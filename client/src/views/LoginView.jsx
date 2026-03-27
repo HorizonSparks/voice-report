@@ -1,0 +1,144 @@
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
+export default function LoginView({ onLogin }) {
+  const { t, i18n } = useTranslation();
+  const [language, setLanguage] = useState(i18n.language || 'en');
+
+  const toggleLanguage = (lang) => {
+    setLanguage(lang);
+    i18n.changeLanguage(lang);
+    localStorage.setItem('hs_language', lang);
+  };
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [faceIdAvailable, setFaceIdAvailable] = useState(false);
+
+  useEffect(() => {
+    // Check if Face ID / Touch ID is available
+    checkFaceId();
+  }, []);
+
+  const checkFaceId = async () => {
+    try {
+      const res = await fetch('/api/webauthn/login-options', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json();
+      if (data.available && window.PublicKeyCredential) {
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        setFaceIdAvailable(available);
+      }
+    } catch (e) {}
+  };
+
+  const handleFaceId = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const optRes = await fetch('/api/webauthn/login-options', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const options = await optRes.json();
+      if (!options.available) { setError(t('common.noFaceIdCredentials')); setLoading(false); return; }
+
+      const credential = await navigator.credentials.get({
+        publicKey: {
+          challenge: Uint8Array.from(atob(options.challenge.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0)),
+          rpId: options.rpId,
+          allowCredentials: options.allowCredentials.map(c => ({
+            id: Uint8Array.from(atob(c.id.replace(/-/g,'+').replace(/_/g,'/')), ch => ch.charCodeAt(0)),
+            type: c.type,
+          })),
+          userVerification: options.userVerification,
+          timeout: options.timeout,
+        }
+      });
+
+      const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+      const loginRes = await fetch('/api/webauthn/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential_id: credId }),
+      });
+      const data = await loginRes.json();
+      if (loginRes.ok) onLogin(data);
+      else setError(data.error || 'Face ID login failed');
+    } catch (e) {
+      if (e.name !== 'NotAllowedError') setError(t('login.faceIdFailed'));
+    }
+    setLoading(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!pin.trim()) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pin.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) onLogin(data);
+      else { setError(data.error || 'PIN not recognized'); setPin(''); }
+    } catch (e) { setError(t('common.connectionError')); }
+    setLoading(false);
+  };
+
+  return (
+    <div className="login-view">
+      <div className="login-card">
+        {/* Language toggle */}
+        <div style={{display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px'}}>
+          <button onClick={() => toggleLanguage('en')}
+            style={{padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: language === 'en' ? 700 : 400,
+              border: language === 'en' ? '2px solid var(--primary)' : '2px solid var(--gray-200)',
+              background: language === 'en' ? 'var(--charcoal)' : 'white',
+              color: language === 'en' ? 'var(--primary)' : 'var(--gray-400)', cursor: 'pointer'}}>
+            English
+          </button>
+          <button onClick={() => toggleLanguage('es')}
+            style={{padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: language === 'es' ? 700 : 400,
+              border: language === 'es' ? '2px solid var(--primary)' : '2px solid var(--gray-200)',
+              background: language === 'es' ? 'var(--charcoal)' : 'white',
+              color: language === 'es' ? 'var(--primary)' : 'var(--gray-400)', cursor: 'pointer'}}>
+            Español
+          </button>
+        </div>
+
+        <div className="login-brand">HORIZON SPARKS</div>
+        <h2>{t('login.title')}</h2>
+        <p className="login-subtitle">{t('login.enterPin')}</p>
+
+        {error && <div className="error-banner"><span>{error}</span></div>}
+
+        {faceIdAvailable && (
+          <button className="face-id-btn" onClick={handleFaceId} disabled={loading}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/></svg>
+            <span>{t('login.faceId')}</span>
+          </button>
+        )}
+
+        {faceIdAvailable && <div className="login-divider"><span>{t('login.orUsePin')}</span></div>}
+
+        <div className="pin-input-row">
+          <input
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={8}
+            value={pin}
+            onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            placeholder={t('login.pin')}
+            autoFocus={!faceIdAvailable}
+            className="pin-input"
+          />
+        </div>
+
+        <button className="btn btn-primary btn-lg login-btn" onClick={handleSubmit} disabled={loading || !pin.trim()}>
+          {loading ? '...' : t('login.submit')}
+        </button>
+      </div>
+    </div>
+  );
+}

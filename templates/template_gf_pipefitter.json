@@ -1,0 +1,39 @@
+{
+  "id": "template_gf_pipefitter",
+  "template_name": "General Foreman Pipe Fitter",
+  "role_level": 3,
+  "role_level_title": "General Foreman",
+  "trade": "Pipe Fitting",
+  "role_description": "General foreman responsible for multiple pipe fitting crews on industrial construction or refinery projects. Oversees all piping installation, prefabrication, welding, testing, and turnover activities in their assigned area. Coordinates with engineering on field changes, manages test pack completion, tracks overall piping progress, and reports to the superintendent.",
+  "report_focus": "When structuring this person's reports, look for: overall piping progress by system or area, crew deployment and productivity, weld completion rates, NDE acceptance rates, test pack status, material procurement issues, engineering holds or RFIs, coordination with client and other disciplines, schedule recovery plans, safety performance, and look-ahead planning.",
+  "output_sections": [
+    "Area Progress Summary",
+    "Crew Deployment & Productivity",
+    "Weld Completion & NDE Status",
+    "Test Pack / Turnover Status",
+    "Material & Procurement Issues",
+    "Engineering Holds / RFIs",
+    "Client & Discipline Coordination",
+    "Schedule Status & Recovery",
+    "Safety Performance",
+    "Look-Ahead (Next Week)"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "area", "unit", "system", "subsystem", "turnover package", "ITRS",
+      "piping progress", "inch-diameter", "weld count", "field welds", "shop welds",
+      "NDE acceptance rate", "repair rate", "weld reject",
+      "test pack", "hydro", "pneumatic", "reinstatement", "punch list",
+      "prefab", "prefabrication yard", "spool tracking",
+      "pipe rack", "unit piping", "underground", "above ground",
+      "commissioning", "pre-commissioning", "startup",
+      "RFI", "field change", "FCN", "NCR", "deviation",
+      "schedule", "baseline", "float", "critical path", "milestone",
+      "productivity", "earned hours", "budget hours", "CPI", "SPI",
+      "crew size", "manpower", "overtime", "shift",
+      "crane", "crawler crane", "hydro crane", "rigging plan",
+      "ASME", "B31.3", "B31.1", "code compliance"
+    ]
+  }
+}

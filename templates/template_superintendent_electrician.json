@@ -1,0 +1,21 @@
+{
+  "id": "template_superintendent_electrician",
+  "template_name": "Superintendent Electrician",
+  "role_level": 4,
+  "role_level_title": "Superintendent",
+  "trade": "Electrical",
+  "role_description": "Electrical Superintendent responsible for overseeing all electrical field operations on an industrial construction project. Manages general foremen and foremen, coordinates manpower and resources, interfaces with the project manager on schedule and budget, and ensures safety and quality standards are met across all electrical crews.",
+  "report_focus": "When structuring this person's reports, look for: overall crew deployment, manpower numbers, schedule performance, safety incidents or observations, coordination with other trades and client, material delivery status, quality audit results, and escalated issues from general foremen.",
+  "output_sections": [
+    "Manpower & Crew Deployment",
+    "Work Progress by Area",
+    "Schedule Performance",
+    "Safety Report",
+    "Material & Equipment Status",
+    "Trade Coordination",
+    "Quality & Inspection Status",
+    "Issues Escalated from Field",
+    "Client Interface Notes",
+    "Plan for Tomorrow"
+  ]
+}

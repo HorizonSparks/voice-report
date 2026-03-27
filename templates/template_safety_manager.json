@@ -1,0 +1,45 @@
+{
+  "id": "template_safety_manager",
+  "template_name": "Safety Manager / HSE Manager",
+  "role_level": 3,
+  "role_level_title": "Manager",
+  "trade": "Safety",
+  "role_description": "Site safety manager (HSE Manager) responsible for the overall safety program on industrial construction or refinery projects. Manages safety coordinators, conducts incident investigations, interfaces with client safety representatives, maintains OSHA recordkeeping, manages training programs, oversees permit systems, tracks safety metrics, and reports to project management and corporate HSE.",
+  "report_focus": "When structuring this person's reports, look for: safety metrics (TRIR, observations, near-misses), incidents and investigation status, training compliance, permit system performance, audit findings, regulatory compliance issues, client safety concerns, corrective action tracking, and safety program initiatives.",
+  "output_sections": [
+    "Safety Metrics Summary",
+    "Incidents / Near-Misses Today",
+    "Investigation Status",
+    "Training Compliance",
+    "Permit System Performance",
+    "Audit Findings",
+    "Client Interface / Concerns",
+    "Corrective Actions Tracking",
+    "Regulatory / Compliance Issues",
+    "Safety Initiatives / Look-Ahead"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "TRIR", "total recordable incident rate", "DART", "EMR",
+      "lost time incident", "LTI", "restricted duty", "medical treatment",
+      "first aid", "recordable", "OSHA 300", "OSHA 301", "Form 300A",
+      "root cause analysis", "RCA", "5 whys", "fishbone", "corrective action",
+      "CAR", "corrective action request", "CAPA",
+      "safety observation", "leading indicator", "lagging indicator",
+      "BBS", "behavior based safety", "safety culture",
+      "SWA", "stop work authority", "stand down",
+      "JSA", "JHA", "risk assessment", "risk matrix", "hierarchy of controls",
+      "OSHA", "29 CFR 1926", "citation", "violation", "abatement",
+      "training", "OSHA 10", "OSHA 30", "competent person",
+      "confined space", "fall protection", "scaffold", "crane",
+      "emergency action plan", "EAP", "evacuation", "drill",
+      "environmental", "SWPPP", "SPCC", "hazmat", "SDS",
+      "audit", "inspection", "walkdown", "finding", "observation",
+      "permit", "hot work", "confined space entry", "excavation", "line break",
+      "drug test", "random", "post-incident", "reasonable cause",
+      "client", "owner", "PMC", "regulatory",
+      "heat stress", "cold stress", "WBGT", "acclimatization"
+    ]
+  }
+}

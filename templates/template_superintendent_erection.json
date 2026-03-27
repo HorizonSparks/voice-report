@@ -1,0 +1,36 @@
+{
+  "id": "template_superintendent_erection",
+  "template_name": "Superintendent Industrial Erection",
+  "role_level": 4,
+  "role_level_title": "Superintendent",
+  "trade": "Industrial Erection",
+  "role_description": "Erection superintendent overseeing all rigging, structural steel, and equipment setting operations on industrial construction or refinery projects. Manages multiple foremen and crews. Responsible for erection schedule, crane fleet management, heavy lift planning, safety performance, budget, and coordination with all other discipline superintendents.",
+  "report_focus": "When structuring this person's reports, look for: overall erection progress, crane fleet status, major lifts planned or completed, steel tonnage erected, equipment set, manpower and budget status, schedule performance, safety metrics, client interface, and strategic decisions.",
+  "output_sections": [
+    "Executive Summary",
+    "Erection Progress (Overall)",
+    "Crane Fleet Status",
+    "Major Lifts (Completed / Planned)",
+    "Manpower & Budget",
+    "Schedule Performance",
+    "Safety Summary",
+    "Client Interface",
+    "Strategic Decisions / Look-Ahead"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "erection", "structural steel", "equipment setting", "module set",
+      "crane fleet", "crawler crane", "hydraulic crane", "tower crane",
+      "heavy lift", "critical lift", "tandem lift", "lift plan",
+      "tonnage", "progress", "completion percentage",
+      "schedule", "critical path", "milestone", "float",
+      "manpower", "headcount", "productivity", "earned hours",
+      "budget", "forecast", "variance", "SPI", "CPI",
+      "safety", "TRIR", "near miss", "fall protection",
+      "client", "owner", "PMC", "engineering",
+      "turnover", "commissioning", "punch list",
+      "subcontractor", "vendor", "third party inspection"
+    ]
+  }
+}

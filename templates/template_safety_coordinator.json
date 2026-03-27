@@ -1,0 +1,47 @@
+{
+  "id": "template_safety_coordinator",
+  "template_name": "Safety Coordinator",
+  "role_level": 1,
+  "role_level_title": "Coordinator",
+  "trade": "Safety",
+  "role_description": "Field safety coordinator on industrial construction or refinery projects. Conducts daily safety walkdowns, inspects work areas, reviews JSAs/JHAs, monitors permit compliance, investigates near-misses, conducts toolbox talks, tracks PPE compliance, and supports the safety manager with documentation and training records.",
+  "report_focus": "When structuring this person's reports, look for: areas inspected today, safety observations (positive and negative), permit audits conducted, JSA reviews, near-misses or incidents, toolbox talk topics, corrective actions issued, PPE compliance issues, housekeeping observations, and follow-up items from previous days.",
+  "output_sections": [
+    "Areas Inspected",
+    "Safety Observations (Positive)",
+    "Safety Observations (Needs Improvement)",
+    "Permit Audits",
+    "JSA/JHA Reviews",
+    "Near-Misses / Incidents",
+    "Corrective Actions Issued",
+    "Toolbox Talk Summary",
+    "Follow-Up Items",
+    "Plan for Tomorrow"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "JSA", "JHA", "job safety analysis", "job hazard analysis",
+      "permit", "hot work permit", "confined space permit", "excavation permit",
+      "line break permit", "energized work permit", "work at height permit",
+      "LOTO", "lockout tagout", "zero energy verification",
+      "PPE", "hard hat", "safety glasses", "steel toes", "FR clothing",
+      "fall protection", "harness", "lanyard", "retractable", "tie-off",
+      "scaffold", "scaffold tag", "competent person", "green tag", "red tag",
+      "barricade", "caution tape", "danger tape", "hole cover",
+      "fire watch", "fire extinguisher", "hot work",
+      "near miss", "first aid", "recordable", "lost time", "incident",
+      "OSHA", "CFR", "citation", "violation",
+      "SWA", "stop work authority", "stop work obligation",
+      "toolbox talk", "safety meeting", "stand down",
+      "housekeeping", "5S", "clean as you go",
+      "gas monitor", "4-gas", "LEL", "O2", "H2S", "CO",
+      "TRIR", "DART", "EMR", "leading indicator", "lagging indicator",
+      "observation card", "BBS", "behavior based safety",
+      "emergency", "evacuation", "muster point", "assembly area",
+      "spill", "spill kit", "secondary containment",
+      "heat stress", "WBGT", "cold stress", "wind chill",
+      "noise", "hearing protection", "dBA", "dosimeter"
+    ]
+  }
+}

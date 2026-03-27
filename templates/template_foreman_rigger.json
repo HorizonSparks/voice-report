@@ -1,0 +1,40 @@
+{
+  "id": "template_foreman_rigger",
+  "template_name": "Foreman Rigger / Iron Worker",
+  "role_level": 2,
+  "role_level_title": "Foreman",
+  "trade": "Industrial Erection",
+  "role_description": "Rigging and iron work foreman responsible for supervising erection crews on industrial construction or refinery projects. Plans and executes lifts, develops rigging plans for non-critical lifts, coordinates with crane operators, manages structural steel erection sequence, ensures bolt-up quality, monitors fall protection compliance, and reports to the general foreman or superintendent.",
+  "report_focus": "When structuring this person's reports, look for: crew status, lifts completed, equipment set, steel tonnage erected, rigging inspections performed, crane utilization, safety observations (fall protection is critical), material status, coordination with other trades, schedule impacts, and plans for tomorrow.",
+  "output_sections": [
+    "Crew Status & Assignments",
+    "Lifts Completed / Equipment Set",
+    "Steel Erected (Tonnage / Pieces)",
+    "Crane Utilization",
+    "Rigging Inspections",
+    "Schedule Impact",
+    "Material & Equipment Needs",
+    "Trade Coordination",
+    "Safety Observations",
+    "Plan for Tomorrow"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "rigging", "lift plan", "critical lift", "engineered lift", "tandem lift",
+      "crane", "crawler", "hydraulic", "load chart", "radius", "capacity",
+      "sling", "shackle", "spreader bar", "pad eye", "lifting lug",
+      "vessel", "column", "exchanger", "module", "skid",
+      "structural steel", "beam", "column", "brace", "gusset",
+      "platform", "grating", "handrail", "stairway", "ladder",
+      "erection sequence", "erection plan", "erection drawing",
+      "bolt-up", "A325", "A490", "TC bolt", "snug tight", "turn-of-nut",
+      "alignment", "plumb", "level", "survey", "benchmark",
+      "fall protection", "100% tie-off", "leading edge", "rescue plan",
+      "crane operator", "signal person", "rigger",
+      "tonnage", "weight", "center of gravity", "CG",
+      "hot work", "scaffold", "JLG", "aerial lift",
+      "crew", "journeyman", "apprentice", "helper", "connector"
+    ]
+  }
+}

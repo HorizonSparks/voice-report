@@ -1,0 +1,52 @@
+{
+  "id": "template_journeyman_rigger",
+  "template_name": "Journeyman Rigger / Iron Worker",
+  "role_level": 1,
+  "role_level_title": "Journeyman",
+  "trade": "Industrial Erection",
+  "role_description": "Journeyman rigger or iron worker on industrial construction or refinery projects. Responsible for rigging and setting equipment (vessels, columns, exchangers, pumps, compressors), erecting structural steel, installing platforms and grating, performing crane signaling, fabricating and installing pipe supports and steel brackets, bolt-up of structural connections, and assisting with heavy lifts and module sets.",
+  "report_focus": "When structuring this person's reports, look for: lifts performed today, equipment set, steel erected, rigging inspections, crane operations, safety observations (fall protection, rigging integrity), material issues, and planned work for tomorrow.",
+  "output_sections": [
+    "Work Completed",
+    "Lifts / Equipment Set",
+    "Steel Erected",
+    "Safety Observations",
+    "Material / Rigging Issues",
+    "Needs Foreman Attention",
+    "Plan for Tomorrow"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "rigging", "rig", "sling", "wire rope sling", "nylon sling", "chain sling",
+      "choker", "basket", "vertical hitch", "bridle",
+      "shackle", "screw pin shackle", "bolt type shackle", "crosby",
+      "turnbuckle", "eyebolt", "pad eye", "lifting lug", "trunnion",
+      "spreader bar", "spreader beam", "equalizer beam",
+      "crane", "crawler crane", "hydraulic crane", "RT crane", "rough terrain",
+      "boom", "jib", "counterweight", "outrigger", "load chart",
+      "capacity", "radius", "swing", "boom angle", "load block",
+      "tagline", "tag line", "bull line", "come-along", "chain fall",
+      "tugger", "winch", "capstan",
+      "signal", "hand signal", "radio", "signal person", "qualified signal person",
+      "critical lift", "lift plan", "engineered lift", "tandem lift",
+      "vessel", "column", "tower", "drum", "exchanger", "heat exchanger",
+      "reactor", "regenerator", "compressor", "pump", "blower", "fan",
+      "module", "module set", "skid", "package unit",
+      "structural steel", "beam", "column", "brace", "gusset",
+      "W-shape", "wide flange", "HSS", "tube steel", "angle", "channel",
+      "platform", "grating", "handrail", "toe plate", "ladder", "cage ladder",
+      "clip", "connection", "bolt-up", "A325", "A490", "tension control bolt", "TC bolt",
+      "moment connection", "shear connection", "base plate", "anchor bolt",
+      "plumb", "level", "square", "alignment", "survey",
+      "erection plan", "erection sequence", "erection drawing",
+      "welding", "field weld", "fit-up", "tack", "full penetration", "partial penetration",
+      "ironworker", "iron worker", "connector", "bolter",
+      "fall protection", "harness", "lanyard", "retractable", "100% tie-off",
+      "leading edge", "controlled access zone", "safety net",
+      "scaffold", "JLG", "boom lift", "scissor lift", "man basket",
+      "hot work", "cutting", "burning", "torch",
+      "OSHA", "competent person", "qualified person"
+    ]
+  }
+}

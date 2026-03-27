@@ -1,0 +1,15 @@
+{
+  "id": "template_other_electrician",
+  "template_name": "Other (Electrical)",
+  "role_level": 0,
+  "role_level_title": "Other",
+  "trade": "Electrical",
+  "role_description": "Other electrical role on an industrial construction project. This is a flexible template for roles not covered by standard categories.",
+  "report_focus": "When structuring this person's reports, look for: work completed, issues encountered, safety observations, coordination notes, and plans.",
+  "output_sections": [
+    "Work Completed",
+    "Issues & Notes",
+    "Safety Observations",
+    "Plan for Tomorrow"
+  ]
+}

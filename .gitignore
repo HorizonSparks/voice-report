@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Build Output
+dist/
+
+# Database Files
+*.db
+*.db-shm
+*.db-wal
+
+# SSL/TLS Certificates & Keys
+cert.pem
+key.pem
+certs/
+.challenges/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# User Data Directories
+audio/
+photos/
+reports/
+messages/
+message-audio/
+message-photos/
+people/
+forms/
+knowledge/
+memory_backup/
+
+# PM2
+*.pid

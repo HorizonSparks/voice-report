@@ -1,0 +1,21 @@
+{
+  "id": "template_project_manager",
+  "template_name": "Project Manager",
+  "role_level": 5,
+  "role_level_title": "Project Manager",
+  "trade": "Electrical",
+  "role_description": "Project Manager overseeing the entire electrical scope of an industrial construction project. Manages schedule, budget, client relations, subcontractors, and ensures overall project delivery. Coordinates with the superintendent and general foremen to ensure milestones are met.",
+  "report_focus": "When structuring this person's reports, look for: project milestones, budget status, schedule updates, client communications, subcontractor performance, RFI status, change orders, procurement issues, manpower planning, and risk items.",
+  "output_sections": [
+    "Project Status Summary",
+    "Schedule & Milestones",
+    "Budget & Cost Tracking",
+    "Client Communications",
+    "Subcontractor Performance",
+    "RFIs & Change Orders",
+    "Procurement & Material Status",
+    "Manpower Planning",
+    "Risk Items & Mitigation",
+    "Action Items"
+  ]
+}

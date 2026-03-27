@@ -1,0 +1,36 @@
+{
+  "id": "template_helper_pipefitter",
+  "template_name": "Helper Pipe Fitter",
+  "role_level": 0,
+  "role_level_title": "Helper",
+  "trade": "Pipe Fitting",
+  "role_description": "Pipe fitter helper supporting journeymen and foremen on industrial construction and refinery projects. Assists with material handling, rigging preparation, pipe staging, grinding, cleaning, bolt-up assistance, scaffold setup, and general labor support for pipe installation crews.",
+  "report_focus": "When structuring this person's reports, look for: tasks they helped with today, materials they moved or staged, tools they used, any safety observations, issues they noticed, and what they need for tomorrow.",
+  "output_sections": [
+    "Work Assisted Today",
+    "Materials Handled",
+    "Safety Observations",
+    "Issues Noticed",
+    "Plan for Tomorrow"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "pipe", "spool", "spool piece", "flange", "weld neck", "slip-on", "blind flange",
+      "gasket", "spiral wound", "ring joint", "RTJ", "bolts", "studs", "nuts",
+      "elbow", "90", "45", "tee", "reducer", "concentric reducer", "eccentric reducer",
+      "coupling", "union", "nipple", "cap", "plug",
+      "valve", "gate valve", "globe valve", "ball valve", "check valve", "butterfly valve",
+      "pipe rack", "pipe support", "hanger", "spring hanger", "shoe", "guide", "anchor",
+      "scaffold", "scaffolding", "plank", "tag line", "come-along", "chain fall",
+      "rigging", "sling", "choker", "shackle", "crane", "boom", "lift",
+      "grinder", "cutting wheel", "flap disc", "wire wheel", "torch", "oxy-fuel",
+      "bevel", "land", "root gap", "fit-up", "tack", "tack weld",
+      "hydro", "hydro test", "pressure test", "leak test",
+      "P&ID", "isometric", "ISO", "line number", "spec break",
+      "carbon steel", "stainless", "chrome-moly", "alloy",
+      "weld map", "weld log", "NDE", "X-ray", "radiography",
+      "hot work", "fire watch", "JSA", "JHA", "permit"
+    ]
+  }
+}

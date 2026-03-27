@@ -1,0 +1,385 @@
+{
+  "instrumentation": {
+    "instrument_installation": [
+      "instrument",
+      "transmitter",
+      "pressure",
+      "temperature",
+      "level",
+      "flow",
+      "install",
+      "mount",
+      "thermowell",
+      "rtd",
+      "thermocouple"
+    ],
+    "tubing_runs": [
+      "tubing",
+      "tube",
+      "impulse",
+      "air supply",
+      "swagelok",
+      "fitting",
+      "compression"
+    ],
+    "control_valve_installation": [
+      "valve",
+      "control valve",
+      "actuator",
+      "positioner",
+      "globe",
+      "butterfly"
+    ],
+    "calibration": [
+      "calibrate",
+      "calibration",
+      "hart",
+      "range",
+      "span",
+      "zero",
+      "trim",
+      "4-20"
+    ],
+    "loop_testing": [
+      "loop",
+      "loop test",
+      "loop check",
+      "checkout",
+      "dcs",
+      "plc",
+      "signal"
+    ],
+    "hazardous_areas": [
+      "classified",
+      "div 1",
+      "div 2",
+      "explosion",
+      "intrinsically safe",
+      "barrier"
+    ],
+    "pneumatic_systems": [
+      "air",
+      "pneumatic",
+      "air header",
+      "regulator",
+      "filter"
+    ],
+    "working_near_process_piping": [
+      "process",
+      "piping",
+      "hot pipe",
+      "steam",
+      "cryogenic"
+    ]
+  },
+  "electrical": {
+    "cable_pulling": [
+      "cable",
+      "pull",
+      "wire",
+      "conductor",
+      "reel"
+    ],
+    "conduit_installation": [
+      "conduit",
+      "emt",
+      "rigid",
+      "raceway",
+      "bend"
+    ],
+    "terminations": [
+      "terminate",
+      "termination",
+      "land",
+      "landing",
+      "lug",
+      "connect",
+      "breaker",
+      "panel"
+    ],
+    "testing_megger": [
+      "megger",
+      "test",
+      "insulation",
+      "resistance",
+      "meg"
+    ],
+    "testing_hipot": [
+      "hipot",
+      "high pot",
+      "high potential"
+    ],
+    "panel_mcc_work": [
+      "panel",
+      "mcc",
+      "motor control",
+      "switchgear",
+      "breaker"
+    ],
+    "cable_tray": [
+      "tray",
+      "cable tray",
+      "ladder tray"
+    ],
+    "confined_space": [
+      "confined",
+      "vault",
+      "manhole",
+      "tank"
+    ],
+    "hot_work_near_electrical": [
+      "weld",
+      "grind",
+      "cut",
+      "hot work",
+      "spark"
+    ]
+  },
+  "pipefitting": {
+    "welding": [
+      "weld",
+      "welding",
+      "stick",
+      "tig",
+      "gtaw",
+      "smaw",
+      "fcaw",
+      "6010",
+      "7018",
+      "root pass",
+      "fill pass",
+      "cap"
+    ],
+    "fitup": [
+      "fit-up",
+      "fitup",
+      "fit up",
+      "alignment",
+      "hi-lo",
+      "mismatch",
+      "tack",
+      "bevel",
+      "root gap"
+    ],
+    "flange_boltup": [
+      "flange",
+      "bolt",
+      "bolt-up",
+      "torque",
+      "gasket",
+      "spiral wound",
+      "rtj",
+      "ring joint",
+      "stud"
+    ],
+    "hydro_testing": [
+      "hydro",
+      "hydrostatic",
+      "pressure test",
+      "test pack",
+      "test boundary",
+      "leak test"
+    ],
+    "valve_installation": [
+      "valve",
+      "gate valve",
+      "globe valve",
+      "ball valve",
+      "check valve",
+      "butterfly",
+      "relief valve",
+      "psv"
+    ],
+    "pipe_support": [
+      "support",
+      "hanger",
+      "spring hanger",
+      "shoe",
+      "guide",
+      "anchor",
+      "trunnion",
+      "u-bolt"
+    ],
+    "pipe_fabrication": [
+      "spool",
+      "prefab",
+      "fabrication",
+      "iso",
+      "isometric",
+      "pipe rack"
+    ],
+    "cutting_grinding": [
+      "grind",
+      "cut",
+      "torch",
+      "oxy-fuel",
+      "bevel machine",
+      "coping"
+    ],
+    "preheat_pwht": [
+      "preheat",
+      "pwht",
+      "post weld",
+      "stress relief",
+      "heat treatment",
+      "interpass"
+    ],
+    "nde_inspection": [
+      "nde",
+      "x-ray",
+      "radiography",
+      "rt",
+      "ut",
+      "pt",
+      "mt",
+      "dye pen",
+      "mag particle",
+      "pmi"
+    ]
+  },
+  "erection": {
+    "rigging": [
+      "rig",
+      "rigging",
+      "sling",
+      "shackle",
+      "choker",
+      "basket",
+      "spreader bar",
+      "pad eye",
+      "lifting lug"
+    ],
+    "crane_operations": [
+      "crane",
+      "crawler",
+      "hydraulic crane",
+      "boom",
+      "load chart",
+      "radius",
+      "capacity",
+      "outrigger"
+    ],
+    "steel_erection": [
+      "steel",
+      "beam",
+      "column",
+      "brace",
+      "gusset",
+      "wide flange",
+      "erection",
+      "bolt-up",
+      "a325",
+      "a490"
+    ],
+    "equipment_setting": [
+      "vessel",
+      "column",
+      "tower",
+      "exchanger",
+      "reactor",
+      "compressor",
+      "pump",
+      "module",
+      "skid"
+    ],
+    "platforms_grating": [
+      "platform",
+      "grating",
+      "handrail",
+      "toe plate",
+      "ladder",
+      "stairway",
+      "cage"
+    ],
+    "fall_protection": [
+      "fall",
+      "harness",
+      "lanyard",
+      "retractable",
+      "tie-off",
+      "leading edge",
+      "rescue"
+    ],
+    "heavy_lifts": [
+      "heavy lift",
+      "critical lift",
+      "tandem lift",
+      "lift plan",
+      "engineered lift",
+      "center of gravity"
+    ]
+  },
+  "safety": {
+    "permits": [
+      "permit",
+      "hot work",
+      "confined space",
+      "excavation",
+      "line break",
+      "energized work",
+      "loto"
+    ],
+    "inspections": [
+      "inspection",
+      "walkdown",
+      "audit",
+      "observation",
+      "finding",
+      "violation",
+      "citation"
+    ],
+    "incidents": [
+      "incident",
+      "near miss",
+      "first aid",
+      "recordable",
+      "lost time",
+      "fatality",
+      "investigation"
+    ],
+    "training": [
+      "training",
+      "osha 10",
+      "osha 30",
+      "competent person",
+      "qualified",
+      "certification"
+    ],
+    "emergency": [
+      "emergency",
+      "evacuation",
+      "muster",
+      "fire",
+      "spill",
+      "rescue",
+      "ems"
+    ],
+    "environmental": [
+      "swppp",
+      "spcc",
+      "spill",
+      "containment",
+      "hazmat",
+      "waste",
+      "erosion"
+    ],
+    "fall_protection": [
+      "fall",
+      "harness",
+      "scaffold",
+      "guardrail",
+      "hole cover",
+      "leading edge"
+    ],
+    "ppe": [
+      "ppe",
+      "hard hat",
+      "glasses",
+      "gloves",
+      "fr",
+      "steel toe",
+      "hearing protection",
+      "respirator"
+    ]
+  }
+}

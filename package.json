@@ -1,0 +1,39 @@
+{
+  "name": "voice-report",
+  "version": "2.0.0",
+  "description": "Voice-first reporting app for Horizon Sparks",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "start:legacy": "node server.js",
+    "dev": "concurrently \"node server/index.js\" \"vite --config vite.config.js\"",
+    "dev:server": "node server/index.js",
+    "dev:client": "vite --config vite.config.js",
+    "build": "vite build --config vite.config.js",
+    "preview": "vite preview --config vite.config.js",
+    "test": "jest --verbose",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "^13.3.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "better-sqlite3": "^12.8.0",
+    "concurrently": "^9.2.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "formdata-node": "^6.0.3",
+    "i18next": "^25.10.9",
+    "marked": "^12.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.20.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-i18next": "^16.6.6",
+    "uuid": "^11.1.0",
+    "vite": "^8.0.2"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
+  }
+}

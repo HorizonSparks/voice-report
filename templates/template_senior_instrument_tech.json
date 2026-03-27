@@ -1,0 +1,41 @@
+{
+  "id": "template_senior_instrument_tech",
+  "template_name": "Senior Instrument Tech",
+  "role_level": 2,
+  "role_level_title": "Senior Tech",
+  "trade": "Instrumentation",
+  "role_description": "Senior Instrument Technician supervising a crew of instrument techs and junior techs on industrial construction or refinery projects. Manages daily work assignments for instrument installation, calibration, loop checking, and troubleshooting. Ensures proper hook-up drawing compliance, calibration accuracy, and reports crew progress to the instrument lead.",
+  "report_focus": "When structuring this person's reports, look for: crew status and headcount, work assignments given, installation progress, calibrations performed, loop checks completed, material and tool needs, coordination with other trades, quality issues found, safety observations, problems escalated from techs, and plans for tomorrow.",
+  "output_sections": [
+    "Crew Status & Assignments",
+    "Installation Progress",
+    "Calibrations Performed",
+    "Loop Checks Completed",
+    "Material & Tool Needs",
+    "Trade Coordination",
+    "Quality Issues",
+    "Safety Observations",
+    "Issues Escalated from Crew",
+    "Plan for Tomorrow"
+  ],
+  "vocabulary": {
+    "terms": ["transmitter", "pressure transmitter", "temperature transmitter", "level transmitter", "flow transmitter", "differential pressure", "DP", "control valve", "actuator", "positioner", "I/P converter", "RTD", "thermocouple", "thermowell", "orifice plate", "flow element", "radar level", "guided wave radar", "ultrasonic level", "magnetic flow meter", "Coriolis meter", "vortex meter", "pressure gauge", "temperature gauge", "level gauge", "PSV", "solenoid valve", "shutdown valve", "calibrator", "HART communicator", "Fluke", "Beamex", "deadweight tester", "loop check", "loop diagram", "hook-up drawing", "P&ID", "instrument index", "junction box", "JB", "marshalling cabinet", "DCS", "PLC", "4-20mA", "HART", "fieldbus", "cable", "multi-pair", "thermocouple extension wire", "instrument tubing", "SS tubing", "tube fitting", "Swagelok", "impulse line", "manifold", "root valve", "isolation valve", "instrument air", "pneumatic signal", "calibration certificate", "as-found", "as-left", "range", "span", "zero", "LRV", "URV", "damping", "turndown", "accuracy", "repeatability", "drift"]
+  },
+  "safety_rules": [
+    "All personnel must wear required PPE at all times: hard hat, safety glasses, steel-toe boots, FR clothing",
+    "Never work on energized or pressurized systems without proper isolation and LOTO procedures",
+    "Confined space entry requires a permit, atmospheric testing, and a dedicated attendant",
+    "Hot work requires a permit and a fire watch for minimum 30 minutes after work completion",
+    "Fall protection is required at heights of 6 feet or more — 100% tie-off at all times",
+    "Verify zero energy state before working on any instrument loop",
+    "Use proper PPE when handling calibration gases — check SDS",
+    "Never bypass safety instrumented systems (SIS) without proper authorization",
+    "Instrument air systems must be properly isolated before maintenance",
+    "Use only approved intrinsically safe equipment in classified areas",
+    "Verify area classification before using any non-IS equipment",
+    "Report all incidents, near-misses, and unsafe conditions immediately",
+    "Attend daily toolbox talks and JSA reviews before starting work",
+    "Maintain 3 points of contact when climbing ladders",
+    "Keep work areas clean and organized"
+  ]
+}

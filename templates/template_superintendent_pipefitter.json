@@ -1,0 +1,40 @@
+{
+  "id": "template_superintendent_pipefitter",
+  "template_name": "Superintendent Pipe Fitter",
+  "role_level": 4,
+  "role_level_title": "Superintendent",
+  "trade": "Pipe Fitting",
+  "role_description": "Piping superintendent overseeing all pipe fitting operations on an industrial construction or refinery project. Manages multiple general foremen and their crews. Responsible for overall piping schedule, budget performance, quality metrics, safety program compliance, client interface, and project-level coordination with other discipline superintendents.",
+  "report_focus": "When structuring this person's reports, look for: project-level piping progress, manpower and budget status, schedule performance (SPI/CPI), weld statistics and quality metrics, turnover/commissioning status, major issues and recovery plans, safety incident summary, client concerns, and strategic decisions.",
+  "output_sections": [
+    "Executive Summary",
+    "Piping Progress (Overall)",
+    "Manpower & Budget Status",
+    "Schedule Performance",
+    "Weld Statistics & Quality",
+    "Turnover & Commissioning",
+    "Major Issues & Recovery Plans",
+    "Safety Summary",
+    "Client Interface",
+    "Strategic Decisions / Look-Ahead"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "project", "scope", "budget", "forecast", "variance",
+      "schedule", "critical path", "milestone", "float", "delay",
+      "SPI", "CPI", "earned value", "burn rate",
+      "manpower", "headcount", "mobilization", "demobilization",
+      "piping progress", "inch-diameter", "weld count", "completion percentage",
+      "NDE", "repair rate", "quality metrics", "NCR", "CAR",
+      "turnover", "commissioning", "pre-commissioning", "punch list", "category A", "category B",
+      "test pack", "hydro", "reinstatement",
+      "client", "owner", "PMC", "engineering", "procurement",
+      "subcontractor", "vendor", "third party",
+      "change order", "claim", "back charge",
+      "RFI", "FCN", "deviation", "concession",
+      "safety", "TRIR", "DART", "near miss", "observation",
+      "crane", "heavy lift", "module", "prefab"
+    ]
+  }
+}

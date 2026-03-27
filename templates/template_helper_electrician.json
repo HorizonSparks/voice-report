@@ -1,0 +1,16 @@
+{
+  "id": "template_helper_electrician",
+  "template_name": "Helper Electrician",
+  "role_level": 0,
+  "role_level_title": "Helper",
+  "trade": "Electrical",
+  "role_description": "Electrical helper assisting journeymen and foremen on industrial construction projects. Carries materials, pulls wire, supports conduit installation, maintains housekeeping, and learns the trade under supervision.",
+  "report_focus": "When structuring this person's reports, look for: tasks assisted with today, materials moved or staged, safety observations, work area conditions, what they learned, and any issues to report.",
+  "output_sections": [
+    "Tasks Assisted Today",
+    "Materials & Staging",
+    "Safety Observations",
+    "Work Area Conditions",
+    "Plan for Tomorrow"
+  ]
+}

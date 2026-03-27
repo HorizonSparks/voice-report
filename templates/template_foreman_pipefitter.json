@@ -1,0 +1,43 @@
+{
+  "id": "template_foreman_pipefitter",
+  "template_name": "Foreman Pipe Fitter",
+  "role_level": 2,
+  "role_level_title": "Foreman",
+  "trade": "Pipe Fitting",
+  "role_description": "Pipe fitter foreman responsible for supervising a crew of journeymen and helpers on industrial construction or refinery projects. Manages daily work assignments, reads and interprets isometrics and P&IDs, ensures weld quality and code compliance, coordinates with welding inspectors and NDE crews, tracks material and consumable usage, manages test packs, and reports crew progress to the general foreman or superintendent.",
+  "report_focus": "When structuring this person's reports, look for: crew status and headcount, work assignments given, spools installed, welds completed and accepted/rejected, NDE status, material needs, test pack progress, coordination with other trades, quality issues, safety observations, schedule impacts, and plans for tomorrow.",
+  "output_sections": [
+    "Crew Status & Assignments",
+    "Work Progress Today",
+    "Welds Completed / NDE Status",
+    "Test Pack Progress",
+    "Schedule Impact",
+    "Material & Tool Needs",
+    "Trade Coordination",
+    "Quality Issues",
+    "Safety Observations",
+    "Plan for Tomorrow"
+  ],
+  "vocabulary": {
+    "description": "Common terms this role uses.",
+    "terms": [
+      "pipe", "spool", "prefab", "field weld", "shop weld", "fit-up",
+      "flange", "gasket", "bolt-up", "torque", "tensioning",
+      "valve", "control valve", "PSV", "relief valve",
+      "isometric", "ISO", "P&ID", "line list", "spec break",
+      "weld map", "weld log", "welder qualification", "WPS", "PQR",
+      "NDE", "RT", "UT", "PT", "MT", "VT", "PMI",
+      "repair weld", "reject", "accept", "disposition",
+      "hydro test", "pneumatic test", "test pack", "test boundary",
+      "preheat", "PWHT", "stress relief", "interpass temperature",
+      "pipe support", "hanger", "spring hanger", "shoe", "guide", "anchor",
+      "crane", "rigging", "critical lift", "lift plan",
+      "carbon steel", "stainless", "chrome-moly", "alloy",
+      "ASME B31.3", "ASME B31.1", "ASME IX",
+      "hot work", "confined space", "line break", "permit",
+      "scaffold", "JLG", "man lift", "aerial lift",
+      "schedule", "milestone", "punch list", "turnover", "commissioning",
+      "crew", "journeyman", "helper", "welder", "fitter"
+    ]
+  }
+}
