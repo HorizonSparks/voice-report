@@ -1,7 +1,13 @@
-import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 import TeamAssignment from '../components/TeamAssignment.jsx';
 import PersonEditor from '../components/people/PersonEditor.jsx';
 import PersonDashboard from '../components/people/PersonDashboard.jsx';
@@ -40,6 +46,39 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
   const [openSections, setOpenSections] = useState({});
   const toggleSection = (key) => setOpenSections(s => ({ ...s, [key]: !s[key] }));
 
+  // Reusable dialog state to replace native alert() and confirm()
+  const [dialogConfig, setDialogConfig] = useState(null);
+  const closeDialog = () => setDialogConfig(null);
+  const showAlert = useCallback((message, title) => {
+    setDialogConfig({ title: title || 'Notice', message, onClose: null });
+  }, []);
+  const showConfirm = useCallback((message, onConfirm, title) => {
+    setDialogConfig({ title: title || 'Confirm', message, onConfirm, confirmText: 'OK', cancelText: 'Cancel' });
+  }, []);
+
+  const renderDialog = () => (
+    <Dialog open={!!dialogConfig} onClose={closeDialog}>
+      {dialogConfig && (
+        <>
+          <DialogTitle>{dialogConfig.title}</DialogTitle>
+          <DialogContent>
+            <DialogContentText>{dialogConfig.message}</DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            {dialogConfig.onConfirm ? (
+              <>
+                <Button onClick={closeDialog}>{dialogConfig.cancelText || 'Cancel'}</Button>
+                <Button onClick={() => { closeDialog(); dialogConfig.onConfirm(); }} autoFocus>{dialogConfig.confirmText || 'OK'}</Button>
+              </>
+            ) : (
+              <Button onClick={closeDialog} autoFocus>OK</Button>
+            )}
+          </DialogActions>
+        </>
+      )}
+    </Dialog>
+  );
+
   const isAdmin = user && user.is_admin;
   const isSupervisor = user && parseInt(user.role_level || 0) >= 2;
   const myPersonId = user && user.person_id;
@@ -57,17 +96,18 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
     }
   }, [viewing]);
 
-  const deletePerson2 = async () => {
+  const deletePerson2 = () => {
     const id = viewing;
     const name = viewingPerson?.name || 'this person';
-    if (!confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/people/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setViewing(null);
-        reloadPeople();
-      } else { alert('Failed to delete person.'); }
-    } catch (err) { alert('Error: ' + err.message); }
+    showConfirm(`Are you sure you want to delete ${name}? This cannot be undone.`, async () => {
+      try {
+        const res = await fetch(`/api/people/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setViewing(null);
+          reloadPeople();
+        } else { showAlert('Failed to delete person.'); }
+      } catch (err) { showAlert('Error: ' + err.message); }
+    });
   };
 
   const startNew = () => {
@@ -138,18 +178,19 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
     }
   };
 
-  const deletePerson = async () => {
-    if (!confirm(`Are you sure you want to delete ${form.name || 'this person'}? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/people/${editing}`, { method: 'DELETE' });
-      if (res.ok) {
-        setEditing(null);
-        setViewing(null);
-        reloadPeople();
-      } else {
-        alert('Failed to delete person.');
-      }
-    } catch (err) { alert('Error deleting person: ' + err.message); }
+  const deletePerson = () => {
+    showConfirm(`Are you sure you want to delete ${form.name || 'this person'}? This cannot be undone.`, async () => {
+      try {
+        const res = await fetch(`/api/people/${editing}`, { method: 'DELETE' });
+        if (res.ok) {
+          setEditing(null);
+          setViewing(null);
+          reloadPeople();
+        } else {
+          showAlert('Failed to delete person.');
+        }
+      } catch (err) { showAlert('Error deleting person: ' + err.message); }
+    });
   };
 
   const uploadPhoto = async (e) => {
@@ -210,9 +251,9 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
         body: JSON.stringify({ person_id: editing, credential: { id: credId, rawId: credId } }),
       });
       setForm(f => ({ ...f, webauthn_credential_id: credId }));
-      alert('Face ID registered successfully!');
+      showAlert('Face ID registered successfully!');
     } catch (e) {
-      if (e.name !== 'NotAllowedError') alert('Face ID registration failed: ' + e.message);
+      if (e.name !== 'NotAllowedError') showAlert('Face ID registration failed: ' + e.message);
     }
   };
 
@@ -230,7 +271,7 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
   const updateCtx = (key, val) => setForm(f => ({ ...f, personal_context: { ...f.personal_context, [key]: val } }));
 
   const uploadCert = async (file) => {
-    if (editing === 'new') { alert('Save the person first, then upload certifications.'); return; }
+    if (editing === 'new') { showAlert('Save the person first, then upload certifications.'); return; }
     const fd = new FormData();
     fd.append('cert', file);
     try {
@@ -242,34 +283,41 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
     } catch (err) { console.error('Cert upload failed:', err); }
   };
 
-  const removeCert = async (filename) => {
-    if (!confirm('Remove this certification file?')) return;
-    try {
-      await fetch(`/api/people/${editing}/certs/${filename}`, { method: 'DELETE' });
-      setForm(f => ({ ...f, certifications_files: (f.certifications_files || []).filter(c => c.filename !== filename) }));
-    } catch (err) { console.error('Cert delete failed:', err); }
+  const removeCert = (filename) => {
+    showConfirm('Remove this certification file?', async () => {
+      try {
+        await fetch(`/api/people/${editing}/certs/${filename}`, { method: 'DELETE' });
+        setForm(f => ({ ...f, certifications_files: (f.certifications_files || []).filter(c => c.filename !== filename) }));
+      } catch (err) { console.error('Cert delete failed:', err); }
+    });
   };
 
   if (loading) return (
-    <Box className="loading" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <CircularProgress size={24} sx={{ mr: 1 }} />
-      {t('common.loading')}
-    </Box>
+    <>
+      <Box className="loading" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress size={24} sx={{ mr: 1 }} />
+        {t('common.loading')}
+      </Box>
+      {renderDialog()}
+    </>
   );
 
   if (editing !== null) {
     return (
-      <PersonEditor
-        editing={editing} form={form} setForm={setForm}
-        templates={templates} people={people}
-        openSections={openSections} toggleSection={toggleSection}
-        onSave={save} onDelete={deletePerson}
-        onUploadPhoto={uploadPhoto} onUploadCert={uploadCert} onRemoveCert={removeCert}
-        onRegisterFaceId={registerFaceId} onGeneratePin={generatePin}
-        messages={messages} messageText={messageText} setMessageText={setMessageText}
-        onSendMessage={sendMessage} showMessages={showMessages} setShowMessages={setShowMessages}
-        setPeople={setPeople} t={t}
-      />
+      <>
+        <PersonEditor
+          editing={editing} form={form} setForm={setForm}
+          templates={templates} people={people}
+          openSections={openSections} toggleSection={toggleSection}
+          onSave={save} onDelete={deletePerson}
+          onUploadPhoto={uploadPhoto} onUploadCert={uploadCert} onRemoveCert={removeCert}
+          onRegisterFaceId={registerFaceId} onGeneratePin={generatePin}
+          messages={messages} messageText={messageText} setMessageText={setMessageText}
+          onSendMessage={sendMessage} showMessages={showMessages} setShowMessages={setShowMessages}
+          setPeople={setPeople} t={t}
+        />
+        {renderDialog()}
+      </>
     );
   }
 
@@ -278,24 +326,27 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
   // ============================================================
   if (viewing && viewingPerson && !editing) {
     return (
-      <PersonDashboard
-        user={user}
-        person={viewingPerson}
-        reports={viewingReports}
-        tasks={viewingTasks}
-        people={people}
-        expandedPersonSection={expandedPersonSection}
-        setExpandedPersonSection={setExpandedPersonSection}
-        onOpenReport={onOpenReport}
-        onOpenTask={(taskId) => navigateTo('taskdetail', { taskId })}
-        onEditPerson={() => startEdit(viewing)}
-        onDeletePerson={deletePerson2}
-        onAssignTask={(p) => {
-          if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('preAssignPerson', JSON.stringify({id: p.id, name: p.name}));
-          navigateTo('dailyplan');
-        }}
-        onViewPerson={viewPerson}
-      />
+      <>
+        <PersonDashboard
+          user={user}
+          person={viewingPerson}
+          reports={viewingReports}
+          tasks={viewingTasks}
+          people={people}
+          expandedPersonSection={expandedPersonSection}
+          setExpandedPersonSection={setExpandedPersonSection}
+          onOpenReport={onOpenReport}
+          onOpenTask={(taskId) => navigateTo('taskdetail', { taskId })}
+          onEditPerson={() => startEdit(viewing)}
+          onDeletePerson={deletePerson2}
+          onAssignTask={(p) => {
+            if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('preAssignPerson', JSON.stringify({id: p.id, name: p.name}));
+            navigateTo('dailyplan');
+          }}
+          onViewPerson={viewPerson}
+        />
+        {renderDialog()}
+      </>
     );
   }
 
@@ -303,17 +354,20 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
 
   // People list view — extracted to PeopleListSection
   return (
-    <PeopleListSection
-      user={user}
-      activeTrade={activeTrade}
-      activeRoleLevels={activeRoleLevels}
-      people={people}
-      templates={templates}
-      expandedCategory={expandedCategory}
-      setExpandedCategory={setExpandedCategory}
-      onSelectPerson={viewPerson}
-      onCreatePerson={startNew}
-    />
+    <>
+      <PeopleListSection
+        user={user}
+        activeTrade={activeTrade}
+        activeRoleLevels={activeRoleLevels}
+        people={people}
+        templates={templates}
+        expandedCategory={expandedCategory}
+        setExpandedCategory={setExpandedCategory}
+        onSelectPerson={viewPerson}
+        onCreatePerson={startNew}
+      />
+      {renderDialog()}
+    </>
   );
 
 })

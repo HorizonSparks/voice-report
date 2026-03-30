@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Button, TextField, Paper, CircularProgress, IconButton } from '@mui/material';
+import { Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Dialog, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import VoiceMessagePlayer from '../components/VoiceMessagePlayer.jsx';
 
 export default function MessagesView({ user, readOnly }) {
@@ -21,6 +21,10 @@ export default function MessagesView({ user, readOnly }) {
   const voiceChunksRef = useRef([]);
   const voiceTimerRef = useRef(null);
   const personId = user.person_id;
+  const [dialogConfig, setDialogConfig] = useState(null);
+  const showAlert = (message) => setDialogConfig({ message });
+  const showConfirm = (message, onConfirm) => setDialogConfig({ message, onConfirm, showCancel: true });
+  const closeDialog = () => setDialogConfig(null);
 
   // Load contacts on mount to know who the supervisor is
   useEffect(() => {
@@ -98,7 +102,7 @@ export default function MessagesView({ user, readOnly }) {
       });
       setNewMessage('');
       loadChat(activeChat, false);
-    } catch(e) { alert(t('messages.sendFailed')); }
+    } catch(e) { showAlert(t('messages.sendFailed')); }
   };
 
   const handleKeyPress = (e) => {
@@ -128,14 +132,14 @@ export default function MessagesView({ user, readOnly }) {
         try {
           await fetch('/api/v2/messages/voice', { method: 'POST', body: formData });
           loadChat(activeChat, false);
-        } catch(e) { alert('Failed to send voice message'); }
+        } catch(e) { showAlert('Failed to send voice message'); }
       };
       recorder.start(100);
       voiceRecorderRef.current = recorder;
       setIsRecordingVoice(true);
       setVoiceRecordingTime(0);
       voiceTimerRef.current = setInterval(() => setVoiceRecordingTime(t => t + 1), 1000);
-    } catch(e) { alert('Microphone access denied'); }
+    } catch(e) { showAlert('Microphone access denied'); }
   };
 
   const stopVoiceRecording = () => {
@@ -200,14 +204,15 @@ export default function MessagesView({ user, readOnly }) {
   const [showChatPhotoChoice, setShowChatPhotoChoice] = useState(false);
   const [sendingPhoto, setSendingPhoto] = useState(false);
 
-  const deleteMessage = async (msgId) => {
-    if (!confirm('Delete this message?')) return;
-    try {
-      const res = await fetch('/api/v2/messages/' + msgId, { method: 'DELETE' });
-      if (res.ok) {
-        setChatMessages(prev => prev.filter(m => m.id !== msgId));
-      } else { alert('Failed to delete message'); }
-    } catch (err) { alert('Delete error: ' + err.message); }
+  const deleteMessage = (msgId) => {
+    showConfirm('Delete this message?', async () => {
+      try {
+        const res = await fetch('/api/v2/messages/' + msgId, { method: 'DELETE' });
+        if (res.ok) {
+          setChatMessages(prev => prev.filter(m => m.id !== msgId));
+        } else { showAlert('Failed to delete message'); }
+      } catch (err) { showAlert('Delete error: ' + err.message); }
+    });
   };
 
   const sendFile = async (file) => {
@@ -238,7 +243,7 @@ export default function MessagesView({ user, readOnly }) {
       formData.append('to_id', activeChat);
       const res = await fetch('/api/v2/messages/photo', { method: 'POST', body: formData });
       if (res.ok) loadChat(activeChat, false);
-    } catch(e) { alert('Failed to send photo'); }
+    } catch(e) { showAlert('Failed to send photo'); }
     setSendingPhoto(false);
   };
 
@@ -477,6 +482,30 @@ export default function MessagesView({ user, readOnly }) {
             <Box component="img" src={lightboxPhoto} alt="" sx={{ maxWidth: '95%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '4px' }} onClick={e => e.stopPropagation()} />
           </Box>
         )}
+        {/* Reusable Dialog for alerts and confirmations */}
+        <Dialog open={Boolean(dialogConfig)} onClose={closeDialog}>
+          <DialogContent>
+            <DialogContentText sx={{ color: 'text.primary', fontSize: '15px' }}>
+              {dialogConfig?.message}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            {dialogConfig?.showCancel && (
+              <Button onClick={closeDialog} sx={{ textTransform: 'none' }}>Cancel</Button>
+            )}
+            <Button
+              onClick={() => {
+                if (dialogConfig?.onConfirm) dialogConfig.onConfirm();
+                closeDialog();
+              }}
+              variant="contained"
+              sx={{ textTransform: 'none' }}
+              autoFocus
+            >
+              OK
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     );
   }
@@ -613,9 +642,9 @@ export default function MessagesView({ user, readOnly }) {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ from_id: personId, content: msg.trim() }),
                 }).then(r => r.json()).then(res => {
-                  if (res.success) { alert(`Sent to ${res.sent_to} team members`); loadConversations(); }
-                  else alert(res.error || 'Failed');
-                }).catch(() => alert('Failed to send'));
+                  if (res.success) { showAlert(`Sent to ${res.sent_to} team members`); loadConversations(); }
+                  else showAlert(res.error || 'Failed');
+                }).catch(() => showAlert('Failed to send'));
               }}
             >📢 All</Button>
           )}
@@ -692,6 +721,30 @@ export default function MessagesView({ user, readOnly }) {
           </Button>
         );
       })}
+      {/* Reusable Dialog for alerts and confirmations */}
+      <Dialog open={Boolean(dialogConfig)} onClose={closeDialog}>
+        <DialogContent>
+          <DialogContentText sx={{ color: 'text.primary', fontSize: '15px' }}>
+            {dialogConfig?.message}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          {dialogConfig?.showCancel && (
+            <Button onClick={closeDialog} sx={{ textTransform: 'none' }}>Cancel</Button>
+          )}
+          <Button
+            onClick={() => {
+              if (dialogConfig?.onConfirm) dialogConfig.onConfirm();
+              closeDialog();
+            }}
+            variant="contained"
+            sx={{ textTransform: 'none' }}
+            autoFocus
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Box, TextField, IconButton, Button, Typography, Paper, CircularProgress } from '@mui/material';
+import { Box, TextField, IconButton, Button, Typography, Paper, CircularProgress, Dialog, DialogContent, DialogActions } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
 
@@ -9,7 +9,10 @@ export default function VoiceInput({ value, onChange, placeholder, rows }) {
   const [showAiVersion, setShowAiVersion] = useState(false);
   const [aiText, setAiText] = useState('');
   const [originalText, setOriginalText] = useState('');
+  const [dialogConfig, setDialogConfig] = useState(null);
   const recorderRef = useRef(null);
+
+  const showAlert = (message) => setDialogConfig({ message });
   const chunksRef = useRef([]);
 
   const startVoice = async () => {
@@ -29,7 +32,7 @@ export default function VoiceInput({ value, onChange, placeholder, rows }) {
       recorderRef.current = recorder;
       setRecording(true);
     } catch (e) {
-      alert('Microphone access needed. Make sure you are using HTTPS.');
+      showAlert('Microphone access needed. Make sure you are using HTTPS.');
     }
   };
 
@@ -76,7 +79,7 @@ export default function VoiceInput({ value, onChange, placeholder, rows }) {
           }
         }
       } catch(e) {
-        alert('Recording failed. Try again.');
+        showAlert('Recording failed. Try again.');
       }
       setProcessing(false);
     }, 500);
@@ -133,6 +136,15 @@ export default function VoiceInput({ value, onChange, placeholder, rows }) {
           </Box>
         </Paper>
       )}
+
+      <Dialog open={!!dialogConfig} onClose={() => setDialogConfig(null)}>
+        <DialogContent>
+          <Typography>{dialogConfig?.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogConfig(null)}>OK</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

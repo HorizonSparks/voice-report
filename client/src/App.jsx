@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import {
   AppBar, Toolbar, IconButton, Typography, Drawer, Box, Button, Avatar, Divider,
   List, ListItemButton, ListItemIcon, ListItemText, Checkbox, FormControlLabel,
-  Alert, Collapse, ToggleButton, ToggleButtonGroup
+  Alert, Collapse, ToggleButton, ToggleButtonGroup,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
@@ -63,6 +64,11 @@ export default function App() {
   const readOnly = !!simulatingCompany && !editModeEnabled;
   const [supportChatOpen, setSupportChatOpen] = useState(false); // 'customer' or 'support'
   const [currentWorld, setCurrentWorld] = useState(null); // 'control-center' | 'voice-report' | null
+  const [dialogConfig, setDialogConfig] = useState(null); // { title, message, onConfirm, confirmText, cancelText }
+
+  const closeDialog = () => setDialogConfig(null);
+  const showAlert = (title, message) => setDialogConfig({ title, message, confirmText: 'OK' });
+  const showConfirm = (title, message, onConfirm, confirmText = 'OK', cancelText) => setDialogConfig({ title, message, onConfirm, confirmText, cancelText });
 
   // Build ALL_TRADES with translated labels
   // Sparks only visible to Sparks users — everyone else never sees it
@@ -549,7 +555,7 @@ export default function App() {
         </Box>
 
         <List sx={{ px: 1 }}>
-          <ListItemButton onClick={() => { if (window.confirm(t('nav.confirmLogout'))) logout(); }}>
+          <ListItemButton onClick={() => { showConfirm(t('nav.logout'), t('nav.confirmLogout'), () => { closeDialog(); logout(); }, t('nav.logout'), t('common.cancel')); }}>
             <ListItemText primary={'⏻ ' + t('nav.logout')} slotProps={{ primary: { sx: { color: 'text.primary' } } }} />
           </ListItemButton>
         </List>
@@ -651,7 +657,7 @@ export default function App() {
               { icon: '⚠️', title: t('safety.reportHazard'), desc: t('safety.reportHazardDesc') },
               { icon: '🦺', title: t('safety.requestPPE'), desc: t('safety.requestPPEDesc') },
             ].map((item, i) => (
-              <Button key={i} fullWidth variant="outlined" onClick={() => alert('Coming soon')}
+              <Button key={i} fullWidth variant="outlined" onClick={() => showAlert(t('common.info') || 'Info', 'Coming soon')}
                 sx={{ justifyContent: 'flex-start', gap: 1.5, py: 1.5, textAlign: 'left' }}>
                 <Typography sx={{ fontSize: 24 }}>{item.icon}</Typography>
                 <Box>
@@ -661,7 +667,7 @@ export default function App() {
               </Button>
             ))}
             <Button fullWidth variant="outlined" color="error"
-              onClick={() => { if (window.confirm(t('safety.stopWorkConfirm'))) { setSafetyPanelOpen(false); alert(t('safety.stopWorkSent')); } }}
+              onClick={() => { showConfirm(t('safety.stopWork'), t('safety.stopWorkConfirm'), () => { closeDialog(); setSafetyPanelOpen(false); showAlert(t('safety.stopWork'), t('safety.stopWorkSent')); }); }}
               sx={{ justifyContent: 'flex-start', gap: 1.5, py: 1.5, textAlign: 'left', borderWidth: 2 }}>
               <Typography sx={{ fontSize: 24 }}>🛑</Typography>
               <Box>
@@ -669,7 +675,7 @@ export default function App() {
                 <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('safety.stopWorkDesc')}</Typography>
               </Box>
             </Button>
-            <Button fullWidth variant="outlined" onClick={() => alert('Coming soon')}
+            <Button fullWidth variant="outlined" onClick={() => showAlert(t('common.info') || 'Info', 'Coming soon')}
               sx={{ justifyContent: 'flex-start', gap: 1.5, py: 1.5, textAlign: 'left' }}>
               <Typography sx={{ fontSize: 24 }}>📞</Typography>
               <Box>
@@ -692,6 +698,30 @@ export default function App() {
         />
         <SupportChat user={user} simulatingCompany={simulatingCompany} externalOpen={supportChatOpen} onExternalOpenChange={setSupportChatOpen} /></>
       )}
+
+      {/* Reusable Dialog — replaces native alert() / confirm() */}
+      <Dialog open={!!dialogConfig} onClose={closeDialog}>
+        {dialogConfig?.title && <DialogTitle>{dialogConfig.title}</DialogTitle>}
+        {dialogConfig?.message && (
+          <DialogContent>
+            <Typography>{dialogConfig.message}</Typography>
+          </DialogContent>
+        )}
+        <DialogActions>
+          {dialogConfig?.onConfirm && dialogConfig?.cancelText && (
+            <Button onClick={closeDialog} color="secondary">
+              {dialogConfig.cancelText}
+            </Button>
+          )}
+          <Button
+            onClick={() => { if (dialogConfig?.onConfirm) { dialogConfig.onConfirm(); } else { closeDialog(); } }}
+            variant="contained"
+            color="primary"
+          >
+            {dialogConfig?.confirmText || 'OK'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

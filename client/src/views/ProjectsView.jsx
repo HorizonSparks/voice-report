@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Button, TextField, Paper, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, TextField, Paper, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 
 export default function ProjectsView({ user, activeTrade, onSelectProject, navigateTo, readOnly }) {
   const { t } = useTranslation();
@@ -9,6 +9,7 @@ export default function ProjectsView({ user, activeTrade, onSelectProject, navig
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [dialogConfig, setDialogConfig] = useState(null);
 
   const isAdmin = user && (user.is_admin || parseInt(user.role_level || 0) >= 3);
 
@@ -41,17 +42,24 @@ export default function ProjectsView({ user, activeTrade, onSelectProject, navig
         setShowCreate(false);
         loadProjects();
       }
-    } catch (err) { alert('Failed to create project: ' + err.message); }
+    } catch (err) { setDialogConfig({ title: 'Error', message: 'Failed to create project: ' + err.message }); }
   };
 
-  const deleteProject = async (id, name, e) => {
+  const deleteProject = (id, name, e) => {
     e.stopPropagation();
-    if (!confirm(t('projects.deleteConfirm', { name }))) return;
-    try {
-      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      loadProjects();
-    } catch (err) { alert('Delete failed: ' + err.message); }
+    setDialogConfig({
+      title: t('projects.deleteConfirm', { name }),
+      message: t('projects.deleteConfirm', { name }),
+      confirmLabel: t('common.delete', 'Delete'),
+      onConfirm: async () => {
+        setDialogConfig(null);
+        try {
+          const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error(`Server error ${res.status}`);
+          loadProjects();
+        } catch (err) { setDialogConfig({ title: 'Error', message: 'Delete failed: ' + err.message }); }
+      },
+    });
   };
 
   if (loading) return (
@@ -151,6 +159,26 @@ export default function ProjectsView({ user, activeTrade, onSelectProject, navig
           ))}
         </Box>
       )}
+      <Dialog open={Boolean(dialogConfig)} onClose={() => setDialogConfig(null)}>
+        {dialogConfig && (
+          <>
+            <DialogTitle>{dialogConfig.title}</DialogTitle>
+            <DialogContent>
+              <Typography>{dialogConfig.message}</Typography>
+            </DialogContent>
+            <DialogActions>
+              {dialogConfig.onConfirm ? (
+                <>
+                  <Button onClick={() => setDialogConfig(null)}>{t('common.cancel')}</Button>
+                  <Button onClick={dialogConfig.onConfirm} color="error">{dialogConfig.confirmLabel}</Button>
+                </>
+              ) : (
+                <Button onClick={() => setDialogConfig(null)}>OK</Button>
+              )}
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }

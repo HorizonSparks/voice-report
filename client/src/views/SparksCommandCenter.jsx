@@ -10,7 +10,7 @@ import AnalyticsView from './AnalyticsView.jsx';
  * Control Center — the operating system for Horizon Sparks.
  * Only visible to users with a sparks_role.
  */
-export default forwardRef(function SparksCommandCenter({ user, goBack, onEnterCompany }, ref) {
+export default forwardRef(function SparksCommandCenter({ user, onEnterCompany }, ref) {
   const [screen, setScreen] = useState('dashboard');
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -29,6 +29,9 @@ export default forwardRef(function SparksCommandCenter({ user, goBack, onEnterCo
   const [showCreateCompany, setShowCreateCompany] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', tier: 'standard', notes: '' });
   const [creating, setCreating] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState(null);
+
+  const showConfirm = (message, onConfirm) => setDialogConfig({ message, onConfirm, showCancel: true });
 
   useEffect(() => { loadDashboard(); }, []);
 
@@ -96,15 +99,16 @@ export default forwardRef(function SparksCommandCenter({ user, goBack, onEnterCo
     } catch(e) { setError(e.message); }
   }
 
-  async function cancelSubscription(companyId) {
-    if (!confirm('Cancel this subscription? The company will lose access at the end of the billing period.')) return;
-    try {
-      const res = await fetch('/api/billing/company/' + companyId + '/cancel', { method: 'POST' });
-      if (res.ok) {
-        loadCompanyBilling(companyId);
-        loadRevenue();
-      }
-    } catch(e) { setError(e.message); }
+  function cancelSubscription(companyId) {
+    showConfirm('Cancel this subscription? The company will lose access at the end of the billing period.', async () => {
+      try {
+        const res = await fetch('/api/billing/company/' + companyId + '/cancel', { method: 'POST' });
+        if (res.ok) {
+          loadCompanyBilling(companyId);
+          loadRevenue();
+        }
+      } catch(e) { setError(e.message); }
+    });
   }
 
   async function createInvoice(companyId) {
@@ -236,7 +240,6 @@ export default forwardRef(function SparksCommandCenter({ user, goBack, onEnterCo
   function handleBack() {
     if (screen === 'company-detail') { loadCompanies(); return; }
     if (screen !== 'dashboard') { setScreen('dashboard'); return; }
-    if (goBack) goBack();
   }
 
   useImperativeHandle(ref, () => ({
@@ -876,6 +879,18 @@ export default forwardRef(function SparksCommandCenter({ user, goBack, onEnterCo
           <CircularProgress color="primary" />
         </Box>
       )}
+
+      <Dialog open={!!dialogConfig} onClose={() => setDialogConfig(null)}>
+        <DialogContent>
+          <Typography>{dialogConfig?.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          {dialogConfig?.showCancel && (
+            <Button onClick={() => setDialogConfig(null)}>Cancel</Button>
+          )}
+          <Button onClick={() => { setDialogConfig(null); if (dialogConfig?.onConfirm) dialogConfig.onConfirm(); }}>OK</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 });

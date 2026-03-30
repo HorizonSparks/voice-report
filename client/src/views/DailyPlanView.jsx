@@ -4,7 +4,8 @@ import VoiceRefinePanel from '../components/VoiceRefinePanel.jsx';
 import PunchListView from './PunchListView.jsx';
 import {
   Box, Typography, Button, TextField, Paper, CircularProgress,
-  Select, MenuItem, Checkbox, LinearProgress, IconButton
+  Select, MenuItem, Checkbox, LinearProgress, IconButton,
+  Dialog, DialogContent, DialogActions
 } from '@mui/material';
 
 export default function DailyPlanView({ user, initialTab, onNavigate, goBack, readOnly }) {
@@ -27,6 +28,10 @@ export default function DailyPlanView({ user, initialTab, onNavigate, goBack, re
   const [assignOnlyMode, setAssignOnlyMode] = useState(false); // true when came from Assign Task button
   const [assignPersonName, setAssignPersonName] = useState('');
   const [selectedBubble, setSelectedBubble] = useState(null); // person id for expanded bubble view
+  const [dialogConfig, setDialogConfig] = useState(null);
+
+  const showConfirmDialog = (message, onConfirm) => setDialogConfig({ message, onConfirm, showCancel: true });
+
   const isSupervisor = (user.role_level || 1) >= 2;
   const personId = user.person_id;
 
@@ -148,10 +153,11 @@ export default function DailyPlanView({ user, initialTab, onNavigate, goBack, re
     loadTasks();
   };
 
-  const deleteTask = async (taskId) => {
-    if (!confirm(t('common.deleteConfirm'))) return;
-    await fetch(`/api/daily-plans/tasks/${taskId}`, { method: 'DELETE' });
-    loadTasks();
+  const deleteTask = (taskId) => {
+    showConfirmDialog(t('common.deleteConfirm'), async () => {
+      await fetch(`/api/daily-plans/tasks/${taskId}`, { method: 'DELETE' });
+      loadTasks();
+    });
   };
 
   const statusColors = { pending: '#F99440', in_progress: '#48484A', completed: '#4CAF50', cancelled: '#999' };
@@ -562,6 +568,18 @@ export default function DailyPlanView({ user, initialTab, onNavigate, goBack, re
           </Box>
         );
       })()}
+
+      <Dialog open={!!dialogConfig} onClose={() => setDialogConfig(null)}>
+        <DialogContent>
+          <Typography>{dialogConfig?.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          {dialogConfig?.showCancel && (
+            <Button onClick={() => setDialogConfig(null)}>{t('common.cancel')}</Button>
+          )}
+          <Button onClick={() => { setDialogConfig(null); if (dialogConfig?.onConfirm) dialogConfig.onConfirm(); }}>OK</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

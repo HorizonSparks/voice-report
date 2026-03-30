@@ -34,6 +34,9 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
   const [submitting, setSubmitting] = useState(false);
   const [editingHeader, setEditingHeader] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState(null);
+
+  const showAlert = (message) => setDialogConfig({ message });
 
   useEffect(() => {
     if (!templateId) return;
@@ -196,7 +199,7 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
       const data = await res.json();
       if (onSubmitted) onSubmitted(data.id);
     } catch (e) {
-      alert('Failed to submit form: ' + e.message);
+      showAlert('Failed to submit form: ' + e.message);
     }
     setSubmitting(false);
   };
@@ -373,6 +376,15 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
           </Box>
         )}
       </Box>
+
+      <Dialog open={!!dialogConfig} onClose={() => setDialogConfig(null)}>
+        <DialogContent>
+          <Typography>{dialogConfig?.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogConfig(null)}>OK</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Paper, IconButton } from '@mui/material';
+import { Box, Typography, Button, Paper, IconButton, Dialog, DialogContent, DialogActions } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 
 export default function TeamAssignment({ person, allPeople, onUpdate }) {
   const [showPicker, setShowPicker] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState(null);
+
+  const showConfirm = (message, onConfirm) => setDialogConfig({ message, onConfirm, showCancel: true });
 
   const directReports = allPeople.filter(p => p.supervisor_id === person.id);
   const personLevel = person.role_level || 2;
@@ -28,17 +31,18 @@ export default function TeamAssignment({ person, allPeople, onUpdate }) {
     setShowPicker(false);
   };
 
-  const unassignPerson = async (subordinateId) => {
-    if (!window.confirm('Remove this person from the team?')) return;
-    const sub = allPeople.find(p => p.id === subordinateId);
-    if (!sub) return;
-    sub.supervisor_id = null;
-    await fetch(`/api/people/${subordinateId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sub),
+  const unassignPerson = (subordinateId) => {
+    showConfirm('Remove this person from the team?', async () => {
+      const sub = allPeople.find(p => p.id === subordinateId);
+      if (!sub) return;
+      sub.supervisor_id = null;
+      await fetch(`/api/people/${subordinateId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      });
+      onUpdate();
     });
-    onUpdate();
   };
 
   const levelBelow = personLevel === 2 ? 'Journeymen' : personLevel === 3 ? 'Foremen' : personLevel === 4 ? 'General Foremen' : 'Direct Reports';
@@ -98,6 +102,18 @@ export default function TeamAssignment({ person, allPeople, onUpdate }) {
           </Button>
         )}
       </Box>
+
+      <Dialog open={!!dialogConfig} onClose={() => setDialogConfig(null)}>
+        <DialogContent>
+          <Typography>{dialogConfig?.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          {dialogConfig?.showCancel && (
+            <Button onClick={() => setDialogConfig(null)}>Cancel</Button>
+          )}
+          <Button onClick={() => { setDialogConfig(null); if (dialogConfig?.onConfirm) dialogConfig.onConfirm(); }}>OK</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }

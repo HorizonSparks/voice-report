@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Button, TextField, Select, MenuItem } from '@mui/material';
+import { Box, Typography, Button, TextField, Select, MenuItem, Dialog, DialogContent, DialogActions } from '@mui/material';
 import VoiceInput from './VoiceInput.jsx';
 
 export default function SafetyObservationForm({ user, onBack, onSaved }) {
@@ -19,6 +19,9 @@ export default function SafetyObservationForm({ user, onBack, onSaved }) {
     additional_notes: '',
   });
   const [saving, setSaving] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState(null);
+
+  const showAlert = (message) => setDialogConfig({ message });
 
   const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -64,10 +67,10 @@ export default function SafetyObservationForm({ user, onBack, onSaved }) {
         const result = await res.json();
         onSaved(result.id);
       } else {
-        alert('Failed to save form.');
+        showAlert('Failed to save form.');
       }
     } catch (e) {
-      alert('Error saving: ' + e.message);
+      showAlert('Error saving: ' + e.message);
     }
     setSaving(false);
   };
@@ -178,6 +181,15 @@ export default function SafetyObservationForm({ user, onBack, onSaved }) {
       <Button className="btn-primary btn-full" variant="contained" onClick={handleSave} disabled={saving}>
         {saving ? 'Saving...' : 'Save Observation'}
       </Button>
+
+      <Dialog open={!!dialogConfig} onClose={() => setDialogConfig(null)}>
+        <DialogContent>
+          <Typography>{dialogConfig?.message}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogConfig(null)}>OK</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
