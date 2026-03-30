@@ -1,0 +1,32 @@
+{
+  "category": "documentation",
+  "description": "Forms, ITRs, turnover packages, NCRs, daily reports, material traceability",
+  "forms_by_work_type": {
+    "hot_work_permit": {"for": "Welding, cutting, grinding, brazing", "validity": "One shift only", "requires": ["Fire watch during + 30 min after", "Combustibles removed/covered within 35 ft", "Gas test if near process areas", "Fire extinguisher within 20 ft"]},
+    "confined_space_permit": {"for": "Manholes, vaults, tanks, cable trenches >4 ft deep", "requires": ["Atmospheric testing continuous", "Rescue plan + standby team", "Attendant at entry at all times"]},
+    "energized_work_permit": {"for": "Any work on energized equipment (NFPA 70E)", "requires": ["Justify why can't de-energize", "Shock and arc flash risk assessment", "PPE based on incident energy", "Qualified person only"]},
+    "LOTO": {"for": "All work on de-energized equipment", "requires": ["Written energy control procedure", "Each worker applies own lock/tag", "Zero energy verification", "Stored energy dissipated"]},
+    "excavation_permit": {"for": "Underground conduit, duct banks, ground grids", "requires": ["811 utility locate 48 hrs prior", "Underground drawings reviewed", "GPR or potholing for critical crossings", "Competent person inspects daily"]},
+    "lifting_plan": {"for": "Transformers, switchgear, large cable reels", "requires": ["Load weight verified", "Crane capacity chart reviewed", "Rigging gear inspected", "Critical lift plan if >80% capacity"]}
+  },
+  "daily_report_must_capture": [
+    "Date, weather, temperature",
+    "Manpower by trade and classification",
+    "Hours worked (ST, OT, DT)",
+    "Equipment on site and utilization",
+    "Specific quantities completed (feet of conduit, terminations, instruments calibrated)",
+    "Work area/system ID",
+    "Material received or issued",
+    "Safety observations, near-misses, incidents",
+    "Delays with specific times and causes",
+    "RFIs submitted or received",
+    "Photos of critical/hidden work",
+    "Next day plan and resource needs",
+    "Verbal instructions from client/engineer"
+  ],
+  "daily_report_rule": "Daily reports are LEGAL DOCUMENTS. Write them as if a lawyer will read them in 3 years. Be specific: '120 LF of 2-inch RGS conduit in Unit 5, PR-12, elevation 30 ft, per E-2015 Rev 3' — not 'worked on electrical'.",
+  "turnover_package_contents": ["System description", "Punch list (A/B/C categories)", "As-built drawings", "All signed ITRs", "Test reports (megger, hipot, continuity, ground resistance, calibration, loop checks)", "Material traceability (MTRs, serial numbers)", "Vendor O&M manuals", "Spare parts lists", "NCRs with dispositions", "Field change notices", "Welder/electrician certifications"],
+  "turnover_pro_tip": "Start building turnover packages from DAY ONE. Backfilling paperwork is the #1 cause of late turnover.",
+  "NCR_when_to_issue": ["Material doesn't match spec", "Work doesn't match drawings", "Test results fail acceptance criteria", "Procedures not followed (work past hold point)", "Damage to accepted work", "Design errors found", "Wrong material installed"],
+  "NCR_rule": "Never be afraid to write an NCR. Not writing one when you should is far worse than writing too many. Keep them factual, not blaming."
+}

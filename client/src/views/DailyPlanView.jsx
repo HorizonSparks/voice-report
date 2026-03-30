@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import VoiceRefinePanel from '../components/VoiceRefinePanel.jsx';
 import PunchListView from './PunchListView.jsx';
 
-export default function DailyPlanView({ user, initialTab, onNavigate, goBack }) {
+export default function DailyPlanView({ user, initialTab, onNavigate, goBack, readOnly }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(initialTab || 'plan'); // 'plan' or 'punch'
   const [tasks, setTasks] = useState([]);
@@ -22,6 +22,7 @@ export default function DailyPlanView({ user, initialTab, onNavigate, goBack }) 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [assignOnlyMode, setAssignOnlyMode] = useState(false); // true when came from Assign Task button
   const [assignPersonName, setAssignPersonName] = useState('');
+  const [selectedBubble, setSelectedBubble] = useState(null); // person id for expanded bubble view
   const isSupervisor = (user.role_level || 1) >= 2;
   const personId = user.person_id;
 
@@ -463,47 +464,89 @@ export default function DailyPlanView({ user, initialTab, onNavigate, goBack }) 
         </div>
       )}
 
-      {/* Task list */}
-      {tasks.map(task => (
-        <div key={task.id} onClick={() => { if (onNavigate) onNavigate('taskdetail', { taskId: task.id }); }} style={{
-          background: 'white', borderRadius: '12px', padding: '14px 16px', marginBottom: '8px',
-          borderLeft: `4px solid ${statusColors[task.status] || '#999'}`,
-          opacity: task.status === 'completed' ? 0.7 : 1,
-          cursor: 'pointer',
-        }}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-            <div style={{flex: 1}}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px'}}>
-                <button onClick={(e) => { e.stopPropagation(); updateTaskStatus(task.id, task.status === 'completed' ? 'pending' : 'completed'); }}
-                  style={{width: '24px', height: '24px', borderRadius: '6px', border: `2px solid ${statusColors[task.status]}`, background: task.status === 'completed' ? '#4CAF50' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: '14px', padding: 0}}>
-                  {task.status === 'completed' ? '✓' : ''}
-                </button>
-                <span style={{fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)', textDecoration: task.status === 'completed' ? 'line-through' : 'none'}}>{task.title}</span>
+      {/* Task list — bubble pattern grouped by person */}
+      {!loading && tasks.length > 0 && (() => {
+        // Group tasks by assigned person
+        const byPerson = {};
+        const personOrder = [];
+        tasks.forEach(task => {
+          const key = task.assigned_to || task.created_by || '_unassigned';
+          const name = task.assigned_to_name || task.created_by_name || 'Unassigned';
+          if (!byPerson[key]) {
+            byPerson[key] = { name, tasks: [] };
+            personOrder.push(key);
+          }
+          byPerson[key].tasks.push(task);
+        });
+
+        // Render task card (reused in bubble and expanded view)
+        const renderTaskCard = (task) => (
+          <div key={task.id} onClick={() => { if (onNavigate) onNavigate('taskdetail', { taskId: task.id }); }} style={{
+            background: 'white', borderRadius: '8px', padding: '10px 12px', marginBottom: '6px',
+            borderLeft: `4px solid ${statusColors[task.status] || '#999'}`,
+            opacity: task.status === 'completed' ? 0.7 : 1,
+            cursor: 'pointer', borderBottom: '1px solid #f0f0f0',
+          }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px'}}>
+              <button onClick={(e) => { e.stopPropagation(); updateTaskStatus(task.id, task.status === 'completed' ? 'pending' : 'completed'); }}
+                style={{width: '22px', height: '22px', borderRadius: '6px', border: `2px solid ${statusColors[task.status]}`, background: task.status === 'completed' ? '#4CAF50' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: '13px', padding: 0}}>
+                {task.status === 'completed' ? '✓' : ''}
+              </button>
+              <span style={{fontSize: '14px', fontWeight: 700, color: 'var(--charcoal)', textDecoration: task.status === 'completed' ? 'line-through' : 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{task.title}</span>
+              <span style={{fontSize: '12px', color: priorityColors[task.priority], fontWeight: 600, flexShrink: 0}}>{task.priority !== 'normal' ? task.priority.toUpperCase() : ''}</span>
+            </div>
+            {task.description && <p style={{fontSize: '12px', color: 'var(--charcoal)', margin: '0 0 0 30px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{task.description}</p>}
+          </div>
+        );
+
+        // Expanded bubble view — full screen for one person
+        if (selectedBubble !== null) {
+          const group = byPerson[selectedBubble];
+          if (!group) { setSelectedBubble(null); return null; }
+          return (
+            <div>
+              <button onClick={() => setSelectedBubble(null)} style={{background: 'none', border: 'none', fontSize: '15px', fontWeight: 700, color: 'var(--primary)', cursor: 'pointer', marginBottom: '16px', padding: 0}}>
+                ← Back to all
+              </button>
+              <div style={{background: 'var(--charcoal)', color: 'var(--primary)', padding: '14px 20px', borderRadius: '16px 16px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                <span style={{fontWeight: 700, fontSize: '16px'}}>{group.name}</span>
+                <span style={{background: 'var(--primary)', color: 'white', borderRadius: '14px', padding: '2px 12px', fontSize: '14px', fontWeight: 700, minWidth: '28px', textAlign: 'center'}}>{group.tasks.length}</span>
               </div>
-              {task.description && <p style={{fontSize: '13px', color: 'var(--charcoal)', margin: '4px 0 4px 32px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70vw'}}>{task.description}</p>}
-              <div style={{display: 'flex', gap: '8px', marginLeft: '32px', flexWrap: 'wrap'}}>
-                {task.assigned_to_name && (
-                  <span style={{fontSize: '12px', background: '#f0ece8', borderRadius: '4px', padding: '2px 8px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
-                    👤 {task.assigned_to_name}
-                    {task.jsa_status && (
-                      <span style={{
-                        width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block',
-                        background: task.jsa_status === 'match' ? '#4CAF50'
-                          : task.jsa_status === 'has_jsa' ? '#4CAF50'
-                          : task.jsa_status === 'mismatch' ? '#E8922A'
-                          : task.jsa_status === 'no_jsa' ? '#ccc' : 'transparent',
-                      }} />
-                    )}
-                  </span>
-                )}
-                <span style={{fontSize: '12px', color: priorityColors[task.priority], fontWeight: 600}}>{task.priority !== 'normal' ? task.priority.toUpperCase() : ''}</span>
-                {task.start_date && <span style={{fontSize: '11px', color: 'var(--charcoal)'}}>Started {new Date(task.start_date).toLocaleDateString()}</span>}
+              <div style={{border: '2px solid var(--gray-200)', borderTop: 'none', borderRadius: '0 0 16px 16px', padding: '12px 16px'}}>
+                {group.tasks.map(renderTaskCard)}
               </div>
             </div>
-            <div style={{display: 'flex', alignItems: 'center', flexShrink: 0, color: '#ccc', fontSize: '18px', paddingLeft: '8px'}}>›</div>
+          );
+        }
+
+        // Bubble grid view
+        return (
+          <div className="people-grid">
+            {personOrder.map(key => {
+              const group = byPerson[key];
+              const preview = group.tasks.slice(0, 4);
+              const remaining = group.tasks.length - preview.length;
+              return (
+                <div key={key} className="people-category-bubble">
+                  <div className="people-category-header" onClick={() => setSelectedBubble(key)} style={{cursor: 'pointer'}}>
+                    <span className="people-category-label" style={{flex: 1}}>{group.name}</span>
+                    <span className="people-category-count">{group.tasks.length}</span>
+                    <span style={{fontSize: '14px', marginLeft: '4px', color: 'white'}}>▶</span>
+                  </div>
+                  <div className="people-category-body" style={{maxHeight: '280px', overflowY: 'auto'}}>
+                    {preview.map(renderTaskCard)}
+                    {remaining > 0 && (
+                      <div onClick={() => setSelectedBubble(key)} style={{fontSize: '13px', color: 'var(--primary)', textAlign: 'center', padding: '8px', cursor: 'pointer', fontWeight: 600}}>
+                        +{remaining} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      ))}
+        );
+      })()}
     </div>
   );
 }

@@ -81,6 +81,9 @@ CREATE TABLE IF NOT EXISTS people (
   webauthn_raw_id TEXT,
   webauthn_public_key TEXT,
 
+  -- Multi-tenancy
+  company_id TEXT,
+
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -90,6 +93,7 @@ CREATE INDEX idx_people_supervisor ON people(supervisor_id);
 CREATE INDEX idx_people_role_level ON people(role_level);
 CREATE INDEX idx_people_status ON people(status);
 CREATE INDEX idx_people_pin ON people(pin);
+CREATE INDEX idx_people_company ON people(company_id);
 
 -- ============================================
 -- TABLE 3: reports — Voice reports from crew members
@@ -118,6 +122,9 @@ CREATE TABLE IF NOT EXISTS reports (
   photos TEXT,                   -- JSON array of photo filenames
   messages_addressed TEXT,       -- JSON array of message IDs
 
+  -- Multi-tenancy
+  company_id TEXT,
+
   -- Full-text search vector (replaces SQLite FTS5)
   search_vector TSVECTOR
 );
@@ -127,6 +134,7 @@ CREATE INDEX idx_reports_created ON reports(created_at DESC);
 CREATE INDEX idx_reports_trade ON reports(trade);
 CREATE INDEX idx_reports_person_date ON reports(person_id, created_at DESC);
 CREATE INDEX idx_reports_search ON reports USING GIN(search_vector);
+CREATE INDEX idx_reports_company ON reports(company_id);
 
 -- Trigger function: auto-update reports search_vector
 CREATE OR REPLACE FUNCTION reports_search_vector_update() RETURNS TRIGGER AS $$
@@ -399,6 +407,7 @@ CREATE TABLE IF NOT EXISTS punch_items (
   closed_by TEXT REFERENCES people(id),
   closed_at TEXT,
   closed_notes TEXT,
+  company_id TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -406,6 +415,7 @@ CREATE TABLE IF NOT EXISTS punch_items (
 CREATE INDEX idx_punch_status ON punch_items(status);
 CREATE INDEX idx_punch_assigned ON punch_items(assigned_to);
 CREATE INDEX idx_punch_trade ON punch_items(trade);
+CREATE INDEX idx_punch_company ON punch_items(company_id);
 
 -- ============================================
 -- TABLE 16: form_templates_v2 — Form definitions
@@ -528,9 +538,15 @@ CREATE TABLE IF NOT EXISTS jsa_records (
   crew_members TEXT DEFAULT '[]', -- JSON array
   task_id TEXT,
   jsa_number TEXT,
+  company_id TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX idx_jsa_company ON jsa_records(company_id);
+CREATE INDEX idx_jsa_date ON jsa_records(date);
+CREATE INDEX idx_jsa_person ON jsa_records(person_id);
+CREATE INDEX idx_jsa_status ON jsa_records(status);
 
 -- ============================================
 -- TABLE 23: jsa_acknowledgments — Crew JSA sign-offs
@@ -653,6 +669,165 @@ CREATE TABLE IF NOT EXISTS analytics_sessions (
 );
 
 CREATE INDEX idx_as_person ON analytics_sessions(person_id);
+
+-- ============================================
+-- TABLE 29: app_sessions — User sessions
+-- ============================================
+CREATE TABLE IF NOT EXISTS app_sessions (
+  id TEXT PRIMARY KEY,
+  person_id TEXT NOT NULL,
+  is_admin INTEGER DEFAULT 0,
+  role_level INTEGER DEFAULT 1,
+  trade TEXT,
+  company_id TEXT,
+  sparks_role TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  last_seen_at TIMESTAMP DEFAULT NOW(),
+  expires_at TIMESTAMP
+);
+
+CREATE INDEX idx_sessions_person ON app_sessions(person_id);
+CREATE INDEX idx_sessions_expires ON app_sessions(expires_at);
+
+-- ============================================
+-- TABLE 30: webauthn_credentials — Face ID / biometric login
+-- ============================================
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+  id TEXT PRIMARY KEY,
+  person_id TEXT NOT NULL,
+  credential_id TEXT NOT NULL,
+  public_key TEXT NOT NULL,
+  counter INTEGER DEFAULT 0,
+  device_name TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_webauthn_person ON webauthn_credentials(person_id);
+CREATE INDEX idx_webauthn_credential ON webauthn_credentials(credential_id);
+
+-- ============================================
+-- TABLE 31: companies — Multi-tenant company records
+-- ============================================
+CREATE TABLE IF NOT EXISTS companies (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT DEFAULT 'active',
+  tier TEXT DEFAULT 'standard',
+  created_by TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================
+-- TABLE 32: company_trades — Licensed trades per company
+-- ============================================
+CREATE TABLE IF NOT EXISTS company_trades (
+  id SERIAL PRIMARY KEY,
+  company_id TEXT NOT NULL REFERENCES companies(id),
+  trade TEXT NOT NULL,
+  status TEXT DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (company_id, trade)
+);
+
+-- ============================================
+-- TABLE 33: company_products — Licensed products per company
+-- ============================================
+CREATE TABLE IF NOT EXISTS company_products (
+  id SERIAL PRIMARY KEY,
+  company_id TEXT NOT NULL REFERENCES companies(id),
+  product TEXT NOT NULL,
+  status TEXT DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (company_id, product)
+);
+
+-- ============================================
+-- TABLE 34: company_settings — Per-company settings
+-- ============================================
+CREATE TABLE IF NOT EXISTS company_settings (
+  id SERIAL PRIMARY KEY,
+  company_id TEXT,
+  company_name TEXT DEFAULT 'Horizon Sparks',
+  logo_data TEXT,
+  logo_filename TEXT,
+  active_role_levels TEXT,         -- JSON
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================
+-- TABLE 35: projects — Project records
+-- ============================================
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  trade TEXT,
+  owner_id TEXT,
+  description TEXT DEFAULT '',
+  color TEXT DEFAULT '#F99440',
+  status TEXT DEFAULT 'active',
+  company_id TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_projects_company ON projects(company_id);
+
+-- ============================================
+-- TABLE 36: project_members — Project membership
+-- ============================================
+CREATE TABLE IF NOT EXISTS project_members (
+  project_id TEXT NOT NULL REFERENCES projects(id),
+  person_id TEXT NOT NULL,
+  role TEXT DEFAULT 'member',
+  created_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (project_id, person_id)
+);
+
+-- ============================================
+-- TABLE 37: knowledge_files — Person knowledge base files
+-- ============================================
+CREATE TABLE IF NOT EXISTS knowledge_files (
+  id SERIAL PRIMARY KEY,
+  person_id TEXT NOT NULL,
+  uploaded_by TEXT,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  mime_type TEXT,
+  file_path TEXT,
+  title TEXT,
+  source_type TEXT DEFAULT 'upload',
+  text_content TEXT,
+  token_estimate INTEGER DEFAULT 0,
+  visibility TEXT DEFAULT 'shared',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_knowledge_person ON knowledge_files(person_id);
+
+-- ============================================
+-- TABLE 38: jsa_sequence — JSA numbering sequence
+-- ============================================
+CREATE TABLE IF NOT EXISTS jsa_sequence (
+  year INTEGER PRIMARY KEY,
+  last_number INTEGER DEFAULT 0
+);
+
+-- ============================================
+-- TABLE 39: sparks_audit_log — Sparks admin action log
+-- ============================================
+CREATE TABLE IF NOT EXISTS sparks_audit_log (
+  id SERIAL PRIMARY KEY,
+  person_id TEXT,
+  person_name TEXT,
+  action TEXT NOT NULL,
+  target_type TEXT,
+  target_id TEXT,
+  details TEXT,                    -- JSON
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_created ON sparks_audit_log(created_at DESC);
 
 -- ============================================
 -- END OF SCHEMA

@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireRoleLevel } = require('../middleware/sessionAuth');
+const { requireAuth, requireRoleLevel, requireSparksEditMode } = require('../middleware/sessionAuth');
 const { getActor } = require('../auth/authz');
+const DB = require('../../database/db');
 
 module.exports = function(db) {
 
@@ -59,6 +60,10 @@ module.exports = function(db) {
     // Link JSA to a task (task-centric model)
     try { await db.query("ALTER TABLE jsa_records ADD COLUMN task_id TEXT"); } catch(e) {}
     try { await db.query("ALTER TABLE jsa_records ADD COLUMN jsa_number TEXT"); } catch(e) {}
+    // Multi-tenancy: company_id for data isolation
+    try { await db.query("ALTER TABLE jsa_records ADD COLUMN company_id TEXT"); } catch(e) {}
+    // Backfill company_id from person_id for existing records
+    try { await db.query("UPDATE jsa_records SET company_id = p.company_id FROM people p WHERE jsa_records.person_id = p.id AND jsa_records.company_id IS NULL"); } catch(e) {}
   })();
 
   // ============================================
@@ -69,18 +74,26 @@ module.exports = function(db) {
     if (!person_id) return res.json({ jsas: [], shared_with_me: [], my_acknowledgments: [] });
 
     try {
-      // JSAs I created
-      const own = (await db.query('SELECT * FROM jsa_records WHERE person_id = $1 ORDER BY date DESC LIMIT 30', [person_id])).rows;
+      // JSAs I created — scoped by company
+      let ownQuery = 'SELECT * FROM jsa_records WHERE person_id = $1';
+      const ownParams = [person_id];
+      if (req.companyId) { ownParams.push(req.companyId); ownQuery += ` AND company_id = $${ownParams.length}`; }
+      ownQuery += ' ORDER BY date DESC LIMIT 30';
+      const own = (await (req.db || DB).db.query(ownQuery, ownParams)).rows;
 
-      // JSAs shared with me (I'm in crew_members)
-      const allRecent = (await db.query("SELECT * FROM jsa_records WHERE date >= CURRENT_DATE - INTERVAL '7 days' AND status != 'draft' ORDER BY date DESC")).rows;
+      // JSAs shared with me (I'm in crew_members) — scoped by company
+      let sharedQuery = "SELECT * FROM jsa_records WHERE date >= CURRENT_DATE - INTERVAL '7 days' AND status != 'draft'";
+      const sharedParams = [];
+      if (req.companyId) { sharedParams.push(req.companyId); sharedQuery += ` AND company_id = $${sharedParams.length}`; }
+      sharedQuery += ' ORDER BY date DESC';
+      const allRecent = (await (req.db || DB).db.query(sharedQuery, sharedParams)).rows;
       const sharedWithMe = allRecent.filter(j => {
         const crew = JSON.parse(j.crew_members || '[]');
         return crew.some(c => c.id === person_id || c.person_id === person_id);
       });
 
       // My pending acknowledgments
-      const myAcks = (await db.query('SELECT a.*, j.date as jsa_date, j.form_data as jsa_form_data, j.person_name as creator_name FROM jsa_acknowledgments a JOIN jsa_records j ON a.jsa_id = j.id WHERE a.person_id = $1 ORDER BY a.created_at DESC LIMIT 20', [person_id])).rows;
+      const myAcks = (await (req.db || DB).db.query('SELECT a.*, j.date as jsa_date, j.form_data as jsa_form_data, j.person_name as creator_name FROM jsa_acknowledgments a JOIN jsa_records j ON a.jsa_id = j.id WHERE a.person_id = $1 ORDER BY a.created_at DESC LIMIT 20', [person_id])).rows;
 
       const jsas = [];
       for (const j of own) {
@@ -88,7 +101,7 @@ module.exports = function(db) {
           ...j,
           form_data: JSON.parse(j.form_data || '{}'),
           crew_members: JSON.parse(j.crew_members || '[]'),
-          acknowledgments: await getAcknowledgments(j.id),
+          acknowledgments: await getAcknowledgments(j.id, req.db),
         });
       }
 
@@ -116,8 +129,8 @@ module.exports = function(db) {
   });
 
   // Helper: get signatures for a JSA
-  async function getAcknowledgments(jsaId) {
-    return (await db.query('SELECT * FROM jsa_acknowledgments WHERE jsa_id = $1 ORDER BY created_at', [jsaId])).rows;
+  async function getAcknowledgments(jsaId, reqDb) {
+    return (await (reqDb || DB).db.query('SELECT * FROM jsa_acknowledgments WHERE jsa_id = $1 ORDER BY created_at', [jsaId])).rows;
   }
 
   // ============================================
@@ -130,9 +143,13 @@ module.exports = function(db) {
     try {
       let pending;
       if (role === 'safety') {
-        pending = (await db.query('SELECT * FROM jsa_records WHERE status = $1 ORDER BY date DESC', ['pending_safety'])).rows;
+        if (req.companyId) {
+          pending = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE status = $1 AND company_id = $2 ORDER BY date DESC', ['pending_safety', req.companyId])).rows;
+        } else {
+          pending = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE status = $1 ORDER BY date DESC', ['pending_safety'])).rows;
+        }
       } else {
-        pending = (await db.query('SELECT * FROM jsa_records WHERE status = $1 AND supervisor_id = $2 ORDER BY date DESC', ['pending_foreman', approver_id])).rows;
+        pending = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE status = $1 AND supervisor_id = $2 ORDER BY date DESC', ['pending_foreman', approver_id])).rows;
       }
 
       const parsed = [];
@@ -141,7 +158,7 @@ module.exports = function(db) {
           ...j,
           form_data: JSON.parse(j.form_data || '{}'),
           crew_members: JSON.parse(j.crew_members || '[]'),
-          acknowledgments: await getAcknowledgments(j.id),
+          acknowledgments: await getAcknowledgments(j.id, req.db),
         });
       }
 
@@ -155,7 +172,7 @@ module.exports = function(db) {
   // ============================================
   // POST — Create a new JSA
   // ============================================
-  router.post('/', requireAuth, async (req, res) => {
+  router.post('/', requireAuth, requireSparksEditMode, async (req, res) => {
     const actor = getActor(req);
     const { person_id, person_name, trade, date, status, form_data, supervisor_id, crew_members, mode, task_id } = req.body;
     const id = 'jsa_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -163,22 +180,31 @@ module.exports = function(db) {
     try {
       // Auto-generate JSA number
       const year = new Date().getFullYear();
-      await db.query('INSERT INTO jsa_sequence (year, last_number) VALUES ($1, 0) ON CONFLICT DO NOTHING', [year]);
-      await db.query('UPDATE jsa_sequence SET last_number = last_number + 1 WHERE year = $1', [year]);
-      const seq = (await db.query('SELECT last_number FROM jsa_sequence WHERE year = $1', [year])).rows[0];
+      await (req.db || DB).db.query('INSERT INTO jsa_sequence (year, last_number) VALUES ($1, 0) ON CONFLICT DO NOTHING', [year]);
+      await (req.db || DB).db.query('UPDATE jsa_sequence SET last_number = last_number + 1 WHERE year = $1', [year]);
+      const seq = (await (req.db || DB).db.query('SELECT last_number FROM jsa_sequence WHERE year = $1', [year])).rows[0];
       const jsaNumber = `JSA-${year}-${String(seq.last_number).padStart(4, '0')}`;
 
-      await db.query(`
-        INSERT INTO jsa_records (id, person_id, person_name, trade, date, status, form_data, supervisor_id, crew_members, mode, jsa_number, task_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      `, [id, person_id, person_name, trade || '', date, status || 'draft', JSON.stringify(form_data || {}), supervisor_id || null, JSON.stringify(crew_members || []), mode || 'shared', jsaNumber, task_id || null]);
+      // Derive company_id from session or from the person record
+      let companyId = req.companyId;
+      if (!companyId && person_id) {
+        try {
+          const personRow = (await (req.db || DB).db.query('SELECT company_id FROM people WHERE id = $1', [person_id])).rows[0];
+          companyId = personRow?.company_id || null;
+        } catch(e) {}
+      }
+
+      await (req.db || DB).db.query(`
+        INSERT INTO jsa_records (id, person_id, person_name, trade, date, status, form_data, supervisor_id, crew_members, mode, jsa_number, task_id, company_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `, [id, person_id, person_name, trade || '', date, status || 'draft', JSON.stringify(form_data || {}), supervisor_id || null, JSON.stringify(crew_members || []), mode || 'shared', jsaNumber, task_id || null, companyId]);
 
       // If linked to a task, update the task_day's jsa_id
       if (task_id) {
         try {
           const DB = require('../../database/db');
-          const day = await DB.taskDays.getOrCreate(task_id, date, person_id);
-          await DB.taskDays.update(day.id, { jsa_id: id });
+          const day = await (req.db || DB).taskDays.getOrCreate(task_id, date, person_id);
+          await (req.db || DB).taskDays.update(day.id, { jsa_id: id });
         } catch(e) { console.error('Task-day JSA link error:', e.message); }
       }
 
@@ -187,7 +213,7 @@ module.exports = function(db) {
       if (crew.length > 0 && mode !== 'individual') {
         for (const member of crew) {
           const ackId = 'ack_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-          await db.query(`
+          await (req.db || DB).db.query(`
             INSERT INTO jsa_acknowledgments (id, jsa_id, person_id, person_name, role_title, status)
             VALUES ($1, $2, $3, $4, $5, 'pending')
           `, [ackId, id, member.id || member.person_id, member.name || member.person_name, member.role_title || '']);
@@ -204,7 +230,7 @@ module.exports = function(db) {
   // ============================================
   // PUT — Update JSA form data
   // ============================================
-  router.put('/:id', requireAuth, async (req, res) => {
+  router.put('/:id', requireAuth, requireSparksEditMode, async (req, res) => {
     const { id } = req.params;
     const { form_data, crew_members, status } = req.body;
 
@@ -219,18 +245,18 @@ module.exports = function(db) {
       updates.push('updated_at = NOW()');
       values.push(id);
 
-      await db.query(`UPDATE jsa_records SET ${updates.join(', ')} WHERE id = $${paramIdx}`, values);
+      await (req.db || DB).db.query(`UPDATE jsa_records SET ${updates.join(', ')} WHERE id = $${paramIdx}`, values);
 
       // If crew members updated, create new acknowledgment records for any new members
       if (crew_members) {
-        const existingAcks = (await db.query('SELECT person_id FROM jsa_acknowledgments WHERE jsa_id = $1', [id])).rows;
+        const existingAcks = (await (req.db || DB).db.query('SELECT person_id FROM jsa_acknowledgments WHERE jsa_id = $1', [id])).rows;
         const existingIds = new Set(existingAcks.map(a => a.person_id));
 
         for (const member of crew_members) {
           const memberId = member.id || member.person_id;
           if (!existingIds.has(memberId)) {
             const ackId = 'ack_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            await db.query(`
+            await (req.db || DB).db.query(`
               INSERT INTO jsa_acknowledgments (id, jsa_id, person_id, person_name, role_title, status)
               VALUES ($1, $2, $3, $4, $5, 'pending')
             `, [ackId, id, memberId, member.name || member.person_name, member.role_title || '']);
@@ -248,10 +274,10 @@ module.exports = function(db) {
   // ============================================
   // POST — Submit JSA for approval
   // ============================================
-  router.post('/:id/submit', requireAuth, async (req, res) => {
+  router.post('/:id/submit', requireAuth, requireSparksEditMode, async (req, res) => {
     const { id } = req.params;
     try {
-      await db.query("UPDATE jsa_records SET status = $1, updated_at = NOW() WHERE id = $2",
+      await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, updated_at = NOW() WHERE id = $2",
         ['pending_foreman', id]);
       res.json({ success: true });
     } catch (err) {
@@ -262,13 +288,13 @@ module.exports = function(db) {
   // ============================================
   // POST — Sign JSA (crew member signature)
   // ============================================
-  router.post('/sign', requireAuth, async (req, res) => {
+  router.post('/sign', requireAuth, requireSparksEditMode, async (req, res) => {
     const { ack_id, jsa_id, person_id, person_name, signature, signed_on_device } = req.body;
 
     try {
       if (ack_id) {
         // Sign existing record (crew member on their own phone)
-        await db.query(`
+        await (req.db || DB).db.query(`
           UPDATE jsa_acknowledgments
           SET signature = $1, signed_at = NOW(), signed_on_device = $2, status = 'signed'
           WHERE id = $3
@@ -276,16 +302,16 @@ module.exports = function(db) {
       } else {
         // Add and sign (foreman signing for someone on their phone)
         const newId = 'ack_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        await db.query(`
+        await (req.db || DB).db.query(`
           INSERT INTO jsa_acknowledgments (id, jsa_id, person_id, person_name, role_title, signature, signed_at, signed_on_device, status)
           VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, 'signed')
         `, [newId, jsa_id, person_id || 'manual', person_name || '', req.body.role_title || '', signature || 'signed', signed_on_device || 'foreman']);
       }
 
       // Check if all crew members have signed
-      const jsa = (await db.query('SELECT * FROM jsa_records WHERE id = $1', [jsa_id])).rows[0];
+      const jsa = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE id = $1', [jsa_id])).rows[0];
       if (jsa) {
-        const allAcks = (await db.query('SELECT * FROM jsa_acknowledgments WHERE jsa_id = $1', [jsa_id])).rows;
+        const allAcks = (await (req.db || DB).db.query('SELECT * FROM jsa_acknowledgments WHERE jsa_id = $1', [jsa_id])).rows;
         const completedCount = allAcks.filter(a => a.status === 'signed').length;
         const totalCount = allAcks.length;
 
@@ -321,7 +347,7 @@ module.exports = function(db) {
   // ============================================
   // POST — Approve JSA (foreman or safety)
   // ============================================
-  router.post('/:id/approve', requireAuth, requireRoleLevel(3), async (req, res) => {
+  router.post('/:id/approve', requireAuth, requireSparksEditMode, requireRoleLevel(3), async (req, res) => {
     const actor = getActor(req);
     const { id } = req.params;
     // DERIVE approver identity from session
@@ -329,19 +355,19 @@ module.exports = function(db) {
     const { role } = req.body;
     let approver_name = '';
     try {
-      const p = await db.query('SELECT name FROM people WHERE id = $1', [approver_id]);
+      const p = await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [approver_id]);
       approver_name = p.rows[0]?.name || '';
     } catch {};
 
     try {
-      const jsa = (await db.query('SELECT * FROM jsa_records WHERE id = $1', [id])).rows[0];
+      const jsa = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE id = $1', [id])).rows[0];
       if (!jsa) return res.status(404).json({ error: 'JSA not found' });
 
       if (role === 'foreman') {
-        await db.query("UPDATE jsa_records SET status = $1, foreman_id = $2, foreman_name = $3, foreman_approved_at = NOW(), updated_at = NOW() WHERE id = $4",
+        await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, foreman_id = $2, foreman_name = $3, foreman_approved_at = NOW(), updated_at = NOW() WHERE id = $4",
           ['pending_safety', approver_id, approver_name, id]);
       } else if (role === 'safety') {
-        await db.query("UPDATE jsa_records SET status = $1, safety_id = $2, safety_name = $3, safety_approved_at = NOW(), updated_at = NOW() WHERE id = $4",
+        await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, safety_id = $2, safety_name = $3, safety_approved_at = NOW(), updated_at = NOW() WHERE id = $4",
           ['active', approver_id, approver_name, id]);
       }
 
@@ -354,7 +380,7 @@ module.exports = function(db) {
   // ============================================
   // POST — Reject JSA
   // ============================================
-  router.post('/:id/reject', requireAuth, requireRoleLevel(3), async (req, res) => {
+  router.post('/:id/reject', requireAuth, requireSparksEditMode, requireRoleLevel(3), async (req, res) => {
     const actor = getActor(req);
     const { id } = req.params;
     // DERIVE approver identity from session
@@ -362,7 +388,7 @@ module.exports = function(db) {
     const { role, reason } = req.body;
 
     try {
-      await db.query("UPDATE jsa_records SET status = $1, rejection_reason = $2, updated_at = NOW() WHERE id = $3",
+      await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, rejection_reason = $2, updated_at = NOW() WHERE id = $3",
         ['rejected', reason || 'No reason provided', id]);
       res.json({ success: true });
     } catch (err) {
@@ -379,17 +405,18 @@ module.exports = function(db) {
       let query = "SELECT * FROM jsa_records WHERE date = CURRENT_DATE::text AND status = 'active'";
       const params = [];
       let paramIdx = 1;
+      if (req.companyId) { query += ` AND company_id = $${paramIdx++}`; params.push(req.companyId); }
       if (trade) { query += ` AND trade = $${paramIdx++}`; params.push(trade); }
       query += ' ORDER BY created_at DESC';
 
-      const rows = (await db.query(query, params)).rows;
+      const rows = (await (req.db || DB).db.query(query, params)).rows;
       const jsas = [];
       for (const j of rows) {
         jsas.push({
           ...j,
           form_data: JSON.parse(j.form_data || '{}'),
           crew_members: JSON.parse(j.crew_members || '[]'),
-          acknowledgments: await getAcknowledgments(j.id),
+          acknowledgments: await getAcknowledgments(j.id, req.db),
         });
       }
 
@@ -403,7 +430,7 @@ module.exports = function(db) {
   // AI JSA Mismatch Detection
   // ============================================
 
-  router.post('/match-check', requireAuth, async (req, res) => {
+  router.post('/match-check', requireAuth, requireSparksEditMode, async (req, res) => {
     try {
       const { jsa_task_description, task_title, task_description } = req.body;
       if (!jsa_task_description || !task_title) {
@@ -470,14 +497,17 @@ If the work is substantially the same, match=true. If different work types, loca
   // ============================================
 
   // POST /api/jsa/status/batch — check JSA status for multiple persons on a date
-  router.post('/status/batch', requireAuth, async (req, res) => {
+  router.post('/status/batch', requireAuth, requireSparksEditMode, async (req, res) => {
     try {
       const { person_ids, date, task_title, task_description } = req.body;
       if (!person_ids || !date) return res.status(400).json({ error: 'person_ids and date required' });
 
       const today = date || new Date().toISOString().split('T')[0];
-      // Get all JSAs for this date
-      const allJsas = (await db.query("SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected'", [today])).rows;
+      // Get all JSAs for this date — scoped by company
+      let batchQuery = "SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected'";
+      const batchParams = [today];
+      if (req.companyId) { batchParams.push(req.companyId); batchQuery += ` AND company_id = $${batchParams.length}`; }
+      const allJsas = (await (req.db || DB).db.query(batchQuery, batchParams)).rows;
 
       const taskWords = ((task_title || '') + ' ' + (task_description || '')).toLowerCase().split(/\s+/).filter(w => w.length > 3);
 
@@ -563,11 +593,19 @@ If the work is substantially the same, match=true. If different work types, loca
       const { personId } = req.params;
       const today = req.query.date || new Date().toISOString().split('T')[0];
 
-      // JSAs created by this person today
-      const own = (await db.query("SELECT * FROM jsa_records WHERE person_id = $1 AND date = $2 AND status != 'rejected' ORDER BY created_at DESC", [personId, today])).rows;
+      // JSAs created by this person today — scoped by company
+      let ownQuery = "SELECT * FROM jsa_records WHERE person_id = $1 AND date = $2 AND status != 'rejected'";
+      const ownParams = [personId, today];
+      if (req.companyId) { ownParams.push(req.companyId); ownQuery += ` AND company_id = $${ownParams.length}`; }
+      ownQuery += ' ORDER BY created_at DESC';
+      const own = (await (req.db || DB).db.query(ownQuery, ownParams)).rows;
 
-      // JSAs where this person is a crew member today
-      const allToday = (await db.query("SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected' AND status != 'draft' ORDER BY created_at DESC", [today])).rows;
+      // JSAs where this person is a crew member today — scoped by company
+      let todayQuery = "SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected' AND status != 'draft'";
+      const todayParams = [today];
+      if (req.companyId) { todayParams.push(req.companyId); todayQuery += ` AND company_id = $${todayParams.length}`; }
+      todayQuery += ' ORDER BY created_at DESC';
+      const allToday = (await (req.db || DB).db.query(todayQuery, todayParams)).rows;
       const shared = allToday.filter(j => {
         if (j.person_id === personId) return false; // already in own
         try {
@@ -603,16 +641,24 @@ If the work is substantially the same, match=true. If different work types, loca
 
       const DB = require('../../database/db');
 
-      // Get all active people (optionally filtered by trade)
+      // Get all active people (filtered by company and optionally by trade)
       let people;
-      if (trade) {
-        people = (await DB.db.query("SELECT id, name, role_title, trade FROM people WHERE status = 'active' AND trade = $1", [trade])).rows;
+      const companyId = req.companyId;
+      if (trade && companyId) {
+        people = (await (req.db || DB).db.query("SELECT id, name, role_title, trade FROM people WHERE status = 'active' AND trade = $1 AND company_id = $2", [trade, companyId])).rows;
+      } else if (trade) {
+        people = (await (req.db || DB).db.query("SELECT id, name, role_title, trade FROM people WHERE status = 'active' AND trade = $1", [trade])).rows;
+      } else if (companyId) {
+        people = (await (req.db || DB).db.query("SELECT id, name, role_title, trade FROM people WHERE status = 'active' AND company_id = $1", [companyId])).rows;
       } else {
-        people = (await DB.db.query("SELECT id, name, role_title, trade FROM people WHERE status = 'active'")).rows;
+        people = (await (req.db || DB).db.query("SELECT id, name, role_title, trade FROM people WHERE status = 'active'")).rows;
       }
 
-      // Get all JSAs for this date
-      const allJsas = (await db.query("SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected'", [date])).rows;
+      // Get all JSAs for this date — scoped by company
+      let dashJsaQuery = "SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected'";
+      const dashJsaParams = [date];
+      if (companyId) { dashJsaParams.push(companyId); dashJsaQuery += ` AND company_id = $${dashJsaParams.length}`; }
+      const allJsas = (await (req.db || DB).db.query(dashJsaQuery, dashJsaParams)).rows;
 
       const completed = [];
       const missing = [];

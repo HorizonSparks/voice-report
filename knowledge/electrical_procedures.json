@@ -1,0 +1,84 @@
+{
+  "trade": "Electrical",
+  "category": "procedures",
+  "description": "Step-by-step craft procedures for common electrical tasks",
+  "cable_pulling": {
+    "steps": [
+      "Review pull ticket: verify cable size, type, from/to, reel number, route, estimated length +10%",
+      "Walk the route: inspect conduit, caps removed, pull rope in place, no obstructions",
+      "Set up reel on jacks: cable pays off top (clockwise), reel braked",
+      "Position sheaves/rollers at all bends — min diameter per manufacturer",
+      "Attach pulling grip with swivel to prevent twist",
+      "Apply lubricant generously at feed point and each bend",
+      "Establish radio communication between all pull points",
+      "Pull at slow steady pace — monitor tension, don't exceed sidewall bearing pressure",
+      "Feeders guide cable, prevent kinks, maintain back-tension",
+      "Leave service loops (10-15 ft each end for termination)",
+      "Cut cable, apply tags at both ends immediately",
+      "Seal conduit ends with duct seal",
+      "Complete pull ticket with actual length, date, crew"
+    ],
+    "min_bend_radius": {"non_shielded": "8x cable diameter", "shielded": "12x cable diameter", "control": "6x cable diameter"}
+  },
+  "conduit_bending": {
+    "offset_multipliers": {"10deg": 6.0, "15deg": 3.9, "22.5deg": 2.6, "30deg": 2.0, "45deg": 1.4, "60deg": 1.2},
+    "shrinkage_per_inch": {"10deg": "1/16 in", "15deg": "1/8 in", "22.5deg": "3/16 in", "30deg": "1/4 in", "45deg": "3/8 in", "60deg": "1/2 in"},
+    "offset_procedure": "Measure offset depth → multiply by multiplier for distance between bends → calculate shrinkage → mark and bend",
+    "bender_deducts_90deg": {"1/2_EMT": "5 in", "3/4_EMT": "6 in", "1_in_EMT": "8 in"},
+    "conduit_support_spacing": {"RMC": "10 ft and within 3 ft of boxes", "EMT": "10 ft and within 3 ft of boxes"}
+  },
+  "motor_termination": {
+    "steps": [
+      "Verify motor nameplate matches spec: HP, voltage, phase, RPM, FLA",
+      "Verify rotation requirement from P&ID or data sheet",
+      "Megger test motor windings before connecting — record values",
+      "Verify wire size matches motor FLA per NEC 430",
+      "Route conductors into junction box — maintain bend radius",
+      "Connect per wiring diagram on nameplate (high vs low voltage config)",
+      "Anti-oxidant on aluminum conductors",
+      "Torque all connections per manufacturer spec — document",
+      "Verify equipment grounding conductor connected",
+      "Install strain relief at junction box entry",
+      "Bump test: momentary start to check rotation",
+      "If wrong rotation: swap any two phases at STARTER (not motor)",
+      "Check for vibration, noise, or heat during bump test",
+      "Document rotation, megger values, torque values, wire tags"
+    ]
+  },
+  "megger_testing": {
+    "steps": [
+      "De-energize and LOTO circuit under test",
+      "Disconnect cable from all equipment at both ends",
+      "Verify all conductors isolated",
+      "Set up barriers and warning signs",
+      "Select proper test voltage",
+      "Test each conductor to ground individually",
+      "Test each conductor to every other conductor (phase-to-phase)",
+      "Apply voltage for 1 minute (or per spec)",
+      "Record reading — should be stable or increasing",
+      "Discharge cable: ground for 4x test duration",
+      "Verify zero volts before removing leads",
+      "Record all values on test form"
+    ],
+    "acceptable_values": {
+      "new_cable": "Hundreds of megohms to gigohms expected",
+      "investigate_below": "50 megohms on new cable",
+      "minimum": "1 megohm per 1000V operating voltage + 1 megohm"
+    }
+  },
+  "quality_common_punch_items": [
+    "Missing/wrong labels on conductors",
+    "Missing cover plates on boxes/panels",
+    "Conduit not properly supported",
+    "Missing conduit bushings",
+    "Incomplete seals in hazardous areas",
+    "Missing ground connections or bonding jumpers",
+    "Cable tray splices missing bonding jumpers",
+    "Open knockouts not plugged",
+    "Panel directories incomplete",
+    "Missing arc flash labels",
+    "Torque documentation missing",
+    "Fire caulk missing at penetrations",
+    "Missing pull wire in spare conduits"
+  ]
+}

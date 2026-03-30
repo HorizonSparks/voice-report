@@ -1,0 +1,465 @@
+{
+  "category": "pipefitting_materials",
+  "description": "Pipe materials, schedules, flanges, gaskets, bolts, valves, and welding consumables knowledge for field workers",
+  "pipe_materials": {
+    "carbon_steel": {
+      "grades": {
+        "A106_Gr_B": {
+          "use": "THE most common pipe in refineries and plants — seamless",
+          "temp_range": "-20F to 800F",
+          "SMYS": "35,000 psi yield, 60,000 psi tensile",
+          "P_number": "P1 Group 1",
+          "weld_consumables": "6010 root, 7018 fill/cap (SMAW); ER70S-2 or ER70S-6 (GTAW)",
+          "preheat": "None above 32F for thin wall; 200F for wall >1 inch",
+          "PWHT": "Required over 3/4 inch wall thickness"
+        },
+        "A53_Gr_B": {
+          "use": "Welded or seamless, utility services, lower-pressure applications, fire water",
+          "similar_to": "A106 Gr B but less stringent testing",
+          "note": "ERW (electric resistance welded) seam — oriented seam away from high stress"
+        },
+        "A333_Gr_6": {
+          "use": "Low temperature service (impact tested)",
+          "temp_range": "Down to -50F",
+          "note": "Impact (Charpy) tested at -50F — required for cold service, LPG, propane, refrigeration",
+          "P_number": "P1 Group 1"
+        },
+        "API_5L_Gr_B_X42_X52_X60_X65": {
+          "use": "Pipeline piping per API 1104",
+          "note": "X-grades indicate yield strength in ksi (X52 = 52,000 psi yield)",
+          "weld_code": "API 1104, NOT ASME IX/B31.3"
+        }
+      }
+    },
+    "stainless_steel": {
+      "austenitic": {
+        "304_SS_A312_TP304": {
+          "use": "General corrosion resistance, food/pharma, chemical service",
+          "temp_range": "-425F to 1500F (but watch for sensitization above 800F)",
+          "P_number": "P8 Group 1",
+          "weld_consumables": "ER308L (GTAW), E308L-16 (SMAW)",
+          "NOT_for": "Chloride service (stress corrosion cracking), seawater",
+          "sensitization": "800-1500F exposure causes chromium carbide precipitation — use L grades or 321/347 for elevated temperature"
+        },
+        "304L_SS": {
+          "use": "Same as 304 but low carbon (0.03% max) — resists sensitization better",
+          "note": "L grade preferred for all welded construction to avoid sensitization at weld HAZ"
+        },
+        "316_SS_A312_TP316": {
+          "use": "Better corrosion resistance than 304 — chloride environments, more aggressive chemicals, refinery process piping",
+          "P_number": "P8 Group 1",
+          "weld_consumables": "ER316L (GTAW), E316L-16 (SMAW)"
+        },
+        "316L_SS": {
+          "use": "Same as 316 but low carbon — standard for welded refinery stainless piping",
+          "note": "MOST common stainless in refineries"
+        },
+        "321_SS": {
+          "use": "Stabilized with titanium — resists sensitization at elevated temp. Used for high-temperature stainless service.",
+          "weld_consumables": "ER347 (GTAW) — use 347 filler on 321 base (standard practice)"
+        },
+        "347_SS": {
+          "use": "Stabilized with columbium (niobium) — similar to 321 but better elevated-temp properties",
+          "weld_consumables": "ER347 (GTAW)"
+        }
+      },
+      "carbon_contamination_WARNING": "NEVER use carbon steel wire brushes, grinding wheels, or tools on stainless steel. Use dedicated stainless tools only. Carbon contamination causes pitting corrosion at contamination sites.",
+      "storage": "Store stainless pipe and fittings SEPARATELY from carbon steel. Use wooden cradles or plastic — no direct contact with CS.",
+      "purge_requirement": "ALWAYS purge with argon when welding stainless. Sugar (oxidation) on the ID is a REJECTION."
+    },
+    "chrome_moly_alloy": {
+      "P11_1_25Cr_half_Mo": {
+        "spec": "A335 P11 pipe, A234 WP11 fittings, A182 F11 flanges",
+        "use": "High temperature hydrogen service, hydroprocessing units, moderate sulfur environments",
+        "temp_range": "Up to 1050F",
+        "P_number": "P4 Group 1",
+        "weld_consumables": "ER80S-B2 (GTAW), E8018-B2 (SMAW)",
+        "preheat": "300F minimum",
+        "PWHT": "MANDATORY — 1300F minimum, 1 hr/inch",
+        "note": "All chrome-moly requires PMI verification and strict preheat/PWHT compliance"
+      },
+      "P22_2_25Cr_1Mo": {
+        "spec": "A335 P22 pipe, A234 WP22 fittings, A182 F22 flanges",
+        "use": "Higher temperature hydrogen service, catalytic reformer piping, hydrocracker",
+        "temp_range": "Up to 1100F",
+        "P_number": "P5A Group 1",
+        "weld_consumables": "ER90S-B3 (GTAW), E9018-B3 (SMAW)",
+        "preheat": "400F minimum",
+        "PWHT": "MANDATORY — 1325F minimum",
+        "hardness": "Max 225 HBW (Brinell) after PWHT in most refinery specs"
+      },
+      "P5_5Cr_half_Mo": {
+        "spec": "A335 P5 pipe, A234 WP5 fittings",
+        "use": "High temperature sulfur resistance (naphthenic acid, high temp sulfidation)",
+        "P_number": "P5B Group 1",
+        "preheat": "400F minimum",
+        "PWHT": "MANDATORY"
+      },
+      "P9_9Cr_1Mo": {
+        "spec": "A335 P9 pipe",
+        "use": "Higher sulfur resistance than P5, heater tube piping",
+        "P_number": "P5B Group 2",
+        "preheat": "400F minimum",
+        "PWHT": "MANDATORY"
+      },
+      "P91_9Cr_1Mo_V": {
+        "spec": "A335 P91 pipe, A182 F91 flanges",
+        "use": "Modern high-temperature power plant and refinery service — replaces P22 in some applications with thinner wall",
+        "P_number": "P5C (formerly 15E)",
+        "WARNING": "P91 has VERY STRICT welding requirements. Improper welding/PWHT creates Type IV cracking failures.",
+        "preheat": "400F minimum, must maintain minimum 400F interpass",
+        "PWHT": "MANDATORY — 1375-1425F, precise temperature control critical. Under-tempering or over-tempering both cause failures.",
+        "hardness": "200-275 HBW — too soft or too hard both indicate problems",
+        "weld_consumables": "Matching P91 filler metal ONLY — do NOT substitute",
+        "special_requirements": [
+          "Qualified P91 welders only (not all chrome-moly welders can weld P91)",
+          "Thermocouple monitoring of preheat, interpass, AND PWHT",
+          "Hardness testing of ALL welds after PWHT",
+          "No quenching — must slow cool to below 200F before PWHT",
+          "PWHT must be between 1375-1425F — out of range = potential failure in service"
+        ]
+      }
+    },
+    "duplex_stainless": {
+      "2205_UNS_S31803_S32205": {
+        "spec": "A790 pipe, A182 F51 flanges",
+        "use": "Chloride environments where austenitic SS would crack. Seawater, offshore, brine, brackish water.",
+        "P_number": "P10H Group 1",
+        "weld_consumables": "ER2209 (GTAW) — over-alloyed filler to maintain phase balance",
+        "preheat": "None required (do NOT preheat above 300F — damages phase balance)",
+        "PWHT": "Generally NOT required and can be HARMFUL",
+        "max_interpass": "300F maximum — CRITICAL. Excessive heat damages phase balance (50/50 ferrite/austenite).",
+        "ferrite_testing": "Ferrite content 35-65% required in weld and HAZ. Tested with ferrite scope.",
+        "special_notes": [
+          "Heat input CRITICAL — too high = sigma phase (brittle). Too low = excessive ferrite.",
+          "Typical heat input range: 0.5 - 2.5 kJ/mm depending on thickness",
+          "Do NOT use pure CO2 shield gas — use Ar or Ar/N2 mix",
+          "N2 addition to purge gas (90% Ar, 10% N2) helps maintain austenite in root"
+        ]
+      },
+      "super_duplex_2507": {
+        "spec": "A790 S32750",
+        "use": "More aggressive chloride environments than 2205 — high-pressure seawater, aggressive chemical service",
+        "notes": "Even more critical welding controls than 2205. Specialist welders required."
+      }
+    },
+    "alloy_20_UNS_N08020": {
+      "spec": "B464 pipe, B462 flanges",
+      "use": "Sulfuric acid service — THE acid alloy. Alky units, sulfuric acid piping.",
+      "P_number": "P45",
+      "weld_consumables": "ERNiCrMo-3 (Alloy 625 filler) or matching Alloy 20 filler",
+      "notes": "Nickel alloy — expensive. Handle with care, no carbon steel contamination. Purge with argon."
+    },
+    "inconel": {
+      "Inconel_625_UNS_N06625": {
+        "spec": "B444 pipe, B564 flanges",
+        "use": "Extreme corrosion resistance — acid gas, high temp oxidation, chloride, seawater",
+        "P_number": "P43",
+        "weld_consumables": "ERNiCrMo-3 (GTAW)",
+        "notes": "VERY expensive. Used in worst-case corrosive services."
+      },
+      "Inconel_600_UNS_N06600": {
+        "use": "High temperature oxidation and carburization resistance",
+        "P_number": "P43",
+        "weld_consumables": "ERNiCr-3 (Alloy 82 — GTAW)"
+      }
+    }
+  },
+  "pipe_schedules_and_wall_thickness": {
+    "description": "Wall thickness increases with schedule number. Same schedule number = thicker wall on larger pipe.",
+    "common_schedules": {
+      "SCH_5S": "Thin wall stainless — low pressure utility services",
+      "SCH_10S": "Light stainless applications — typical for 150# stainless utility",
+      "SCH_10": "Light wall carbon steel",
+      "SCH_20": "Light wall — some low-pressure applications",
+      "SCH_40_STD": "STANDARD weight — the default for most carbon steel applications",
+      "SCH_80_XS": "Extra strong — higher pressure or where corrosion allowance needed",
+      "SCH_120": "Heavy wall",
+      "SCH_160": "Very heavy wall — high pressure service",
+      "SCH_XXS": "Double extra strong — maximum wall"
+    },
+    "reference_wall_thickness_inches": {
+      "note": "Selected sizes showing wall thickness progression",
+      "2_inch_pipe": {
+        "SCH_10S": 0.065,
+        "SCH_40_STD": 0.154,
+        "SCH_80_XS": 0.218,
+        "SCH_160": 0.344,
+        "XXS": 0.436
+      },
+      "4_inch_pipe": {
+        "SCH_10S": 0.120,
+        "SCH_40_STD": 0.237,
+        "SCH_80_XS": 0.337,
+        "SCH_120": 0.438,
+        "SCH_160": 0.531,
+        "XXS": 0.674
+      },
+      "6_inch_pipe": {
+        "SCH_10S": 0.134,
+        "SCH_40_STD": 0.280,
+        "SCH_80_XS": 0.432,
+        "SCH_120": 0.562,
+        "SCH_160": 0.719,
+        "XXS": 0.864
+      },
+      "8_inch_pipe": {
+        "SCH_10S": 0.148,
+        "SCH_20": 0.250,
+        "SCH_40_STD": 0.322,
+        "SCH_60": 0.406,
+        "SCH_80_XS": 0.500,
+        "SCH_120": 0.719,
+        "SCH_160": 0.906,
+        "XXS": 0.875
+      },
+      "12_inch_pipe": {
+        "SCH_10S": 0.180,
+        "SCH_20": 0.250,
+        "SCH_STD": 0.375,
+        "SCH_40": 0.406,
+        "SCH_60": 0.562,
+        "SCH_80_XS": 0.500,
+        "SCH_120": 0.844,
+        "SCH_160": 1.000
+      },
+      "important_note": "Above 12 inch, STD and SCH 40 are NOT the same. STD stays at 0.375 inch wall for all sizes above 12 inch. SCH 40 continues to increase. Always specify schedule number OR wall thickness, never assume."
+    }
+  },
+  "flange_ratings": {
+    "pressure_class_explanation": "Flange ratings (Class/Pound) define the maximum pressure at a given temperature. Higher temperature = lower pressure rating.",
+    "classes": {
+      "150_lb": {
+        "max_pressure_at_100F": "285 psi (carbon steel A105)",
+        "max_pressure_at_500F": "170 psi",
+        "max_pressure_at_750F": "95 psi",
+        "common_use": "Low pressure utility — water, air, low-pressure steam, cooling water",
+        "gasket_type": "Spiral wound (raised face) standard",
+        "face_type": "Raised face (RF) — 1/16 inch raised"
+      },
+      "300_lb": {
+        "max_pressure_at_100F": "740 psi",
+        "max_pressure_at_500F": "535 psi",
+        "max_pressure_at_750F": "365 psi",
+        "common_use": "Medium pressure process piping, steam systems"
+      },
+      "600_lb": {
+        "max_pressure_at_100F": "1480 psi",
+        "max_pressure_at_500F": "1075 psi",
+        "max_pressure_at_750F": "730 psi",
+        "common_use": "High pressure process — hydroprocessing, high-pressure steam"
+      },
+      "900_lb": {
+        "max_pressure_at_100F": "2220 psi",
+        "common_use": "High pressure — hydrocracker, hydrogen systems",
+        "face_type": "Often RTJ (Ring Type Joint) at 900# and above"
+      },
+      "1500_lb": {
+        "max_pressure_at_100F": "3705 psi",
+        "common_use": "Very high pressure — wellhead piping, high-pressure let-down"
+      },
+      "2500_lb": {
+        "max_pressure_at_100F": "6170 psi",
+        "common_use": "Extreme pressure — urea synthesis, ammonia synthesis, some wellhead"
+      }
+    },
+    "flange_face_types": {
+      "RF_raised_face": "Most common. Gasket seals on raised portion. Standard for 150# and 300#.",
+      "RTJ_ring_type_joint": "Metal ring groove machined into face. Used for high-pressure (typically 600# and above mandatory for 900#+). Most reliable seal.",
+      "FF_flat_face": "Full face contact. Used for cast iron flanges, non-metallic flanges. NEVER bolt flat face to raised face without machining — will crack the flat face flange.",
+      "tongue_and_groove": "Interlocking faces. Less common, used in specialty applications.",
+      "CRITICAL_NOTE": "NEVER mix flange face types without engineering approval. RF to FF bolting without machining = cracked flange or leak."
+    }
+  },
+  "bolt_specifications": {
+    "B7_A193_B7": {
+      "material": "Chrome-moly steel, quenched and tempered",
+      "tensile_strength": "125,000 psi (for diameters up to 2.5 inch)",
+      "use": "THE standard stud bolt for high-temperature, high-pressure service in refineries",
+      "temp_range": "-50F to 1000F",
+      "nut": "A194 Grade 2H (heavy hex)"
+    },
+    "B7M_A193_B7M": {
+      "material": "Same as B7 but lower hardness (235 HBW max vs 321 HBW for B7)",
+      "use": "Sour service (wet H2S) where NACE MR0175/ISO 15156 applies — prevents sulfide stress cracking",
+      "note": "REQUIRED in sour (H2S) service — standard B7 too hard for sour"
+    },
+    "L7_A320_L7": {
+      "material": "Similar to B7 but impact tested for low-temperature service",
+      "use": "Low temperature service below -50F to -150F",
+      "nut": "A194 Grade 4 or 7"
+    },
+    "B8_A193_B8": {
+      "material": "304 stainless steel",
+      "classes": {
+        "Class_1": "Solution annealed — LOW strength (75,000 psi tensile). Used where stainless required for corrosion.",
+        "Class_2": "Strain hardened — HIGHER strength (100,000-125,000 psi). Closer to B7 strength."
+      },
+      "use": "Where corrosion resistance requires stainless bolts",
+      "CAUTION": "Class 1 is MUCH weaker than B7. Cannot use B7 torque values. Requires lower torque.",
+      "nut": "A194 Grade 8 (Class 1) or 8A"
+    },
+    "B8M_A193_B8M": {
+      "material": "316 stainless steel",
+      "use": "Better corrosion resistance than B8 — chloride, marine environments",
+      "note": "Same strength considerations as B8"
+    },
+    "anti_galling": "ALL stainless bolts (B8, B8M) MUST use anti-seize compound. Stainless on stainless galls and seizes without lubricant. Do NOT use copper-based anti-seize on stainless in high-temp service (copper contamination causes embrittlement). Use nickel-based or molybdenum-based anti-seize."
+  },
+  "valve_types": {
+    "gate_valve": {
+      "function": "On-off isolation (full open or full closed — NOT for throttling)",
+      "design": "Rising stem, wedge or double-disc gate",
+      "advantages": "Full bore — low pressure drop when fully open, piggable",
+      "disadvantages": "Cannot throttle (erosion, vibration), slow operation, large space for stem travel",
+      "common_specs": "API 600 (cast steel), API 602 (forged steel, small bore)",
+      "installation_note": "Install with stem vertical or above horizontal. Never inverted (debris settles in bonnet)."
+    },
+    "globe_valve": {
+      "function": "Throttling and flow regulation, also used for isolation",
+      "design": "Rising stem, disc seats against body seat",
+      "advantages": "Excellent throttling, positive shutoff, can be repaired in-line",
+      "disadvantages": "High pressure drop (flow makes two 90-degree turns), not full bore",
+      "installation_note": "Flow direction matters — typically pressure under disc (check arrow on body). Install stem UP."
+    },
+    "ball_valve": {
+      "function": "Quick on-off isolation, some designs suitable for throttling",
+      "design": "Quarter-turn operation, ball with bore",
+      "types": {
+        "full_port": "Bore same as pipe ID — low pressure drop, piggable",
+        "reduced_port": "Bore one size smaller — acceptable for many applications, lighter/cheaper",
+        "V_port": "Characterized ball for throttling — better than standard ball for flow control"
+      },
+      "advantages": "Fast operation (quarter turn), tight shutoff, low pressure drop (full port), compact",
+      "disadvantages": "Not great for throttling (standard), seats damaged by debris, expensive in large sizes/high ratings",
+      "common_specs": "API 6D (pipeline), API 608 (process)",
+      "installation_note": "Handle position indicates open/closed — verify. Support weight on both sides."
+    },
+    "check_valve": {
+      "function": "Prevents reverse flow (one-direction only)",
+      "types": {
+        "swing_check": "Hinged disc — low pressure drop, common in horizontal lines. Can be vertical FLOW-UP only.",
+        "piston_check": "Piston/dash-pot — can be installed horizontally or vertically flow-up. Better for pulsating flow.",
+        "dual_plate_wafer": "Two spring-loaded plates — compact, lighter, installed between flanges. Good for lines with frequent reversal.",
+        "tilting_disc": "Pivoted disc — fast closing, low pressure drop. Used where water hammer from slow-closing check is concern."
+      },
+      "installation_note": "ALWAYS verify flow direction arrow. Wrong orientation = valve doesn't function. Swing checks MUST be horizontal or vertical flow-up (never vertical flow-down)."
+    },
+    "butterfly_valve": {
+      "function": "On-off and throttling, large line sizes",
+      "design": "Quarter-turn disc in pipe bore",
+      "advantages": "Light weight, compact, low cost in large sizes, quick operation",
+      "disadvantages": "Not full bore (disc always in flow path), limited shutoff class, not for high pressure",
+      "types": {
+        "concentric": "Standard, lower pressure rating, rubber seat",
+        "double_offset": "Better shutoff, metal seat option",
+        "triple_offset": "Premium — metal-to-metal seat, bubble-tight shutoff, rated for high pressure/temperature"
+      },
+      "installation_note": "Check disc clearance in pipe — gasket ID must not protrude into bore. Wafer style needs alignment pins."
+    },
+    "plug_valve": {
+      "function": "On-off isolation, quick operation",
+      "design": "Tapered or cylindrical plug with port",
+      "types": {
+        "lubricated": "Sealant injected to maintain seal — common in pipeline service",
+        "non_lubricated": "Sleeve-lined — used in chemical service where lubricant contamination unacceptable"
+      },
+      "advantages": "Fast quarter-turn operation, multi-port options, good for slurry/dirty service",
+      "installation_note": "Verify port orientation — can be three-way or four-way in some designs"
+    }
+  },
+  "welding_consumables_detail": {
+    "SMAW_rods": {
+      "E6010": {
+        "type": "Cellulosic coating (fast-freeze, deep penetrating)",
+        "use": "Root pass on carbon steel pipe — the pipe fitter's rod",
+        "position": "All positions including downhill",
+        "current": "DCEP (DC electrode positive) ONLY",
+        "key_properties": "Deep penetration, fast freeze, forceful arc — excellent for open root pipe welding",
+        "storage": "No oven needed — cellulosic coating needs moisture to function properly",
+        "note": "Cannot be used on chrome-moly or where low hydrogen required"
+      },
+      "E7018": {
+        "type": "Low hydrogen iron powder coating",
+        "use": "Fill and cap passes on carbon steel, also root pass on some procedures. THE general-purpose structural rod.",
+        "position": "All positions (7018-1 for improved vertical-down)",
+        "current": "DCEP preferred, AC acceptable",
+        "key_properties": "Low hydrogen — prevents hydrogen cracking. Smooth arc, good appearance.",
+        "storage": "MUST be stored in holding oven at 250-300F after opening sealed container. Max 4 hours out of oven (some specs 2 hours). If exposed longer, re-bake per manufacturer instructions.",
+        "CRITICAL": "Moisture in low-hydrogen rods causes hydrogen cracking — ALWAYS keep dry. This is the #1 cause of cracking in field welding."
+      },
+      "E8018_B2": {
+        "type": "Low hydrogen for 1-1/4 Cr-1/2 Mo (P4 material)",
+        "use": "Fill and cap on P11 chrome-moly pipe",
+        "storage": "Same low-hydrogen storage as 7018 — oven at 250-300F",
+        "preheat": "300F minimum with this rod"
+      },
+      "E9018_B3": {
+        "type": "Low hydrogen for 2-1/4 Cr-1 Mo (P5A material)",
+        "use": "Fill and cap on P22 chrome-moly pipe",
+        "storage": "Same low-hydrogen storage",
+        "preheat": "400F minimum"
+      },
+      "E309L_16": {
+        "type": "Stainless dissimilar metal rod",
+        "use": "Welding carbon steel to stainless steel (transition welds), first layer of stainless overlay on carbon steel",
+        "note": "Over-alloyed to account for dilution from carbon steel"
+      },
+      "E308L_16": {
+        "type": "Stainless rod for 304/304L",
+        "use": "SMAW welding of 304/304L stainless steel"
+      },
+      "E316L_16": {
+        "type": "Stainless rod for 316/316L",
+        "use": "SMAW welding of 316/316L stainless steel"
+      }
+    },
+    "GTAW_wire": {
+      "ER70S_2": {
+        "use": "Carbon steel GTAW — most common for pipe root passes",
+        "note": "Triple deoxidized — excellent for root passes with variable fit-up",
+        "diameter": "1/16, 3/32, 1/8 inch common"
+      },
+      "ER70S_6": {
+        "use": "Carbon steel GTAW and GMAW — higher silicon for better wetting",
+        "note": "Better for GMAW than 70S-2; 70S-2 preferred for GTAW pipe roots"
+      },
+      "ER308L": {
+        "use": "GTAW filler for 304/304L stainless steel",
+        "note": "L grade (low carbon) standard to prevent sensitization"
+      },
+      "ER309L": {
+        "use": "GTAW filler for dissimilar metal welds (CS to SS), first layer of stainless overlay",
+        "note": "Higher chromium and nickel to compensate for dilution with carbon steel",
+        "IMPORTANT": "Use 309L for the FIRST pass when joining CS to SS. Switch to 308L or 316L for subsequent passes."
+      },
+      "ER316L": {
+        "use": "GTAW filler for 316/316L stainless steel",
+        "note": "Molybdenum content provides better pitting/crevice corrosion resistance than 308L"
+      },
+      "ER80S_B2": {
+        "use": "GTAW filler for 1-1/4 Cr-1/2 Mo (P11)",
+        "preheat": "300F minimum required"
+      },
+      "ER90S_B3": {
+        "use": "GTAW filler for 2-1/4 Cr-1 Mo (P22)",
+        "preheat": "400F minimum required"
+      },
+      "ER2209": {
+        "use": "GTAW filler for duplex stainless steel 2205",
+        "note": "Over-alloyed (22% Cr, 9% Ni) to maintain proper ferrite/austenite phase balance in weld"
+      },
+      "ERNiCrMo_3": {
+        "common_name": "Alloy 625 filler / Inconel 625 wire",
+        "use": "GTAW filler for Inconel, Alloy 20, nickel alloy overlays, dissimilar metals involving nickel alloys",
+        "note": "Premium filler — expensive but very versatile for exotic alloys"
+      }
+    },
+    "consumable_storage_summary": {
+      "low_hydrogen_SMAW": "250-300F holding oven. Max exposure time 4 hours (many sites say 2 hours). Re-bake if exceeded.",
+      "cellulosic_SMAW_6010": "Room temperature storage. Sealed container until use. Do NOT put in oven.",
+      "GTAW_wire": "Clean, dry storage. Keep in tube/container. Wipe with acetone before use. Handle with clean gloves — oil from hands = porosity.",
+      "FCAW_wire": "Sealed container until use. Some wires require heated storage (check manufacturer). Rusty wire = porosity."
+    }
+  }
+}

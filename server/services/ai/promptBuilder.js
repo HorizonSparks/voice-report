@@ -1,3 +1,5 @@
+const { isSparks, buildSparksStructurePrompt, buildSparksConversePrompt } = require("./sparksPrompts");
+
 /**
  * AI Prompt Builder
  * Constructs system prompts for all AI routes.
@@ -28,12 +30,42 @@ IMPORTANT: If the worker mentions ANY safety concern, near-miss, PPE issue, or u
 /**
  * Build context package from person + template data
  */
-function buildContextPackage(person, template) {
+async function buildContextPackage(person, template, dbOverride) {
   if (!person || !template) return null;
   const pc = person.personal_context || {};
+
+  // Load knowledge files for this person from DB
+  let knowledgeContext = '';
+  try {
+    const DB = dbOverride || require('../../../database/db');
+    const knowledgeRows = (await DB.db.query(
+      'SELECT title, text_content, source_type FROM knowledge_files WHERE person_id = $1 AND text_content IS NOT NULL AND text_content != $2 ORDER BY created_at DESC LIMIT 5',
+      [person.id, '']
+    )).rows;
+    if (knowledgeRows.length > 0) {
+      // Cap total knowledge context at ~8000 chars (~2000 tokens) to stay efficient
+      let totalChars = 0;
+      const maxChars = 8000;
+      const chunks = [];
+      for (const kf of knowledgeRows) {
+        const text = kf.text_content || '';
+        if (totalChars + text.length > maxChars) {
+          chunks.push('--- ' + kf.title + ' (truncated) ---\n' + text.substring(0, maxChars - totalChars));
+          break;
+        }
+        chunks.push('--- ' + kf.title + ' ---\n' + text);
+        totalChars += text.length;
+      }
+      knowledgeContext = chunks.join('\n\n');
+    }
+  } catch (e) {
+    console.error('Knowledge files load error:', e.message);
+  }
+
   return {
     person_name: person.name,
     role_title: person.role_title,
+    trade: person.trade || template.trade || '',
     role_description: pc.role_description || template.role_description,
     report_focus: pc.report_focus || template.report_focus,
     output_sections: (pc.output_sections && pc.output_sections.length > 0) ? pc.output_sections : template.output_sections,
@@ -47,6 +79,7 @@ function buildContextPackage(person, template) {
     safety_vocabulary: (pc.safety_vocabulary && pc.safety_vocabulary.length > 0) ? pc.safety_vocabulary : (template.safety_vocabulary || []),
     tools_and_equipment: (pc.tools_and_equipment && pc.tools_and_equipment.length > 0) ? pc.tools_and_equipment : (template.tools_and_equipment || []),
     safety_notes: pc.safety_notes || '',
+    knowledge_context: knowledgeContext,
   };
 }
 
@@ -73,6 +106,11 @@ DOCUMENT 2 — "structured": Reorganize into sections:
 Keep language direct and professional. Do not invent information.`;
   }
 
+  // Route Sparks trade to dedicated prompt builder — completely different persona
+  if (isSparks({ trade: contextPackage.trade }, null)) {
+    return buildSparksStructurePrompt(contextPackage);
+  }
+
   const sectionsText = contextPackage.output_sections.map((s, i) => `${i + 1}. ${s}`).join('\n');
 
   return `You are a report structuring assistant for a construction/refinery project run by Horizon Sparks.
@@ -94,6 +132,8 @@ VOCABULARY REFERENCE (preserve these terms exactly as spoken):
 ${contextPackage.vocabulary_terms}
 
 PERSONAL NOTES: ${contextPackage.personal_notes}
+
+${contextPackage.knowledge_context ? 'KNOWLEDGE FILES (uploaded background documents about this person):\n' + contextPackage.knowledge_context : ''}
 
 SAFETY KNOWLEDGE:
 ${contextPackage.safety_rules.length > 0 ? 'Safety Rules:\n' + contextPackage.safety_rules.map(r => '- ' + r).join('\n') : ''}
@@ -118,8 +158,13 @@ Produce TWO outputs as valid JSON with keys "verbatim" and "structured":
 /**
  * Build system prompt for /api/converse (follow-up conversation)
  */
-function buildConversePrompt({ personName, roleTitle, roleDescription, reportFocus, outputSections, messagesForPerson }) {
+function buildConversePrompt({ personName, roleTitle, roleDescription, reportFocus, outputSections, messagesForPerson, trade }) {
   let messagesBlock = '';
+  // Route Sparks trade to dedicated converse prompt
+  if (isSparks({ trade }, null)) {
+    return buildSparksConversePrompt({ personName, roleTitle, roleDescription, reportFocus, outputSections, messagesForPerson });
+  }
+
   if (messagesForPerson && messagesForPerson.length > 0) {
     messagesBlock = `\n\nIMPORTANT MESSAGES FOR ${personName.toUpperCase()}:\nThe following messages were left by supervisors or safety officers. You MUST mention each one naturally during the conversation:\n${messagesForPerson.map((m, i) => `${i + 1}. From ${m.from}: "${m.text}"`).join('\n')}`;
   }

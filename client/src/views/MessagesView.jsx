@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import VoiceMessagePlayer from '../components/VoiceMessagePlayer.jsx';
 
-export default function MessagesView({ user }) {
+export default function MessagesView({ user, readOnly }) {
   const { t } = useTranslation();
   const [contacts, setContacts] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -199,6 +199,34 @@ export default function MessagesView({ user }) {
   const [showChatPhotoChoice, setShowChatPhotoChoice] = useState(false);
   const [sendingPhoto, setSendingPhoto] = useState(false);
 
+  const deleteMessage = async (msgId) => {
+    if (!confirm('Delete this message?')) return;
+    try {
+      const res = await fetch('/api/v2/messages/' + msgId, { method: 'DELETE' });
+      if (res.ok) {
+        setChatMessages(prev => prev.filter(m => m.id !== msgId));
+      } else { alert('Failed to delete message'); }
+    } catch (err) { alert('Delete error: ' + err.message); }
+  };
+
+  const sendFile = async (file) => {
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('from_id', personId);
+    fd.append('to_id', activeChat);
+    try {
+      const res = await fetch('/api/v2/messages/file', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        setChatMessages(prev => [...prev, data.message]);
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    } catch (err) { console.error('File send failed:', err); }
+  };
+
+  const chatFileRef = useRef(null);
+
   const sendPhoto = async (file) => {
     if (!file || !activeChat) return;
     setSendingPhoto(true);
@@ -275,7 +303,16 @@ export default function MessagesView({ user }) {
                     color: 'var(--charcoal)',
                     boxShadow: '0 1px 1px rgba(0,0,0,0.1)',
                     position: 'relative',
-                  }}>
+                  }}
+                  onContextMenu={(e) => { if (isMine) { e.preventDefault(); deleteMessage(m.id); } }}
+                  onTouchStart={(e) => {
+                    if (!isMine) return;
+                    const timer = setTimeout(() => deleteMessage(m.id), 800);
+                    e.target._longPress = timer;
+                  }}
+                  onTouchEnd={(e) => { if (e.target._longPress) clearTimeout(e.target._longPress); }}
+                  onTouchMove={(e) => { if (e.target._longPress) clearTimeout(e.target._longPress); }}
+                  >
                     {m.type === 'safety_alert' && (
                       <div style={{fontSize: '11px', fontWeight: 700, color: '#C45500', marginBottom: '4px'}}>⚠ SAFETY ALERT</div>
                     )}
@@ -284,6 +321,16 @@ export default function MessagesView({ user }) {
                     )}
                     {m.photo && (
                       <img src={`/api/message-photos/${m.photo}`} alt="" style={{maxWidth: '100%', borderRadius: '6px', marginBottom: '4px', cursor: 'pointer'}} onClick={() => setLightboxPhoto(`/api/message-photos/${m.photo}`)} />
+                    )}
+                    {m.type === 'file' && m.metadata && (
+                      <a href={`/api/message-files/${m.metadata.filename}`} download={m.metadata.original_name || m.content} style={{display:'flex', alignItems:'center', gap:'8px', padding:'8px 12px', background: isMine ? 'rgba(255,255,255,0.2)' : 'var(--gray-50)', borderRadius:'8px', textDecoration:'none', color:'var(--charcoal)', marginBottom:'4px'}}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <div style={{flex:1, minWidth:0}}>
+                          <div style={{fontSize:'13px', fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{m.metadata.original_name || m.content}</div>
+                          <div style={{fontSize:'11px', opacity:0.7}}>{m.metadata.size ? (m.metadata.size / 1024).toFixed(0) + ' KB' : 'File'}</div>
+                        </div>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      </a>
                     )}
                     {m.type === 'voice' && m.audio_file ? (
                       <VoiceMessagePlayer src={`/api/message-audio/${m.audio_file}`} isMine={isMine} />
@@ -357,6 +404,9 @@ export default function MessagesView({ user }) {
                       </button>
                       <button onClick={() => { chatGalleryRef.current?.click(); setShowChatPhotoChoice(false); }} style={{display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left'}}>
                         <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Gallery</span>
+                      </button>
+                      <button onClick={() => { chatFileRef.current?.click(); setShowChatPhotoChoice(false); }} style={{display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderTop: '1px solid #eee'}}>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>File</span>
                       </button>
                     </div>
                   </Fragment>

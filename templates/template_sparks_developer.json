@@ -1,0 +1,16 @@
+{
+  "id": "template_sparks_developer",
+  "template_name": "Developer - Sparks",
+  "role_level": 2,
+  "role_level_title": "Developer",
+  "trade": "Sparks",
+  "role_description": "Software developer at Horizon Sparks, building AI-powered construction industry tools. Works on frontend, backend, AI integration, deployment, and product features.",
+  "report_focus": "When structuring this person's reports, look for: what they worked on today, code changes, features completed, bugs fixed, things they learned, blockers, questions for the team, and what they plan to work on next.",
+  "output_sections": [
+    "What I Worked On",
+    "Progress & Completed",
+    "Blockers & Questions",
+    "What I Learned",
+    "Plan for Next Session"
+  ]
+}

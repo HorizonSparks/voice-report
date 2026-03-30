@@ -7,7 +7,7 @@ const analytics = require('../database/analytics');
 const knowledgeCache = require('./services/ai/knowledgeCache');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Ensure directories exist
 ['audio', 'photos', 'forms', 'certs', '.challenges', 'message-photos', 'message-audio'].forEach(dir => {
@@ -20,8 +20,10 @@ app.use(express.json({ limit: '50mb' }));
 app.use('/api', analytics.middleware);
 
 // Session auth — loads req.auth from cookie on every request
-const { loadSession } = require('./middleware/sessionAuth');
+const { loadSession, tenantFilter, attachCompanyDb } = require('./middleware/sessionAuth');
 app.use(loadSession);
+app.use(tenantFilter);
+app.use(attachCompanyDb);
 
 // Mount routes
 app.use('/api', require('./routes/auth'));
@@ -39,6 +41,9 @@ app.use('/api/punch-list', require('./routes/punchList'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/webauthn', require('./routes/webauthn'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/projects', require('./routes/projects'));
+app.use('/api/sparks', require('./routes/sparks'));
+app.use('/api/billing', require('./routes/billing'));
 app.use('/api', require('./routes/files'));
 
 // In production, serve built client files
@@ -47,6 +52,13 @@ const distPath = path.join(__dirname, '..', 'dist');
 const clientPath = path.join(__dirname, '..', 'client');
 
 if (fs.existsSync(distPath)) {
+  // Service worker must be served from root with correct headers
+  app.get('/sw.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(distPath, 'sw.js'));
+  });
+
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
@@ -69,7 +81,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('  Voice Report v2.0');
   console.log('===========================================');
   console.log(`  API Server:  http://localhost:${PORT}`);
-  console.log(`  Admin PIN:   ${process.env.ADMIN_PIN || '12345678'}`);
+  console.log(`  Admin PIN:   ${process.env.ADMIN_PIN ? '****' : 'DEFAULT (change ADMIN_PIN env!)'}`);
   console.log(`  Anthropic:   ${process.env.ANTHROPIC_API_KEY ? 'OK' : 'MISSING'}`);
   console.log(`  OpenAI:      ${process.env.OPENAI_API_KEY ? 'OK' : 'MISSING'}`);
   console.log('===========================================');
@@ -81,7 +93,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('===========================================');
 });
 
-const HTTPS_PORT = 3443;
+const HTTPS_PORT = process.env.HTTPS_PORT || (parseInt(PORT) + 443);
 const certPath = path.join(__dirname, '..', 'cert.pem');
 const keyPath = path.join(__dirname, '..', 'key.pem');
 

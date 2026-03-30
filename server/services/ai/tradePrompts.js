@@ -9,13 +9,14 @@ const TRADE_WHISPER_PROMPTS = {
   instrumentation: 'Construction instrumentation and controls work: transmitter, transducer, thermocouple, RTD, resistance temperature detector, control valve, positioner, I/P converter, 4-20 milliamp, HART, Foundation Fieldbus, DCS, PLC, loop check, loop diagram, loop sheet, calibration, calibrator, Beamex, Fluke, zero, span, as-found, as-left, tuning, PID, thermowell, manifold, impulse line, pressure test, orifice plate, magnetic flow meter, Coriolis, vortex, radar level, level transmitter, pressure transmitter, temperature transmitter, differential pressure, DP, instrument air, pneumatic, solenoid valve, limit switch, proximity switch, junction box, J-box, marshalling cabinet, intrinsically safe, IS barrier, zener barrier, cable tray, conduit, instrument tubing, Swagelok, compression fitting, tube bender, flare fitting, tag number, nameplate, P&ID, ISA, NEC, OSHA, JSA, PPE.',
   pipe_fitting: 'Construction pipe fitting work: pipe spool, flange, elbow, tee, reducer, coupling, union, nipple, weld, butt weld, socket weld, threaded, pipe hanger, pipe support, spring hanger, strut, Unistrut, pipe clamp, U-bolt, pipe rack, hydrostatic test, hydrotest, pneumatic test, pressure test, NDE, radiograph, dye penetrant, magnetic particle, weld map, fit-up, tack weld, root pass, hot pass, cap, purge, GTAW, TIG, SMAW, stick weld, FCAW, pipe schedule, wall thickness, carbon steel, stainless steel, alloy, chrome-moly, gasket, spiral wound gasket, ring joint, bolt torque, flange bolt-up, pipe bender, pipe cutter, beveling machine, OSHA, JSA, PPE.',
   safety: 'Construction safety observation: JSA, JHA, job safety analysis, job hazard analysis, PPE, personal protective equipment, hard hat, safety glasses, gloves, fall protection, harness, lanyard, anchor point, scaffold, guardrail, barricade, LOTO, lockout tagout, confined space, permit, hot work, fire watch, fire extinguisher, first aid, near miss, incident, OSHA, toolbox talk, safety stand-down, SWA, stop work authority.',
+  sparks: 'Software development team: AI, machine learning, API, frontend, backend, React, Node.js, PostgreSQL, deployment, Docker, PM2, Cloudflare, voice report, transcription, Whisper, Claude, prompt engineering, product roadmap, sprint, standup, pull request, code review, merge, branch, commit, refactor, debug, feature, bug fix, CI, CD, deployment pipeline.',
   default: 'Construction work: conduit, cable tray, pipe, valve, transmitter, instrument, wire, panel, transformer, scaffold, JSA, PPE, OSHA, safety, harness, NEC.',
 };
 
-async function getTradeWhisperPrompt(personId) {
+async function getTradeWhisperPrompt(personId, dbOverride) {
   if (!personId) return TRADE_WHISPER_PROMPTS.default;
   try {
-    const person = await DB.people.getById(personId);
+    const person = await (dbOverride || DB).people.getById(personId);
     if (!person || !person.trade) return TRADE_WHISPER_PROMPTS.default;
     const tradeKey = person.trade.toLowerCase().replace(/[\s-]+/g, '_');
     return TRADE_WHISPER_PROMPTS[tradeKey] || TRADE_WHISPER_PROMPTS.default;

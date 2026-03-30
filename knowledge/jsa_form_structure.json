@@ -1,0 +1,663 @@
+{
+  "id": "jsa_form_structure",
+  "title": "Definitive JSA/JHA Form Structure for Industrial Construction",
+  "version": "2.0",
+  "description": "Research-backed JSA form structure synthesized from OSHA 3071, major EPC contractors (Bechtel, Fluor, Kiewit, Jacobs, Turner Industries), and refinery owner requirements (ExxonMobil OIM, Chevron OEMS, Shell HSSE, Valero PSM). Designed to be completed in 2-3 minutes with AI assistance.",
+  "research_sources": {
+    "osha": "OSHA Publication 3071 - Job Hazard Analysis (revised 2002), 29 CFR 1926 Construction Standards",
+    "epc_contractors": "Bechtel Zero Incident Program, Fluor HSE Management System, Kiewit Safety Program, Jacobs BeyondZero, Turner Industries Safety Manual",
+    "refinery_owners": "ExxonMobil Operations Integrity Management System (OIMS), Chevron Operational Excellence Management System (OEMS), Shell HSSE & SP Control Framework, Valero Process Safety Management",
+    "industry_standards": "ANSI/ASSP Z590.3-2011 Prevention Through Design, API RP 2220, NFPA 70E, CSA Z1002"
+  },
+
+  "form_metadata": {
+    "form_code": "HS-SF-001",
+    "form_name": "Job Safety Analysis / Job Hazard Analysis",
+    "revision": "2.0",
+    "valid_duration": "One shift only (must be renewed each shift)",
+    "retention": "Minimum 1 year per OSHA recordkeeping; most owners require 3 years",
+    "review_triggers": [
+      "Start of each shift/new day",
+      "Change in scope of work",
+      "Change in crew members",
+      "Change in environmental conditions (weather, adjacent work)",
+      "After an incident or near-miss",
+      "New hazard identified during work"
+    ]
+  },
+
+  "sections": [
+    {
+      "section_number": 1,
+      "section_id": "header",
+      "section_name": "Job Identification",
+      "description": "Who, what, where, when. Auto-populated where possible.",
+      "fields": [
+        {
+          "field_name": "date",
+          "field_label": "Date",
+          "field_type": "date",
+          "required": true,
+          "auto_populate": true,
+          "source": "system_date",
+          "notes": "Auto-fills today's date. Calendar picker for backdating (supervisor only)."
+        },
+        {
+          "field_name": "shift",
+          "field_label": "Shift",
+          "field_type": "select",
+          "required": true,
+          "auto_populate": true,
+          "source": "time_based",
+          "options": ["Day Shift", "Night Shift", "Swing Shift"],
+          "notes": "Auto-detect from current time. Day=0500-1700, Night=1700-0500."
+        },
+        {
+          "field_name": "project_name",
+          "field_label": "Project / Unit",
+          "field_type": "select",
+          "required": true,
+          "auto_populate": true,
+          "source": "user_assignment",
+          "notes": "Pulled from user's current project assignment. Dropdown of active projects."
+        },
+        {
+          "field_name": "work_area",
+          "field_label": "Work Area / Location",
+          "field_type": "text",
+          "required": true,
+          "auto_populate": false,
+          "placeholder": "e.g., Unit 12 Pipe Rack Level 3, MCC Room B, Tank Farm East",
+          "notes": "Free text with autocomplete from recently used locations."
+        },
+        {
+          "field_name": "contractor_company",
+          "field_label": "Contractor / Company",
+          "field_type": "select",
+          "required": true,
+          "auto_populate": true,
+          "source": "user_profile",
+          "notes": "From user's employer record."
+        },
+        {
+          "field_name": "craft_trade",
+          "field_label": "Craft / Trade",
+          "field_type": "select",
+          "required": true,
+          "auto_populate": true,
+          "source": "user_profile",
+          "options": ["Electrical", "Instrumentation", "Pipefitting", "Ironworkers", "Millwright", "Boilermaker", "Carpenter", "Painter/Blaster", "Insulator", "Operator", "General Labor", "Scaffold Builder", "Rigger", "Welder", "Civil", "Other"],
+          "notes": "From user's trade. Dropdown for manual override."
+        }
+      ]
+    },
+    {
+      "section_number": 2,
+      "section_id": "crew",
+      "section_name": "Crew & Supervision",
+      "description": "Everyone who will perform or supervise this work.",
+      "fields": [
+        {
+          "field_name": "prepared_by",
+          "field_label": "Prepared By (Lead Worker)",
+          "field_type": "text",
+          "required": true,
+          "auto_populate": true,
+          "source": "user_name",
+          "notes": "The person filling out the JSA. Auto-populated from login."
+        },
+        {
+          "field_name": "foreman_name",
+          "field_label": "Foreman / Supervisor",
+          "field_type": "select",
+          "required": true,
+          "auto_populate": true,
+          "source": "user_supervisor",
+          "notes": "Auto-populated from org chart. Dropdown of available supervisors."
+        },
+        {
+          "field_name": "crew_members",
+          "field_label": "Crew Members",
+          "field_type": "crew_picker",
+          "required": true,
+          "auto_populate": false,
+          "notes": "Multi-select from roster. Each crew member must acknowledge the JSA. Minimum 1 crew member (the preparer). Bechtel/Fluor require all names; refineries require badge numbers too.",
+          "crew_fields_per_member": ["name", "badge_number", "acknowledged"]
+        },
+        {
+          "field_name": "crew_count",
+          "field_label": "Total Crew Size",
+          "field_type": "number",
+          "required": true,
+          "auto_populate": true,
+          "source": "calculated_from_crew_members",
+          "notes": "Auto-calculated from crew list."
+        }
+      ]
+    },
+    {
+      "section_number": 3,
+      "section_id": "task_description",
+      "section_name": "Task Description",
+      "description": "Clear description of the work to be performed.",
+      "fields": [
+        {
+          "field_name": "task_description",
+          "field_label": "Description of Work",
+          "field_type": "textarea",
+          "required": true,
+          "auto_populate": false,
+          "placeholder": "e.g., Install 4-inch conduit run from MCC-12 to JB-4A on pipe rack elevation 35 ft. Pull 3/C #6 AWG wire through existing conduit.",
+          "notes": "Voice input primary. Should be specific enough that a safety officer reading it knows exactly what you're doing. OSHA 3071 says: describe the job, not just the task name."
+        },
+        {
+          "field_name": "work_type",
+          "field_label": "Type of Work",
+          "field_type": "multi_select",
+          "required": true,
+          "options": [
+            "New Construction",
+            "Maintenance / Repair",
+            "Demolition / Removal",
+            "Testing / Commissioning",
+            "Inspection",
+            "Turnaround / Shutdown",
+            "Emergency Repair"
+          ],
+          "notes": "Multiple can apply (e.g., Turnaround + Maintenance)."
+        }
+      ]
+    },
+    {
+      "section_number": 4,
+      "section_id": "permits_and_conditions",
+      "section_name": "Permits & Environmental Conditions",
+      "description": "What permits are needed and what conditions affect the work.",
+      "fields": [
+        {
+          "field_name": "permits_required",
+          "field_label": "Permits Required",
+          "field_type": "multi_select",
+          "required": true,
+          "options": [
+            "None",
+            "Hot Work Permit",
+            "Confined Space Entry Permit",
+            "Excavation Permit",
+            "Line/Equipment Opening (Break) Permit",
+            "Lockout/Tagout (LOTO)",
+            "Elevated Work Permit",
+            "Radiation Work Permit",
+            "Critical Lift Plan",
+            "Energized Electrical Work Permit (NFPA 70E)",
+            "Scaffold Permit/Tag",
+            "Vehicle Entry Permit",
+            "Ground Disturbance Permit"
+          ],
+          "notes": "Multi-select checkboxes. This is a critical field — missing permits is the #1 reason JSAs get rejected by safety."
+        },
+        {
+          "field_name": "permit_numbers",
+          "field_label": "Permit Number(s)",
+          "field_type": "text",
+          "required": false,
+          "conditional_on": "permits_required != None",
+          "placeholder": "e.g., HW-2026-0342, CSE-2026-0018",
+          "notes": "Optional at draft stage. Required before work begins. Refineries (especially ExxonMobil) require this linked."
+        },
+        {
+          "field_name": "environmental_conditions",
+          "field_label": "Environmental / Site Conditions",
+          "field_type": "multi_select",
+          "required": true,
+          "options": [
+            "Normal Conditions",
+            "Extreme Heat (>90F / Heat Index >105F)",
+            "Extreme Cold (<32F)",
+            "Rain / Wet Conditions",
+            "High Wind (>25 mph)",
+            "Lightning Risk",
+            "Low Light / Night Work",
+            "Noise >85 dBA",
+            "Dust / Particulate",
+            "Adjacent Hot Work",
+            "Adjacent Crane Operations",
+            "Live Process Equipment Nearby",
+            "Excavation / Underground Utilities",
+            "Overhead Work / Multi-Level Work",
+            "Traffic / Mobile Equipment",
+            "H2S Area",
+            "Benzene/LEL Area"
+          ],
+          "notes": "This drives automatic PPE and hazard suggestions. Weather conditions auto-suggested from weather API."
+        },
+        {
+          "field_name": "risk_level",
+          "field_label": "Overall Risk Level",
+          "field_type": "select",
+          "required": true,
+          "options": [
+            "Low - Routine task, familiar crew, standard conditions",
+            "Medium - Some elevated hazards, non-routine elements",
+            "High - Multiple serious hazards, critical lift, energized work, confined space",
+            "Critical - Life-threatening potential, requires site management approval"
+          ],
+          "notes": "Drives approval requirements. Critical risk requires superintendent + site safety manager sign-off. Chevron and Shell require risk matrix scoring."
+        }
+      ]
+    },
+    {
+      "section_number": 5,
+      "section_id": "hazard_analysis",
+      "section_name": "Hazard Analysis — Job Steps",
+      "description": "The core of the JSA. Break the job into sequential steps, identify hazards for each, and define controls. OSHA 3071 methodology: (1) Sequence the job steps, (2) Identify the hazards, (3) Determine preventive measures.",
+      "table_structure": {
+        "columns": [
+          {
+            "column_id": "step_number",
+            "column_label": "#",
+            "width": "5%",
+            "type": "auto_increment",
+            "notes": "Auto-numbered 1, 2, 3..."
+          },
+          {
+            "column_id": "job_step",
+            "column_label": "Job Step / Task",
+            "width": "25%",
+            "type": "text",
+            "placeholder": "What is the activity?",
+            "notes": "Keep steps specific and action-oriented. Start with a verb. E.g., 'Set up ladder at column C-12' not 'Preparation'. OSHA recommends breaking the job into 5-10 steps."
+          },
+          {
+            "column_id": "potential_hazards",
+            "column_label": "Potential Hazards",
+            "width": "25%",
+            "type": "text_with_suggestions",
+            "placeholder": "What could go wrong?",
+            "notes": "Identify ALL hazards for this step. AI suggests from hazard library based on keywords. Common categories: Struck-by, Caught-in, Fall, Electrical, Burns, Chemical, Ergonomic, Environmental.",
+            "hazard_categories": [
+              "Struck-by (falling/flying/swinging objects)",
+              "Struck-against (walking into, bumping)",
+              "Caught-in/between (pinch points, rotating equipment)",
+              "Fall - same level (slip, trip)",
+              "Fall - elevated (>6 ft)",
+              "Electrical contact (shock, arc flash)",
+              "Burn - thermal (hot surfaces, steam, welding)",
+              "Burn - chemical (acid, caustic)",
+              "Exposure - chemical (inhalation, skin)",
+              "Exposure - noise (>85 dBA)",
+              "Exposure - radiation",
+              "Exposure - temperature (heat/cold stress)",
+              "Ergonomic (overexertion, repetitive motion, awkward posture)",
+              "Engulfment (trench, confined space)",
+              "Oxygen deficient/enriched atmosphere",
+              "Fire/Explosion",
+              "Biological (insects, snakes, mold)",
+              "Vehicle/equipment traffic",
+              "Overhead hazards",
+              "Underground utilities",
+              "Pressure release (stored energy)"
+            ]
+          },
+          {
+            "column_id": "risk_rating",
+            "column_label": "Risk",
+            "width": "10%",
+            "type": "select",
+            "options": ["L", "M", "H", "C"],
+            "option_labels": {
+              "L": "Low - Minor injury unlikely",
+              "M": "Medium - Moderate injury possible",
+              "H": "High - Serious injury possible",
+              "C": "Critical - Fatality/catastrophic possible"
+            },
+            "notes": "Some owners (Chevron, Shell) use a 5x5 risk matrix (Severity x Likelihood). For mobile, a simple L/M/H/C is faster and sufficient for most contractors."
+          },
+          {
+            "column_id": "control_measures",
+            "column_label": "Control Measures / Mitigation",
+            "width": "30%",
+            "type": "text_with_suggestions",
+            "placeholder": "How do you prevent it?",
+            "notes": "Must follow Hierarchy of Controls (OSHA preferred order): 1) Elimination, 2) Substitution, 3) Engineering Controls, 4) Administrative Controls, 5) PPE (last resort). AI suggests controls from knowledge base. Must be specific — 'Be careful' is NOT a control. Good: 'Use fall arrest harness tied off to beam clamp at column C-12, 100% tie-off during transition.'",
+            "hierarchy_of_controls": [
+              "Elimination - Remove the hazard entirely",
+              "Substitution - Replace with less hazardous alternative",
+              "Engineering Controls - Guardrails, ventilation, barriers, GFCI",
+              "Administrative Controls - Training, procedures, permits, signage, buddy system",
+              "PPE - Last line of defense, specify exact PPE type"
+            ]
+          },
+          {
+            "column_id": "responsible_person",
+            "column_label": "Who",
+            "width": "5%",
+            "type": "text_short",
+            "placeholder": "Initials",
+            "notes": "Who is responsible for ensuring this control is in place. Usually initials. Some owners skip this column."
+          }
+        ],
+        "min_rows": 3,
+        "max_rows": 10,
+        "recommended_rows": 5,
+        "notes": "OSHA recommends 5-10 steps. Less than 3 means you haven't broken the job down enough. More than 10 means you should split into multiple JSAs. AI can auto-generate initial steps from the task description."
+      }
+    },
+    {
+      "section_number": 6,
+      "section_id": "ppe_required",
+      "section_name": "Required PPE",
+      "description": "All personal protective equipment required for this job. Standard site PPE is pre-checked. Additional PPE based on hazards identified above.",
+      "fields": [
+        {
+          "field_name": "ppe_standard",
+          "field_label": "Standard Site PPE (Always Required)",
+          "field_type": "checklist_locked",
+          "always_checked": true,
+          "items": [
+            "Hard Hat (ANSI Z89.1 Type I, Class E)",
+            "Safety Glasses (ANSI Z87.1+)",
+            "Steel/Composite Toe Boots (ASTM F2413 EH rated)",
+            "High-Visibility Vest (ANSI 107 Class 2 minimum)",
+            "Long Pants (no shorts on industrial sites)",
+            "Leather Work Gloves"
+          ],
+          "notes": "These are ALWAYS required on industrial construction sites. Pre-checked and locked. Cannot be unchecked. This is universal across Bechtel, Fluor, Kiewit, all refineries."
+        },
+        {
+          "field_name": "ppe_additional",
+          "field_label": "Additional Task-Specific PPE",
+          "field_type": "multi_select_with_details",
+          "auto_suggest_from": "hazard_analysis.potential_hazards",
+          "categories": {
+            "Head Protection": [
+              "Type II Hard Hat (side impact) - for overhead/confined work",
+              "Welding Hood/Helmet - for welding operations",
+              "Balaclava/Hard Hat Liner - for cold weather",
+              "Face Shield (ANSI Z87.1) - for grinding, chipping, chemical"
+            ],
+            "Eye/Face Protection": [
+              "Splash-proof Chemical Goggles (ANSI Z87.1 D3)",
+              "Welding Helmet - Auto-darkening (shade per process)",
+              "Welding Goggles (shade 5) - for cutting/brazing",
+              "Tinted Safety Glasses - for outdoor glare",
+              "Face Shield with Hard Hat Bracket"
+            ],
+            "Hand Protection": [
+              "Cut-Resistant Gloves (ANSI A4+ rating)",
+              "Rubber Insulating Gloves with Leather Protectors (Class 00-4)",
+              "Chemical-Resistant Gloves (Nitrile/Neoprene)",
+              "Welding Gloves (leather gauntlet)",
+              "Anti-Vibration Gloves",
+              "Cold Weather / Insulated Gloves",
+              "Latex/Nitrile Disposable Gloves"
+            ],
+            "Foot Protection": [
+              "Metatarsal Guards - for heavy material handling",
+              "Chemical-Resistant Boots/Overboots",
+              "Dielectric (non-conductive) Boots",
+              "Rubber Boots - for wet/muddy conditions"
+            ],
+            "Body Protection": [
+              "FR Clothing (NFPA 2112, CAT 2 minimum / 8 cal/cm2)",
+              "FR Clothing (CAT 3 / 25 cal/cm2) - for higher arc flash",
+              "FR Clothing (CAT 4 / 40 cal/cm2) - for high-energy arc flash",
+              "Arc Flash Suit (40+ cal/cm2)",
+              "Chemical Splash Suit (Tyvek/Saranex)",
+              "Chemical Vapor Suit (Level A/B)",
+              "Rain Gear (FR-rated if in FR area)",
+              "Chaps/Aprons - for welding, grinding",
+              "Cooling Vest - for heat stress"
+            ],
+            "Fall Protection": [
+              "Full Body Harness (ANSI Z359.11)",
+              "Shock-Absorbing Lanyard (6 ft max)",
+              "Self-Retracting Lifeline (SRL)",
+              "Positioning Lanyard",
+              "Rope Grab / Vertical Lifeline",
+              "Beam Clamp / Anchor Point",
+              "Guardrail System",
+              "Safety Net"
+            ],
+            "Respiratory Protection": [
+              "N95 Filtering Facepiece (dust/particulate)",
+              "Half-Face APR (OV/P100 cartridges)",
+              "Full-Face APR (OV/P100 cartridges)",
+              "PAPR (Powered Air Purifying Respirator)",
+              "Supplied Air Respirator (SAR)",
+              "SCBA (Self-Contained Breathing Apparatus)",
+              "Escape Respirator (EEBD)"
+            ],
+            "Hearing Protection": [
+              "Foam Ear Plugs (NRR 29-33)",
+              "Reusable Ear Plugs (NRR 22-27)",
+              "Earmuffs (NRR 22-31)",
+              "Electronic Earmuffs (NRR 22, communication capable)",
+              "Canal Caps (NRR 17-22)"
+            ],
+            "Other/Specialized": [
+              "4-Gas Monitor (O2, LEL, H2S, CO)",
+              "Personal H2S Monitor",
+              "Voltage Detector / Proximity Alert",
+              "Personal Fall Limiter (6 ft retractable)",
+              "Life Jacket/PFD - for over-water work",
+              "Knee Pads",
+              "Welding Blanket/Curtain (for nearby workers)",
+              "Barricade Tape / Cones"
+            ]
+          },
+          "notes": "AI auto-suggests based on hazards in Section 5. Worker confirms/adds. Each PPE item links to the hazard it mitigates."
+        }
+      ]
+    },
+    {
+      "section_number": 7,
+      "section_id": "emergency_info",
+      "section_name": "Emergency Information",
+      "description": "What to do if something goes wrong. Auto-populated from site data.",
+      "fields": [
+        {
+          "field_name": "emergency_phone",
+          "field_label": "Site Emergency Number",
+          "field_type": "text",
+          "required": true,
+          "auto_populate": true,
+          "source": "site_config",
+          "notes": "Auto-populated from project/site settings."
+        },
+        {
+          "field_name": "muster_point",
+          "field_label": "Muster Point / Assembly Area",
+          "field_type": "select",
+          "required": true,
+          "auto_populate": true,
+          "source": "site_config_by_area",
+          "notes": "Auto-suggested based on work area. Dropdown of site muster points."
+        },
+        {
+          "field_name": "nearest_first_aid",
+          "field_label": "Nearest First Aid / AED Location",
+          "field_type": "text",
+          "required": true,
+          "auto_populate": true,
+          "source": "site_config_by_area",
+          "notes": "Auto-populated from site data based on work area."
+        },
+        {
+          "field_name": "nearest_eyewash",
+          "field_label": "Nearest Eyewash / Safety Shower",
+          "field_type": "text",
+          "required": false,
+          "auto_populate": true,
+          "source": "site_config_by_area",
+          "conditional_on": "chemical hazards identified",
+          "notes": "Required when chemical hazards are present. Auto-populated."
+        },
+        {
+          "field_name": "rescue_plan",
+          "field_label": "Rescue / Retrieval Plan",
+          "field_type": "textarea",
+          "required": false,
+          "conditional_on": "fall_protection_or_confined_space",
+          "placeholder": "How will an injured worker be rescued from height or confined space?",
+          "notes": "REQUIRED when fall protection or confined space is involved. OSHA 1926.502(d)(20) requires rescue plan for fall protection. This is a frequent audit finding."
+        }
+      ]
+    },
+    {
+      "section_number": 8,
+      "section_id": "crew_acknowledgment",
+      "section_name": "Crew Review & Acknowledgment",
+      "description": "Every crew member must review and acknowledge the JSA before work begins. This is the toolbox talk / pre-task briefing.",
+      "fields": [
+        {
+          "field_name": "toolbox_talk_conducted",
+          "field_label": "Pre-Task Safety Briefing Conducted",
+          "field_type": "checkbox",
+          "required": true,
+          "notes": "Confirms the crew discussed this JSA together before starting work. OSHA and all major contractors require this."
+        },
+        {
+          "field_name": "stop_work_authority_reviewed",
+          "field_label": "Stop Work Authority Reviewed with Crew",
+          "field_type": "checkbox",
+          "required": true,
+          "notes": "Every contractor (Bechtel, Fluor, Kiewit) and every refinery (ExxonMobil, Chevron, Shell, Valero) requires this. Non-negotiable."
+        },
+        {
+          "field_name": "crew_signatures",
+          "field_label": "Crew Member Signatures",
+          "field_type": "signature_list",
+          "required": true,
+          "notes": "Each crew member signs or provides electronic acknowledgment. For mobile: tap to acknowledge with timestamp. Bechtel requires wet signatures on paper; digital accepted for Fluor, Kiewit, Turner Industries. Refineries vary — ExxonMobil accepts digital in newer facilities."
+        }
+      ]
+    },
+    {
+      "section_number": 9,
+      "section_id": "approval_signatures",
+      "section_name": "Approval Signatures",
+      "description": "Chain of approval. Order matters: Worker signs first, then Foreman, then Safety (if required by risk level).",
+      "approval_chain": [
+        {
+          "order": 1,
+          "role": "prepared_by",
+          "label": "Prepared By (Lead Worker / Journeyman)",
+          "required": true,
+          "notes": "The person who filled out the JSA. Always required."
+        },
+        {
+          "order": 2,
+          "role": "foreman",
+          "label": "Foreman / Supervisor Approval",
+          "required": true,
+          "notes": "Must review the JSA for completeness, verify hazards are properly identified, controls are adequate. Cannot approve their own JSA (conflict of interest). Required by ALL contractors and owners."
+        },
+        {
+          "order": 3,
+          "role": "safety_representative",
+          "label": "Safety Representative Approval",
+          "required": "conditional",
+          "condition": "risk_level == High OR risk_level == Critical OR permits include Confined Space OR permits include LOTO OR permits include Energized Work",
+          "notes": "Required for High/Critical risk work. ExxonMobil requires safety approval on ALL JSAs. Chevron requires it for any permit-required work. Bechtel requires for high-risk only. Some sites require safety to approve every JSA — this is configurable."
+        },
+        {
+          "order": 4,
+          "role": "superintendent",
+          "label": "Superintendent / Area Manager Approval",
+          "required": "conditional",
+          "condition": "risk_level == Critical",
+          "notes": "Only for Critical risk tasks. Shell and ExxonMobil require superintendent sign-off for critical lifts, energized work >480V, confined space with IDLH atmosphere."
+        }
+      ],
+      "signature_fields_per_approver": [
+        {"field": "name", "type": "text", "auto_populate": true},
+        {"field": "signature", "type": "signature_pad"},
+        {"field": "date_time", "type": "datetime", "auto_populate": true},
+        {"field": "badge_number", "type": "text", "auto_populate": true}
+      ]
+    }
+  ],
+
+  "rejection_criteria": {
+    "title": "Common Reasons JSAs Get Rejected",
+    "description": "Based on safety department audit data from major contractors and refineries.",
+    "automatic_rejection": [
+      "No hazards identified (at least 1 hazard per step required)",
+      "Generic controls like 'Be careful' or 'Use caution' or 'Pay attention' — must be specific",
+      "PPE is the ONLY control listed (must use hierarchy of controls — engineering/admin first)",
+      "Missing required permits (hot work near flammables, confined space entry, etc.)",
+      "Crew members not listed or not acknowledged",
+      "Work at height identified but no fall protection plan",
+      "Confined space identified but no rescue plan",
+      "LOTO required but not listed in permits",
+      "Task description is too vague (e.g., 'electrical work' instead of specific scope)",
+      "Risk level doesn't match hazards (high hazards but marked Low risk)"
+    ],
+    "common_audit_findings": [
+      "JSA was written at the desk, not at the work site — hazards don't match actual conditions",
+      "Copy-paste from yesterday's JSA without reviewing for today's conditions",
+      "Crew members signed but clearly didn't participate in the discussion",
+      "Hazard analysis doesn't match the actual sequence of work steps",
+      "Environmental conditions not updated (weather changed, adjacent work started)",
+      "JSA written after work already started (must be completed BEFORE work begins)",
+      "No evidence of crew discussion / toolbox talk",
+      "Fall protection controls don't specify tie-off points",
+      "Electrical hazards listed but no arc flash boundary or voltage specified",
+      "Chemical hazards listed but no SDS referenced or available"
+    ]
+  },
+
+  "ai_assistance_features": {
+    "description": "How AI helps complete the JSA in 2-3 minutes",
+    "auto_populate_fields": [
+      "date", "shift", "project_name", "contractor_company", "craft_trade",
+      "prepared_by", "foreman_name", "crew_count",
+      "emergency_phone", "muster_point", "nearest_first_aid", "nearest_eyewash"
+    ],
+    "ai_generated_suggestions": [
+      {
+        "trigger": "task_description entered via voice",
+        "action": "AI parses task description and suggests: (1) job steps broken into sequence, (2) likely hazards per step from hazard library, (3) recommended controls from knowledge base, (4) required PPE based on hazards, (5) required permits based on task type, (6) risk level assessment"
+      },
+      {
+        "trigger": "work_area entered",
+        "action": "AI suggests: (1) environmental conditions for that area, (2) adjacent hazards, (3) emergency info for that zone"
+      },
+      {
+        "trigger": "craft_trade selected",
+        "action": "AI pre-loads trade-specific hazard library and standard PPE for that trade"
+      },
+      {
+        "trigger": "environmental_conditions selected",
+        "action": "AI adds relevant hazards and controls (e.g., Heat selected -> adds hydration breaks, buddy system, shade requirements)"
+      }
+    ],
+    "voice_workflow": {
+      "description": "Journeyman speaks naturally, AI structures into JSA",
+      "example_voice_input": "We're pulling wire on the pipe rack at unit 12, about 35 feet up. Four guys on the crew — me, Tommy, Carlos, and Mike. We'll be setting up the tugger at grade, running the pull rope up through the conduit, then pulling the wire. Main concerns are working at height, heavy cable weight, and there's hot work going on one bay over.",
+      "ai_output": "AI extracts: Location (Unit 12 pipe rack, 35 ft), Crew (4 members), Steps (1. Set up tugger, 2. Run pull rope, 3. Pull wire), Hazards (fall from height, struck by cable, ergonomic - heavy lifting, adjacent hot work), Controls (fall harness + SRL, tag line on cable, mechanical advantage/tugger, fire watch awareness), PPE (standard + harness + SRL + face shield for adjacent hot work), Permits (elevated work, hot work awareness)"
+    }
+  },
+
+  "mobile_optimization": {
+    "design_principles": [
+      "Voice-first: speak the task description, AI fills in the rest",
+      "One-tap selections: big touch targets, dropdowns not typing",
+      "Pre-populated: 60% of fields auto-fill from user profile and site data",
+      "Progressive disclosure: show required fields first, expand for details",
+      "Offline capable: must work without internet on job site",
+      "2-3 minute target: from open to submitted in under 3 minutes"
+    ],
+    "field_counts": {
+      "auto_populated": 12,
+      "user_enters_voice": 1,
+      "user_selects_dropdown": 6,
+      "user_checks_boxes": 4,
+      "ai_generates_for_review": 15,
+      "total_user_actions": "~23 taps/selections after voice input"
+    }
+  },
+
+  "updated_at": "2026-03-24T00:00:00.000Z"
+}

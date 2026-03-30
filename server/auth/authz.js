@@ -34,14 +34,14 @@ function getActor(req) {
  *   - admin: always
  *   - chain-of-command: use existing DB visibility logic
  */
-async function canViewPerson(actor, targetPersonId) {
+async function canViewPerson(actor, targetPersonId, reqDb) {
   if (!actor) return false;
   if (actor.is_admin) return true;
   if (actor.person_id === targetPersonId) return true;
 
   // Use existing chain-of-command contact visibility
   try {
-    return await DB.contacts.canMessage(actor.person_id, targetPersonId);
+    return await (reqDb || DB).contacts.canMessage(actor.person_id, targetPersonId);
   } catch {
     return false;
   }
@@ -54,12 +54,12 @@ async function canViewPerson(actor, targetPersonId) {
  *   - higher role_level in the target's chain: yes
  *   - self cannot manage self (for safety)
  */
-async function canManagePerson(actor, targetPersonId) {
+async function canManagePerson(actor, targetPersonId, reqDb) {
   if (!actor) return false;
   if (actor.is_admin) return true;
 
   try {
-    const target = await DB.people.getById(targetPersonId);
+    const target = await (reqDb || DB).people.getById(targetPersonId);
     if (!target) return false;
 
     // Must be higher level
@@ -73,7 +73,7 @@ async function canManagePerson(actor, targetPersonId) {
     let depth = 0;
     while (current.supervisor_id && depth < 5) {
       if (current.supervisor_id === actor.person_id) return true;
-      current = await DB.people.getById(current.supervisor_id);
+      current = await (reqDb || DB).people.getById(current.supervisor_id);
       if (!current) break;
       depth++;
     }
@@ -91,7 +91,7 @@ async function canManagePerson(actor, targetPersonId) {
  *   - foreman approval: actor must be the JSA creator's supervisor or role_level >= 3
  *   - safety approval: actor must have safety authority (role_level >= 4 or is safety dept)
  */
-async function canApproveJsa(actor, jsa) {
+async function canApproveJsa(actor, jsa, reqDb) {
   if (!actor) return false;
   if (actor.is_admin) return true;
 
@@ -102,7 +102,7 @@ async function canApproveJsa(actor, jsa) {
     if (actor.role_level >= 3) return true;
     // Check if actor is the creator's supervisor
     if (jsa.created_by) {
-      const creator = await DB.people.getById(jsa.created_by);
+      const creator = await (reqDb || DB).people.getById(jsa.created_by);
       if (creator && creator.supervisor_id === actor.person_id) return true;
     }
     return false;
@@ -124,13 +124,13 @@ async function canApproveJsa(actor, jsa) {
  * Uses existing DB.contacts.canMessage chain-of-command rules.
  * Admin always allowed.
  */
-async function canMessage(actor, targetPersonId) {
+async function canMessage(actor, targetPersonId, reqDb) {
   if (!actor) return false;
   if (actor.is_admin) return true;
   if (actor.person_id === targetPersonId) return false; // No self-messaging
 
   try {
-    return await DB.contacts.canMessage(actor.person_id, targetPersonId);
+    return await (reqDb || DB).contacts.canMessage(actor.person_id, targetPersonId);
   } catch {
     return false;
   }

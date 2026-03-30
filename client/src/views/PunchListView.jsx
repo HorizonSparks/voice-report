@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import VoiceRefinePanel from '../components/VoiceRefinePanel.jsx';
 
-export default function PunchListView({ user, embedded, onNavigate, goBack }) {
+export default function PunchListView({ user, embedded, onNavigate, goBack, readOnly }) {
   const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);

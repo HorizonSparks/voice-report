@@ -1,0 +1,43 @@
+{
+  "category": "materials",
+  "description": "Cable types, conduit types, tubing materials, fitting compatibility, seal materials",
+  "cable_types": {
+    "THHN": {"rating": "90C dry, 75C wet", "use": "General building wire in conduit", "voltage": "600V", "not_for": "Direct burial, exposed runs, hazardous locations without conduit"},
+    "XHHW-2": {"rating": "90C dry AND wet", "use": "Higher temp, wet locations, industrial", "advantage": "Maintains 90C in wet (THHN derates to 75C)", "insulation": "Cross-linked polyethylene — more chemical resistant"},
+    "MC": {"use": "Exposed runs, cable tray", "MC-HL": "For hazardous locations, gas/vapor tight armor", "advantage": "Faster than conduit-and-wire", "not_for": "Standard MC not in Class I Div 1"},
+    "MI": {"rating": "Up to 250C, fire-survivable", "use": "Fire alarm, emergency systems, extreme high temp, hazardous", "cost": "3-5x standard cable", "caution": "MgO is hygroscopic — seal ends immediately after cutting"},
+    "TC": {"use": "Cable tray in industrial", "TC-ER": "Can run exposed up to 50 ft between tray and equipment", "common_for": "Instrument signal cables"},
+    "instrument_cable": {"construction": "Twisted shielded pairs, 16-18 AWG, 300V", "shield": "Ground at ONE end only to prevent ground loops"}
+  },
+  "conduit_types": {
+    "RMC": {"where_required": "Hazardous areas (Div 1 and 2), physical damage, outdoor industrial", "pros": "Maximum protection, inherent grounding", "cons": "Heaviest, most labor, most expensive", "threads": "Minimum 5 full threads engaged"},
+    "EMT": {"where_used": "Indoor dry, non-hazardous, control rooms, electrical rooms", "NOT_permitted": "Hazardous locations, direct burial, outdoor industrial", "pros": "Lightweight, fast, lower cost"},
+    "PVC_coated_RMC": {"where_used": "Corrosive environments, coastal, chemical plants", "note": "Touch up all cut ends and thread exposure"},
+    "PVC": {"Sch40": "Underground in concrete", "Sch80": "Where exposed to damage", "NOT_permitted": "Hazardous locations generally", "temp_limit": "75C — deforms above", "expansion": "4 inches per 100 ft per 100F temp change"},
+    "LFMC": {"where_used": "Final connections to vibrating equipment (motors)", "length_limit": "6 ft max for grounding, 3 ft in hazardous", "caution": "Standard flex fittings NOT interchangeable with liquidtight"}
+  },
+  "tubing_materials": {
+    "316SS": {"use": "Most common refinery instrument tubing", "resists": "Chlorides, dilute sulfuric acid, organics, caustics", "standard_sizes": "1/4 and 1/2 OD, 0.035 wall"},
+    "304SS": {"use": "Instrument air, non-corrosive services", "NOT_for": "Chloride environments, seawater, coastal", "cost": "15-20% less than 316SS"},
+    "Monel_400": {"use": "HF alkylation units, seawater — NON-NEGOTIABLE for HF alky", "cost": "3-4x more than 316SS"},
+    "copper": {"use": "Instrument air (traditional), pneumatic signals", "NOT_for": "Process impulse lines, ammonia service, H2S service"}
+  },
+  "seal_gasket_compatibility": {
+    "hydrocarbons": {"use": "Viton (FKM), PTFE", "avoid": "Natural rubber"},
+    "sulfuric_acid": {"use": "PTFE, EPDM", "avoid": "Viton, Buna-N"},
+    "caustic_NaOH": {"use": "EPDM, PTFE", "avoid": "Viton"},
+    "steam": {"use": "Graphite, PTFE", "avoid": "Elastomers above 250F"},
+    "oxygen_service": {"use": "PTFE, Kel-F", "avoid": "Any hydrocarbon-based material"},
+    "HF_acid": {"use": "Viton, PTFE", "avoid": "EPDM, Buna-N"}
+  },
+  "common_material_mistakes": [
+    "Using 304SS where 316SS specified — chloride cracking in service",
+    "Wrong conduit seal compound in hazardous location — inspector rejects",
+    "Mixing aluminum and steel conduit without dielectric unions — galvanic corrosion",
+    "EMT outdoors in industrial — corrosion and code violation",
+    "Forgetting anti-seize on stainless fittings — galling and stuck fittings",
+    "Wrong gasket material for service — discovered during hydro or in operation",
+    "Standard PVC cement on CPVC (or vice versa) — joint failure",
+    "Not reaming conduit after cutting — insulation damage during wire pull"
+  ]
+}

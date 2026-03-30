@@ -224,7 +224,7 @@ describe('WebAuthn uses @simplewebauthn/server', () => {
   });
 
   test('creates session on login', () => {
-    expect(content).toContain('DB.sessions.create');
+    expect(content).toMatch(/sessions.create/);
     expect(content).toContain('setSessionCookie');
   });
 
@@ -320,7 +320,7 @@ describe('Auth route has session + logout', () => {
   const content = fs.readFileSync(path.join(ROOT, 'server/routes/auth.js'), 'utf8');
 
   test('login creates session', () => {
-    expect(content).toContain('DB.sessions.create');
+    expect(content).toMatch(/sessions.create/);
     expect(content).toContain('setSessionCookie');
   });
 

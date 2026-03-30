@@ -21,7 +21,7 @@ export default function SafetyHub({ user, goHome }) {
           <h3>{t('common.savedSuccessfully')}</h3>
           <div className="form-saved-actions">
             <button className="btn-primary" onClick={() => { setSavedFormId(null); setActiveView(null); }}>← {t('nav.back')}</button>
-            <button className="btn-secondary" onClick={goHome}>Home</button>
+            
           </div>
         </div>
       </div>

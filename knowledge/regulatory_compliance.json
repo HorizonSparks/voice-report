@@ -1,0 +1,38 @@
+{
+  "category": "regulatory",
+  "description": "OSHA recordkeeping, EPA requirements, refinery owner rules, union rules, arc flash",
+  "OSHA_reporting_timelines": {
+    "fatality": "Report within 8 hours",
+    "amputation": "Report within 24 hours",
+    "loss_of_eye": "Report within 24 hours",
+    "inpatient_hospitalization": "Report within 24 hours",
+    "how": "Call OSHA area office, hotline 1-800-321-OSHA, or osha.gov",
+    "clock_starts": "When employer LEARNS of event, not when it happens"
+  },
+  "recordable_vs_first_aid": {
+    "RECORDABLE": ["Sutures/stitches", "Prescription medications", "Physical therapy", "Foreign body removal from eye with surgery/magnet", "Rigid splints", "Any work restriction"],
+    "first_aid_NOT_recordable": ["Cleaning/flushing wound", "Butterfly bandages/Steri-Strips", "Tetanus shot", "Eye patches", "Irrigation of eye", "Finger splints", "Non-prescription medications", "Elastic bandages"]
+  },
+  "common_refinery_owner_rules_beyond_OSHA": [
+    "100% tie-off at heights above 6 ft (retractable/double-leg lanyards)",
+    "Personal 4-gas monitor (LEL, O2, CO, H2S) for all in process areas",
+    "No cell phones in classified areas — need intrinsically safe devices",
+    "FR clothing required at all times — ALL layers must be FR",
+    "Short Service Employee program — green hard hat/sticker, paired with experienced worker",
+    "Stop Work Authority/Obligation — every worker expected to stop unsafe work",
+    "Pre-job JSA required before every task, every day — entire crew reviews and signs",
+    "Zero tolerance drugs/alcohol — random testing, positive = immediate removal"
+  ],
+  "union_jurisdiction_examples": [
+    {"scenario": "Thermocouple on bearing", "resolution": "Threaded process connection = pipefitters. Direct wired = electricians. Calibration = instrument techs."},
+    {"scenario": "Conduit in cable tray", "resolution": "Electricians install inside tray. Ironworkers build support steel."},
+    {"scenario": "Control valve", "resolution": "Pipefitter installs body in line. Instrument tech handles actuator/positioner/tubing. Electrician runs power/signal cable."}
+  ],
+  "arc_flash_labels_must_show": ["Nominal system voltage", "Arc flash boundary", "Incident energy and working distance OR minimum arc rating OR PPE category", "Date of arc flash study"],
+  "arc_flash_study_update": "Must be updated when electrical system is modified (new transformer, changed breaker settings). Temp power also needs assessment.",
+  "EPA_relevance": {
+    "transformer_oil": "Counts toward SPCC plan threshold (>1320 gal aggregate). Large transformer can have 5000+ gal.",
+    "construction_waste": ["Used cable pulling lubricant", "Solvent rags", "Lead paint waste from demolition", "Mercury from old instruments", "PCBs from old transformers"],
+    "storm_water": "NPDES permit required for sites disturbing 1+ acres. SWPPP document required."
+  }
+}

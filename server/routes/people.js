@@ -3,8 +3,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const DB = require('../../database/db');
-const { requireAuth, requireRoleLevel, requireSelfOrRoleLevel } = require('../middleware/sessionAuth');
+const {requireAuth, requireRoleLevel, requireSelfOrRoleLevel, requireSparksEditMode} = require('../middleware/sessionAuth');
 const { getActor } = require('../auth/authz');
+const mammoth = require('mammoth');
+const pdfParse = require('pdf-parse');
 
 const router = Router();
 
@@ -37,58 +39,78 @@ const certStorage = multer.diskStorage({
 });
 const certUpload = multer({ storage: certStorage, limits: { fileSize: 20 * 1024 * 1024 } });
 
-// GET all people — auth required
+// GET all people — auth required, filtered by company_id, optional ?trade= filter
 router.get('/', requireAuth, async (req, res) => {
-  try { res.json(await DB.people.getAll()); } catch (err) { res.status(500).json({ error: err.message }); }
+  try {
+    let people = await (req.db || DB).people.getAll(req.companyId);
+    // Server-side trade filter — if ?trade= is provided, only return people in that trade
+    if (req.query.trade) {
+      const allTemplates = await (req.db || DB).templates.getAll();
+      const tradeTemplateIds = new Set(allTemplates.filter(t => t.trade === req.query.trade).map(t => t.id));
+      people = people.filter(p => tradeTemplateIds.has(p.template_id));
+    }
+    res.json(people);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET person by ID — auth required, self or supervisor+
+// GET person by ID — auth required, self or supervisor+ or same company
 router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const p = await DB.people.getById(req.params.id);
+    const p = await (req.db || DB).people.getById(req.params.id);
     if (!p) return res.status(404).json({ error: 'Person not found' });
+    // Authorization: self, admin, supervisor+, or same company
+    const isSelf = req.auth.person_id === req.params.id;
+    const isSupervisor = req.auth.is_admin || req.auth.role_level >= 3;
+    const sameCompany = req.companyId && p.company_id === req.companyId;
+    if (!isSelf && !isSupervisor && !sameCompany) {
+      return res.status(403).json({ error: 'Not authorized to view this person' });
+    }
     res.json(p);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Create person — admin/supervisor only
-router.post('/', requireAuth, requireRoleLevel(3), async (req, res) => {
-  try { res.json(await DB.people.create(req.body)); } catch (err) { res.status(500).json({ error: err.message }); }
+// Create person — admin/supervisor only, tag with company_id
+router.post('/', requireAuth, requireSparksEditMode, requireRoleLevel(3), async (req, res) => {
+  try {
+    const data = { ...req.body };
+    if (req.companyId) data.company_id = req.companyId;
+    res.json(await (req.db || DB).people.create(data));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Update person — self or supervisor+
-router.put('/:id', requireAuth, requireSelfOrRoleLevel('id', 3), async (req, res) => {
+router.put('/:id', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('id', 3), async (req, res) => {
   try {
-    const result = await DB.people.update(req.params.id, req.body);
+    const result = await (req.db || DB).people.update(req.params.id, req.body);
     if (!result) return res.status(404).json({ error: 'Person not found' });
     res.json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Delete person — admin only
-router.delete('/:id', requireAuth, requireRoleLevel(4), async (req, res) => {
-  try { res.json(await DB.people.delete(req.params.id)); } catch (err) { res.status(500).json({ error: err.message }); }
+router.delete('/:id', requireAuth, requireSparksEditMode, requireRoleLevel(4), async (req, res) => {
+  try { res.json(await (req.db || DB).people.delete(req.params.id)); } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Lead-man — supervisor+
-router.put('/:id/lead-man', requireAuth, requireRoleLevel(3), async (req, res) => {
+router.put('/:id/lead-man', requireAuth, requireSparksEditMode, requireRoleLevel(3), async (req, res) => {
   try {
-    const person = (await DB.db.query('SELECT * FROM people WHERE id = $1', [req.params.id])).rows[0];
+    const person = (await (req.db || DB).db.query('SELECT * FROM people WHERE id = $1', [req.params.id])).rows[0];
     if (!person) return res.status(404).json({ error: 'Person not found' });
     if (req.body.is_lead_man) {
-      await DB.db.query('UPDATE people SET is_lead_man = 0 WHERE supervisor_id = $1 AND id != $2', [person.supervisor_id, req.params.id]);
+      await (req.db || DB).db.query('UPDATE people SET is_lead_man = 0 WHERE supervisor_id = $1 AND id != $2', [person.supervisor_id, req.params.id]);
     }
-    await DB.db.query('UPDATE people SET is_lead_man = $1 WHERE id = $2', [req.body.is_lead_man ? 1 : 0, req.params.id]);
+    await (req.db || DB).db.query('UPDATE people SET is_lead_man = $1 WHERE id = $2', [req.body.is_lead_man ? 1 : 0, req.params.id]);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Contact order — self or supervisor+
-router.put('/:id/contact-order', requireAuth, requireSelfOrRoleLevel('id', 3), async (req, res) => {
+router.put('/:id/contact-order', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('id', 3), async (req, res) => {
   try {
     const { order } = req.body;
     if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array' });
-    const client = await DB.db.connect();
+    const client = await (req.db || DB).db.connect();
     try {
       await client.query('BEGIN');
       await client.query('DELETE FROM contact_order WHERE person_id = $1', [req.params.id]);
@@ -108,40 +130,130 @@ router.put('/:id/contact-order', requireAuth, requireSelfOrRoleLevel('id', 3), a
 
 router.get('/:id/contact-order', requireAuth, async (req, res) => {
   try {
-    const rows = (await DB.db.query('SELECT contact_id, sort_order FROM contact_order WHERE person_id = $1 ORDER BY sort_order', [req.params.id])).rows;
+    const rows = (await (req.db || DB).db.query('SELECT contact_id, sort_order FROM contact_order WHERE person_id = $1 ORDER BY sort_order', [req.params.id])).rows;
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Photo upload — self or supervisor+
-router.post('/:person_id/photo', requireAuth, requireSelfOrRoleLevel('person_id', 3), photoUpload.single('photo'), async (req, res) => {
+router.post('/:person_id/photo', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('person_id', 3), photoUpload.single('photo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No photo' });
-    await DB.people.update(req.params.person_id, { photo: req.file.filename });
+    await (req.db || DB).people.update(req.params.person_id, { photo: req.file.filename });
     res.json({ success: true, photo: req.file.filename });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Cert upload — self or supervisor+
-router.post('/:person_id/certs', requireAuth, requireSelfOrRoleLevel('person_id', 3), certUpload.single('cert'), async (req, res) => {
+router.post('/:person_id/certs', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('person_id', 3), certUpload.single('cert'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file' });
-    const person = await DB.people.getById(req.params.person_id);
+    const person = await (req.db || DB).people.getById(req.params.person_id);
     if (!person) return res.status(404).json({ error: 'Person not found' });
     const entry = { filename: req.file.filename, original_name: req.file.originalname, size: req.file.size, type: req.file.mimetype, uploaded_at: new Date().toISOString() };
-    await DB.db.query('INSERT INTO certifications (person_id, cert_name, file_path, uploaded_at) VALUES ($1, $2, $3, $4)', [req.params.person_id, req.file.originalname, req.file.filename, new Date().toISOString()]);
+    await (req.db || DB).db.query('INSERT INTO certifications (person_id, cert_name, file_path, uploaded_at) VALUES ($1, $2, $3, $4)', [req.params.person_id, req.file.originalname, req.file.filename, new Date().toISOString()]);
     res.json({ success: true, file: entry });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Cert delete — self or supervisor+
-router.delete('/:person_id/certs/:filename', requireAuth, requireSelfOrRoleLevel('person_id', 3), async (req, res) => {
+router.delete('/:person_id/certs/:filename', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('person_id', 3), async (req, res) => {
   try {
-    await DB.db.query('DELETE FROM certifications WHERE person_id = $1 AND file_path = $2', [req.params.person_id, req.params.filename]);
+    await (req.db || DB).db.query('DELETE FROM certifications WHERE person_id = $1 AND file_path = $2', [req.params.person_id, req.params.filename]);
     const filePath = path.join(__dirname, '../../certs', req.params.filename);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+
+// ========== Knowledge Files ==========
+const knowledgePath = require('path');
+const knowledgeStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = knowledgePath.join(__dirname, '../../knowledge', req.params.person_id);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = knowledgePath.extname(file.originalname) || '.txt';
+    const base = knowledgePath.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+    cb(null, base + '_' + Date.now() + ext);
+  }
+});
+const knowledgeUpload = multer({ storage: knowledgeStorage, limits: { fileSize: 50 * 1024 * 1024 } });
+
+// GET knowledge files for a person — self or supervisor+
+router.get('/:person_id/knowledge', requireAuth, requireSelfOrRoleLevel('person_id', 3), async (req, res) => {
+  try {
+    const rows = (await (req.db || DB).db.query(
+      'SELECT * FROM knowledge_files WHERE person_id = $1 ORDER BY created_at DESC',
+      [req.params.person_id]
+    )).rows;
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Upload knowledge file
+router.post('/:person_id/knowledge', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('person_id', 3), knowledgeUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file' });
+
+    let textContent = '';
+    const ext = knowledgePath.extname(req.file.originalname).toLowerCase();
+    const fullPath = knowledgePath.join(req.file.destination, req.file.filename);
+
+    if (['.txt', '.md', '.csv'].includes(ext)) {
+      textContent = fs.readFileSync(fullPath, 'utf8');
+    } else if (ext === '.docx' || ext === '.doc') {
+      try {
+        const result = await mammoth.extractRawText({ path: fullPath });
+        textContent = result.value || '';
+      } catch (e) { console.error('DOCX extraction failed:', e.message); }
+    } else if (ext === '.pdf') {
+      try {
+        const dataBuffer = fs.readFileSync(fullPath);
+        const pdfData = await pdfParse(dataBuffer);
+        textContent = pdfData.text || '';
+      } catch (e) { console.error('PDF extraction failed:', e.message); }
+    }
+
+    const tokenEstimate = Math.ceil(textContent.length / 4);
+    const title = req.body.title || req.file.originalname;
+    const sourceType = req.body.source_type || 'upload';
+    const visibility = req.body.visibility || 'shared';
+    const uploadedBy = req.body.uploaded_by || null;
+
+    const result = await (req.db || DB).db.query(
+      'INSERT INTO knowledge_files (person_id, uploaded_by, filename, original_name, mime_type, file_path, title, source_type, text_content, token_estimate, visibility) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+      [req.params.person_id, uploadedBy, req.file.filename, req.file.originalname,
+       req.file.mimetype, req.file.filename, title, sourceType, textContent, tokenEstimate, visibility]
+    );
+
+    res.json({ success: true, file: result.rows[0] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Delete knowledge file
+router.delete('/:person_id/knowledge/:file_id', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('person_id', 3), async (req, res) => {
+  try {
+    const file = (await (req.db || DB).db.query('SELECT * FROM knowledge_files WHERE id = $1 AND person_id = $2', [req.params.file_id, req.params.person_id])).rows[0];
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    const fullPath = knowledgePath.join(__dirname, '../../knowledge', req.params.person_id, file.filename);
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+
+    await (req.db || DB).db.query('DELETE FROM knowledge_files WHERE id = $1', [req.params.file_id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Serve knowledge files — self or supervisor+
+router.get('/:person_id/knowledge/file/:filename', requireAuth, requireSelfOrRoleLevel('person_id', 3), (req, res) => {
+  const fullPath = knowledgePath.join(__dirname, '../../knowledge', req.params.person_id, req.params.filename);
+  if (!fs.existsSync(fullPath)) return res.status(404).json({ error: 'File not found' });
+  res.sendFile(fullPath);
 });
 
 module.exports = router;

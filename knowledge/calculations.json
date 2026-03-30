@@ -1,0 +1,44 @@
+{
+  "category": "calculations",
+  "description": "Formulas and examples for conduit fill, voltage drop, motor starting, 4-20mA scaling, cable tray fill",
+  "conduit_fill": {
+    "rules": {"1_conductor": "53%", "2_conductors": "31%", "3_or_more": "40%"},
+    "formula": "Total conductor area / conduit internal area x 100 = fill %",
+    "tip": "Stay under 35% for long runs or runs with many bends — just because it fits by math doesn't mean pulling is easy"
+  },
+  "voltage_drop": {
+    "single_phase": "Vd = (2 x K x I x L) / CM",
+    "three_phase": "Vd = (1.732 x K x I x L) / CM",
+    "K_values": {"copper": 12.9, "aluminum": 21.2},
+    "NEC_recommendation": "Max 3% branch circuit, 5% total (feeder + branch)",
+    "example": "480V 3-phase, 50A, 400ft, #6 AWG copper (26240 CM): Vd = 1.732 x 12.9 x 50 x 400 / 26240 = 17V = 3.55% — marginal, consider upsizing to #4 AWG (2.23%)"
+  },
+  "motor_starting_current": {
+    "NEMA_B_typical": "5-7x FLA (most common industrial motor)",
+    "breaker_sizing_NEC_430_52": "Inverse time: 250% x FLA, round up to next standard size",
+    "conductor_sizing_NEC_430_22": "125% x FLA",
+    "VFD_note": "VFDs eliminate high inrush — starting current typically 100-150% FLA"
+  },
+  "instrument_4_20mA_scaling": {
+    "mA_to_engineering_units": "EU = ((mA - 4) / 16) x Span + LRV",
+    "engineering_units_to_mA": "mA = ((EU - LRV) / Span) x 16 + 4",
+    "quick_reference": {
+      "4mA": "0%", "8mA": "25%", "12mA": "50%", "16mA": "75%", "20mA": "100%"
+    },
+    "fault_signals_NAMUR_NE43": {
+      "below_3.6mA": "Sensor failure downscale",
+      "above_21mA": "Sensor failure upscale"
+    }
+  },
+  "cable_tray_fill": {
+    "multiconductor_cables": "Sum of cross-sectional areas must not exceed tray allowable fill (24-inch tray = 28 sq-in)",
+    "signal_control": "Fill depth not to exceed 50% of tray rail height",
+    "weight_check": "Calculate total cable weight per foot + tray weight, verify against manufacturer load tables at support span"
+  },
+  "heat_tracing_load": {
+    "formula": "Q_loss (W/ft) = K_factor x (T_maintain - T_ambient)",
+    "add_for_fittings": "2 ft trace per valve, 1 ft per flange pair, 3 ft per instrument connection",
+    "safety_factor": "Add 10-20% for aging, wet insulation, wind",
+    "common_mistake": "Not accounting for valves/flanges/instruments in total trace length — these are significant heat sinks"
+  }
+}

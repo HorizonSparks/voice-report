@@ -12,6 +12,8 @@
  * }
  */
 const DB = require('../../database/db');
+const poolRouter = require('../../database/pool-router');
+const DB_FULL = require('../../database/db');
 
 const COOKIE_NAME = 'hs_session';
 
@@ -87,6 +89,8 @@ async function loadSession(req, res, next) {
       is_admin: session.is_admin,
       role_level: session.role_level,
       trade: session.trade,
+      company_id: session.company_id,
+      sparks_role: session.sparks_role,
     };
 
     // Touch last_seen_at (non-blocking, don't await)
@@ -154,6 +158,187 @@ function requireSelfOrRoleLevel(paramName, minLevel) {
   };
 }
 
+// ============================================
+// TENANT & SPARKS GUARDS
+// ============================================
+
+/**
+ * Tenant filter — injects req.companyId for data isolation.
+ * Sparks admin/support can optionally target a specific company via ?company_id query param.
+ * Regular users are locked to their own company.
+ */
+function tenantFilter(req, res, next) {
+  if (!req.auth) return next();
+
+  const sparksRole = req.auth.sparks_role;
+
+  if (sparksRole === 'admin' || sparksRole === 'support') {
+    // Sparks admin/support: query param override, else own company
+    req.companyId = req.query.company_id || req.auth.company_id || null;
+  } else {
+    // Everyone else is locked to their own company
+    req.companyId = req.auth.company_id || null;
+  }
+
+  next();
+}
+
+/**
+ * Require a specific Sparks role (or higher).
+ * Role hierarchy: admin(4) > support(3) > collaborator(2) > advisor(1)
+ */
+function requireSparksRole(minRole) {
+  const roleLevel = { admin: 4, support: 3, collaborator: 2, advisor: 1 };
+  const minLevel = roleLevel[minRole] || 0;
+
+  return (req, res, next) => {
+    if (!req.auth) return res.status(401).json({ error: 'Authentication required' });
+
+    const userRole = req.auth.sparks_role;
+    if (!userRole) return res.status(403).json({ error: 'Sparks access required' });
+
+    const userLevel = roleLevel[userRole] || 0;
+    if (userLevel < minLevel) {
+      return res.status(403).json({ error: `Sparks ${minRole} access required` });
+    }
+
+    next();
+  };
+}
+
+/**
+ * Enforce trade licensing — blocks access if the company doesn't have the trade licensed.
+ * Sparks admin/support bypass this check.
+ * Trade comes from req.query.trade, req.params.trade, or req.body.trade.
+ */
+async function enforceTradeLimit(req, res, next) {
+  // Sparks admin/support bypass licensing
+  const sparksRole = req.auth && req.auth.sparks_role;
+  if (sparksRole === 'admin' || sparksRole === 'support') return next();
+
+  // Get the trade being accessed
+  const trade = req.query.trade || req.params.trade || req.body?.trade;
+  if (!trade) return next(); // No trade specified, nothing to enforce
+
+  // Get the user's company
+  const companyId = req.auth?.company_id;
+  if (!companyId) return next(); // No company, nothing to check
+
+  try {
+    const { rows } = await DB.db.query(
+      "SELECT 1 FROM company_trades WHERE company_id = $1 AND trade = $2 AND status = 'active'",
+      [companyId, trade]
+    );
+    if (rows.length === 0) {
+      return res.status(403).json({ error: `Trade "${trade}" is not licensed for your company` });
+    }
+    next();
+  } catch (err) {
+    console.error('Trade enforcement error:', err);
+    next(); // Don't block on DB errors, but log them
+  }
+}
+
+/**
+ * Attach company-specific database to request.
+ * When USE_COMPANY_DBS=true and a company has a dedicated DB,
+ * req.db points to that company's DB. Otherwise, req.db = shared DB.
+ */
+function attachCompanyDb(req, res, next) {
+  if (process.env.USE_COMPANY_DBS === 'true' && req.companyId && poolRouter.hasCompanyDb(req.companyId)) {
+    const companyPool = poolRouter.getCompanyPool(req.companyId);
+    req.db = DB.withPool(companyPool);
+  } else {
+    req.db = DB; // Default shared pool
+  }
+  next();
+}
+
+
+// ============================================
+// EDIT MODE — Sparks operator simulation safety
+// ============================================
+const EDIT_MODE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const editModeSessions = new Map(); // sessionId -> { companyId, enabledAt, lastActivityAt }
+
+function isEditModeActive(sessionId) {
+  const entry = editModeSessions.get(sessionId);
+  if (!entry) return false;
+  if (Date.now() - entry.lastActivityAt > EDIT_MODE_TIMEOUT_MS) {
+    editModeSessions.delete(sessionId);
+    return false;
+  }
+  return true;
+}
+
+function getEditModeRemaining(sessionId) {
+  const entry = editModeSessions.get(sessionId);
+  if (!entry) return 0;
+  const remaining = EDIT_MODE_TIMEOUT_MS - (Date.now() - entry.lastActivityAt);
+  return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
+}
+
+function enableEditMode(sessionId, companyId) {
+  editModeSessions.set(sessionId, { companyId, enabledAt: Date.now(), lastActivityAt: Date.now() });
+}
+
+function disableEditMode(sessionId) {
+  editModeSessions.delete(sessionId);
+}
+
+function touchEditMode(sessionId) {
+  const entry = editModeSessions.get(sessionId);
+  if (entry) entry.lastActivityAt = Date.now();
+}
+
+// Cleanup expired entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [sessionId, entry] of editModeSessions) {
+    if (now - entry.lastActivityAt > EDIT_MODE_TIMEOUT_MS) {
+      editModeSessions.delete(sessionId);
+    }
+  }
+}, 5 * 60 * 1000);
+
+/**
+ * Block write operations for Sparks operators in simulation mode unless edit mode is active.
+ * Passes through immediately for non-Sparks users (customers are never affected).
+ */
+function requireSparksEditMode(req, res, next) {
+  // Not a Sparks operator? Pass through — customers unaffected
+  if (!req.auth?.sparks_role) return next();
+
+  // Not in simulation (operating on own company)? Pass through
+  if (!req.companyId || req.companyId === req.auth.company_id) return next();
+
+  // Sparks operator in simulation — check edit mode AND company match
+  const editEntry = editModeSessions.get(req.auth.sessionId);
+  if (!editEntry || !isEditModeActive(req.auth.sessionId) || editEntry.companyId !== req.companyId) {
+    return res.status(403).json({ error: 'Read-only mode. Enable editing first.', code: 'READONLY' });
+  }
+
+  // Touch the timer
+  touchEditMode(req.auth.sessionId);
+
+  // Audit log the write (non-blocking)
+  try {
+    const details = JSON.stringify({
+      method: req.method,
+      path: req.originalUrl,
+      body_keys: req.body ? Object.keys(req.body).join(',') : '',
+    });
+    DB_FULL.db.query(
+      "INSERT INTO sparks_audit_log (id, person_id, person_name, action, resource_type, resource_id, details, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())",
+      ['audit_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+       req.auth.person_id, '', 'simulation_write',
+       req.method + ' ' + req.baseUrl, req.params?.id || '', details]
+    ).catch(() => {});
+  } catch(e) {}
+
+  next();
+}
+
 module.exports = {
   COOKIE_NAME,
   parseCookies,
@@ -164,4 +349,14 @@ module.exports = {
   requireAdmin,
   requireRoleLevel,
   requireSelfOrRoleLevel,
+  tenantFilter,
+  requireSparksRole,
+  enforceTradeLimit,
+  attachCompanyDb,
+  requireSparksEditMode,
+  isEditModeActive,
+  getEditModeRemaining,
+  enableEditMode,
+  disableEditMode,
+  touchEditMode,
 };

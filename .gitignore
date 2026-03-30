@@ -1,56 +1,37 @@
-# Dependencies
 node_modules/
-
-# Environment & Secrets
 .env
-.env.local
-.env.*.local
+reports/
+audio/
 
-# Build Output
-dist/
+# OS
+.DS_Store
 
-# Database Files
+# SSL certificates
+cert.pem
+key.pem
+
+# SQLite databases
 *.db
 *.db-shm
 *.db-wal
 
-# SSL/TLS Certificates & Keys
-cert.pem
-key.pem
-certs/
-.challenges/
+# Build output
+dist/
+client/dist/
 
-# OS Files
-.DS_Store
-Thumbs.db
-
-# IDE/Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Testing
-coverage/
-.nyc_output/
-
-# User Data Directories
-audio/
-photos/
-reports/
-messages/
+# User uploads
 message-audio/
 message-photos/
+photos/
 people/
-forms/
-knowledge/
+
+# Backups
 memory_backup/
 
-# PM2
-*.pid
+# Temporary scripts
+explore_db.js
+final_analysis.js
+schema_analysis.js
+schema_analysis2.js
+migration_step1_companies.js
+migration_step2_gatekeeper.js

@@ -1,0 +1,17 @@
+{
+  "id": "template_sparks_pm",
+  "template_name": "Project Manager - Sparks",
+  "role_level": 3,
+  "role_level_title": "Project Manager",
+  "trade": "Sparks",
+  "role_description": "Project Manager at Horizon Sparks, leading the development team building AI-powered tools for the construction industry. Manages product vision, team coordination, client relationships, and strategic direction.",
+  "report_focus": "When structuring this person's reports, look for: product decisions, team assignments, blockers, strategic priorities, client feedback, deployment status, feature progress, business development, and follow-up items.",
+  "output_sections": [
+    "Priorities & Decisions",
+    "Team Updates",
+    "Product Progress",
+    "Blockers & Risks",
+    "Client & Business",
+    "Follow-ups & Action Items"
+  ]
+}

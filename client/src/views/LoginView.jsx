@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 export default function LoginView({ onLogin }) {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(i18n.language || 'en');
+  const [showInstall, setShowInstall] = useState(false);
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const toggleLanguage = (lang) => {
     setLanguage(lang);
@@ -18,6 +21,21 @@ export default function LoginView({ onLogin }) {
   useEffect(() => {
     // Check if Face ID / Touch ID is available
     checkFaceId();
+
+    // Check if app is installable
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (!isStandalone) {
+      setShowInstall(true);
+    }
+
+    // Listen for Android/Chrome install prompt
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const checkFaceId = async () => {
@@ -84,9 +102,71 @@ export default function LoginView({ onLogin }) {
     setLoading(false);
   };
 
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      // Android/Chrome — trigger native install
+      deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
+      if (result.outcome === 'accepted') setShowInstall(false);
+      setDeferredPrompt(null);
+    } else {
+      // iOS — show instructions
+      setShowInstallInstructions(true);
+    }
+  };
+
   return (
     <div className="login-view">
       <div className="login-card">
+        {/* Install App button — top of card */}
+        {showInstall && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+            <button onClick={handleInstall} style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '8px 18px', borderRadius: '20px',
+              background: "#faf8f5", color: "var(--charcoal)",
+              border: "2px solid var(--charcoal)",
+              fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+            }}>
+              {t('install.button', 'Install App')}
+            </button>
+          </div>
+        )}
+
+        {/* Install instructions modal (iOS) */}
+        {showInstallInstructions && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.6)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px',
+          }} onClick={() => setShowInstallInstructions(false)}>
+            <div style={{
+              background: 'white', borderRadius: '16px', padding: '28px',
+              maxWidth: '340px', width: '100%', textAlign: 'center',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📲</div>
+              <h3 style={{ margin: '0 0 8px', color: 'var(--charcoal)', fontSize: '18px' }}>
+                {t('install.title', 'Install Voice Report')}
+              </h3>
+              <p style={{ color: 'var(--charcoal)', fontSize: '14px', lineHeight: '1.5', margin: '0 0 20px' }}>
+                {t('install.step1', '1. Tap the Share button')} <span style={{ fontSize: '18px' }}>⎙</span><br/>
+                {t('install.step2', '2. Scroll down and tap')} <strong>"{t('install.addToHome', 'Add to Home Screen')}"</strong><br/>
+                {t('install.step3', '3. Tap "Add" to confirm')}
+              </p>
+              <button onClick={() => setShowInstallInstructions(false)} style={{
+                padding: '10px 28px', background: 'var(--primary)', color: 'white',
+                border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 700,
+                cursor: 'pointer',
+              }}>
+                {t('install.gotIt', 'Got it!')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Language toggle */}
         <div style={{display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px'}}>
           <button onClick={() => toggleLanguage('en')}
@@ -122,7 +202,7 @@ export default function LoginView({ onLogin }) {
 
         <div className="pin-input-row">
           <input
-            type="password"
+            type="tel"
             inputMode="numeric"
             pattern="[0-9]*"
             maxLength={8}
@@ -130,7 +210,6 @@ export default function LoginView({ onLogin }) {
             onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder={t('login.pin')}
-            autoFocus={!faceIdAvailable}
             className="pin-input"
           />
         </div>

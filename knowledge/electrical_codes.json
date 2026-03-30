@@ -1,0 +1,65 @@
+{
+  "trade": "Electrical",
+  "category": "codes_and_standards",
+  "description": "NEC code essentials, wire sizing, conduit fill, grounding, area classifications",
+  "wire_ampacity_copper_75C": {
+    "14_AWG": {"amps": 20, "use": "Lighting, 15A breaker max"},
+    "12_AWG": {"amps": 25, "use": "Receptacles, 20A breaker max"},
+    "10_AWG": {"amps": 35, "use": "30A circuits, small motors"},
+    "8_AWG": {"amps": 50, "use": "40-50A circuits"},
+    "6_AWG": {"amps": 65, "use": "60A circuits"},
+    "4_AWG": {"amps": 85, "use": "70-80A circuits"},
+    "3_AWG": {"amps": 100, "use": "100A sub-feeds"},
+    "2_AWG": {"amps": 115, "use": "100-110A circuits"},
+    "1_AWG": {"amps": 130, "use": "Large feeders"},
+    "1/0": {"amps": 150, "use": "150A feeders"},
+    "2/0": {"amps": 175, "use": "Large feeders"},
+    "3/0": {"amps": 200, "use": "200A feeders/services"},
+    "4/0": {"amps": 230, "use": "200A services"},
+    "250_kcmil": {"amps": 255, "use": "Large feeders"},
+    "350_kcmil": {"amps": 310, "use": "Large distribution"},
+    "500_kcmil": {"amps": 380, "use": "Main feeders"}
+  },
+  "conduit_fill_rule": "40% max fill for 3+ conductors (NEC Chapter 9 Table 1)",
+  "conduit_derating": {
+    "1_to_3_conductors": "100%",
+    "4_to_6": "80%",
+    "7_to_9": "70%",
+    "10_to_20": "50%",
+    "21_to_30": "45%",
+    "31_to_40": "40%"
+  },
+  "equipment_grounding_conductor": {
+    "15A": "14 AWG", "20A": "12 AWG", "30A": "10 AWG", "60A": "10 AWG",
+    "100A": "8 AWG", "200A": "6 AWG", "400A": "3 AWG", "600A": "1 AWG",
+    "800A": "1/0", "1200A": "3/0", "2000A": "250 kcmil"
+  },
+  "ground_rod": {
+    "min_length": "8 ft",
+    "min_diameter": "5/8 in copper-clad",
+    "max_resistance": "25 ohms — if exceeded, add supplemental rod min 6 ft apart",
+    "connections": "Exothermic weld (Cadweld) or listed clamp only"
+  },
+  "area_classifications": {
+    "class_I_div_1": "Ignitable concentrations under normal conditions. RMC or MI cable only. XP fittings. Seals within 18 in of enclosures.",
+    "class_I_div_2": "Ignitable concentrations only under abnormal conditions. RMC, IMC, EMT, MC-HL, TC cable allowed. Non-sparking or XP equipment.",
+    "gas_groups": {"A": "Acetylene", "B": "Hydrogen", "C": "Ethylene", "D": "Gasoline, propane, natural gas — most common in refineries"},
+    "seal_requirements": "Within 18 in of enclosure in Div 1, at boundary classified/unclassified, chico compound fill to 100%"
+  },
+  "working_clearances_nec_110_26": {
+    "0_to_150V": "3 ft", "151_to_600V": "3 ft to 4 ft depending on conditions",
+    "width": "30 in minimum", "height": "6 ft 6 in minimum",
+    "rule": "Never store materials in electrical clearance zones"
+  },
+  "torque_general_guidelines": {
+    "14_10_AWG": "20-25 in-lb", "8_6_AWG": "35-45 in-lb",
+    "4_3_AWG": "45-50 in-lb", "2_1_AWG": "50-60 in-lb",
+    "1/0_to_4/0": "200-300 in-lb", "250_to_500_kcmil": "300-500 in-lb",
+    "rule": "ALWAYS use manufacturer spec on equipment label. Use calibrated torque wrench."
+  },
+  "wire_colors": {
+    "208Y_120V": {"A": "black", "B": "red", "C": "blue", "neutral": "white", "ground": "green"},
+    "480Y_277V": {"A": "brown", "B": "orange", "C": "yellow", "neutral": "gray", "ground": "green"}
+  },
+  "voltage_drop": "Max 3% branch circuit, 5% total (branch + feeder) recommended by NEC"
+}

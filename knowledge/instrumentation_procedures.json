@@ -1,0 +1,92 @@
+{
+  "trade": "Instrumentation",
+  "category": "procedures",
+  "description": "Craft procedures, instrument specs, ISA standards, and troubleshooting for instrumentation",
+  "isa_tag_structure": {
+    "format": "First letter = measured variable, remaining = function, then loop number",
+    "examples": {"PT": "Pressure Transmitter", "FIC": "Flow Indicating Controller", "LT": "Level Transmitter", "TI": "Temperature Indicator", "PSH": "Pressure Switch High", "LSHH": "Level Switch High-High (safety)", "FE": "Flow Element", "TV": "Temperature Valve"},
+    "first_letters": {"A": "Analysis", "F": "Flow", "L": "Level", "P": "Pressure", "T": "Temperature", "V": "Vibration"},
+    "succeeding_letters": {"A": "Alarm", "C": "Controller", "E": "Element/Sensor", "H": "High", "I": "Indicator", "L": "Low", "S": "Switch", "T": "Transmitter", "V": "Valve"}
+  },
+  "signal_reference": {
+    "4_20mA": {"0%": "4.00 mA", "25%": "8.00 mA", "50%": "12.00 mA", "75%": "16.00 mA", "100%": "20.00 mA"},
+    "formula": "mA = 4 + (16 x percent/100)",
+    "burnout_upscale": "Greater than 21.0 mA — sensor failure",
+    "burnout_downscale": "Less than 3.6 mA — sensor failure"
+  },
+  "thermocouple_types": {
+    "type_J": {"materials": "Iron/Constantan", "range": "-210 to +760C", "color": "White(+)/Red(-)", "jacket": "Black", "use": "General purpose, reducing atmospheres"},
+    "type_K": {"materials": "Chromel/Alumel", "range": "-270 to +1260C", "color": "Yellow(+)/Red(-)", "jacket": "Brown", "use": "Most common general purpose"},
+    "type_T": {"materials": "Copper/Constantan", "range": "-270 to +370C", "color": "Blue(+)/Red(-)", "jacket": "Blue", "use": "Low temp, cryogenics"},
+    "rule": "Red is ALWAYS negative in US ANSI standard. ALWAYS use matching extension wire type."
+  },
+  "rtd_wiring": {
+    "2_wire": "Least accurate — lead resistance adds error",
+    "3_wire": "Most common industrial — compensates for lead resistance",
+    "4_wire": "Most accurate — eliminates all lead resistance"
+  },
+  "compression_fittings": {
+    "initial_makeup": "1-1/4 turns past finger tight for 1/2-inch and smaller",
+    "remake": "1/4 turn past previous position",
+    "rules": ["Never use Teflon tape on compression fittings", "Match fitting material to tubing", "Inspect ferrules before assembly"]
+  },
+  "impulse_line_routing": {
+    "liquid_service": "Slope DOWN from process tap to transmitter. Transmitter BELOW tap. No traps or high points.",
+    "gas_service": "Slope UP from process tap to transmitter. Transmitter ABOVE tap. No low points where liquid accumulates.",
+    "steam_service": "Install condensate pots at process connection. Fill legs with water. Both legs same length and temperature."
+  },
+  "cable_separation": {
+    "from_power_cables": "12-inch minimum in tray, separate conduit systems",
+    "crossing": "Cross at 90 degrees",
+    "shield_grounding": "Ground at ONE end only (marshalling cabinet) to prevent ground loops",
+    "sis_safety": "DEDICATED cable tray and conduit — never mixed with BPCS"
+  },
+  "calibration_procedure": {
+    "steps": ["Verify de-energized or LOTO", "Connect calibrator to test terminals", "Apply known input at 0%, 25%, 50%, 75%, 100%", "Record mA output (should be 4, 8, 12, 16, 20)", "Tolerance typically +/- 0.1% of span", "Adjust zero/span if out of tolerance", "Record as-found and as-left values", "Apply calibration sticker"]
+  },
+  "loop_testing": {
+    "prerequisites": ["All wiring complete with continuity check", "Instrument installed and calibrated", "DCS/PLC point configured", "Control narrative available"],
+    "steps": ["Apply simulated input at field device", "Verify signal at marshalling junction box", "Verify correct reading in DCS/PLC (tag, units, range)", "Verify alarms at correct setpoints", "Command output from DCS, verify valve responds", "Verify valve position feedback in DCS", "Verify fail-safe action (remove air/power)", "For safety loops: verify shutdown activates correctly", "Document all results, sign and date"],
+    "common_issues": ["Reversed polarity (0 mA or pegged)", "Wrong DCS channel", "Scaling error in DCS", "Alarm setpoints not configured", "Valve responds opposite direction"]
+  },
+  "orifice_plate_installation": {
+    "orientation": "Bevel faces DOWNSTREAM. Paddle/handle text faces UPSTREAM.",
+    "straight_runs": "Minimum 10D upstream / 5D downstream (varies by beta ratio)",
+    "common_errors": ["Plate installed backwards — most common error", "Wrong bore size", "Gasket protruding into flow", "Insufficient straight run"]
+  },
+  "troubleshooting": {
+    "signal_noise": {
+      "ground_loop": {"cause": "Shield grounded at both ends", "fix": "Ground at ONE end only"},
+      "emi": {"cause": "Cable too close to power/VFDs/motors", "fix": "12-24 inch separation, cross at 90 degrees"},
+      "loose_connections": {"cause": "Loose terminals, corroded connections", "fix": "Retighten, clean, replace damaged cables"}
+    },
+    "impulse_line_problems": {
+      "plugging": {"symptom": "Slow/no response, reading stuck", "fix": "Rod out, blow back with N2, or switch to remote seal"},
+      "condensation": {"symptom": "Reading drifts high, erratic in cold weather", "fix": "Install drain legs, re-slope, add heat tracing"},
+      "air_locks": {"symptom": "Reading offset, sluggish response", "fix": "Vent at high points, re-slope tubing"},
+      "frozen": {"symptom": "Reading stuck in cold weather", "fix": "Thaw carefully (heat gun, NOT flame), verify heat trace"}
+    },
+    "common_mistakes": {
+      "orifice_backwards": "Flow reads inaccurate/low → reinstall with bevel downstream",
+      "tc_wire_reversed": "Temperature offset or nonlinear → replace with correct matching extension wire",
+      "mag_meter_vertical_electrodes": "Erratic/zero reading → rotate so electrodes are horizontal",
+      "wrong_range_in_dcs": "Proportional error → verify DCS range matches transmitter calibrated range"
+    }
+  },
+  "quality_common_punch_items": [
+    "Missing or incorrect tag plates",
+    "Instrument not level",
+    "Missing sunshade",
+    "Tubing supports missing or exceeding max spacing",
+    "Tubing not properly sloped",
+    "Junction box covers not installed or bolts missing",
+    "Conduit seal fittings missing in classified areas",
+    "Shields grounded at wrong end or both ends",
+    "Wrong wire type for thermocouple circuits",
+    "Missing cable labels",
+    "Calibration not performed or out of tolerance",
+    "Loop check not complete",
+    "Control valve stroking issues",
+    "Fail-safe action not verified"
+  ]
+}

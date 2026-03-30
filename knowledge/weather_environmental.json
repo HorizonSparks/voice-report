@@ -1,0 +1,59 @@
+{
+  "category": "environmental",
+  "description": "Weather limits, cold/heat protocols, rain/wind restrictions, humidity effects",
+  "cold_weather": {
+    "cable_pulling": {
+      "PVC_THHN_minimum": "14F (-10C) per NEC 310.10(H) — manufacturer may specify higher",
+      "XLPE_XHHW_minimum": "-40F (-40C) — verify with manufacturer",
+      "some_specs_require": "40F (4C) minimum regardless of cable type",
+      "cold_cable_rule": "Store in heated space 24 hours minimum before pull — cold jacket cracks during bending"
+    },
+    "concrete": {
+      "minimum_placement": "50F (10C) and rising",
+      "do_not_place_below": "40F (4C) without cold weather protection plan",
+      "maintain_above": "50F for minimum 48 hours after placement",
+      "never": "Place on frozen ground or against frozen forms"
+    },
+    "instrument_tubing": {
+      "bending": "SS tubing OK in cold but quality drops below 40F (dexterity)",
+      "leak_testing": "Use dry gas — moisture freezes in tubing",
+      "hydro_testing": "NOT below 32F unless freeze protection in place"
+    }
+  },
+  "heat_stress": {
+    "thresholds_WBGT": {
+      "below_80F": "Normal work",
+      "80_85F": "Caution — water every 30 min, acclimatize new workers",
+      "85_88F": "Increased risk — 15 min rest per hour, buddy system",
+      "88_90F": "High risk — 30 min rest per hour, limit strenuous work",
+      "above_90F": "Extreme — consider stopping or 45 min rest per hour"
+    },
+    "new_worker_acclimatization": "20% workload Day 1, increase 20% per day over 5 days",
+    "water_requirement": "1 quart per hour per worker minimum",
+    "cooling_stations": "Within 200 feet of work areas",
+    "schedule": "Start early 5-6 AM, extended lunch during peak 11 AM - 2 PM"
+  },
+  "rain_wet_conditions": {
+    "must_stop": ["Open cable pulling", "Electrical terminations in open enclosures", "Megger and insulation testing", "Hi-pot testing", "Energization activities", "Welding", "Crane lifts in lightning (stop when lightning within 10 miles, resume 30 min after last strike)", "Working on wet steel at elevation", "Concrete in heavy rain"],
+    "can_continue": ["Conduit installation (if connections made dry)", "Cable tray installation", "Underground conduit", "Work inside buildings", "Cable pull in sealed conduit", "Planning and material staging under cover"]
+  },
+  "wind_restrictions": {
+    "cranes_conventional": "20-25 mph max (varies by load chart)",
+    "tower_cranes": "35-45 mph operating, weathervane above 45 mph",
+    "personnel_hoisting": "20 mph max",
+    "scissor_lifts": "28 mph typical",
+    "boom_lifts": "28 mph sustained",
+    "light_materials": "Secure or stop handling above 20 mph",
+    "note": "Measure wind at working height, not ground level"
+  },
+  "humidity_effects_on_testing": {
+    "megger_testing": {
+      "above_70_80_percent": "Results unreliable — artificially low readings",
+      "above_80_percent": "Postpone if possible, document humidity",
+      "condensation": "Do NOT test — water film gives meaningless readings",
+      "mitigation": "Test early morning, use dehumidifiers, warm equipment above dew point"
+    },
+    "hipot": "Even more sensitive than megger — generally requires below 70% humidity",
+    "rule": "Always record temperature AND humidity with insulation test results"
+  }
+}

@@ -84,6 +84,33 @@ Or with PM2:
 pm2 start ecosystem.config.cjs
 ```
 
+### Cloudflare Tunnel (expose to internet)
+
+The app uses a Cloudflare Tunnel to serve traffic through `www.voice-report.ai` and `api.voice-report.ai`.
+
+1. Install `cloudflared` if not already installed.
+
+2. The tunnel config is at `~/.cloudflared/config.yml`:
+   ```yaml
+   tunnel: <tunnel-id>
+   credentials-file: ~/.cloudflared/<tunnel-id>.json
+
+   ingress:
+     - hostname: www.voice-report.ai
+       service: http://localhost:5173
+     - hostname: api.voice-report.ai
+       service: http://localhost:3070
+     - service: http_status:404
+   ```
+
+3. Start the tunnel alongside the dev server:
+   ```bash
+   npm run dev                    # Start Vite (5173) + API server (3070)
+   cloudflared tunnel run voice-report  # Expose via Cloudflare
+   ```
+
+   Both commands must be running for `www.voice-report.ai` to work.
+
 ### Testing
 
 ```bash

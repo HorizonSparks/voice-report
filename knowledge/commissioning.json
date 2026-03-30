@@ -1,0 +1,39 @@
+{
+  "category": "commissioning",
+  "description": "Pre-energization checklists, startup sequences, instrument commissioning, common mistakes",
+  "electrical_pre_energization_checklist": {
+    "documentation": ["All punch list items cleared or accepted", "As-built drawings available", "Relay settings and coordination study complete", "Cable test reports (megger/hipot) reviewed", "Grounding system tested and documented"],
+    "physical_inspection": ["All conduit/tray complete, supported, labeled", "All wire terminated and labeled both ends", "All connections torqued and documented", "All enclosures closed and secured", "All safety guards in place", "All grounding/bonding verified", "Fire stops installed", "Hazardous area seals inspected", "No foreign material inside equipment", "Space heaters energized on large motors/transformers", "All breakers in TEST/DISCONNECT position", "All starters OFF, all disconnects OPEN"],
+    "testing": ["Insulation resistance (megger) all circuits", "Point-to-point continuity checks", "Phase rotation verification", "Protective relay testing", "Ground fault protection testing", "Breaker operation test", "CT ratio and polarity check"]
+  },
+  "electrical_startup_sequence": [
+    "1. Verify utility/source stable",
+    "2. Energize main transformer — check oil, close primary, soak 1-4 hours (inrush can be 8-12x rated)",
+    "3. Energize main switchgear bus — verify voltage all phases, check phase rotation",
+    "4. Energize distribution panels/MCCs one feeder at a time — verify voltage at each",
+    "5. Energize branch circuits — lighting/receptacles first, then control power, then instrument power",
+    "6. Motor circuits individually — bump test (1-2 sec), verify rotation, expect 5-7x FLA starting current"
+  ],
+  "motor_bump_test": ["Confirm process permits operation", "Verify alignment, coupling guard, valve positions", "Verify overload settings", "Start for 1-2 seconds only", "Verify correct rotation", "If wrong: LOCK OUT, swap two phases at STARTER (not motor)", "Run uncoupled if possible, check vibration/temp/amps"],
+  "instrument_commissioning_sequence": {
+    "phase_1_bench_calibration": ["Verify nameplate matches data sheet", "Inspect for shipping damage", "Configure range, units, damping, fail mode, tag", "5-point calibration (0/25/50/75/100%) up and down", "Record as-found and as-left", "Tolerance typically +/-0.5% of span"],
+    "phase_2_installation_verification": ["Mounting location matches P&ID", "Process connections correct (high/low sides)", "Tubing: correct material, slope, drain/vent, heat trace", "Wiring: correct cable, shield grounding one end only"],
+    "phase_3_loop_check": ["Apply simulated signal at field device", "Verify signal at correct DCS/PLC input, tag, units", "4mA = 0%, 20mA = 100%", "Command output from DCS, verify field response", "Document loop number, cable, DCS point, readings"],
+    "phase_4_functional_test": ["Alarm setpoints trigger correctly", "Control loop preliminary tuning", "Interlock/trip functions at correct setpoint", "Fail-safe: simulate cable break and power loss", "Control valve stroke test 0-100%, verify fail position"],
+    "phase_5_tie_in": ["Connect to live DCS/SIS", "Verify operator graphics display", "Verify historian logging", "Verify alarms on alarm summary", "Place in manual/commissioned — NOT auto until process ready"]
+  },
+  "common_commissioning_mistakes": [
+    "Energizing before completing all inspections",
+    "Not testing protective relays before energizing",
+    "Forgetting to remove shipping locks/blocks from breakers",
+    "Wrong CT polarity — metering errors, relay misoperation",
+    "Skipping transformer soak time",
+    "Motor bump without confirming process is safe",
+    "Instrument shield grounded at both ends — noisy signal",
+    "Not documenting as-found calibration — no baseline",
+    "Testing SIS with bypasses that never get removed",
+    "Commissioning control loops in AUTO before process stable",
+    "Not verifying fail-safe position of control valves",
+    "Forgetting to commission heat tracing before cold weather"
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "category": "lessons_learned",
+  "description": "Top rework causes, foreman tips, new journeyman wisdom, toolbox talks, common miscommunications",
+  "top_rework_causes_electrical": [
+    {"cause": "Cable pulled to wrong location or wrong cable pulled", "prevention": "Two-person verification of cable tag vs cable schedule BEFORE pulling"},
+    {"cause": "Conduit routed to as-designed location but equipment orientation differs", "prevention": "Field-verify equipment/JB location BEFORE running conduit"},
+    {"cause": "Wrong torque on terminations", "prevention": "Calibrated torque wrench, post torque tables at work area, verify lug matches conductor AND stud"},
+    {"cause": "Conduit fill exceeded", "prevention": "Run calculation BEFORE pulling, account for cable OD not just gauge"},
+    {"cause": "Cable damaged during pulling", "prevention": "Tension monitoring, intermediate pull points, never use backhoe to pull cable"},
+    {"cause": "Wrong area classification — non-rated equipment in classified area", "prevention": "Mark classifications on site, carry area classification drawing, ASK if in doubt"},
+    {"cause": "Grounding deficiencies", "prevention": "Treat grounding as a system. Hammer-test Cadwelds (good = rings, bad = dull thud)"},
+    {"cause": "Working from superseded drawing", "prevention": "Stamp superseded drawings IMMEDIATELY. Use controlled document system."},
+    {"cause": "Failed megger after install — jacket damaged during pulling", "prevention": "Protect at penetrations with bushings, megger before AND after pulling"},
+    {"cause": "Fire seals not installed or wrong type", "prevention": "Install as you go, use only specific listed firestop system"}
+  ],
+  "top_rework_causes_instrumentation": [
+    {"cause": "Instrument calibrated to wrong range", "prevention": "Verify nameplate against data sheet AND loop diagram before calibrating"},
+    {"cause": "Tubing connected to wrong process tap", "prevention": "Verify tag on primary element, trace P&ID, confirm hookup drawing"},
+    {"cause": "Wrong tubing material installed", "prevention": "PMI testing on SS if any doubt, segregate materials in warehouse"},
+    {"cause": "Tube fitting leak at process connection", "prevention": "Train on proper Swagelok makeup, use gap gauges, 1-1/4 turn past finger tight"},
+    {"cause": "Wiring polarity reversed", "prevention": "Standardize terminal markings, loop check every circuit end-to-end"},
+    {"cause": "Control valve installed backwards", "prevention": "Verify flow arrow on body matches P&ID flow direction"},
+    {"cause": "Impulse tubing not sloped correctly", "prevention": "Liquid slopes toward transmitter, gas slopes toward process"},
+    {"cause": "Instrument air tubing undersized", "prevention": "Follow valve manufacturer air consumption data"},
+    {"cause": "DCS point mapping error", "prevention": "Loop check verifies ENTIRE path: field device to DCS screen"},
+    {"cause": "Instrument damaged during hydro test", "prevention": "REMOVE or ISOLATE all instruments before hydro/flush — on pre-test checklist"}
+  ],
+  "new_journeyman_wisdom": [
+    "Your license says qualified. The field will teach you how much you still need to learn. Stay humble.",
+    "Learn to read P&IDs fluently — understand the process, not just your trade.",
+    "Always carry current drawings, a notebook, and a calibrated multimeter.",
+    "Never energize anything without second person verification. No exceptions.",
+    "When something doesn't match the drawing, STOP and ask. Don't 'make it work.'",
+    "Document everything. If it isn't written down, it didn't happen. Photos are your friend.",
+    "Know material codes. Wrong material in sour service can kill someone.",
+    "Treat every wire as energized until YOU verify it's dead with a known-good meter.",
+    "Relationships matter more than being right. The pipefitter foreman you work with today may give you access tomorrow.",
+    "Asking for help is not weakness. Installing something wrong because you were afraid to ask IS weakness."
+  ],
+  "foreman_tips": [
+    {"tip": "Plan tomorrow's work today", "detail": "Walk area, verify materials/drawings/permits/access. Planning = 7+ productive hours. Winging it = 4."},
+    {"tip": "Front-load difficult work", "detail": "Hardest work first half when crew is fresh. Save cleanup/staging for end of day."},
+    {"tip": "Never let your crew wait", "detail": "Skilled worker standing around = YOUR planning failure. Fix it and learn."},
+    {"tip": "Teach while you work", "detail": "Pair best journeyman with greenest apprentice. Builds your bench."},
+    {"tip": "Track quantities daily", "detail": "If you can't measure it, you can't improve it or defend it when questioned."},
+    {"tip": "Build relationships with other foremen", "detail": "Most interference issues resolved with 5-minute conversation if you have the relationship."},
+    {"tip": "Control tools and materials", "detail": "Designate one person as material coordinator. Journeymen should be installing, not walking to tool crib."},
+    {"tip": "Safety is not separate from production", "detail": "Shortcuts saving 10 minutes can cost 10 weeks if someone gets hurt."}
+  ],
+  "toolbox_talk_format": {
+    "duration": "5-10 minutes max",
+    "frequency": "Daily at shift start. Additional if scope/conditions change.",
+    "must_include": ["Topic relevant to TODAY'S work", "Specific hazards in today's work area", "Controls in place", "Open crew discussion", "Yesterday's near-misses", "Verify PPE for today", "Emergency assembly point"],
+    "good_talk_signs": ["Connects to today's work", "Crew participates — discussion not lecture", "Foreman shares personal experience", "Specific, not generic", "Short enough crew respects it"]
+  },
+  "quality_walkdown_warning_signs": [
+    "Cable tray covers missing — cables unprotected from sparks/debris",
+    "Junction boxes left open — moisture and pest ingress",
+    "Conduit ends not capped — debris damages cable during pull",
+    "Tubing without continuous support — sags and fails at vibration points",
+    "Instruments still in shipping plastic weeks later — not inspected or calibrated",
+    "Multiple drawing revisions floating around",
+    "Lack of cable/tube labeling — massive commissioning problem",
+    "Grounding not continuous — afterthought that creates safety issues",
+    "Outdoor enclosure seals not installed — water damage #1 cause of equipment failure"
+  ]
+}

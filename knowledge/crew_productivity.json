@@ -1,0 +1,73 @@
+{
+  "category": "crew_coordination",
+  "description": "Crew sizes, productivity rates, task dependencies, trade coordination",
+  "crew_sizes": {
+    "conduit_small_1in": {"min": "1 journeyman + 1 helper", "typical": "2 journeymen + 1 helper"},
+    "conduit_large_2_4in": {"min": "2 journeymen + 1 helper", "typical": "2 journeymen + 2 helpers"},
+    "cable_pull_small": {"min": 2, "typical": "3-4 (puller, feeder, one at each bend)"},
+    "cable_pull_large": {"min": 4, "typical": "5-6 + tugger operator"},
+    "cable_tray": {"min": "2 journeymen + 1 helper", "typical": "3-4 with aerial lifts"},
+    "panel_terminations": {"typical": "1-2 journeymen per panel"},
+    "motor_connections": {"typical": "1 journeyman + 1 helper"},
+    "instrument_install": {"typical": "1-2 instrument techs"},
+    "loop_check": {"typical": "2-3 techs (one field, one DCS)"},
+    "transformer_install": {"typical": "6-8 + rigging crew"}
+  },
+  "productivity_rates_per_10hr_day": {
+    "conduit_RMC": {
+      "half_inch_straight": "150-200 ft", "half_inch_complex": "80-120 ft",
+      "1_inch_straight": "120-160 ft", "1_inch_complex": "60-90 ft",
+      "2_inch_straight": "80-120 ft", "4_inch_straight": "40-60 ft",
+      "EMT_factor": "40-50% faster than RMC",
+      "PVC_coated_factor": "15-20% slower than standard RMC"
+    },
+    "cable": {
+      "control_in_tray": "1500-3000 ft", "power_in_tray": "800-1500 ft",
+      "pull_through_conduit_small": "500-1000 ft", "pull_through_conduit_large": "200-500 ft",
+      "instrument_in_tray": "1500-2500 ft"
+    },
+    "terminations": {
+      "small_14_10AWG": "50-80 per journeyman", "medium_8_2AWG": "25-40",
+      "large_1_0_up": "10-20", "instrument_pairs": "20-40 pairs"
+    },
+    "instruments": {
+      "transmitter_install": "2-4 per tech", "control_valve": "1-2 per crew",
+      "TC_RTD_install": "3-6 per tech", "tubing_runs": "50-100 ft per tech",
+      "loop_checks": "8-15 per 2-person crew", "bench_calibrations": "8-12 per tech"
+    }
+  },
+  "task_dependencies": {
+    "sequence": ["Structural steel/supports complete", "Cable tray installed and grounded", "Conduit routed and supported", "Equipment set and anchored", "Cable pulled", "Megger testing", "Terminations made", "Loop checks", "Energization/commissioning"],
+    "often_missed": [
+      "Cable pull needs conduit 100% complete including couplings tight and reamed",
+      "Terminations need megger results first",
+      "Instrument tubing cannot connect until process piping hydro test complete",
+      "Heat tracing must be installed AND tested before insulation goes over it",
+      "Megger testing BEFORE terminations to equipment (internal surge suppression gives false readings)",
+      "Fire stops AFTER all cables pulled through penetration",
+      "Grounding system complete before any equipment energized"
+    ]
+  },
+  "trade_coordination": {
+    "electricians_need_from": {
+      "pipefitters": "Process connections complete and hydro tested before instrument tie-in",
+      "ironworkers": "Steel erected, platforms/grating in place before tray/conduit at elevation",
+      "civil": "Cable trench/duct bank poured, equipment foundations complete",
+      "insulation": "Stay off until heat trace installed and tested",
+      "mechanical": "Equipment set, aligned, anchored before power cable connections"
+    },
+    "others_need_from_electricians": [
+      "Temporary power and lighting installed early (critical path)",
+      "Motor rotation confirmed before mechanical alignment finalized",
+      "Control systems ready for functional testing when operations commissioning",
+      "Grounding connections to steel, pipe, equipment"
+    ],
+    "common_coordination_failures": [
+      "Tray/conduit installed before steel 100% — rework when steel completed",
+      "Insulation over untested heat trace — must tear off to fix",
+      "Motor connected before mechanical alignment — electricians blamed for shift",
+      "Instrument tubing connected before process hydro — tubing damaged",
+      "Fire stops not installed before adjacent zone commissioned"
+    ]
+  }
+}

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import TabView from '../components/TabView.jsx';
 import { safeMarkdown } from '../utils/helpers.js';
 
-export default function RecordView({ user, onSaved }) {
+export default function RecordView({ user, onSaved, readOnly }) {
   const { t } = useTranslation();
   const [stage, setStage] = useState('idle'); // idle, recording, processing, conversation, structuring, done
   const [elapsed, setElapsed] = useState(0);

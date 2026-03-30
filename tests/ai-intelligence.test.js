@@ -240,7 +240,7 @@ describe('Refine Prompts', () => {
       round: 0, personContext: '', safetyContext: '', tradeKnowledge: '',
     });
     expect(prompt).toContain('How to talk');
-    expect(prompt).toContain('2-4 sentences');
+    expect(prompt).toContain('2-5 sentences');
     expect(prompt).toContain('coworker');
   });
 

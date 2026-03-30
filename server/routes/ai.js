@@ -47,7 +47,7 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
 
     const audioBuffer = fs.readFileSync(req.file.path);
     const ext = req.file.originalname.split('.').pop() || 'webm';
-    const whisperPrompt = await getTradeWhisperPrompt(req.body?.person_id || req.query?.person_id);
+    const whisperPrompt = await getTradeWhisperPrompt(req.body?.person_id || req.query?.person_id, req.db);
 
     const result = await transcribe(audioBuffer, ext, whisperPrompt, {
       requestId: req.analyticsId,
@@ -87,9 +87,9 @@ router.post('/structure', requireAuth, async (req, res) => {
 
     let contextPackage = null;
     if (person_id) {
-      const person = await DB.people.getById(person_id);
-      const template = person ? await DB.templates.getById(person.template_id) : null;
-      contextPackage = buildContextPackage(person, template);
+      const person = await (req.db || DB).people.getById(person_id);
+      const template = person ? await (req.db || DB).templates.getById(person.template_id) : null;
+      contextPackage = await buildContextPackage(person, template, req.db);
     }
 
     const systemPrompt = buildStructurePrompt(contextPackage, safetyBlock);
@@ -161,11 +161,12 @@ router.post('/converse', requireAuth, async (req, res) => {
     let roleDescription = '';
     let reportFocus = '';
     let outputSections = [];
+    let trade = '';
 
     if (person_id) {
-      const person = await DB.people.getById(person_id);
-      const template = person ? await DB.templates.getById(person.template_id) : null;
-      if (person) personName = person.name;
+      const person = await (req.db || DB).people.getById(person_id);
+      const template = person ? await (req.db || DB).templates.getById(person.template_id) : null;
+      if (person) { personName = person.name; trade = person.trade || ''; }
       if (template) {
         roleTitle = template.role_level_title + ' ' + template.template_name;
         roleDescription = template.role_description;
@@ -175,7 +176,7 @@ router.post('/converse', requireAuth, async (req, res) => {
     }
 
     const systemPrompt = buildConversePrompt({
-      personName, roleTitle, roleDescription, reportFocus, outputSections, messagesForPerson: messages_for_person,
+      personName, roleTitle, roleDescription, reportFocus, outputSections, messagesForPerson: messages_for_person, trade,
     });
 
     const result = await callClaude({
@@ -199,15 +200,30 @@ router.post('/converse', requireAuth, async (req, res) => {
 // ============================================================
 router.post('/refine', requireAuth, async (req, res) => {
   try {
-    const { context_type, raw_transcript, conversation, round, team_context, phase, person_id, task_context, existing_fields } = req.body;
+    const { context_type, raw_transcript, conversation, round, team_context, phase, person_id, task_context, existing_fields, image_data } = req.body;
     const currentPhase = phase || 'dialogue';
 
     // Load person context using extracted module
-    const personContext = await loadPersonContext(person_id);
+    const personContext = await loadPersonContext(person_id, req.db);
     const safetyContext = loadSafetyContext();
 
-    // Load trade knowledge using extracted module
-    const trade = detectTrade(personContext);
+    // Determine trade: use person's actual trade from DB first, fall back to text detection
+    let trade;
+    if (person_id) {
+      try {
+        const person = await (req.db || DB).people.getById(person_id);
+        if (person && person.trade) {
+          trade = person.trade.toLowerCase().replace(/\s+/g, '');
+          // Normalize to match knowledge folder names
+          if (trade === 'pipefitting') trade = 'pipefitting';
+          else if (trade === 'industrialerection') trade = 'erection';
+          else if (trade === 'instrumentation') trade = 'instrumentation';
+          else if (trade === 'safety') trade = 'safety';
+          else trade = 'electrical';
+        }
+      } catch { /* fall through to text detection */ }
+    }
+    if (!trade) trade = detectTrade(personContext);
     const allText = (conversation || []).map(m => m.content).join(' ') + ' ' + (raw_transcript || '');
     const tradeKnowledge = loadRefineKnowledge(trade, allText);
 
@@ -218,7 +234,7 @@ router.post('/refine', requireAuth, async (req, res) => {
     let recentReports = [];
     if (person_id && currentPhase === 'dialogue') {
       try {
-        const reports = await DB.reports.getByPerson(person_id);
+        const reports = await (req.db || DB).reports.getByPerson(person_id);
         recentReports = (reports || [])
           .slice(0, 3)
           .map(r => ({
@@ -242,15 +258,28 @@ router.post('/refine', requireAuth, async (req, res) => {
       conversation.forEach(msg => messages.push({ role: msg.role, content: msg.content }));
     }
 
+    // Build user message content — supports multimodal (text + image) for photo attachments
+    const buildUserContent = (text) => {
+      if (!image_data) return text;
+      // Parse base64 data URL: data:image/jpeg;base64,/9j/4AAQ...
+      const match = image_data.match(/^data:(image\/[^;]+);base64,(.+)$/);
+      if (!match) return text + '\n\n[Worker attached a photo but format was not recognized]';
+      const [, mediaType, base64] = match;
+      return [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+        { type: 'text', text: text || 'The worker attached this photo.' },
+      ];
+    };
+
     if (currentPhase === 'edit' && existing_fields) {
       // Incremental edit mode: provide existing fields + correction
       messages.push({ role: 'user', content: `Here is the current finalized data:\n\n${JSON.stringify(existing_fields, null, 2)}\n\nPlease apply this change: "${raw_transcript}"` });
     } else if (round === 0) {
-      messages.push({ role: 'user', content: `Here's what I said:\n\n"${raw_transcript}"` });
+      messages.push({ role: 'user', content: buildUserContent(`Here's what I said:\n\n"${raw_transcript}"`) });
     } else if (currentPhase === 'finalize') {
       messages.push({ role: 'user', content: 'Please finalize the task based on our conversation.' });
     } else {
-      messages.push({ role: 'user', content: raw_transcript });
+      messages.push({ role: 'user', content: buildUserContent(raw_transcript) });
     }
 
     // Call Claude using extracted client

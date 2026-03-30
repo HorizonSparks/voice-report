@@ -1,0 +1,2719 @@
+{
+  "id": "safety_department",
+  "title": "Safety Department Comprehensive Knowledge Base",
+  "description": "Complete reference for safety officers, HSE managers, and safety coordinators on industrial/refinery construction sites. Covers OSHA regulations, permits, incident investigation, metrics, JSA/JHA, emergency response, training, programs, environmental compliance, audits, documentation, and common violations.",
+  "version": "1.0.0",
+  "updated_at": "2026-03-22",
+  "disclaimer": "This knowledge base is a reference tool. Always verify current OSHA regulations at osha.gov. State-plan states may have more stringent requirements. Site-specific owner/operator requirements may exceed these minimums.",
+
+  "section_01_osha_regulations": {
+    "title": "OSHA Regulations for Construction (29 CFR 1926)",
+    "authority": "Occupational Safety and Health Administration, U.S. Department of Labor",
+    "general_duty_clause": {
+      "citation": "Section 5(a)(1) of the OSH Act",
+      "text_summary": "Employers must furnish a place of employment free from recognized hazards causing or likely to cause death or serious physical harm.",
+      "application": "Used when no specific OSHA standard exists but a known hazard is present"
+    },
+
+    "subpart_C_general_safety_health": {
+      "citation": "29 CFR 1926.20-35",
+      "key_standards": {
+        "1926.20": {
+          "title": "General Safety and Health Provisions",
+          "requirements": [
+            "Employer must initiate and maintain accident prevention programs",
+            "Competent person required for frequent and regular inspections",
+            "Employees must comply with standards applicable to their actions"
+          ]
+        },
+        "1926.21": {
+          "title": "Safety Training and Education",
+          "requirements": [
+            "Employer must instruct each employee in recognition and avoidance of unsafe conditions",
+            "Training in regulations applicable to work environment",
+            "Employees working in confined or enclosed spaces must be instructed on hazards"
+          ]
+        },
+        "1926.32": {
+          "title": "Definitions",
+          "key_definitions": {
+            "competent_person": "One who is capable of identifying existing and predictable hazards in the surroundings or working conditions which are unsanitary, hazardous, or dangerous to employees, and who has authorization to take prompt corrective measures to eliminate them.",
+            "qualified_person": "One who, by possession of a recognized degree, certificate, or professional standing, or who by extensive knowledge, training, and experience, has successfully demonstrated the ability to solve or resolve problems relating to the subject matter, the work, or the project."
+          }
+        },
+        "1926.34": {
+          "title": "Means of Egress",
+          "requirements": [
+            "Every building or structure must have sufficient exits for prompt escape",
+            "Exit routes must be maintained and free of obstruction",
+            "Exits must be marked with illuminated exit signs"
+          ]
+        }
+      }
+    },
+
+    "subpart_D_occupational_health": {
+      "citation": "29 CFR 1926.50-66",
+      "key_standards": {
+        "1926.50": {
+          "title": "Medical Services and First Aid",
+          "requirements": [
+            "First aid supplies must be available at the jobsite",
+            "In the absence of an infirmary, clinic, or hospital near the worksite, a person trained in first aid must be available",
+            "First aid kits must be checked weekly to ensure completeness",
+            "Emergency phone numbers must be posted",
+            "Where 911 is not available, telephone or radio communication to emergency services required"
+          ]
+        },
+        "1926.51": {
+          "title": "Sanitation",
+          "thresholds": {
+            "potable_water": "Must be provided at all job sites",
+            "toilets": "1 per 20 workers (minimum), 1 per 40 workers if serviced regularly",
+            "handwashing": "Required where sanitation is necessary"
+          }
+        },
+        "1926.52": {
+          "title": "Occupational Noise Exposure",
+          "thresholds": {
+            "action_level": "85 dBA TWA (8-hour) — hearing conservation program required",
+            "PEL": "90 dBA TWA (8-hour) — engineering/administrative controls or hearing protection required",
+            "max_impulse_noise": "140 dB peak"
+          },
+          "exposure_durations": {
+            "90_dBA": "8 hours",
+            "95_dBA": "4 hours",
+            "100_dBA": "2 hours",
+            "105_dBA": "1 hour",
+            "110_dBA": "30 minutes",
+            "115_dBA": "15 minutes"
+          }
+        },
+        "1926.55": {
+          "title": "Gases, Vapors, Fumes, Dusts, and Mists",
+          "key_thresholds": {
+            "H2S_ceiling": "20 ppm (ceiling)",
+            "H2S_peak": "50 ppm (10-min max peak)",
+            "CO_PEL": "50 ppm TWA",
+            "benzene_PEL": "1 ppm TWA, 5 ppm STEL",
+            "asbestos_PEL": "0.1 fiber/cc TWA"
+          }
+        },
+        "1926.62": {
+          "title": "Lead Exposure",
+          "thresholds": {
+            "PEL": "50 ug/m3 TWA",
+            "action_level": "30 ug/m3 TWA"
+          }
+        },
+        "1926.65": {
+          "title": "Hazardous Waste Operations (HAZWOPER)",
+          "training_levels": {
+            "awareness": "For workers near hazwaste operations but not handling",
+            "operations_24hr": "Workers performing cleanup with limited exposure",
+            "operations_40hr": "Workers performing hazwaste cleanup operations",
+            "supervisor": "40hr + 8hr supervisor additional",
+            "annual_refresher": "8 hours annually for all levels"
+          }
+        }
+      }
+    },
+
+    "subpart_E_PPE": {
+      "citation": "29 CFR 1926.95-107",
+      "key_standards": {
+        "1926.95": {
+          "title": "Criteria for PPE",
+          "requirements": [
+            "Employer must assess workplace for hazards requiring PPE",
+            "Written hazard assessment certification required",
+            "PPE must properly fit each affected employee",
+            "Employer must provide PPE at no cost to employee",
+            "Training on when PPE is necessary, what type, proper use, limitations, care, and disposal"
+          ]
+        },
+        "1926.100": {
+          "title": "Head Protection",
+          "standard_reference": "ANSI/ISEA Z89.1",
+          "types": {
+            "type_I": "Protects top of head from impact",
+            "type_II": "Protects top and sides from impact",
+            "class_E": "Electrical — tested to 20,000V",
+            "class_G": "General — tested to 2,200V",
+            "class_C": "Conductive — no electrical protection"
+          },
+          "replacement": "Replace after any impact, after 5 years from manufacture date (or per manufacturer), immediately if cracked/dented/damaged"
+        },
+        "1926.101": {
+          "title": "Hearing Protection",
+          "requirements": "Required when exposures exceed PEL (90 dBA) and engineering/admin controls not feasible. Double protection (plugs + muffs) recommended above 105 dBA."
+        },
+        "1926.102": {
+          "title": "Eye and Face Protection",
+          "standard_reference": "ANSI/ISEA Z87.1",
+          "requirements": {
+            "safety_glasses": "Required at all times on industrial construction sites",
+            "goggles": "Chemical splash, dust, chipping",
+            "face_shield": "Grinding, cutting, chemical splash (worn over safety glasses)",
+            "welding_hood": "Required for arc welding, minimum shade based on amperage",
+            "welding_shade_guide": {
+              "SMAW_up_to_60A": "Shade 7",
+              "SMAW_60_to_160A": "Shade 8-10",
+              "SMAW_160_to_250A": "Shade 10-12",
+              "SMAW_250_to_550A": "Shade 12-14",
+              "GMAW_MIG": "Shade 10-12",
+              "GTAW_TIG": "Shade 8-12",
+              "oxy_fuel_cutting": "Shade 3-5",
+              "oxy_fuel_welding": "Shade 4-8"
+            }
+          }
+        },
+        "1926.103": {
+          "title": "Respiratory Protection",
+          "reference": "Follows 29 CFR 1910.134",
+          "requirements": [
+            "Written respiratory protection program required",
+            "Medical evaluation before fit testing",
+            "Annual fit testing for tight-fitting respirators",
+            "Clean shaven where respirator seals to face",
+            "Assigned Protection Factors (APF): half-mask = 10, full-face = 50, PAPR = 25-1000, SCBA = 10,000"
+          ]
+        },
+        "1926.104": {
+          "title": "Safety Belts, Lifelines, and Lanyards",
+          "note": "Largely superseded by Subpart M (1926.500+) for fall protection"
+        },
+        "1926.107": {
+          "title": "Definitions (PPE subpart)",
+          "fr_clothing_note": "FR clothing required per NFPA 2112/NFPA 70E or site-specific requirements. Most refinery/industrial sites require minimum FR clothing as standard PPE."
+        }
+      },
+      "typical_refinery_ppe_minimums": [
+        "Hard hat (Type I, Class E preferred)",
+        "Safety glasses (ANSI Z87.1, side shields)",
+        "Steel-toe or composite-toe boots (ASTM F2413, minimum 6-inch)",
+        "FR clothing (NFPA 2112 rated, minimum ATPV 8 cal/cm2)",
+        "Hearing protection (available, worn in posted areas)",
+        "Gloves (task-appropriate)",
+        "H2S monitor / 4-gas monitor in process areas",
+        "High-visibility vest or FR hi-vis shirt"
+      ]
+    },
+
+    "subpart_K_electrical": {
+      "citation": "29 CFR 1926.400-449",
+      "key_standards": {
+        "1926.404": {
+          "title": "Wiring Design and Protection",
+          "gfci_requirement": "GFCI protection required on all 120V, single-phase, 15 and 20-amp receptacle outlets on construction sites that are not part of permanent wiring. Alternative: assured equipment grounding conductor program.",
+          "grounding": "All electrical equipment must be grounded or double-insulated"
+        },
+        "1926.405": {
+          "title": "Wiring Methods",
+          "key_points": [
+            "Temporary wiring must be removed after construction complete",
+            "Flexible cords used only for pendants, fixtures, appliances, or temporary purposes",
+            "NM cable (Romex) not permitted for temporary wiring on construction sites"
+          ]
+        },
+        "1926.416": {
+          "title": "Safety-Related Work Practices",
+          "requirements": [
+            "No work near energized parts unless deenergized or properly guarded",
+            "Minimum approach distances must be maintained",
+            "Circuits must be deenergized before work unless deenergizing creates greater hazard"
+          ]
+        },
+        "1926.417": {
+          "title": "Lockout/Tagout",
+          "requirements": [
+            "Controls must be deactivated and locked/tagged in the off position",
+            "Each employee must apply their own lock/tag",
+            "Locks/tags must not be removed by anyone other than the person who applied them",
+            "Stored energy must be dissipated or restrained"
+          ],
+          "loto_steps": [
+            "1. Notify affected employees",
+            "2. Identify all energy sources",
+            "3. Shut down equipment using normal procedures",
+            "4. Isolate all energy sources",
+            "5. Apply locks and tags",
+            "6. Release/restrain stored energy",
+            "7. Verify zero energy state (try to start equipment)"
+          ]
+        },
+        "1926.431_to_432": {
+          "title": "Maintenance and Environmental Deterioration",
+          "requirement": "Electrical equipment must be maintained in safe condition, free from hazards like broken insulation, exposed conductors"
+        }
+      },
+      "arc_flash_nfpa_70E": {
+        "standard": "NFPA 70E Standard for Electrical Safety in the Workplace",
+        "note": "Not directly an OSHA standard but enforced under General Duty Clause",
+        "shock_approach_boundaries": {
+          "limited_approach_50V_to_750V": "42 inches",
+          "restricted_approach_50V_to_750V": "12 inches",
+          "limited_approach_750V_to_15kV": "10 feet",
+          "restricted_approach_750V_to_15kV": "2 feet 2 inches"
+        },
+        "arc_flash_PPE_categories": {
+          "category_1": {"cal_cm2": "4-8", "ppe": "Arc-rated shirt/pants (min 4 cal), face shield, hard hat, safety glasses, hearing protection, leather gloves"},
+          "category_2": {"cal_cm2": "8-25", "ppe": "Arc-rated shirt/pants (min 8 cal), arc-rated flash hood or face shield + balaclava, hard hat, safety glasses, hearing protection, leather gloves"},
+          "category_3": {"cal_cm2": "25-40", "ppe": "Arc-rated flash suit (min 25 cal), arc-rated flash hood, hard hat, safety glasses, hearing protection, rubber insulating gloves + leather protectors"},
+          "category_4": {"cal_cm2": "40", "ppe": "Arc-rated flash suit (min 40 cal), arc-rated flash suit hood, hard hat, safety glasses, hearing protection, rubber insulating gloves + leather protectors"}
+        },
+        "max_working_limit": "40 cal/cm2 — above this, work is not permitted"
+      }
+    },
+
+    "subpart_L_scaffolding": {
+      "citation": "29 CFR 1926.450-454",
+      "key_standards": {
+        "1926.451": {
+          "title": "General Requirements for Scaffolds",
+          "key_thresholds": {
+            "platform_width": "Minimum 18 inches wide (20 inches for plastering/stucco)",
+            "guardrail_height": "38 to 45 inches above platform",
+            "midrail_height": "Approximately halfway between platform and top rail",
+            "toeboard": "Minimum 3.5 inches tall, within 1/4 inch of platform",
+            "plank_overhang": "Minimum 6 inches, maximum 12 inches beyond support (unless cleated)",
+            "fall_protection_trigger": "10 feet above lower level for scaffolds",
+            "maximum_plank_gap": "1 inch between planks (exception: when wider gap necessary for specific work)",
+            "load_rating": "Must support 4x maximum intended load without failure",
+            "access": "Must provide safe access when platform is more than 2 feet above or below point of access (ladder, stair tower, ramp, or equivalent)"
+          }
+        },
+        "1926.452": {
+          "title": "Additional Requirements for Specific Types",
+          "supported_scaffold_notes": [
+            "Mudsills or adequate firm foundation required",
+            "Plumb and level — adjust only with screw jacks, not unstable objects",
+            "Cross-bracing not permitted as means of access",
+            "Scaffold must be secured to structure when height-to-base-width ratio exceeds 4:1"
+          ]
+        },
+        "1926.453": {
+          "title": "Aerial Lifts",
+          "requirements": [
+            "Only trained/authorized operators",
+            "Body harness and lanyard required in boom-supported lifts (attached to boom or basket, never to adjacent structure)",
+            "Not required in scissor lifts per OSHA (some sites still require it)",
+            "Set brakes when on incline",
+            "Do not exceed rated capacity",
+            "Do not belt off to an adjacent structure from an aerial lift"
+          ]
+        },
+        "1926.454": {
+          "title": "Training Requirements for Scaffolds",
+          "requirements": [
+            "Each employee who works on a scaffold must be trained by a qualified person",
+            "Training covers: hazards, proper use, load capacities, fall protection",
+            "Competent person must train erectors and dismantlers on specific scaffold type",
+            "Retraining required when: hazards change, scaffold type changes, deficiencies observed, or knowledge is inadequate"
+          ]
+        }
+      },
+      "competent_person_duties": [
+        "Inspect scaffold before each shift and after any event that could affect structural integrity",
+        "Tag scaffold as safe (green tag) or unsafe (red tag)",
+        "Authority to remove workers from scaffold immediately",
+        "Determine if conditions are safe to erect, use, dismantle",
+        "Supervise erection and dismantling"
+      ],
+      "scaffold_tag_system": {
+        "green_tag": "Safe to use — inspected by competent person, meets all requirements",
+        "yellow_tag": "Caution — specific restrictions apply (noted on tag). May have limitations like 'no more than 2 workers' or 'light duty only'",
+        "red_tag": "Danger — do NOT use. Under construction, dismantling, damaged, or failed inspection. Only authorized erectors may access."
+      }
+    },
+
+    "subpart_M_fall_protection": {
+      "citation": "29 CFR 1926.500-503",
+      "key_standards": {
+        "1926.501": {
+          "title": "Duty to Have Fall Protection",
+          "general_trigger": "6 feet above a lower level for construction (general industry is 4 feet)",
+          "specific_triggers": {
+            "unprotected_sides_edges": "6 feet — guardrail, safety net, or personal fall arrest",
+            "leading_edges": "6 feet — same protections or fall restraint",
+            "hoist_areas": "6 feet — guardrail or personal fall arrest",
+            "holes": "6 feet for walking/working surfaces with holes — covers or guardrails",
+            "formwork_reinforcing_steel": "6 feet",
+            "ramps_runways_walkways": "6 feet — guardrails",
+            "excavations": "6 feet — guardrails, fences, or barricades at edges",
+            "dangerous_equipment": "Less than 6 feet if fall would be into dangerous equipment — guardrails or equipment guards",
+            "overhand_bricklaying": "6 feet",
+            "roofing_low_slope": "6 feet — guardrail, safety net, or personal fall arrest",
+            "roofing_steep_slope": "6 feet — guardrail, safety net, or personal fall arrest",
+            "precast_concrete": "6 feet",
+            "wall_openings": "6 feet — guardrail",
+            "residential_construction": "6 feet (specific provisions in 1926.501(b)(13))",
+            "steel_erection": "15 feet for connectors, 30 feet for decking (per Subpart R)"
+          }
+        },
+        "1926.502": {
+          "title": "Fall Protection Systems Criteria and Practices",
+          "guardrail_specs": {
+            "top_rail_height": "42 inches +/- 3 inches",
+            "midrail": "Halfway between top edge of guardrail and working level",
+            "top_rail_strength": "200 lbs applied in any outward or downward direction",
+            "midrail_strength": "150 lbs in any downward or outward direction",
+            "toeboard": "3.5 inches minimum height"
+          },
+          "safety_net_specs": {
+            "installation": "No more than 30 feet below working surface",
+            "horizontal_extension": "8 feet for up to 5-foot fall distance, 10 feet for 5-10 feet, 13 feet for more than 10 feet",
+            "drop_test": "400 lb bag of sand, 28-32 inches diameter, dropped from highest walking/working surface"
+          },
+          "personal_fall_arrest": {
+            "components": "Full body harness (body belts prohibited for fall arrest), lanyard or retractable, anchor point",
+            "anchor_point_strength": "5,000 lbs per person attached, or designed by qualified person with 2:1 safety factor",
+            "free_fall_distance": "Maximum 6 feet",
+            "deceleration_distance": "Maximum 3.5 feet",
+            "total_fall_distance": "Must not contact lower level — calculate: free fall + deceleration + harness elongation + D-ring shift + safety margin",
+            "harness_inspection": "Before each use — check webbing, stitching, D-rings, buckles, labels",
+            "after_fall": "Remove from service after any fall arrest event — inspect by competent person before reuse (most manufacturers require retirement)"
+          },
+          "positioning_device_systems": {
+            "maximum_free_fall": "2 feet",
+            "anchor_strength": "3,000 lbs minimum (twice intended load)"
+          },
+          "warning_line_systems": {
+            "distance_from_edge": "6 feet from edge on low-slope roofs",
+            "line_height": "34-39 inches from walking/working surface",
+            "minimum_strength": "500 lbs at stanchion"
+          }
+        },
+        "1926.503": {
+          "title": "Training Requirements",
+          "requirements": [
+            "Trained by competent person",
+            "Must recognize fall hazards and procedures to minimize them",
+            "Training on proper use, operation, and limitations of fall protection systems",
+            "Written certification of training required (name, date, signature of trainer)",
+            "Retraining when: inadequate knowledge, changes in equipment or procedures, workplace changes"
+          ]
+        }
+      },
+      "fall_protection_plan_option": {
+        "citation": "1926.502(k)",
+        "when_used": "Only when conventional fall protection (guardrail, safety net, personal fall arrest) is infeasible or creates greater hazard",
+        "requirements": [
+          "Developed by qualified person",
+          "Site-specific, not generic",
+          "Identifies why conventional methods infeasible",
+          "Describes alternative measures",
+          "Must be part of written safety and health program"
+        ]
+      },
+      "common_fall_protection_for_construction": {
+        "personal_fall_arrest_system": "Harness + shock-absorbing lanyard or retractable lifeline + rated anchor",
+        "fall_restraint": "System that prevents worker from reaching the fall hazard — shorter than personal fall arrest distance",
+        "self_retracting_lifeline": "Limits free fall to approximately 2 feet, preferred over standard lanyards",
+        "horizontal_lifeline": "Must be designed by qualified person — each worker adds load to system",
+        "vertical_lifeline": "One worker per lifeline — rope grab device"
+      }
+    },
+
+    "subpart_P_excavations": {
+      "citation": "29 CFR 1926.650-652",
+      "key_standards": {
+        "1926.650": {
+          "title": "Scope, Application, and Definitions",
+          "key_definitions": {
+            "excavation": "Any man-made cut, cavity, trench, or depression in an earth surface formed by earth removal",
+            "trench": "A narrow excavation (depth greater than width, width not exceeding 15 feet)",
+            "competent_person": "Must be capable of identifying existing and predictable hazards and authorized to take corrective measures"
+          }
+        },
+        "1926.651": {
+          "title": "Specific Excavation Requirements",
+          "requirements": {
+            "utility_location": "Estimated location of underground utilities must be determined before excavation. Contact 811 (Call Before You Dig) at least 48-72 hours prior. Hand dig within 18-24 inches of known utilities.",
+            "access_egress": "Ladder, steps, or ramp required when excavation is 4 feet or deeper. Must be within 25 feet of lateral travel for workers.",
+            "exposure_to_vehicle_traffic": "Workers must be provided with and wear high-visibility vests",
+            "falling_loads": "No workers under loads handled by lifting/digging equipment. Stand away from vehicle being loaded/unloaded.",
+            "water_accumulation": "Must have adequate precautions — pumping, special support, water diversion. Do not work in accumulated water without adequate protection.",
+            "stability_of_adjacent_structures": "Underpinning or support may be required. Must not excavate below base of foundation without support system.",
+            "fall_protection_at_edge": "Guardrails, fences, or barricades when excavation is not readily seen (6 feet per Subpart M if walking/working surface)",
+            "inspections": "Daily before each shift, after rainstorm, and after any event that could change conditions. Competent person must inspect."
+          }
+        },
+        "1926.652": {
+          "title": "Requirements for Protective Systems",
+          "trigger_depth": "5 feet — protective systems required for excavations 5 feet or deeper (unless excavation is in stable rock). Exemption: competent person determines no indication of potential cave-in in excavations less than 5 feet.",
+          "20_foot_rule": "Excavations 20 feet or deeper must be designed by a registered professional engineer",
+          "soil_classification": {
+            "stable_rock": "Natural solid mineral material that can be excavated with vertical sides and remain intact while exposed",
+            "type_A": "Most stable soil — cohesive, unconfined compressive strength 1.5 TSF or greater (clay, silty clay, hardpan). Cannot be previously disturbed, subject to vibration, fissured, or have seeping water.",
+            "type_B": "Medium stability — cohesive with compressive strength 0.5-1.5 TSF (angular gravel, silt, silty clay, previously disturbed Type A soils, dry rock not stable)",
+            "type_C": "Least stable — cohesive with compressive strength 0.5 TSF or less (gravel, sand, loamy sand, submerged soil, soil from which water is seeping, submerged rock not stable)"
+          },
+          "maximum_allowable_slopes": {
+            "stable_rock": "90 degrees (vertical)",
+            "type_A": "3/4H:1V (53 degrees) — short term (24hr max) 1/2H:1V (63 degrees) for depths under 12 feet",
+            "type_B": "1H:1V (45 degrees)",
+            "type_C": "1-1/2H:1V (34 degrees)"
+          },
+          "protective_systems": {
+            "sloping": "Cut back trench wall at angle. Simplest method.",
+            "benching": "Cut sides into steps. Only for Type A and B soils. NOT allowed in Type C.",
+            "shoring": "Install supports (hydraulic, pneumatic, or timber) to prevent cave-in. Must be installed top-down, removed bottom-up.",
+            "shielding": "Trench boxes/shields to protect workers. Does not prevent cave-in but protects workers inside shield.",
+            "tabulated_data": "Use manufacturer data sheets for shoring/shielding systems"
+          }
+        }
+      },
+      "competent_person_excavation_duties": [
+        "Classify soil (visual and manual tests)",
+        "Inspect excavation daily, before each shift, after rain, and after any hazard-increasing occurrence",
+        "Design protective system or use tabulated data",
+        "Monitor for changes in conditions",
+        "Remove workers from excavation when hazardous conditions exist",
+        "Ensure utilities are located and protected",
+        "Ensure access/egress available within 25 feet lateral travel"
+      ],
+      "common_soil_tests": {
+        "visual": ["Observe soil as it is excavated", "Look for layering, fissures, seeping water", "Check spoil pile for clumping (cohesive) vs. running (granular)", "Observe sides of existing excavation"],
+        "manual": {
+          "thumb_penetration": "Press thumb into soil clump — Type A: indent with difficulty; Type B: indent easily; Type C: thumb penetrates full depth easily",
+          "ribbon_test": "Roll soil into thread and let hang — Type A: 2+ inch ribbon without breaking; Type C: cannot form ribbon",
+          "pocket_penetrometer": "Reads directly in TSF/tons per square foot"
+        }
+      }
+    },
+
+    "subpart_R_steel_erection": {
+      "citation": "29 CFR 1926.750-761",
+      "key_standards": {
+        "1926.752": {
+          "title": "Site Layout and Construction Sequence",
+          "requirements": [
+            "Site-specific erection plan developed by qualified person for multi-story structures",
+            "Pre-planning meeting required between controlling contractor and steel erector",
+            "Adequate access roads and grading for crane/equipment setup"
+          ]
+        },
+        "1926.753": {
+          "title": "Hoisting and Rigging",
+          "requirements": [
+            "All hoisting equipment inspected before each shift",
+            "Tag lines used to control loads",
+            "Multiple lift rigging assemblies: maximum 5 members per assembly"
+          ]
+        },
+        "1926.756": {
+          "title": "Beams and Columns",
+          "requirements": [
+            "Minimum of 2 bolts per connection before load released",
+            "Columns must be anchored by minimum of 4 anchor bolts",
+            "Column splices evaluated by qualified person"
+          ]
+        },
+        "1926.760": {
+          "title": "Fall Protection for Steel Erection",
+          "thresholds": {
+            "general": "15 feet for connectors (higher than standard 6-foot trigger)",
+            "connectors": "Protected above 15 feet, or above 2 stories/30 feet (whichever is less)",
+            "deckers": "Protected above 15 feet, or above 2 stories/30 feet",
+            "other_workers": "6 feet (standard Subpart M trigger applies)"
+          },
+          "controlled_decking_zone": {
+            "description": "Designated area for initial installation of metal decking where conventional fall protection may not be used",
+            "requirements": [
+              "Width of CDZ: 90 feet or width of bay, whichever is less",
+              "Only workers engaged in decking allowed in CDZ",
+              "Perimeter controlled by control lines or equivalent",
+              "Unsecured decking limited to 3,000 sq ft"
+            ]
+          }
+        }
+      }
+    },
+
+    "subpart_CC_cranes_derricks": {
+      "citation": "29 CFR 1926.1400-1442",
+      "key_standards": {
+        "1926.1402": {
+          "title": "Ground Conditions",
+          "requirements": [
+            "Controlling entity must ensure ground conditions are adequate",
+            "Crane operator informed of ground conditions including underground hazards",
+            "Adequate drainage, firm footing, level ground for cranes"
+          ]
+        },
+        "1926.1404": {
+          "title": "Assembly/Disassembly — General",
+          "requirements": [
+            "Must be directed by qualified or competent person (A/D director)",
+            "A/D must be done under direct supervision"
+          ]
+        },
+        "1926.1408_1411": {
+          "title": "Power Line Safety",
+          "clearances": {
+            "up_to_50kV": "10 feet minimum from power lines",
+            "50kV_to_200kV": "15 feet minimum",
+            "200kV_to_350kV": "20 feet minimum",
+            "350kV_to_500kV": "25 feet minimum",
+            "500kV_to_750kV": "35 feet minimum",
+            "over_750kV": "45 feet minimum",
+            "unknown_voltage": "Assume 50kV — maintain 10 feet minimum. Contact utility to determine voltage."
+          },
+          "assembly_disassembly": "Minimum clearance is 10 feet from lines up to 350kV unless utility confirms de-energized/grounded"
+        },
+        "1926.1412": {
+          "title": "Inspections",
+          "frequencies": {
+            "shift_inspection": "Before each shift by operator — functional check of controls, safety devices, operational aids",
+            "monthly": "Items specified in manufacturer procedures — documented",
+            "annual": "Comprehensive inspection by competent person — documented with date, signature, serial number",
+            "post_assembly": "After each assembly — check connections, pins, bolts, structural members"
+          }
+        },
+        "1926.1417": {
+          "title": "Operation",
+          "critical_rules": [
+            "Never hoist loads over workers",
+            "Tag lines required to control loads",
+            "Operator must not leave controls with load suspended",
+            "No side-loading a crane boom",
+            "Anti-two-block device required and functional",
+            "Load chart must be in cab and legible"
+          ]
+        },
+        "1926.1425": {
+          "title": "Keeping Clear of the Load",
+          "rules": [
+            "No one may be under a suspended load",
+            "No one may stand or walk under boom of any crane",
+            "Swing radius must be barricaded"
+          ]
+        },
+        "1926.1427": {
+          "title": "Operator Qualification and Certification",
+          "requirements": [
+            "Operators must be certified by accredited testing organization (NCCCO, CIC, NCCER, or OECP)",
+            "Certification must match crane type and capacity",
+            "Employer must ensure operator is qualified for specific equipment",
+            "Medical fitness: eyesight able to recognize signals at distance, able to determine load position, no conditions preventing safe operation"
+          ]
+        },
+        "1926.1431": {
+          "title": "Hoisting Personnel",
+          "requirements": [
+            "Personnel platforms only when conventional means (ladder, stairway, etc.) are more hazardous or not possible",
+            "Platform must be designed by qualified person — minimum 2:1 safety factor",
+            "Platform load limited to 50% of rated crane capacity for that radius",
+            "Pre-lift meeting required",
+            "Trial lift at each new location required",
+            "Continuous communication between operator, signal person, and personnel in platform"
+          ]
+        }
+      },
+      "signal_person_requirements": {
+        "citation": "29 CFR 1926.1428",
+        "requirements": [
+          "Must be qualified by third-party evaluation or employer evaluation",
+          "Must know and understand standard hand signals (ASME B30.5)",
+          "Signal person must be in clear view of operator or use radio",
+          "When operating near power lines, a dedicated spotter may be required"
+        ]
+      },
+      "rigger_requirements": {
+        "citation": "29 CFR 1926.1404(r) and 1926.1425",
+        "requirements": [
+          "Qualified rigger required for assembly/disassembly",
+          "Qualified rigger for hooking, unhooking, and guiding loads near workers"
+        ]
+      },
+      "critical_lift_criteria": {
+        "note": "Not an OSHA-defined term but widely used in industrial construction",
+        "typical_criteria": [
+          "Load exceeds 75% of crane rated capacity for configuration",
+          "Tandem (multiple crane) lifts",
+          "Personnel are hoisted",
+          "Lift over operating process equipment",
+          "Lift of a load whose weight is not accurately known",
+          "Loads requiring exceptional care (long/flexible, high-value, radioactive)"
+        ],
+        "critical_lift_plan_elements": [
+          "Lift director designated",
+          "Engineering calculations for rigging",
+          "Load weight verified by calculation or certified scales",
+          "Ground bearing capacity verified",
+          "Crane configuration (boom length, radius, capacity at radius)",
+          "Rigging plan with rated capacity of all components",
+          "Wind speed limitations",
+          "Communication plan",
+          "Pre-lift meeting with all personnel"
+        ]
+      }
+    },
+
+    "subpart_F_fire_protection": {
+      "citation": "29 CFR 1926.150-159",
+      "key_standards": {
+        "1926.150": {
+          "title": "Fire Protection",
+          "requirements": {
+            "fire_extinguisher_placement": "Within 100 feet travel distance (general). Within 50 feet of more than 5 gallons of flammable/combustible liquids or 5 lbs of flammable gas.",
+            "extinguisher_rating": "Minimum 2A rating. Where flammable liquids present, minimum 20-B:C",
+            "inspection": "Monthly inspection. Annual servicing/maintenance. 6-year maintenance for stored pressure. 12-year hydrostatic test.",
+            "fire_alarm": "Must be provided when warranted by construction project",
+            "water_supply": "Minimum 100 GPM supply for first floor, 500 gallons/minute for multi-story"
+          }
+        },
+        "1926.152": {
+          "title": "Flammable Liquids",
+          "storage_limits": {
+            "inside_building": "25 gallons outside of approved storage cabinet",
+            "approved_cabinet": "60 gallons of Class I/II, or 120 gallons of Class III per cabinet. Maximum 3 cabinets per area.",
+            "outside_storage": "Must be at least 20 feet from any building"
+          },
+          "dispensing": "Only approved containers with flash-arresting screens. Containers over 1 gallon must be safety cans."
+        },
+        "1926.155": {
+          "title": "Definitions",
+          "flash_point_classes": {
+            "class_IA": "Flash point below 73F, boiling point below 100F (e.g., pentane)",
+            "class_IB": "Flash point below 73F, boiling point at or above 100F (e.g., gasoline, acetone)",
+            "class_IC": "Flash point at or above 73F but below 100F (e.g., xylene)",
+            "class_II": "Flash point at or above 100F but below 140F (e.g., diesel, kerosene)",
+            "class_IIIA": "Flash point at or above 140F but below 200F (e.g., mineral oil)",
+            "class_IIIB": "Flash point at or above 200F (e.g., cooking oils)"
+          }
+        }
+      }
+    }
+  },
+
+  "section_02_permit_systems": {
+    "title": "Permit Systems for Industrial/Refinery Construction",
+    "general_principles": [
+      "Permits ensure work is reviewed and authorized before starting",
+      "Permits identify hazards and required precautions",
+      "Permits create accountability — specific individuals authorize specific work",
+      "Permits must be available at the work location during work",
+      "When conditions change, work stops and permit is re-evaluated",
+      "Expired permits must be closed and new permits issued"
+    ],
+
+    "hot_work_permit": {
+      "description": "Required for any work producing sparks, flame, or heat — welding, cutting, grinding, brazing, soldering, heat guns, open flame",
+      "osha_reference": "29 CFR 1926.352 (welding), NFPA 51B (Standard for Fire Prevention During Welding, Cutting, and Other Hot Work)",
+      "typical_duration": "One shift (8-12 hours). New permit required each shift.",
+      "who_issues": "Area authority (client/owner representative), or designated safety representative",
+      "who_signs": {
+        "issuer": "Client/owner area authority or designated representative",
+        "performer": "Craft supervisor or foreman of the crew performing hot work",
+        "fire_watch": "Designated fire watch person (name on permit)"
+      },
+      "requirements_before_issuing": [
+        "Area inspected for combustibles within 35 feet",
+        "Combustibles removed or covered with fire-resistant blankets/shields",
+        "Floor/wall openings within 35 feet covered or guarded",
+        "Atmospheric testing if near process equipment — LEL must be below 10% of LEL (most sites use 0% LEL as threshold)",
+        "Fire extinguisher (minimum 20-B:C) within 50 feet",
+        "Fire watch designated (must remain 30 minutes after hot work ceases)",
+        "Verify no flammable liquids/gases in piping being cut/welded (line cleared, blinded, or verified zero energy)",
+        "Sprinkler systems not impaired (or compensating measures in place)",
+        "Ventilation adequate"
+      ],
+      "fire_watch_requirements": [
+        "Trained in fire extinguisher use",
+        "Dedicated role — no other tasks during fire watch",
+        "Maintain watch during hot work and minimum 30 minutes after (some sites require 60 minutes)",
+        "Must have unobstructed view of hot work area",
+        "Fire extinguisher and communication device readily available",
+        "Authority to stop hot work if conditions change",
+        "Know how to activate fire alarm"
+      ],
+      "renewal": "New permit each shift. Re-evaluation if conditions change, work area changes, or scope changes."
+    },
+
+    "confined_space_entry_permit": {
+      "description": "Required for entry into any permit-required confined space — tanks, vessels, manholes, pits, vaults, silos, pipelines (large diameter)",
+      "osha_reference": "29 CFR 1926.1200-1213 (Construction) and 29 CFR 1910.146 (General Industry reference)",
+      "typical_duration": "One shift (8-12 hours). Some sites limit to specific time windows.",
+      "who_issues": "Entry supervisor (competent person authorized by employer)",
+      "who_signs": {
+        "entry_supervisor": "Verifies conditions are safe, authorizes entry, must be on-site or immediately available",
+        "entrants": "Each person entering signs acknowledging hazards and procedures",
+        "attendant": "Person stationed outside space — signs acknowledging duties"
+      },
+      "requirements_before_issuing": [
+        "Space identified as permit-required confined space (PRCS) in written program",
+        "Hazards of the space identified",
+        "Atmospheric testing completed — O2, LEL, H2S, CO at minimum",
+        "Atmospheric testing from outside before entry, then continuous monitoring during entry",
+        "Space ventilated (continuous mechanical ventilation recommended)",
+        "Energy isolation (LOTO) of all energy sources to the space",
+        "Lines broken, blanked, or blinded to prevent introduction of hazardous materials",
+        "Rescue plan and equipment in place (on-site rescue team or arranged external rescue within response time)",
+        "Communication between entrant and attendant established",
+        "Entry/exit equipment in place (ladders, harness/retrieval system)",
+        "PPE determined and available"
+      ],
+      "atmospheric_testing_limits": {
+        "oxygen": {"minimum": "19.5%", "maximum": "23.5%", "normal": "20.9%"},
+        "LEL": {"maximum": "10% of LEL (some sites use lower)", "action_level": "Any reading above 0% requires investigation"},
+        "H2S": {"maximum": "10 ppm (entry limit)", "ceiling": "20 ppm (requires supplied air)", "IDLH": "100 ppm"},
+        "CO": {"maximum": "25 ppm (many sites use 25 ppm as action level)", "ceiling": "200 ppm"},
+        "benzene": "1 ppm TWA (refinery-specific concern)"
+      },
+      "attendant_duties": [
+        "Remain at entry point at all times while entrants are inside",
+        "Monitor atmospheric conditions (remote display or communication with entrants)",
+        "Maintain accurate count of entrants (entry/exit log)",
+        "Communicate with entrants to monitor their status",
+        "Order evacuation if: hazardous condition detected, behavioral effects observed, situation outside scope of permit, attendant cannot perform duties",
+        "Summon rescue services if needed",
+        "Do NOT enter the space for rescue (unless trained and relieved by another attendant)",
+        "Keep unauthorized persons out of the space"
+      ],
+      "cancellation_triggers": [
+        "Atmospheric readings outside acceptable range",
+        "Conditions change from those specified on permit",
+        "Work scope changes",
+        "Emergency or alarm",
+        "Entry supervisor not available",
+        "Any entrant reports symptoms (dizziness, nausea, irritation)"
+      ]
+    },
+
+    "energized_electrical_work_permit": {
+      "description": "Required when electrical work must be performed on energized equipment (live work). Most sites require de-energization as first option.",
+      "osha_reference": "29 CFR 1926.416-417 (Construction), NFPA 70E Article 110.3 (Energized Electrical Work Permit)",
+      "justification_required": "Must document why de-energization creates greater hazard or is infeasible (e.g., hospital life-safety, continuous process where shutdown creates greater risk, testing/troubleshooting that requires energized state)",
+      "typical_duration": "Specific to the task. Expires when task is complete or conditions change.",
+      "who_signs": {
+        "qualified_worker": "Person performing the work — must be qualified per NFPA 70E",
+        "supervisor": "Responsible supervisor approving the work",
+        "safety_representative": "Site safety manager or designee",
+        "facility_owner": "Client representative (in many refinery programs)"
+      },
+      "requirements": [
+        "Arc flash analysis completed for equipment",
+        "Shock and arc flash hazard assessment documented",
+        "Appropriate PPE category determined and PPE available",
+        "Shock approach boundaries identified and controlled",
+        "Arc flash boundary identified and controlled",
+        "Insulated tools rated for voltage",
+        "Rubber insulating gloves (tested and within certification)",
+        "Job briefing completed with all affected workers",
+        "Emergency procedures reviewed (CPR/AED availability)",
+        "Rescue plan for electrical shock/arc flash"
+      ]
+    },
+
+    "excavation_permit": {
+      "description": "Required before any ground disturbance — digging, trenching, boring, potholing, grading that could encounter underground utilities or create cave-in hazard",
+      "typical_duration": "Duration of excavation activity, typically renewed weekly or when scope changes",
+      "who_signs": {
+        "requestor": "Contractor supervisor requesting the dig",
+        "competent_person": "Person trained in soil classification and protective systems",
+        "utility_locator": "Confirmation that 811 locate has been completed",
+        "client_representative": "Area authority / operations representative"
+      },
+      "requirements_before_issuing": [
+        "811 utility locate completed (minimum 48-72 hours advance notice)",
+        "Site-specific utility drawings reviewed",
+        "Competent person assigned for duration of work",
+        "Protective system determined (slope, shore, shield)",
+        "Access/egress plan (ladders within 25 feet lateral travel for 4+ foot depth)",
+        "Spoil pile placement determined (minimum 2 feet from edge of excavation)",
+        "Traffic control plan if near roads/travel ways",
+        "Nearby structures evaluated for stability",
+        "Water control plan if water table or drainage is a concern",
+        "PPE requirements identified (high-vis vest minimum)"
+      ]
+    },
+
+    "line_break_permit": {
+      "description": "Required before opening any process piping, tubing, or equipment that has contained or could contain hazardous substances. Common in refinery/petrochemical construction.",
+      "typical_duration": "Specific to the task, usually one shift",
+      "who_signs": {
+        "operations_representative": "Confirms line is isolated, depressurized, drained, and safe",
+        "craft_supervisor": "Acknowledges hazards and procedures",
+        "safety_representative": "Reviews atmospheric monitoring and PPE requirements"
+      },
+      "requirements": [
+        "Line identified and verified (P&IDs reviewed, line walked)",
+        "Line contents identified (SDS reviewed for all potential contents)",
+        "Line isolated (block valves closed, blinds installed, or disconnected)",
+        "Line depressurized and drained",
+        "Atmospheric testing at break point",
+        "Appropriate PPE (splash protection, respiratory protection based on contents)",
+        "Containment for residual materials (drip pans, absorbent, containment)",
+        "Emergency equipment available (eyewash within 10 seconds travel if corrosives)",
+        "All workers briefed on hazards",
+        "Fire watch if flammable contents possible"
+      ]
+    },
+
+    "radiography_permit": {
+      "description": "Required when radiographic testing (X-ray or gamma ray) is performed. Creates radiation exclusion zones.",
+      "regulatory_reference": "10 CFR 34 (NRC), state radiation control programs, OSHA 29 CFR 1926.53 (ionizing radiation)",
+      "typical_duration": "Duration of radiographic activities (often performed on night shift to minimize personnel exposure)",
+      "who_signs": {
+        "radiographer": "Licensed radiographer (must have specific state/NRC license)",
+        "site_safety": "Confirms exclusion zone, notifications complete",
+        "area_authority": "Confirms area cleared of non-essential personnel"
+      },
+      "requirements": [
+        "Radiographer has valid license and badge (dosimeter)",
+        "Exclusion zone established (roped off, posted with radiation warning signs)",
+        "All personnel evacuated from exclusion zone",
+        "Site-wide notification (PA system, radio, or direct notification)",
+        "Survey meters used to verify boundary radiation levels",
+        "Time, distance, shielding principles applied",
+        "Emergency procedures for source stuck in exposed position",
+        "Exposures logged per NRC/state requirements"
+      ]
+    },
+
+    "scaffold_permit_tag": {
+      "description": "Authorization and inspection system for scaffold use. While not a 'permit' per OSHA, most industrial sites use a formal scaffold tag and inspection system.",
+      "typical_process": [
+        "Scaffold erected by trained/qualified erectors per design or manufacturer requirements",
+        "Competent person inspects scaffold upon completion",
+        "Tag attached: green (safe), yellow (restricted), or red (do not use)",
+        "Competent person inspects before each shift",
+        "Tag updated/replaced as needed",
+        "Scaffold inspection log maintained"
+      ],
+      "tag_must_include": [
+        "Date of inspection",
+        "Name of competent person who inspected",
+        "Load capacity",
+        "Any restrictions or limitations",
+        "Tag color indicating status"
+      ]
+    },
+
+    "crane_lift_plan": {
+      "description": "Required documentation for crane lifts, especially critical lifts. Most industrial sites require a lift plan for every crane operation.",
+      "elements": {
+        "standard_lift_plan": [
+          "Load description and weight (verified, not estimated)",
+          "Crane identification and rated capacity",
+          "Boom length and configuration",
+          "Operating radius (pick and set)",
+          "Capacity at operating radius",
+          "Rigging plan (slings, shackles, rated capacity of each)",
+          "Percentage of rated capacity utilized",
+          "Ground conditions and outrigger/mat requirements",
+          "Swing path clear and barricaded",
+          "Power line clearances",
+          "Wind speed limitations (typically stop at 20-25 mph sustained)"
+        ],
+        "critical_lift_additional": [
+          "Engineered lift plan by qualified person",
+          "Load weight verified by certified scales, certified drawings, or calculation",
+          "All rigging components load-tested or certified",
+          "Detailed setup diagram showing positions, radii, elevations",
+          "Pick and set radii calculated",
+          "Ground bearing pressure calculations",
+          "Wind speed restrictions (often stricter: 15-20 mph)",
+          "Pre-lift meeting with all involved personnel",
+          "Lift director designated",
+          "Client/owner approval"
+        ]
+      }
+    },
+
+    "work_at_height_permit": {
+      "description": "Many industrial sites require a separate work at height permit in addition to standard fall protection requirements. Documents hazards, controls, and rescue plan.",
+      "typical_requirements": [
+        "Work method specified (scaffold, aerial lift, ladder, rope access)",
+        "Fall protection system specified",
+        "Rescue plan documented (self-rescue, assisted rescue, technical rescue)",
+        "Equipment inspected and documented",
+        "Workers trained and competent",
+        "Area below work zone barricaded",
+        "Weather conditions evaluated",
+        "Exclusion zones for dropped object potential"
+      ]
+    }
+  },
+
+  "section_03_incident_investigation": {
+    "title": "Incident Investigation and Reporting",
+
+    "incident_classification": {
+      "first_aid": {
+        "definition": "Treatment that does not meet the criteria for a recordable case",
+        "examples": [
+          "Cleaning, flushing, or soaking surface wounds",
+          "Wound coverings (bandages, butterfly bandages, Steri-strips)",
+          "Hot or cold therapy",
+          "Non-prescription medications at nonprescription strength (first use only)",
+          "Tetanus immunization",
+          "Drilling of fingernail/toenail to relieve pressure",
+          "Eye patches",
+          "Removal of foreign bodies from eye using irrigation or cotton swab",
+          "Removal of splinters or foreign material from areas other than the eye by irrigation, tweezers, cotton swabs, or other simple means",
+          "Finger guards",
+          "Massages",
+          "Drinking fluids for heat stress",
+          "Oxygen therapy (first use)",
+          "Use of elastic bandages (first use)",
+          "Use of temporary immobilization devices while transporting"
+        ]
+      },
+      "recordable": {
+        "osha_reference": "29 CFR 1904.7",
+        "definition": "Work-related injury or illness that results in any of the following",
+        "criteria": [
+          "Death",
+          "Days away from work",
+          "Restricted work or transfer to another job",
+          "Medical treatment beyond first aid",
+          "Loss of consciousness",
+          "Significant injury or illness diagnosed by physician (cancer, fracture, punctured eardrum, chronic irreversible disease)"
+        ],
+        "medical_treatment_beyond_first_aid_includes": [
+          "Prescription medications (second use of non-prescription counts as medical treatment)",
+          "Sutures/stitches (wound closure devices like Steri-strips are first aid)",
+          "Physical therapy or chiropractic treatment after first visit",
+          "Any surgical procedure",
+          "Setting a fracture",
+          "Removing foreign bodies from the eye if embedded or if medical professional needed"
+        ]
+      },
+      "restricted_work_case": {
+        "definition": "Employee cannot perform one or more routine functions of their job, or cannot work a full shift",
+        "counting": "Count calendar days from day after injury, cap at 180 days",
+        "routine_functions": "Work activities the employee regularly performs at least once per week"
+      },
+      "lost_time_case": {
+        "definition": "Days away from work — employee cannot report to work due to work-related injury/illness",
+        "counting": "Count calendar days starting the day after injury. Do not count day of injury. Maximum 180 days. Include weekends/holidays if employee would not have been able to work.",
+        "return_to_work": "Employer may offer restricted/light duty to avoid lost time classification"
+      },
+      "fatality": {
+        "reporting_requirement": "Must report to OSHA within 8 hours",
+        "method": "Call OSHA Area Office, call OSHA 24-hour hotline (1-800-321-OSHA), or report online",
+        "time_limit": "Death must occur within 30 days of the work-related incident"
+      },
+      "hospitalization_amputation_eye_loss": {
+        "reporting_requirement": "Must report to OSHA within 24 hours",
+        "criteria": "In-patient hospitalization (not ER visit), amputation (including fingertip with bone loss), loss of an eye",
+        "time_limit": "Must occur within 24 hours of work-related incident"
+      }
+    },
+
+    "investigation_methods": {
+      "five_whys": {
+        "description": "Iterative interrogative technique to explore cause-and-effect relationships",
+        "process": [
+          "1. State the problem clearly",
+          "2. Ask 'Why did this happen?' — document the answer",
+          "3. For each answer, ask 'Why?' again",
+          "4. Repeat until root cause is identified (typically 5 iterations, may be more or fewer)",
+          "5. Root cause should be something that can be corrected with a systemic change"
+        ],
+        "tips": [
+          "May branch — one problem can have multiple causes",
+          "Stop when you reach a cause that can be controlled/changed",
+          "Avoid blaming individuals — look for system failures",
+          "Verify each 'why' with evidence, not assumptions"
+        ],
+        "example": {
+          "problem": "Worker fell from scaffold",
+          "why_1": "Worker leaned over guardrail to reach work — guardrail was not at proper height",
+          "why_2": "Scaffold was modified after initial inspection — cross brace removed to access equipment",
+          "why_3": "No re-inspection after modification — competent person was not notified",
+          "why_4": "No formal process to trigger re-inspection after scaffold modifications",
+          "why_5": "Scaffold management program did not include modification notification requirements",
+          "root_cause": "Scaffold management program deficiency — no procedure for post-modification re-inspection"
+        }
+      },
+      "fishbone_diagram": {
+        "also_known_as": "Ishikawa diagram, cause-and-effect diagram",
+        "description": "Visual tool that categorizes potential causes of a problem to identify root cause",
+        "categories_for_safety": [
+          "People (training, experience, fatigue, complacency)",
+          "Procedures (missing, inadequate, not followed, outdated)",
+          "Equipment/Tools (defective, wrong for job, not inspected, not maintained)",
+          "Environment (weather, lighting, noise, congestion, confined space)",
+          "Management (supervision, resource allocation, scheduling, communication)",
+          "Materials (SDS not available, wrong material, deteriorated)"
+        ],
+        "process": [
+          "1. Define the problem (effect) — place at the head of the fish",
+          "2. Draw main bones for each category",
+          "3. Brainstorm causes under each category",
+          "4. Ask 'Why?' for each cause to find deeper causes (sub-bones)",
+          "5. Identify most likely root cause(s) based on evidence",
+          "6. Verify root cause with data/evidence"
+        ]
+      },
+      "taproot": {
+        "description": "Systematic root cause analysis process using a structured investigation tree",
+        "phases": [
+          "1. Gather information (SnapCharT — timeline of events, conditions, and actions)",
+          "2. Develop cause-and-effect chart (SnapCharT diagram)",
+          "3. Analyze each causal factor using Root Cause Tree",
+          "4. Develop corrective actions using Corrective Action Helper",
+          "5. Track and verify corrective action effectiveness"
+        ],
+        "root_cause_categories": [
+          "Equipment difficulty",
+          "Procedures (not used, followed incorrectly, wrong, incomplete)",
+          "Training (no training, incomplete, understanding not verified)",
+          "Quality control",
+          "Communications",
+          "Management system (SPAC — Standards, Policies, or Administrative Controls)",
+          "Human engineering (human factors — labels, displays, workplace layout)"
+        ]
+      }
+    },
+
+    "near_miss_reporting": {
+      "definition": "An event that did not result in injury, illness, or damage but had the potential to do so",
+      "importance": [
+        "Heinrich's Triangle: For every 1 serious injury, there are approximately 10 minor injuries, 30 property damage incidents, and 600 near-misses",
+        "Near-miss reporting identifies hazards before they cause harm",
+        "Leading indicator of safety program effectiveness"
+      ],
+      "effective_program_elements": [
+        "Anonymous or non-punitive reporting system",
+        "Simple reporting mechanism (card, app, QR code)",
+        "Management visible response and follow-up",
+        "Feedback loop — reporter notified of actions taken",
+        "Trending and analysis of near-miss data",
+        "Integration with JSA/JHA updates",
+        "Recognition for reporting (not punishment)",
+        "Target: Most effective sites aim for 10:1 near-miss to incident ratio or higher"
+      ]
+    },
+
+    "investigation_timeline": {
+      "immediate_0_to_1_hour": [
+        "Ensure scene is safe and provide medical care",
+        "Secure the incident scene (do not disturb unless necessary for rescue)",
+        "Notify supervision, safety, and client/owner",
+        "Begin collecting perishable evidence (photos, atmospheric readings, witness locations)",
+        "Identify witnesses"
+      ],
+      "short_term_1_to_24_hours": [
+        "Report to OSHA if required (8 hours for fatality, 24 hours for hospitalization/amputation/eye loss)",
+        "Conduct initial witness interviews (separate, not group)",
+        "Document scene with photos, measurements, sketches",
+        "Collect physical evidence (broken equipment, PPE, tools)",
+        "Review relevant documents (permits, JSAs, training records, inspection logs)",
+        "Draft preliminary incident report"
+      ],
+      "investigation_1_to_5_days": [
+        "Conduct formal root cause analysis",
+        "Review all evidence collected",
+        "Conduct follow-up interviews as needed",
+        "Identify contributing factors and root cause(s)",
+        "Develop corrective actions",
+        "Draft investigation report"
+      ],
+      "follow_up_5_to_30_days": [
+        "Finalize investigation report",
+        "Implement corrective actions",
+        "Communicate findings and lessons learned (toolbox talks, safety alerts)",
+        "Verify corrective action effectiveness",
+        "Update JSAs, procedures, training as needed",
+        "Close out investigation with management review"
+      ]
+    },
+
+    "corrective_action_tracking": {
+      "elements": [
+        "Unique tracking number for each corrective action",
+        "Description of corrective action",
+        "Responsible person assigned",
+        "Target completion date",
+        "Priority/severity classification",
+        "Status tracking (open, in progress, completed, verified)",
+        "Verification of effectiveness after implementation",
+        "Link to originating incident/observation"
+      ],
+      "hierarchy_of_corrective_actions": [
+        "Elimination — remove the hazard entirely (most effective)",
+        "Substitution — replace with less hazardous material/process",
+        "Engineering controls — isolate people from hazard (guards, ventilation, barriers)",
+        "Administrative controls — change the way people work (procedures, training, scheduling)",
+        "PPE — protect the worker (least effective, last resort)"
+      ]
+    }
+  },
+
+  "section_04_safety_metrics": {
+    "title": "Safety Metrics and KPIs",
+
+    "lagging_indicators": {
+      "TRIR": {
+        "full_name": "Total Recordable Incident Rate",
+        "also_known_as": "Total Recordable Case Rate (TRCR), RIR",
+        "formula": "(Number of OSHA Recordable Cases x 200,000) / Total Hours Worked",
+        "200000_factor": "Represents 100 full-time workers working 40 hours/week for 50 weeks",
+        "example": "5 recordable cases with 1,000,000 hours worked = (5 x 200,000) / 1,000,000 = 1.0",
+        "industry_benchmarks": {
+          "construction_average": "Approximately 2.5-3.0 (varies by year)",
+          "industrial_construction_good": "Below 1.0",
+          "industrial_construction_excellent": "Below 0.5",
+          "world_class": "Below 0.3"
+        },
+        "notes": [
+          "Includes all OSHA recordable cases: death, days away, restricted work, medical treatment beyond first aid",
+          "Does not include first aid cases",
+          "Calculated per contractor and project-wide",
+          "Many owner/operators set TRIR thresholds for contractor pre-qualification (commonly require below 1.0)"
+        ]
+      },
+      "DART_rate": {
+        "full_name": "Days Away, Restricted, or Transferred Rate",
+        "formula": "(Number of DART Cases x 200,000) / Total Hours Worked",
+        "what_counts": "Only recordable cases that result in days away from work, restricted work activity, or job transfer",
+        "example": "3 DART cases with 1,000,000 hours worked = (3 x 200,000) / 1,000,000 = 0.6",
+        "notes": "DART rate is always equal to or lower than TRIR (DART cases are a subset of all recordable cases)"
+      },
+      "LTIR": {
+        "full_name": "Lost Time Incident Rate",
+        "formula": "(Number of Lost Time Cases x 200,000) / Total Hours Worked",
+        "what_counts": "Only recordable cases that result in one or more days away from work (does not include restricted duty or transfer)",
+        "notes": "LTIR is always equal to or lower than DART rate"
+      },
+      "severity_rate": {
+        "formula": "(Total Days Away/Restricted x 200,000) / Total Hours Worked",
+        "purpose": "Measures severity of injuries, not just frequency"
+      },
+      "EMR": {
+        "full_name": "Experience Modification Rate",
+        "description": "Workers compensation insurance modifier based on company's claims history vs. industry average",
+        "calculation": "Calculated by NCCI (National Council on Compensation Insurance) or state equivalent. Based on 3 prior policy years, excluding most recent year.",
+        "interpretation": {
+          "1.0": "Average for the industry classification",
+          "below_1.0": "Better than average (lower premiums)",
+          "above_1.0": "Worse than average (higher premiums)",
+          "typical_good": "0.70-0.85",
+          "typical_excellent": "Below 0.70"
+        },
+        "impact": "Directly affects workers comp premiums. Also used as contractor pre-qualification criterion. Many owners require EMR below 1.0 (some require below 0.80).",
+        "note": "EMR is retrospective — it reflects past performance and takes time to improve. A single fatality or severe injury can affect EMR for 3+ years."
+      },
+      "fatality_rate": {
+        "formula": "(Number of Fatalities x 200,000) / Total Hours Worked",
+        "goal": "Zero"
+      }
+    },
+
+    "leading_indicators": {
+      "description": "Proactive measures that predict future safety performance. More valuable than lagging indicators because they identify problems before injuries occur.",
+      "examples": {
+        "safety_observations": {
+          "description": "Number of safety observations/inspections conducted",
+          "target": "Varies by site — common targets: 1 observation per supervisor per day, or 1 per 1,000 hours worked",
+          "safe_to_at_risk_ratio": "Track percentage of safe vs. at-risk observations. Improving ratio indicates improving safety culture."
+        },
+        "near_miss_reports": {
+          "description": "Number of near-miss reports submitted",
+          "target": "Should significantly exceed incident count. Target ratio of 10:1 or higher (near-misses to recordables)."
+        },
+        "jsa_jha_completion": {
+          "description": "Percentage of tasks with completed JSA/JHA before work begins",
+          "target": "100% — every task must have a JSA reviewed before starting"
+        },
+        "training_completion": {
+          "description": "Percentage of required training completed on time",
+          "target": "100% — all workers current on all required training"
+        },
+        "corrective_action_closure_rate": {
+          "description": "Percentage of corrective actions closed within target timeframe",
+          "target": "Greater than 90% on time"
+        },
+        "safety_meeting_attendance": {
+          "description": "Percentage of workers attending required safety meetings (toolbox talks, orientations)",
+          "target": "100%"
+        },
+        "stop_work_authority_use": {
+          "description": "Number of SWA exercises — higher is generally better (shows engaged workforce)",
+          "target": "Track trending — should not be zero"
+        },
+        "audit_scores": {
+          "description": "Scores from internal and external safety audits",
+          "target": "Improving trend, meeting minimum thresholds"
+        },
+        "permit_compliance": {
+          "description": "Percentage of permits correctly completed and in place before work begins",
+          "target": "100%"
+        },
+        "inspection_completion": {
+          "description": "Percentage of required inspections completed on schedule (equipment, scaffolds, excavations, fire extinguishers)",
+          "target": "100%"
+        }
+      }
+    },
+
+    "reporting_frequency": {
+      "daily": ["Hours worked (by contractor)", "Incidents/injuries", "Near-misses", "Stop work events"],
+      "weekly": ["TRIR (running)", "Safety observations summary", "Corrective action status", "Training compliance", "Permit compliance"],
+      "monthly": ["TRIR/DART/LTIR formal calculation", "Leading indicator dashboard", "Trend analysis", "Safety meeting minutes compilation", "Audit findings status"],
+      "quarterly": ["Management review of safety performance", "Program effectiveness review", "Trending analysis with action plans"],
+      "annually": ["OSHA 300A summary posted (Feb 1 - April 30)", "EMR review", "Program annual review and update", "Training needs assessment"]
+    }
+  },
+
+  "section_05_jsa_jha": {
+    "title": "Job Safety Analysis / Job Hazard Analysis",
+
+    "definition": "A technique that focuses on job tasks as a way to identify hazards before they occur. Involves breaking a job into steps, identifying hazards at each step, and determining preventive measures.",
+    "osha_guidance": "OSHA Publication 3071 (Job Hazard Analysis)",
+
+    "creation_process": [
+      "1. Select the job to analyze (prioritize: new, changed, high-hazard, or those with incident history)",
+      "2. Break the job into sequential steps (typically 8-15 steps, no more than 20)",
+      "3. Identify hazards associated with each step",
+      "4. Determine preventive measures for each hazard using hierarchy of controls",
+      "5. Review with workers who perform the job",
+      "6. Communicate to all workers before starting the job",
+      "7. Review and update when conditions, equipment, or personnel change"
+    ],
+
+    "hazard_categories": {
+      "struck_by": "Workers hit by moving objects, vehicles, falling materials, swinging loads",
+      "struck_against": "Workers striking against stationary objects, sharp edges, protruding materials",
+      "caught_in_between": "Body parts caught in machinery, pinch points, collapsing materials, cave-ins",
+      "falls": "Falls from elevation (ladders, scaffolds, roofs, openings) or same level (slips, trips)",
+      "overexertion": "Lifting, pushing, pulling, repetitive motion, awkward postures",
+      "exposure_harmful_substances": "Chemical, dust, fume, gas, vapor, radiation exposure",
+      "exposure_extreme_temperatures": "Heat stress, cold stress, burns from hot surfaces/materials",
+      "electrical": "Shock, arc flash, arc blast, electrocution",
+      "fire_explosion": "Ignition sources near flammables, dust explosions, chemical reactions",
+      "oxygen_deficient_enriched": "Confined spaces, inert gas purging, oxygen displacement",
+      "noise": "Hearing damage from equipment, tools, processes",
+      "biological": "Insects, snakes, plants, bacteria (outdoor construction)",
+      "ergonomic": "Repetitive motion, awkward postures, forceful exertions, vibration",
+      "weather": "Lightning, high winds, extreme heat/cold, rain/ice"
+    },
+
+    "risk_matrix": {
+      "description": "Tool to prioritize hazards based on severity and probability",
+      "severity_levels": {
+        "1_negligible": "First aid or less, no property damage",
+        "2_minor": "Recordable injury, minor property damage",
+        "3_moderate": "Lost time injury, moderate property damage, restricted work",
+        "4_major": "Permanent disability, major property damage, hospitalization",
+        "5_catastrophic": "Fatality, multiple hospitalizations, major environmental release"
+      },
+      "probability_levels": {
+        "1_rare": "Very unlikely to occur, no history",
+        "2_unlikely": "Could happen but not expected, rare occurrence in industry",
+        "3_possible": "Might occur, has happened in industry",
+        "4_likely": "Will probably occur, has happened on similar projects",
+        "5_almost_certain": "Expected to occur, has happened on this project/site"
+      },
+      "risk_score": "Severity x Probability",
+      "risk_levels": {
+        "1_to_4_low": "Acceptable with standard precautions. Monitor.",
+        "5_to_9_medium": "Additional controls required. Supervisor review required.",
+        "10_to_15_high": "Significant controls required. Management approval required before proceeding.",
+        "16_to_25_critical": "Work must not proceed without senior management review. May require alternative method, engineered solution, or task redesign."
+      }
+    },
+
+    "hierarchy_of_controls": {
+      "description": "NIOSH Hierarchy of Controls — applied in order of effectiveness",
+      "levels": {
+        "1_elimination": {
+          "description": "Physically remove the hazard",
+          "effectiveness": "Most effective",
+          "examples": ["Design out the hazard in planning phase", "Prefabricate at ground level instead of at height", "Use remote-operated equipment", "Eliminate the step entirely"]
+        },
+        "2_substitution": {
+          "description": "Replace the hazard with something less hazardous",
+          "effectiveness": "Very effective",
+          "examples": ["Use water-based solvent instead of flammable solvent", "Use mechanical lifting instead of manual", "Use lower voltage equipment", "Use pre-fabricated assemblies instead of field-built"]
+        },
+        "3_engineering_controls": {
+          "description": "Isolate people from the hazard",
+          "effectiveness": "Effective",
+          "examples": ["Install guardrails", "Use ventilation/extraction", "Install machine guards", "Use trench shields", "Install sound barriers", "Use ground fault protection"]
+        },
+        "4_administrative_controls": {
+          "description": "Change the way people work",
+          "effectiveness": "Less effective — depends on human behavior",
+          "examples": ["Training and procedures", "Job rotation to limit exposure", "Warning signs and signals", "Buddy system", "Permit systems", "Work scheduling to avoid heat of day"]
+        },
+        "5_PPE": {
+          "description": "Protect the worker with personal protective equipment",
+          "effectiveness": "Least effective — last line of defense",
+          "examples": ["Hard hat, safety glasses, gloves", "Fall protection harness", "Respiratory protection", "Hearing protection", "FR clothing"],
+          "important_note": "PPE should never be the sole control. It must be combined with higher-level controls."
+        }
+      }
+    },
+
+    "jsa_templates_common_tasks": {
+      "scaffold_erection": {
+        "steps": ["Review scaffold plan and gather materials", "Inspect all scaffold components", "Set up base and mudsills", "Erect standards and frames", "Install cross bracing", "Install platforms and planks", "Install guardrails and toeboards", "Install access ladder", "Competent person inspection and tagging"],
+        "key_hazards": ["Falls from height", "Struck by falling components", "Caught between components", "Overexertion (lifting heavy components)", "Electrocution (proximity to power lines)"],
+        "key_controls": ["100% tie-off above 6 feet during erection", "Red tag until complete and inspected", "Exclusion zone below erection area", "Component inspection before use", "Verify power line clearances"]
+      },
+      "hot_work_welding": {
+        "steps": ["Obtain hot work permit", "Inspect area for combustibles", "Set up fire watch and extinguisher", "Inspect welding equipment", "Set up welding screens", "Perform welding operations", "Post-weld cleanup", "Fire watch (minimum 30 minutes after)"],
+        "key_hazards": ["Fire/explosion from sparks", "Burns from hot metal/arc", "Eye damage (UV radiation)", "Fume inhalation", "Electrical shock from welding equipment", "Heat stress"],
+        "key_controls": ["Valid hot work permit", "35-foot combustible-free zone", "Fire extinguisher within 50 feet", "Proper PPE (welding hood, FR, gloves, leathers)", "Ventilation/fume extraction", "GFCI on welding machine"]
+      },
+      "excavation_trenching": {
+        "steps": ["Obtain excavation permit", "Verify utility locates complete", "Competent person soil assessment", "Establish traffic controls", "Begin excavation", "Install protective system", "Place ladders for egress", "Conduct work in excavation", "Backfill and restore"],
+        "key_hazards": ["Cave-in/collapse", "Struck by falling materials from edge", "Contact with underground utilities", "Falls into excavation", "Hazardous atmosphere in deep excavation", "Water accumulation", "Mobile equipment proximity"],
+        "key_controls": ["Competent person on-site", "Protective system per soil type", "Spoil pile 2+ feet from edge", "Ladder within 25 feet lateral travel", "Atmospheric monitoring for deep excavations", "Barricade or guardrail at edges", "Ground guide for equipment"]
+      },
+      "confined_space_entry": {
+        "steps": ["Review space hazards and permit", "Test atmosphere (O2, LEL, H2S, CO)", "Verify isolation and LOTO", "Set up ventilation", "Position rescue equipment", "Brief entrants and attendant", "Enter and perform work", "Continuous atmospheric monitoring", "Exit and close permit"],
+        "key_hazards": ["Oxygen deficient/enriched atmosphere", "Toxic gases (H2S, CO, benzene)", "Flammable atmosphere", "Engulfment", "Entrapment", "Energy release if not properly isolated"],
+        "key_controls": ["Entry permit completed", "Continuous atmospheric monitoring", "Mechanical ventilation", "LOTO of all energy sources", "Rescue team/equipment on standby", "Attendant at entry point at all times", "Communication system"]
+      },
+      "crane_lift": {
+        "steps": ["Develop lift plan", "Pre-lift inspection", "Ground preparation and setup", "Pre-lift meeting with crew", "Rig the load", "Trial lift (critical lifts)", "Execute lift", "Set and secure load", "De-rig"],
+        "key_hazards": ["Struck by falling load", "Crane tip-over", "Contact with power lines", "Caught between load and structure", "Rigging failure", "Ground failure under outriggers"],
+        "key_controls": ["Lift plan reviewed and approved", "Load weight verified", "Crane capacity confirmed for radius", "Power line clearances verified", "Signal person positioned", "Swing radius barricaded", "Tag lines on load", "Never work under suspended load"]
+      }
+    }
+  },
+
+  "section_06_emergency_response": {
+    "title": "Emergency Response Procedures",
+
+    "emergency_action_plan": {
+      "osha_reference": "29 CFR 1926.35 (Construction), 29 CFR 1910.38 (General Industry reference)",
+      "required_elements": [
+        "Emergency escape procedures and escape route assignments",
+        "Procedures for employees who remain to operate critical plant equipment before evacuating",
+        "Procedures to account for all employees after evacuation",
+        "Rescue and medical duties for designated employees",
+        "Means of reporting fires and other emergencies",
+        "Names or regular job titles of persons to contact for further information"
+      ]
+    },
+
+    "evacuation_procedures": {
+      "alarm_signals": {
+        "note": "Site-specific — must be communicated to ALL workers including contractors during orientation",
+        "common_signals": {
+          "continuous_horn": "Evacuate to muster point",
+          "intermittent_horn": "Shelter in place (or all clear, site-specific)",
+          "all_clear": "Resume normal operations (typically announced over PA after continuous horn stops)"
+        }
+      },
+      "muster_points": {
+        "requirements": [
+          "Pre-designated assembly areas, marked and communicated",
+          "Must be at safe distance from potential hazard areas",
+          "Upwind from process areas when possible",
+          "Headcount or badge-scan accountability system",
+          "Designated person responsible for headcount at each muster point",
+          "Must accommodate all personnel in area",
+          "Must not block emergency vehicle access"
+        ]
+      },
+      "accountability": {
+        "methods": [
+          "Badge scan (in/out at gate with muster point scan)",
+          "Manual headcount by supervisor (crew roster)",
+          "T-card system (visual card system at muster point)",
+          "Electronic mustering (smartphone/radio check-in)"
+        ],
+        "key_rule": "NEVER re-enter the work area to search for missing personnel. Report missing persons to emergency coordinator. Only trained rescue teams re-enter."
+      }
+    },
+
+    "fire_response": {
+      "steps": [
+        "1. Activate alarm (pull station, radio, phone)",
+        "2. Evacuate immediate area",
+        "3. ONLY attempt to fight fire if: trained, fire is small/contained, safe exit available behind you, correct extinguisher available",
+        "4. Evacuate to muster point if fire cannot be quickly controlled",
+        "5. Account for all personnel",
+        "6. Guide emergency responders to fire location"
+      ],
+      "fire_extinguisher_types": {
+        "class_A": "Ordinary combustibles (wood, paper, cloth) — water, foam, dry chemical",
+        "class_B": "Flammable liquids (gasoline, oil, solvents) — CO2, dry chemical, foam",
+        "class_C": "Energized electrical — CO2, dry chemical (never water)",
+        "class_D": "Combustible metals (magnesium, titanium) — special dry powder",
+        "class_K": "Cooking oils/fats — wet chemical",
+        "ABC_multipurpose": "Most common on construction sites — covers A, B, and C"
+      },
+      "PASS_technique": {
+        "P": "Pull the pin",
+        "A": "Aim at the base of the fire",
+        "S": "Squeeze the handle",
+        "S2": "Sweep side to side at the base"
+      }
+    },
+
+    "chemical_spill_response": {
+      "immediate_actions": [
+        "1. Alert others in immediate area",
+        "2. Evacuate if material is unknown, toxic, or large quantity",
+        "3. If safe and trained: contain spill (absorbent, berms, dam drains)",
+        "4. Eliminate ignition sources if flammable",
+        "5. Avoid contact — do not walk through spill",
+        "6. Identify material (SDS, labels, placards)",
+        "7. Notify supervisor, safety, and environmental",
+        "8. Report to NRC (National Response Center, 1-800-424-8802) if reportable quantity released to environment"
+      ],
+      "spill_kit_contents": [
+        "Absorbent pads and pillows",
+        "Absorbent booms/socks (for containment)",
+        "Granular absorbent",
+        "Disposal bags",
+        "PPE (chemical-resistant gloves, goggles, apron)",
+        "Caution tape / barrier",
+        "SDS reference"
+      ],
+      "reportable_quantities": {
+        "note": "Defined per substance in 40 CFR 302 Table 302.4",
+        "common_examples": {
+          "oil_sheen_on_water": "Any visible sheen on navigable water (reportable under CWA)",
+          "sulfuric_acid": "1,000 lbs",
+          "benzene": "10 lbs",
+          "hydrogen_sulfide": "100 lbs",
+          "ammonia": "100 lbs"
+        }
+      }
+    },
+
+    "medical_emergency": {
+      "response_steps": [
+        "1. Ensure scene is safe before approaching",
+        "2. Call for help (911, site emergency number, radio)",
+        "3. Begin first aid / CPR if trained (do not move victim unless in danger)",
+        "4. AED — apply if cardiac arrest (follow device prompts)",
+        "5. Control severe bleeding (direct pressure, tourniquet if trained)",
+        "6. Maintain airway (recovery position if unconscious and breathing)",
+        "7. Treat for shock (elevate legs if no spinal injury suspected, keep warm)",
+        "8. Do NOT remove impaled objects",
+        "9. Guide EMS to location",
+        "10. Preserve scene for investigation"
+      ],
+      "first_aid_supplies_location": "First aid kits must be in a conspicuous, readily accessible location. AED locations posted. Eye wash stations within 10 seconds travel time where corrosives are used (ANSI Z358.1).",
+      "eyewash_requirements": {
+        "standard": "ANSI Z358.1",
+        "location": "Within 10 seconds unobstructed travel from corrosive/chemical hazard",
+        "flow": "0.4 GPM for 15 minutes (plumbed) or minimum 15-minute supply (portable)",
+        "temperature": "Tepid water (60-100F)",
+        "inspection": "Plumbed units activated weekly. Portable units inspected per manufacturer (typical 3-6 months)."
+      }
+    },
+
+    "rescue_from_heights": {
+      "requirement": "Employer must provide for prompt rescue in the event of a fall (29 CFR 1926.502(d)(20))",
+      "methods": [
+        "Self-rescue (worker can reach structure/platform after fall arrest)",
+        "Assisted rescue (co-workers use rescue equipment to reach and lower victim)",
+        "Technical rescue (trained rescue team with specialized equipment)",
+        "Aerial lift rescue (position aerial lift to retrieve fallen worker)"
+      ],
+      "suspension_trauma": {
+        "definition": "Potentially fatal condition when a worker hangs motionless in a harness — blood pools in legs, reduced cardiac output",
+        "onset": "Can begin within minutes of suspension",
+        "prevention_during_suspension": [
+          "Worker should keep moving legs, push against structure",
+          "Suspension trauma straps (built into harness or add-on) — stand in loops to activate leg muscles",
+          "Prompt rescue is critical — rescue within 10-15 minutes"
+        ],
+        "post_rescue": "Do NOT lay victim flat immediately — keep in seated/crouched position. Sudden position change can cause cardiac arrest (reflow syndrome). Gradual transition to lying position. Medical evaluation required."
+      }
+    },
+
+    "confined_space_rescue": {
+      "osha_reference": "29 CFR 1926.1211 (Construction), 29 CFR 1910.146 (General Industry)",
+      "requirements": [
+        "Rescue service must be identified before entry",
+        "Rescue service must be able to reach victim within a timeframe appropriate for the hazards (consider non-IDLH vs. IDLH scenarios)",
+        "On-site rescue team must practice making rescues from representative spaces at least annually",
+        "Off-site rescue service must be evaluated for capability and response time",
+        "Non-entry rescue (retrieval system) preferred when feasible: full body harness, retrieval line, mechanical retrieval device (tripod/davit)"
+      ],
+      "retrieval_system_requirements": {
+        "when_required": "Required for all permit-required confined space entries unless system increases risk or would not contribute to rescue",
+        "components": "Full body harness with retrieval line attached to chest or back D-ring, mechanical device (tripod/davit arm with winch)",
+        "attendant_rule": "Attendant must NOT enter the space for rescue unless trained as rescuer AND relieved by another attendant"
+      }
+    },
+
+    "emergency_communication": {
+      "methods": [
+        "Two-way radios (most common on construction sites — dedicated emergency channel)",
+        "PA/loudspeaker system (for plant-wide announcements)",
+        "Cell phones (backup — may not work in all areas of plant)",
+        "Air horns (manual backup alarm)",
+        "Visual alarms (strobe lights for high-noise areas)"
+      ],
+      "emergency_contact_information": [
+        "911 (or site-specific emergency number if on-site fire/EMS)",
+        "Site safety manager/coordinator",
+        "Site emergency coordinator",
+        "Client/owner operations contact",
+        "National Response Center: 1-800-424-8802 (environmental releases)",
+        "Poison Control: 1-800-222-1222",
+        "OSHA: 1-800-321-OSHA (6742)",
+        "CHEMTREC: 1-800-424-9300 (hazmat transportation emergencies)"
+      ]
+    }
+  },
+
+  "section_07_training_requirements": {
+    "title": "Training Requirements for Industrial Construction",
+
+    "osha_outreach": {
+      "OSHA_10_hour": {
+        "description": "Basic safety awareness for construction workers",
+        "audience": "Entry-level workers, all trades",
+        "topics": ["OSHA overview and workers' rights", "Focus Four hazards (falls, struck-by, caught-in/between, electrocution)", "Health hazards", "PPE", "Excavations", "Scaffolds", "Other elective topics"],
+        "duration": "10 hours (minimum over 2 days, cannot exceed 7.5 hours in one day)",
+        "validity": "Does not expire per OSHA (some states, site owners, and unions require renewal every 3-5 years)",
+        "card": "DOL card issued through authorized OSHA trainer"
+      },
+      "OSHA_30_hour": {
+        "description": "Comprehensive safety training for supervisors and safety professionals",
+        "audience": "Supervisors, foremen, superintendents, safety staff",
+        "topics": ["All OSHA 10 topics plus expanded content", "Safety and health programs", "Confined spaces", "Cranes and rigging", "Fall protection in depth", "Stairways and ladders", "Health hazards in construction", "Ergonomics", "Plus additional elective topics"],
+        "duration": "30 hours (minimum over 4 days, cannot exceed 7.5 hours in one day)",
+        "validity": "Does not expire per OSHA (renewal practices same as OSHA 10)",
+        "card": "DOL card issued through authorized OSHA trainer"
+      }
+    },
+
+    "fall_protection_training": {
+      "osha_reference": "29 CFR 1926.503",
+      "required_for": "All workers exposed to fall hazards of 6 feet or more",
+      "content": [
+        "Nature of fall hazards in the work area",
+        "Correct procedures for erecting, maintaining, disassembling, and inspecting fall protection systems",
+        "Use and operation of each type of fall protection system used",
+        "Role of each employee in the safety monitoring system (if used)",
+        "Limitations on use of mechanical equipment during roofing on low-slope roofs",
+        "Correct procedures for equipment handling/storage",
+        "Standards (Subpart M) requirements"
+      ],
+      "frequency": "Initial training before exposure. Retraining when: reason to believe employee does not understand, changes in workplace/equipment, or inadequacies in knowledge observed.",
+      "documentation": "Written certification: employee name, date of training, signature of trainer or competent person"
+    },
+
+    "scaffold_competent_person": {
+      "osha_reference": "29 CFR 1926.454",
+      "required_for": "Persons who inspect, erect, dismantle, or supervise scaffold operations",
+      "content": [
+        "Nature of scaffold hazards",
+        "Correct procedures for erecting, disassembling, moving, operating, repairing, inspecting, and maintaining the type of scaffold in use",
+        "Design criteria, maximum intended load-carrying capacity, and intended use",
+        "Training on scaffold tag system"
+      ],
+      "frequency": "Initial training. Retraining when: type of scaffold changes, hazards change, or deficiencies in knowledge observed.",
+      "note": "No specific OSHA-required 'certification' — competent person is determined by the employer based on knowledge, training, and experience. However, most industrial sites require documented scaffold training from a recognized program."
+    },
+
+    "confined_space_training": {
+      "osha_reference": "29 CFR 1926.1207-1210",
+      "roles_and_training": {
+        "authorized_entrant": {
+          "content": ["Hazards of the space", "Recognition of signs/symptoms of exposure", "Proper use of equipment (PPE, monitoring, ventilation, communication, lighting)", "Communication with attendant", "When and how to exit"],
+          "frequency": "Before first entry, refresher annually or when conditions change"
+        },
+        "attendant": {
+          "content": ["All entrant training plus:", "Duties (monitoring, headcount, communication)", "How to summon rescue", "Conditions requiring evacuation order", "Non-entry rescue procedures", "What to do if unauthorized person approaches or enters"],
+          "frequency": "Before first assignment as attendant, refresher annually"
+        },
+        "entry_supervisor": {
+          "content": ["All entrant and attendant training plus:", "How to determine if entry conditions are acceptable", "How to verify controls are in place", "When to cancel or terminate entry", "How to handle unauthorized entry"],
+          "frequency": "Before first assignment, refresher annually"
+        },
+        "rescue_team": {
+          "content": ["All above plus:", "First aid and CPR", "Use of rescue equipment (retrieval systems, SCBA/SAR)", "Practice making rescues from representative permit spaces at least annually"],
+          "frequency": "Annual practice rescue from representative space, ongoing competency"
+        }
+      }
+    },
+
+    "crane_signal_person": {
+      "osha_reference": "29 CFR 1926.1428",
+      "requirements": [
+        "Qualified by third-party evaluation or employer-qualified",
+        "Must know and understand standard hand signals (ASME B30.5)",
+        "Knowledge of various signal methods (hand, voice, electronic)",
+        "Demonstrated competence through evaluation"
+      ],
+      "frequency": "Initial qualification. Re-evaluation if observed deficiencies."
+    },
+
+    "forklift_aerial_lift_certification": {
+      "forklift": {
+        "osha_reference": "29 CFR 1926.602 (Construction), 29 CFR 1910.178 (General Industry, commonly applied)",
+        "components": ["Formal instruction (classroom/video)", "Practical training (hands-on with equipment type)", "Evaluation by employer in the workplace"],
+        "frequency": "Initial certification. Evaluation every 3 years. Retraining if: unsafe operation observed, involvement in accident/near-miss, different truck type, or workplace conditions change.",
+        "note": "Operator-specific AND equipment-specific — certification on one type does not qualify for all types"
+      },
+      "aerial_lift": {
+        "osha_reference": "29 CFR 1926.453",
+        "types": ["Boom lifts (articulating, telescoping)", "Scissor lifts", "Personnel hoists"],
+        "training_content": ["Pre-use inspection", "Safe operating procedures", "Workplace hazards (power lines, overhead obstructions, uneven ground, wind)", "Fall protection requirements", "Load capacity limits"],
+        "frequency": "Initial training before operation. Retraining as needed. Many sites require annual refresher."
+      }
+    },
+
+    "first_aid_cpr_aed": {
+      "osha_reference": "29 CFR 1926.50 (requires availability of trained first aider where no medical facility in near proximity)",
+      "training_standards": "American Red Cross, American Heart Association, or equivalent",
+      "certification_duration": "Typically 2 years for first aid, 2 years for CPR/AED",
+      "site_requirement": "At least one trained person per crew or work area. Many sites require all supervisors to be trained."
+    },
+
+    "h2s_awareness": {
+      "required_for": "All workers in refineries, petrochemical plants, and areas with potential H2S exposure",
+      "content": [
+        "Properties of H2S (colorless, heavier than air, smells like rotten eggs at low concentration, deadens sense of smell at higher concentration)",
+        "Health effects at various concentrations",
+        "Exposure limits (10 ppm TWA OSHA PEL, 20 ppm ceiling, 50 ppm 10-min peak)",
+        "Detection methods (4-gas monitors, wind socks)",
+        "Proper use of respiratory protection",
+        "Emergency procedures for H2S release",
+        "Location of wind indicators and escape routes (crosswind/upwind)"
+      ],
+      "key_h2s_thresholds": {
+        "0.01_to_0.3_ppm": "Odor threshold (can smell it)",
+        "10_ppm": "OSHA PEL (8-hour TWA). Alarm setpoint on most monitors.",
+        "15_ppm": "OSHA STEL (15-minute). Common first alarm on personal monitors.",
+        "20_ppm": "OSHA ceiling — do not exceed at any time",
+        "50_ppm": "10-minute maximum peak. Olfactory fatigue begins (cannot smell it).",
+        "100_ppm": "IDLH (Immediately Dangerous to Life or Health). Loss of smell. Can be fatal in minutes to hours.",
+        "300_plus_ppm": "Rapid loss of consciousness, death possible within minutes",
+        "700_plus_ppm": "Immediate collapse, death within minutes"
+      },
+      "frequency": "Before initial assignment. Refresher annually or per site requirements."
+    },
+
+    "respiratory_protection": {
+      "osha_reference": "29 CFR 1910.134 (applied to construction via 1926.103)",
+      "program_requirements": [
+        "Written respiratory protection program",
+        "Designated program administrator",
+        "Medical evaluation (questionnaire/physician review) before fit testing",
+        "Fit testing annually for each make/model/size of tight-fitting respirator",
+        "Training on proper use, limitations, maintenance, storage",
+        "Clean shaven where respirator seals to face (no stubble, beards, sideburns that interfere with seal)"
+      ],
+      "fit_test_methods": {
+        "qualitative": "Pass/fail using test agent (Bitrex, saccharin, irritant smoke). For half-mask only.",
+        "quantitative": "Uses instrument to measure face seal leakage. Required for full-face respirators. Minimum fit factor: 100 for half-mask, 500 for full-face."
+      },
+      "frequency": "Medical evaluation before initial use. Fit test annually. Retraining annually."
+    },
+
+    "hazcom_ghs": {
+      "osha_reference": "29 CFR 1926.59 (Construction HazCom) aligned with 29 CFR 1910.1200 (GHS)",
+      "content": [
+        "Globally Harmonized System (GHS) for classification and labeling of chemicals",
+        "Reading and understanding Safety Data Sheets (16 sections)",
+        "GHS label elements: product identifier, signal word (Danger/Warning), hazard statements, pictograms, precautionary statements, supplier identification",
+        "9 GHS pictograms and their meanings",
+        "Physical and health hazards of chemicals in the workplace",
+        "Protective measures (PPE, ventilation, procedures)",
+        "Location and availability of SDS"
+      ],
+      "ghs_pictograms": {
+        "flame": "Flammable, self-reactive, pyrophoric, self-heating, emits flammable gas, organic peroxide",
+        "flame_over_circle": "Oxidizer",
+        "exploding_bomb": "Explosive, self-reactive, organic peroxide",
+        "skull_crossbones": "Acute toxicity (fatal or toxic)",
+        "corrosion": "Corrosive to metals, skin corrosion, serious eye damage",
+        "exclamation_mark": "Irritant, skin sensitizer, acute toxicity (harmful), narcotic effects, respiratory tract irritation",
+        "health_hazard": "Carcinogen, respiratory sensitizer, reproductive toxicity, target organ toxicity, mutagenicity, aspiration hazard",
+        "gas_cylinder": "Gases under pressure",
+        "environment": "Hazardous to aquatic environment"
+      },
+      "frequency": "Initial training for all workers. Retraining when new hazards introduced or when understanding is deficient."
+    },
+
+    "arc_flash_nfpa_70e": {
+      "standard": "NFPA 70E Standard for Electrical Safety in the Workplace",
+      "required_for": "All workers who may be exposed to electrical hazards (qualified and unqualified persons)",
+      "content": {
+        "qualified_persons": ["Shock and arc flash hazard awareness", "Approach boundaries and their significance", "Arc flash PPE categories and selection", "Energized electrical work permit process", "LOTO procedures", "Use of insulated tools and test equipment", "Emergency procedures for electrical incidents"],
+        "unqualified_persons": ["Awareness of electrical hazards", "Recognition of approach boundaries", "What to do if someone contacts energized equipment"]
+      },
+      "frequency": "Initial training. Retraining at frequency determined by employer (typically annually or every 3 years). NFPA 70E requires retraining at intervals not exceeding 3 years."
+    },
+
+    "loto_training": {
+      "osha_reference": "29 CFR 1910.147 (General Industry, commonly applied in construction) and 29 CFR 1926.417 (Construction electrical LOTO)",
+      "roles": {
+        "authorized_employee": "Applies locks/tags, performs the work. Full LOTO training required.",
+        "affected_employee": "Works in area where LOTO is applied but does not perform service/maintenance. Awareness training required.",
+        "other_employee": "May work near LOTO. Awareness of LOTO purpose and prohibition against removing locks/tags."
+      },
+      "content": [
+        "Purpose of LOTO and types of hazardous energy",
+        "Recognition of hazardous energy sources",
+        "Type and magnitude of energy",
+        "LOTO procedures specific to equipment/process",
+        "Proper use of locks, tags, and lockout devices",
+        "Group LOTO procedures",
+        "Shift change procedures",
+        "Verification of zero energy"
+      ],
+      "frequency": "Initial training before performing LOTO. Retraining when: procedures change, new equipment, periodic inspection reveals inadequacy. Annual inspection of LOTO procedures required."
+    },
+
+    "training_documentation_requirements": {
+      "what_to_document": [
+        "Employee name and identification",
+        "Training topic/course title",
+        "Date of training",
+        "Duration of training",
+        "Name and qualifications of trainer",
+        "Method of training (classroom, OJT, video, etc.)",
+        "Written test or practical evaluation results (if applicable)",
+        "Certification/card number (if applicable)",
+        "Expiration date of certification (if applicable)",
+        "Employee signature acknowledging training received"
+      ],
+      "retention": {
+        "general_rule": "Duration of employment plus 30 years for exposure records (1910.1020). Most sites maintain training records for duration of project plus 3-5 years.",
+        "medical_records": "Duration of employment plus 30 years",
+        "exposure_records": "Duration of employment plus 30 years"
+      }
+    }
+  },
+
+  "section_08_site_safety_programs": {
+    "title": "Site-Specific Safety Programs",
+
+    "contractor_safety_management": {
+      "description": "Owner/operator program to manage safety of contractors performing work on their site",
+      "typical_elements": {
+        "prequalification": [
+          "EMR review (typically require below 1.0, some below 0.80)",
+          "TRIR review (typically require below industry average, often below 1.0)",
+          "DART rate review",
+          "Safety program review",
+          "OSHA citation history (check OSHA online database)",
+          "Reference check from previous clients",
+          "Insurance verification (workers comp, general liability)"
+        ],
+        "orientation": [
+          "Site-specific safety orientation for all personnel before badge issuance",
+          "Duration typically 2-8 hours (some large projects have multi-day orientations)",
+          "Covers: site hazards, emergency procedures, permit systems, PPE requirements, prohibited actions, reporting procedures",
+          "Written test and/or badge issuance upon completion"
+        ],
+        "ongoing_management": [
+          "Regular safety audits of contractor work areas",
+          "Weekly safety statistics reporting from contractors",
+          "Monthly safety meetings (all contractors)",
+          "Consequence management (warnings, stand-downs, removal from site)",
+          "Contractor safety scorecard/ranking"
+        ]
+      }
+    },
+
+    "short_service_employee_SSE": {
+      "description": "Program to identify and provide additional oversight for new or inexperienced workers",
+      "typical_criteria": "Less than 6 months experience in the specific trade or on the specific site (some programs use 6 months to 1 year)",
+      "identification": "Green hard hat, sticker on hard hat, or badge marking to visually identify SSE workers",
+      "requirements": [
+        "Assigned to experienced mentor/buddy",
+        "Cannot work alone",
+        "Extra supervision and monitoring",
+        "Additional JSA review before starting tasks",
+        "Typically limited SSE percentage on a crew (common: no more than 20-25% of crew can be SSE)",
+        "Competency sign-off before advancing out of SSE status"
+      ]
+    },
+
+    "behavior_based_safety_BBS": {
+      "description": "Safety approach focusing on observable behaviors rather than attitudes or conditions",
+      "process": [
+        "1. Identify critical safety behaviors through incident data and JSA review",
+        "2. Develop observation checklist targeting those behaviors",
+        "3. Train observers (typically peer observers, not just supervisors)",
+        "4. Conduct regular observations (in the field, during actual work)",
+        "5. Provide immediate positive or corrective feedback",
+        "6. Collect and analyze data to identify trends",
+        "7. Implement improvements based on data",
+        "8. Celebrate improvements and recognize safe behaviors"
+      ],
+      "key_principles": [
+        "Non-punitive — focus on coaching, not discipline",
+        "Peer-to-peer observations are more effective than top-down",
+        "Positive reinforcement of safe behaviors is primary tool",
+        "Data-driven — track at-risk behaviors and trending",
+        "Worker engagement and participation is essential"
+      ]
+    },
+
+    "stop_work_authority_SWA": {
+      "description": "Every person on site has the right and obligation to stop work when they observe an unsafe condition or act",
+      "key_elements": [
+        "Universal — applies to every person regardless of employer, rank, or trade",
+        "No reprisal — workers cannot be disciplined for exercising SWA in good faith",
+        "Immediate — work stops immediately upon SWA exercise",
+        "Resolution before restart — work does not resume until the concern is resolved and all affected workers are satisfied",
+        "Documentation — SWA exercises should be documented and tracked (as a leading indicator)"
+      ],
+      "process": [
+        "1. Observe unsafe condition or act",
+        "2. Stop the work immediately",
+        "3. Notify the workers and supervisor",
+        "4. Explain the concern",
+        "5. Correct the condition",
+        "6. Get agreement from all involved parties that it is safe to proceed",
+        "7. Resume work",
+        "8. Document the SWA exercise"
+      ]
+    },
+
+    "safety_observation_program": {
+      "description": "Structured program for identifying safe and at-risk behaviors and conditions in the field",
+      "types": [
+        "Peer-to-peer observations (BBS style)",
+        "Supervisor observations (daily walkdowns)",
+        "Management safety walks (leadership visibility)",
+        "Client/owner observations (audit/inspection style)"
+      ],
+      "observation_card_elements": [
+        "Date, time, location",
+        "Observer name (or anonymous option)",
+        "Task being observed",
+        "Safe behaviors observed (positive recognition)",
+        "At-risk behaviors or conditions observed",
+        "Immediate corrective actions taken",
+        "Follow-up actions needed",
+        "Category (PPE, body position, housekeeping, tools/equipment, procedures, etc.)"
+      ]
+    },
+
+    "toolbox_talk_program": {
+      "description": "Short safety meetings held at the work area, typically daily before shift or before starting a new task",
+      "duration": "5-15 minutes",
+      "frequency": "Daily (most sites), or before each new task",
+      "content_sources": [
+        "Planned topic relevant to the day's work",
+        "Recent incidents or near-misses (site or industry)",
+        "Seasonal hazards (heat stress, cold stress, storms)",
+        "Permit review for the day's work",
+        "JSA review for the day's tasks",
+        "Lessons learned from audits/inspections",
+        "Worker concerns and questions"
+      ],
+      "documentation": [
+        "Date and time",
+        "Topic",
+        "Key points discussed",
+        "Presenter name",
+        "Attendee signatures"
+      ]
+    },
+
+    "drug_alcohol_testing": {
+      "types": {
+        "pre_employment": "Before starting work on site. Required by most industrial sites.",
+        "random": "Unannounced selection from workforce. Common frequency: 25-50% of workforce annually.",
+        "post_incident": "After any recordable injury, vehicle accident, or near-miss (per site policy). Must be conducted within reasonable time (typically 2-8 hours).",
+        "reasonable_suspicion": "When trained supervisor observes signs of impairment. Requires two trained supervisors to agree (in many programs).",
+        "return_to_duty": "After a positive test and completion of treatment program",
+        "follow_up": "Unannounced testing after return to duty (typically 6 directly observed tests in 12 months)"
+      },
+      "panel": {
+        "DOT_5_panel": "Marijuana (THC), Cocaine, Opiates, Amphetamines/Methamphetamines, PCP",
+        "expanded_panel": "May include: benzodiazepines, barbiturates, methadone, propoxyphene, expanded opioids",
+        "alcohol": "Breath test (BAC). 0.02% or above is typically a positive result on industrial sites. 0.04% DOT threshold."
+      },
+      "consequences": "Varies by site — typically immediate removal from site for positive result. Some programs allow single chance with treatment program (SAP evaluation per DOT rules). Refusal to test = treated as positive."
+    },
+
+    "fit_for_duty": {
+      "description": "Program ensuring workers are physically and mentally fit to safely perform their duties",
+      "elements": [
+        "Pre-task self-assessment (fatigue, medication, illness, emotional state)",
+        "Supervisor observation for signs of impairment",
+        "Fatigue management (hours of work limitations — many sites enforce 12-hour shift max, 6 day work week max, mandatory rest periods)",
+        "Medical fitness-for-duty evaluations for specific tasks (crane operators, confined space entrants, respiratory protection users)",
+        "Prescription medication reporting and evaluation"
+      ],
+      "fatigue_management_common_rules": {
+        "maximum_shift": "12 hours (portal to portal, including travel in some programs)",
+        "maximum_weekly": "60-72 hours",
+        "minimum_rest": "8 hours between shifts (some require 10-12 hours)",
+        "consecutive_days": "Maximum 14 days without a day off (some sites limit to 6-7 days)",
+        "overtime_approval": "Required for exceeding normal shift limits"
+      }
+    }
+  },
+
+  "section_09_environmental_compliance": {
+    "title": "Environmental Compliance for Construction Sites",
+
+    "SWPPP": {
+      "full_name": "Stormwater Pollution Prevention Plan",
+      "regulatory_basis": "Clean Water Act (CWA), 40 CFR 122, EPA Construction General Permit (CGP)",
+      "when_required": "Construction activity disturbing 1 acre or more of land (or part of a common plan of development that will disturb 1 acre or more)",
+      "key_elements": [
+        "Site description and map showing drainage, receiving waters, disturbed areas",
+        "Description of BMPs (Best Management Practices) to minimize pollutant discharge",
+        "Erosion controls (silt fences, erosion blankets, temporary seeding, mulching)",
+        "Sediment controls (sediment basins, silt fences, inlet protection)",
+        "Good housekeeping practices (spill prevention, waste management, material storage)",
+        "Inspection schedule (every 7 days and within 24 hours of 0.25-inch rain event)",
+        "Corrective action procedures",
+        "Pollution prevention for specific activities (concrete washout, paint, fuel, chemicals)"
+      ],
+      "inspection_requirements": {
+        "frequency": "Every 7 calendar days OR every 14 days with rain event inspections within 24 hours of 0.25-inch rainfall",
+        "inspector": "Qualified person (competent in SWPPP and erosion/sediment controls)",
+        "documentation": "Inspection reports maintained on site with SWPPP"
+      }
+    },
+
+    "SPCC": {
+      "full_name": "Spill Prevention, Control, and Countermeasure Plan",
+      "regulatory_basis": "40 CFR 112 (Clean Water Act Section 311)",
+      "when_required": "Facility with total aboveground oil storage capacity exceeding 1,320 gallons (or underground capacity exceeding 42,000 gallons), with reasonable expectation of discharge to navigable waters",
+      "key_elements": [
+        "Facility description and oil storage inventory",
+        "Potential spill scenarios and discharge predictions",
+        "Containment and diversionary structures (berms, dikes, holding 110% of largest container)",
+        "Inspection and monitoring procedures",
+        "Personnel training",
+        "Security measures to prevent unauthorized access/vandalism",
+        "Spill response procedures and equipment",
+        "Contact information for cleanup contractors and agencies"
+      ],
+      "construction_site_application": "If construction project stores more than 1,320 gallons of oil products (diesel, hydraulic fluid, lubricants, etc.) in aggregate, SPCC plan or equivalent may be required."
+    },
+
+    "hazardous_waste_RCRA": {
+      "full_name": "Resource Conservation and Recovery Act",
+      "key_concepts": {
+        "hazardous_waste_characteristics": {
+          "ignitability": "Flash point below 140F, or can cause fire through friction/absorption/chemical change",
+          "corrosivity": "pH less than or equal to 2, or greater than or equal to 12.5",
+          "reactivity": "Unstable, reacts violently with water, generates toxic gases, capable of detonation",
+          "toxicity": "Contains listed toxic substances above regulatory levels (TCLP test)"
+        },
+        "generator_categories": {
+          "VSQG": "Very Small Quantity Generator — less than 220 lbs/month",
+          "SQG": "Small Quantity Generator — 220-2,200 lbs/month",
+          "LQG": "Large Quantity Generator — more than 2,200 lbs/month"
+        },
+        "construction_site_common_hazardous_wastes": [
+          "Paint waste and thinners",
+          "Solvent-contaminated rags",
+          "Used oil (regulated but not hazardous if managed properly)",
+          "Lead-containing paint debris (abatement projects)",
+          "Asbestos-containing material (ACM) from demolition",
+          "Mercury from old thermostats/switches",
+          "Spent batteries",
+          "Contaminated soil from excavation in brownfield areas"
+        ]
+      },
+      "key_rules": [
+        "Proper labeling: 'Hazardous Waste' label with contents, accumulation start date",
+        "Containers closed except when adding/removing waste",
+        "Compatible waste only in same container",
+        "Storage time limits: SQG 270 days (or 180 days for shipment under 200 miles), LQG 90 days",
+        "Manifest system for off-site disposal",
+        "Employee training for waste handlers"
+      ]
+    },
+
+    "air_quality": {
+      "construction_site_concerns": [
+        "Dust/particulate matter (PM10, PM2.5) from earthwork, demolition, material handling",
+        "Welding fumes (metal fumes, ozone, NOx)",
+        "VOCs from painting, coating, adhesives, solvents",
+        "Diesel exhaust from heavy equipment",
+        "Silica dust from concrete cutting, grinding, drilling (29 CFR 1926.1153)",
+        "Asbestos from demolition/renovation of older structures"
+      ],
+      "silica_standard": {
+        "citation": "29 CFR 1926.1153",
+        "PEL": "50 ug/m3 TWA (8-hour)",
+        "action_level": "25 ug/m3 TWA",
+        "table_1": "Specifies engineering controls, work practices, and respiratory protection by task (e.g., concrete cutting, grinding, drilling)",
+        "requirements": [
+          "Follow Table 1 controls OR conduct exposure monitoring",
+          "Written exposure control plan",
+          "Medical surveillance for workers exposed above action level for 30+ days/year",
+          "Training on silica hazards"
+        ]
+      },
+      "refinery_specific": [
+        "Benzene monitoring near process units (PEL: 1 ppm TWA, STEL: 5 ppm)",
+        "H2S monitoring (continuous monitors, personal monitors in process areas)",
+        "VOC monitoring during line breaks, vessel openings",
+        "Combustible gas monitoring in classified areas"
+      ]
+    },
+
+    "noise_monitoring_hearing_conservation": {
+      "osha_reference": "29 CFR 1926.52 and 29 CFR 1926.101 (Construction), 29 CFR 1910.95 (General Industry program, often applied)",
+      "program_elements": [
+        "Noise monitoring (area surveys and/or personal dosimetry)",
+        "Hearing protection provided at 85 dBA and above (required at 90 dBA if engineering controls not feasible)",
+        "Baseline audiogram within 6 months of first exposure at or above 85 dBA TWA (within 1 year if mobile test van used)",
+        "Annual audiometric testing",
+        "Standard Threshold Shift (STS) evaluation: 10 dB average shift at 2000, 3000, and 4000 Hz in either ear",
+        "Hearing protector selection (NRR rating — effective NRR = (NRR - 7) / 2 for real-world derating)",
+        "Training on noise hazards, hearing protection use, and audiometric testing purpose"
+      ],
+      "common_construction_noise_levels": {
+        "hand_tools_hammering": "85-95 dBA",
+        "circular_saw": "90-100 dBA",
+        "grinder_angle": "95-105 dBA",
+        "impact_wrench": "95-105 dBA",
+        "pneumatic_drill_jackhammer": "100-115 dBA",
+        "pile_driving": "100-115 dBA",
+        "heavy_equipment": "85-100 dBA"
+      }
+    },
+
+    "heat_stress_program": {
+      "osha_guidance": "OSHA Recommended Practices (no specific construction standard, enforced under General Duty Clause). OSHA National Emphasis Program on Heat began 2022.",
+      "WBGT_monitoring": {
+        "description": "Wet Bulb Globe Temperature — measures heat stress accounting for temperature, humidity, wind, and radiant heat",
+        "action_levels": {
+          "light_work": "Above 82.1F WBGT — precautions required",
+          "moderate_work": "Above 79.9F WBGT — precautions required",
+          "heavy_work": "Above 77.9F WBGT — precautions required",
+          "very_heavy_work": "Above 76.1F WBGT — precautions required"
+        },
+        "note": "WBGT meters should be placed at the work location (radiant heat from equipment can significantly affect reading)"
+      },
+      "program_elements": [
+        "Written heat stress prevention program",
+        "WBGT or heat index monitoring when temperatures warrant",
+        "Water — cool water available, encourage 1 cup every 15-20 minutes",
+        "Rest — scheduled rest breaks in shade/cool area (rest frequency increases with heat)",
+        "Shade — shaded or climate-controlled rest areas provided",
+        "Acclimatization — new or returning workers (after 2+ weeks away) require gradual exposure: start at 20% of full duration on day 1, increase 20% per day for new workers; 50% on day 1, increase 20% per day for returning workers",
+        "Training — recognition of heat illness symptoms, buddy system, emergency procedures",
+        "Emergency procedures — how to respond to heat illness, when to call 911",
+        "Monitoring — buddy system, supervisor check-ins"
+      ],
+      "heat_illness_types": {
+        "heat_rash": "Red bumpy rash with itching. Move to cooler area, keep area dry.",
+        "heat_cramps": "Muscle spasms/cramps. Stop activity, drink water, rest in cool area.",
+        "heat_exhaustion": "Heavy sweating, weakness, nausea, dizziness, cool/moist skin, fast pulse. Move to cool area, loosen clothing, cool the worker, give water. Medical attention if no improvement.",
+        "heat_stroke": "HIGH BODY TEMPERATURE (above 103F), red/hot/dry skin, rapid strong pulse, confusion, loss of consciousness. MEDICAL EMERGENCY — call 911 immediately, move to cool area, cool the worker aggressively (water, ice, fans). Do NOT give fluids to unconscious person."
+      }
+    },
+
+    "cold_stress_program": {
+      "elements": [
+        "Written cold stress prevention program",
+        "Monitor wind chill temperatures",
+        "Warm break areas provided",
+        "Warm, sweet beverages available (no alcohol or caffeine)",
+        "Layered clothing — inner wicking layer, insulating layer, outer wind/waterproof layer",
+        "Work/warm-up schedule based on wind chill",
+        "Buddy system for monitoring",
+        "Training on recognition of hypothermia and frostbite symptoms"
+      ],
+      "conditions": {
+        "frostbite": "Numbness, tingling, stinging, aching in extremities (fingers, toes, nose, ears). White or grayish-yellow skin. Do NOT rub affected area. Immerse in warm (not hot) water.",
+        "hypothermia": "Shivering, exhaustion, confusion, fumbling hands, memory loss, slurred speech. Core body temperature below 95F. MEDICAL EMERGENCY — call 911, move to warm area, remove wet clothing, warm the center of the body."
+      }
+    }
+  },
+
+  "section_10_audits_inspections": {
+    "title": "Safety Audits and Inspections",
+
+    "daily_area_inspections": {
+      "who": "Supervisors, foremen, and designated safety personnel",
+      "when": "Before each shift begins and continuously throughout the shift",
+      "what_to_inspect": [
+        "Housekeeping (clear walkways, organized work area, waste properly disposed)",
+        "PPE compliance (correct PPE worn properly)",
+        "Fall protection in place and used correctly",
+        "Barricades and warning signs in place",
+        "Fire extinguishers present and accessible",
+        "Permits posted and current",
+        "Electrical cords and equipment condition",
+        "Ladder condition and proper use",
+        "Tool condition (guards in place, no damage)",
+        "Material storage (stable, not blocking egress)",
+        "Excavation conditions (shoring, egress, edge protection)"
+      ],
+      "documentation": "Daily inspection form or checklist. Deficiencies documented with corrective actions."
+    },
+
+    "weekly_safety_walkdowns": {
+      "who": "Safety manager, superintendent, client safety representative",
+      "purpose": "Broader inspection of work areas, focus on trends, program compliance, and conditions not caught in daily inspections",
+      "typical_checklist_areas": [
+        "All daily inspection items",
+        "Scaffold condition and tags current",
+        "Crane inspection documentation current",
+        "SWPPP BMPs in place and effective",
+        "Chemical storage and labeling",
+        "Waste management (segregation, labeling, accumulation time)",
+        "Emergency equipment (eyewash, first aid, AEDs, fire extinguishers)",
+        "Traffic control and vehicle safety",
+        "Temporary electrical installations",
+        "Office and break area conditions"
+      ]
+    },
+
+    "scaffold_inspection": {
+      "osha_reference": "29 CFR 1926.451(f)(3)",
+      "requirements": {
+        "when": "Before each work shift by competent person. After any event that could affect structural integrity (weather, impact, modification).",
+        "by_whom": "Competent person (as defined in 29 CFR 1926.32(f))",
+        "what_to_check": [
+          "Foundation/mudsills — stable, level, not undermined",
+          "All connections secure — pins, bolts, braces",
+          "Plumb and level (not leaning)",
+          "All planks in place, secured, proper overhang (6-12 inches)",
+          "Guardrails at 38-45 inches, midrails in place",
+          "Toeboards in place (3.5 inches minimum height)",
+          "No gaps greater than 1 inch between planks",
+          "Access ladder/stair tower in place and secure",
+          "Ties to building/structure at required intervals (per design)",
+          "No overloading beyond rated capacity",
+          "No visible damage to components",
+          "Tag updated with current date and inspector name"
+        ]
+      }
+    },
+
+    "crane_inspection": {
+      "osha_reference": "29 CFR 1926.1412",
+      "inspection_types": {
+        "shift_pre_use": {
+          "by": "Crane operator",
+          "items": [
+            "Control functions — test all controls for proper operation",
+            "Safety devices — anti-two-block, boom angle indicator, load moment indicator, outrigger interlocks",
+            "Operational aids — working properly",
+            "Wire rope — visual inspection for damage, kinks, bird-caging",
+            "Hooks — safety latches, no cracks or deformation",
+            "Hydraulic system — no leaks",
+            "Tires/tracks — condition, proper inflation",
+            "Outriggers/stabilizers — function properly",
+            "Ground conditions — adequate for setup",
+            "Load chart in cab and readable"
+          ]
+        },
+        "monthly": {
+          "by": "Competent person",
+          "items": [
+            "All shift inspection items in detail",
+            "Structural components for deformation, cracks, corrosion",
+            "Wire rope condition (measure diameter, check for broken wires — 6 randomly in one lay or 3 in one strand = replacement)",
+            "Sheaves and drums for wear",
+            "All pins, bolts, and connections",
+            "Electrical systems and components",
+            "Hydraulic and pneumatic systems",
+            "Safety devices functional test"
+          ],
+          "documentation": "Written record signed by inspector with date and crane identification"
+        },
+        "annual_comprehensive": {
+          "by": "Competent person (many sites require third-party qualified inspector)",
+          "items": [
+            "Complete structural inspection",
+            "NDT of critical welds and structural members if applicable",
+            "Complete mechanical inspection",
+            "Load test if required by manufacturer or after major repair",
+            "All safety device calibration and testing",
+            "Review of maintenance and repair records"
+          ],
+          "documentation": "Written report with date, inspector qualifications, serial number, findings, and certification of compliance"
+        }
+      }
+    },
+
+    "fire_extinguisher_inspection": {
+      "osha_reference": "29 CFR 1926.150 and NFPA 10",
+      "frequencies": {
+        "monthly": {
+          "by": "Designated competent person",
+          "items": ["Located in designated place", "No obstructions to access", "Gauge in operable range (green zone)", "Seal and tamper indicator intact", "No visible damage, corrosion, or leakage", "Inspection tag initialed and dated"]
+        },
+        "annual": {
+          "by": "Certified fire extinguisher technician",
+          "items": ["Complete external examination", "Internal examination where applicable", "Verify correct agent and charge", "Replace defective parts", "Maintenance tag attached"]
+        },
+        "6_year": {
+          "applies_to": "Stored pressure extinguishers (dry chemical, clean agent)",
+          "items": ["Complete internal examination", "Recharge or replace agent"]
+        },
+        "12_year_hydrostatic": {
+          "applies_to": "Extinguisher cylinders requiring hydrostatic testing",
+          "items": ["Pressure test of cylinder to verify structural integrity"]
+        }
+      }
+    },
+
+    "ppe_inspection": {
+      "hard_hat": {
+        "frequency": "Before each use",
+        "check_for": ["Cracks, dents, or deformation in shell", "Frayed, torn, or damaged suspension", "Fading or chalking (UV degradation)", "Stickers covering damage (only allowed per manufacturer guidelines)", "Manufacturing date (replace per manufacturer guidance, typically 2-5 years for shell, 1 year for suspension)"]
+      },
+      "safety_harness_fall_protection": {
+        "frequency": "Before each use by user; formally by competent person per manufacturer recommendations (annually minimum)",
+        "check_for": ["Frayed, cut, or worn webbing", "Cracked, bent, or broken buckles and D-rings", "Damaged or missing labels/tags (if label is missing or illegible, remove from service)", "Stitching — broken, pulled, or cut threads", "Evidence of chemical damage, burns, or heat exposure", "Evidence of impact loading (stretched, deformed) — remove from service after any fall arrest event", "Inspect all connection points (lanyard to D-ring, carabiner function, SRL retraction)"],
+        "retirement": "Per manufacturer guidelines. Immediately after fall arrest event. When any defect is found. Typical maximum service life: 5-10 years from date of first use (varies by manufacturer)."
+      },
+      "safety_glasses": {
+        "frequency": "Before each use",
+        "check_for": ["ANSI Z87.1 marking on lens and frame", "Scratched or pitted lenses (impair vision)", "Bent or loose frames", "Missing or damaged side shields"]
+      },
+      "respiratory_protection": {
+        "frequency": "Before and after each use",
+        "check_for": ["Facepiece — cracks, tears, distortion", "Head straps — elasticity, cracks, breaks", "Inhalation/exhalation valves — function, damage", "Filter/cartridge — proper type, expiration, saturation", "Seal — positive and negative pressure user seal check each donning"]
+      }
+    },
+
+    "housekeeping_standards": {
+      "requirements": [
+        "Walking paths clear of debris, tools, materials, cords",
+        "No tripping hazards (cover or mark floor openings, secure cords/hoses)",
+        "Waste containers available and not overflowing",
+        "Scrap materials removed from work area regularly",
+        "Flammable waste in approved containers with lids",
+        "Material stacked and stored safely (not above head height unless on rated storage)",
+        "Tools returned to proper storage when not in use",
+        "Adequate lighting in work areas and walkways",
+        "Stairways and access points clear",
+        "No eating or drinking in work areas where chemicals present",
+        "Spills cleaned up immediately",
+        "Laydown areas organized with designated storage locations"
+      ],
+      "frequency_of_inspection": "Continuous (every worker's responsibility). Formal inspection daily by supervisor. Weekly by safety."
+    }
+  },
+
+  "section_11_documentation": {
+    "title": "Safety Documentation Requirements",
+
+    "safety_meeting_minutes": {
+      "types": {
+        "daily_toolbox_talk": {
+          "required_content": ["Date, time, location", "Topic discussed", "Key safety points", "Presenter name", "Attendee sign-in sheet (printed name + signature)", "Questions/concerns raised and responses"]
+        },
+        "weekly_safety_meeting": {
+          "required_content": ["Date, time, location, duration", "Attendees (sign-in sheet)", "Topics covered (agenda)", "Incident/near-miss review", "Upcoming work hazards discussion", "Action items from previous meeting", "New action items with responsible parties", "Open discussion/worker concerns"]
+        },
+        "monthly_all_hands_safety_meeting": {
+          "required_content": ["All weekly meeting content plus:", "Safety statistics review (TRIR, observations, near-misses)", "Recognition of safe work practices", "Lessons learned from incidents", "Program updates", "Guest speakers (client safety, medical, environmental)"]
+        }
+      },
+      "retention": "Duration of project plus minimum 3 years. Many companies retain for 5+ years."
+    },
+
+    "training_records": {
+      "required_elements": [
+        "Employee name and unique identifier (badge number, SSN last 4)",
+        "Training course/topic",
+        "Date completed",
+        "Duration",
+        "Trainer name and qualifications",
+        "Training method (classroom, OJT, online, practical)",
+        "Test/evaluation results if applicable",
+        "Certification number and expiration date if applicable",
+        "Employee signature"
+      ],
+      "specific_osha_required_records": {
+        "fall_protection": "Written certification of training (name, date, trainer signature) per 1926.503",
+        "scaffold": "Training documented per 1926.454",
+        "confined_space": "Training records per 1926.1207",
+        "HAZWOPER": "Training certificates per 1926.65",
+        "respiratory_protection": "Fit test records, medical clearance, training per 1910.134",
+        "crane_operator": "Certification documentation per 1926.1427",
+        "hearing_conservation": "Audiometric test records per 1910.95"
+      },
+      "retention": "Duration of employment. Medical/exposure records: employment + 30 years."
+    },
+
+    "incident_reports": {
+      "osha_form_301": {
+        "title": "Injury and Illness Incident Report",
+        "when_required": "For every OSHA recordable injury/illness",
+        "due": "Within 7 calendar days of learning of the injury/illness",
+        "content": ["Employee information", "Physician/healthcare provider information", "Case details (date, time, location, what happened, what object/substance, what was the injury/illness, what body part)"],
+        "retention": "5 years following the year the record covers"
+      },
+      "osha_form_300": {
+        "title": "Log of Work-Related Injuries and Illnesses",
+        "when_required": "Running log maintained throughout the calendar year",
+        "content": ["Case number, employee name, job title, date of injury, where event occurred, description, classification (death, days away, restricted, other recordable), whether injury or illness"],
+        "retention": "5 years following the year the record covers",
+        "privacy_cases": "Employee name withheld for: sexual assault, HIV/hepatitis, needle-stick, tuberculosis, mental illness, musculoskeletal disorders (not on construction typically)"
+      },
+      "osha_form_300A": {
+        "title": "Summary of Work-Related Injuries and Illnesses",
+        "when_required": "Annually",
+        "posting_period": "February 1 through April 30 of the following year",
+        "content": ["Total number of cases by category", "Total days away from work and restricted days", "Injury and illness types", "Average number of employees", "Total hours worked"],
+        "certification": "Must be certified by company executive (owner, officer, highest-ranking official at the establishment)",
+        "electronic_reporting": "Establishments with 250+ employees, or in high-hazard industries with 20+ employees, must electronically submit 300A data to OSHA annually via ITA (Injury Tracking Application)"
+      },
+      "internal_investigation_report": {
+        "recommended_elements": [
+          "Incident number/tracking ID",
+          "Date, time, specific location of incident",
+          "Injured person information (name, employer, trade, experience)",
+          "Supervisor information",
+          "Detailed description of event (narrative)",
+          "Environmental conditions at time of incident",
+          "Equipment/tools involved",
+          "Witnesses and statements",
+          "Root cause analysis (method used and findings)",
+          "Contributing factors",
+          "Immediate corrective actions taken",
+          "Long-term corrective actions (with responsible party and due date)",
+          "Photos and diagrams",
+          "Investigator name and date",
+          "Management review and sign-off"
+        ]
+      }
+    },
+
+    "safety_observation_cards": {
+      "purpose": "Document field observations of safe and at-risk behaviors/conditions",
+      "content": ["Date, time, location", "Observer", "Task observed", "Safe behaviors noted", "At-risk behaviors/conditions noted", "Actions taken", "Follow-up required (yes/no)"],
+      "tracking": "Entered into database for trending and analysis. Target completion rate tracked as leading indicator."
+    },
+
+    "corrective_action_logs": {
+      "content": [
+        "Unique ID number",
+        "Source (incident investigation, observation, audit, inspection)",
+        "Date identified",
+        "Description of finding",
+        "Priority/severity level",
+        "Corrective action description",
+        "Responsible person",
+        "Target completion date",
+        "Actual completion date",
+        "Status (open, in progress, completed, verified, closed)",
+        "Verification of effectiveness",
+        "Verified by (name and date)"
+      ]
+    },
+
+    "permit_archives": {
+      "retention_recommendation": "Minimum duration of project plus 3 years. Hot work permits: 1 year minimum. Confined space permits: 1 year minimum per OSHA. Some companies retain all permits for 5+ years.",
+      "storage": "Organized by date and area. Accessible for audit and investigation purposes."
+    },
+
+    "equipment_inspection_records": {
+      "types_and_retention": {
+        "crane_inspections": "Monthly and annual documented inspections retained for duration of crane on project plus 3 years",
+        "scaffold_inspections": "Daily tag records retained for duration of scaffold on project",
+        "harness_inspection": "Per manufacturer — annual formal inspection records retained for life of equipment",
+        "fire_extinguisher": "Monthly inspection tags on unit. Annual maintenance records retained per NFPA 10.",
+        "rigging_and_slings": "Inspection before each use. Annual inspection by competent person. Records retained for life of equipment.",
+        "electrical_equipment": "GFCI testing records, ground fault testing (assured grounding program). Retained for duration of project."
+      }
+    },
+
+    "calibration_records": {
+      "gas_monitors": {
+        "bump_test": "Before each use (expose to known concentration to verify sensor response). Document date, time, result, instrument ID.",
+        "full_calibration": "Per manufacturer recommendation (typically monthly or when bump test fails). Document date, gas concentrations used, instrument ID, calibrator ID, results, technician.",
+        "sensor_replacement": "Per manufacturer lifespan (varies by sensor type: O2 sensors 1-2 years, LEL sensors 2-3 years, H2S sensors 2-3 years)"
+      },
+      "noise_monitoring_equipment": {
+        "calibration": "Before and after each use with calibrator. Annual laboratory calibration.",
+        "documentation": "Pre/post calibration results, instrument serial number, date, operator"
+      },
+      "fall_protection_equipment": {
+        "SRL_retractables": "Annual inspection by competent person or manufacturer-authorized technician. Documented with serial number, date, findings, technician certification.",
+        "anchor_systems": "Per manufacturer or engineer specifications"
+      }
+    }
+  },
+
+  "section_12_common_violations": {
+    "title": "Common Safety Violations on Industrial Construction Sites",
+
+    "top_10_osha_citations_construction": {
+      "note": "Based on OSHA published data for fiscal year 2023/2024. Rankings may shift slightly year to year but these consistently appear in top 10.",
+      "citations": [
+        {
+          "rank": 1,
+          "standard": "1926.501 — Fall Protection (Duty to Have Fall Protection)",
+          "description": "Failure to provide fall protection for workers at heights of 6 feet or more",
+          "common_specific_violations": [
+            "Workers on scaffolds, roofs, or leading edges without harness/guardrail",
+            "Unprotected floor holes or wall openings",
+            "Inadequate or missing guardrails on platforms",
+            "Workers in aerial lifts without harness/lanyard attached"
+          ]
+        },
+        {
+          "rank": 2,
+          "standard": "1926.1053 — Ladders",
+          "description": "Improper ladder use, condition, or setup",
+          "common_specific_violations": [
+            "Ladder not extending 3 feet above landing surface",
+            "Ladder not secured at top",
+            "Using damaged or defective ladders",
+            "Carrying items while climbing (loss of 3-point contact)",
+            "Standing on top 2 rungs of step ladder"
+          ]
+        },
+        {
+          "rank": 3,
+          "standard": "1926.451 — Scaffolding (General Requirements)",
+          "description": "Scaffold construction, inspection, or use deficiencies",
+          "common_specific_violations": [
+            "Missing guardrails, midrails, or toeboards",
+            "Scaffold not fully planked (gaps over 1 inch)",
+            "Scaffold not inspected by competent person",
+            "Exceeding load capacity",
+            "Scaffold not tied to structure when height exceeds 4:1 ratio",
+            "Workers using cross braces as access"
+          ]
+        },
+        {
+          "rank": 4,
+          "standard": "1910.1200 / 1926.59 — Hazard Communication",
+          "description": "Failure to communicate chemical hazards to workers",
+          "common_specific_violations": [
+            "Missing or incomplete Safety Data Sheets",
+            "Workers not trained on chemical hazards",
+            "Containers not labeled or improperly labeled",
+            "Written HazCom program missing or inadequate"
+          ]
+        },
+        {
+          "rank": 5,
+          "standard": "1926.503 — Fall Protection Training",
+          "description": "Failure to train workers on fall hazards and protection systems",
+          "common_specific_violations": [
+            "No documented fall protection training",
+            "Workers not trained on specific equipment being used",
+            "Retraining not conducted after changes"
+          ]
+        },
+        {
+          "rank": 6,
+          "standard": "1926.502 — Fall Protection Systems Criteria",
+          "description": "Fall protection equipment not meeting OSHA specifications",
+          "common_specific_violations": [
+            "Guardrail height incorrect (not 42 inches +/- 3 inches)",
+            "Anchor points not rated for 5,000 lbs",
+            "Using body belts instead of full body harness for fall arrest",
+            "Free fall distance exceeding 6 feet"
+          ]
+        },
+        {
+          "rank": 7,
+          "standard": "1926.651 — Excavations (Specific Requirements)",
+          "description": "Excavation safety deficiencies",
+          "common_specific_violations": [
+            "No protective system for excavations over 5 feet",
+            "No competent person inspecting excavation",
+            "No ladder/egress within 25 feet lateral travel",
+            "Spoil pile within 2 feet of excavation edge",
+            "Utilities not located before digging"
+          ]
+        },
+        {
+          "rank": 8,
+          "standard": "1910.134 / 1926.103 — Respiratory Protection",
+          "description": "Respiratory protection program deficiencies",
+          "common_specific_violations": [
+            "No written respiratory protection program",
+            "Workers not fit-tested",
+            "Facial hair interfering with seal",
+            "Wrong respirator type for the hazard",
+            "Medical evaluation not completed before use"
+          ]
+        },
+        {
+          "rank": 9,
+          "standard": "1926.1053 / 1926.1052 — Stairways",
+          "description": "Stairway requirements not met",
+          "common_specific_violations": [
+            "Missing stair rails or handrails",
+            "Stairways not provided when break in elevation is 19 inches or more"
+          ]
+        },
+        {
+          "rank": 10,
+          "standard": "1926.453 — Aerial Lifts",
+          "description": "Aerial lift safety violations",
+          "common_specific_violations": [
+            "No harness/lanyard in boom lift",
+            "Untrained operators",
+            "Exceeding rated capacity",
+            "Operating on unstable ground",
+            "Using lift as crane (lifting materials not designed for)"
+          ]
+        }
+      ]
+    },
+
+    "most_common_near_misses": [
+      "Dropped objects (tools, materials from elevation)",
+      "Near-miss struck-by from mobile equipment/vehicles",
+      "Slips, trips, and falls (same level)",
+      "Near-contact with overhead power lines (cranes, aerial lifts, boom trucks)",
+      "Near-miss caught-in/between (moving equipment parts, closing doors/panels)",
+      "Unsecured materials blown by wind",
+      "Near-miss falls from height (misstep on scaffold, ladder slip)",
+      "Electrical near-miss (unexpected energized equipment)",
+      "Trench wall movement/spalling",
+      "Equipment malfunction (brakes, controls, safety devices)"
+    ],
+
+    "leading_causes_of_construction_fatalities": {
+      "focus_four": {
+        "description": "OSHA's Focus Four hazards account for approximately 60%+ of construction fatalities",
+        "falls": {
+          "percentage": "Approximately 33-38% of all construction fatalities",
+          "common_scenarios": ["Falls from roofs", "Falls from scaffolds", "Falls from ladders", "Falls through floor/roof openings", "Falls from structural steel"]
+        },
+        "struck_by": {
+          "percentage": "Approximately 11-15% of all construction fatalities",
+          "common_scenarios": ["Struck by falling objects (tools, materials)", "Struck by vehicles (backing, blind spots)", "Struck by swinging/rotating equipment", "Struck by crane loads"]
+        },
+        "electrocution": {
+          "percentage": "Approximately 7-9% of all construction fatalities",
+          "common_scenarios": ["Contact with overhead power lines", "Contact with energized equipment/wiring", "Improper use of extension cords/tools", "Lightning strikes"]
+        },
+        "caught_in_between": {
+          "percentage": "Approximately 5-7% of all construction fatalities",
+          "common_scenarios": ["Trench/excavation collapse", "Caught in or between equipment parts", "Caught between equipment and fixed objects", "Caught in collapsing structures"]
+        }
+      },
+      "other_significant_causes": [
+        "Heat-related illness (increasing trend)",
+        "Confined space (oxygen depletion, toxic atmosphere)",
+        "Fires and explosions (especially in refinery/petrochemical construction)",
+        "Transportation incidents (driving to/from site, equipment transport)"
+      ]
+    },
+
+    "hazards_by_trade": {
+      "electrical": {
+        "primary_hazards": [
+          "Electrocution/shock (contact with energized conductors)",
+          "Arc flash/arc blast (NFPA 70E categories)",
+          "Falls (work at height for cable tray, conduit, overhead installations)",
+          "Struck by (conduit, cable reels)",
+          "Burns (from energized equipment, soldering)",
+          "Confined space (electrical vaults, manholes, duct banks)"
+        ],
+        "key_violations": [
+          "Failure to lock out/tag out (most critical)",
+          "Working energized without proper PPE or permit",
+          "Lack of GFCI protection on temporary circuits",
+          "Damaged extension cords/tools still in use",
+          "Inadequate arc flash labeling"
+        ]
+      },
+      "pipe_fitting_welding": {
+        "primary_hazards": [
+          "Burns (welding, cutting, hot metal, steam)",
+          "Fire/explosion (hot work near flammables, line breaks on process piping)",
+          "Fume inhalation (welding fumes, galvanized, stainless, chromium, manganese)",
+          "Caught between/struck by (pipe handling, rigging, equipment)",
+          "Falls (work at height for elevated piping systems)",
+          "Confined space (vessels, tanks, large diameter pipe)",
+          "Noise (grinding, air arc gouging, pneumatic tools)",
+          "Eye injury (flash burn, grinding debris, chemical splash during line breaks)"
+        ],
+        "key_violations": [
+          "Hot work permit deficiencies or missing fire watch",
+          "Inadequate fume ventilation/extraction",
+          "Missing or improper fire blanket/shield placement",
+          "Failure to verify line contents before line break",
+          "Inadequate rigging for pipe lifts"
+        ]
+      },
+      "iron_work_structural_steel": {
+        "primary_hazards": [
+          "Falls from height (leading cause of ironworker fatalities)",
+          "Struck by (falling steel, swinging loads, bolts/tools)",
+          "Caught between (steel members, crane loads and structure)",
+          "Crane-related (overloading, rigging failure, power line contact)",
+          "Lacerations (sharp edges, burrs on steel)",
+          "Overexertion (heavy material handling)",
+          "Burns (welding connections, torch cutting)"
+        ],
+        "key_violations": [
+          "Fall protection deficiencies (connectors at height without protection)",
+          "Inadequate bolting before releasing crane load (minimum 2 bolts per connection)",
+          "Lack of tag lines on suspended loads",
+          "Improper rigging (incorrect sling angles, overloaded slings)",
+          "Workers in crane swing radius"
+        ]
+      },
+      "instrumentation": {
+        "primary_hazards": [
+          "Electrical shock (energized circuits, testing, calibration)",
+          "Chemical exposure (process connections, tubing breaks, sample points)",
+          "Falls (elevated instrumentation on columns, vessels, pipe racks)",
+          "Confined space (instrument installations inside vessels)",
+          "H2S/toxic gas exposure (working on analyzers, sample systems in process areas)",
+          "Burns (tubing/process connections on hot lines, steam)"
+        ],
+        "key_violations": [
+          "Working on energized instrumentation circuits without proper LOTO",
+          "Failure to verify process isolation before breaking instrument connections",
+          "Missing confined space permit for vessel entry instrument work",
+          "Inadequate 4-gas monitoring in process areas",
+          "Not wearing proper PPE for line break on process connections"
+        ]
+      }
+    }
+  },
+
+  "voice_assistant_quick_reference": {
+    "title": "Quick Reference for Voice Assistant Responses",
+    "description": "Key numbers and thresholds that safety officers frequently need to recall quickly",
+    "critical_numbers": {
+      "fall_protection_trigger_height": "6 feet (construction), 4 feet (general industry), 15 feet (steel erection connectors)",
+      "guardrail_top_rail_height": "42 inches +/- 3 inches",
+      "anchor_point_strength": "5,000 lbs per person attached",
+      "max_free_fall": "6 feet",
+      "scaffold_fall_protection": "10 feet above lower level",
+      "scaffold_platform_width": "Minimum 18 inches",
+      "scaffold_toeboard": "Minimum 3.5 inches",
+      "scaffold_plank_max_gap": "1 inch between planks",
+      "excavation_protective_system": "5 feet depth triggers protective system requirement",
+      "excavation_engineer_design": "20 feet depth requires PE design",
+      "excavation_egress": "Ladder within 25 feet lateral travel for 4+ foot depth",
+      "excavation_spoil_pile": "Minimum 2 feet from edge",
+      "fire_extinguisher_distance": "100 feet general, 50 feet from flammables",
+      "fire_watch_duration": "Minimum 30 minutes after hot work (60 minutes on some sites)",
+      "hot_work_clear_zone": "35 feet from combustibles",
+      "power_line_clearance_under_50kV": "10 feet minimum",
+      "noise_action_level": "85 dBA TWA",
+      "noise_PEL": "90 dBA TWA",
+      "h2s_PEL": "10 ppm TWA",
+      "h2s_ceiling": "20 ppm",
+      "h2s_IDLH": "100 ppm",
+      "oxygen_minimum": "19.5%",
+      "oxygen_maximum": "23.5%",
+      "LEL_entry_limit": "10% of LEL (many sites use 0%)",
+      "CO_PEL": "50 ppm TWA",
+      "fatality_report_to_osha": "Within 8 hours",
+      "hospitalization_report_to_osha": "Within 24 hours",
+      "TRIR_formula": "(Recordable Cases x 200,000) / Hours Worked",
+      "osha_300A_posting": "February 1 through April 30",
+      "arc_flash_max_working_limit": "40 cal/cm2",
+      "scaffold_height_to_base_ratio": "4:1 requires tie-in to structure",
+      "flammable_storage_inside_building": "25 gallons max outside approved cabinet",
+      "eyewash_travel_distance": "10 seconds from corrosive hazard",
+      "heat_stroke_temp": "Body temp above 103F — call 911"
+    }
+  }
+}

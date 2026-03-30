@@ -1,0 +1,1261 @@
+{
+  "id": "ppe_catalog",
+  "title": "Complete PPE Catalog for Industrial / Refinery Construction",
+  "version": "1.0",
+  "description": "Comprehensive PPE reference covering all categories used on industrial construction and refinery sites. Each item includes standards, ratings, when required, and inspection criteria. Structured as dropdown options for JSA forms.",
+  "standards_references": {
+    "OSHA_1926": "29 CFR 1926 Subpart E - Personal Protective and Life Saving Equipment",
+    "OSHA_1910_132": "29 CFR 1910.132 - General Requirements for PPE",
+    "OSHA_1910_134": "29 CFR 1910.134 - Respiratory Protection",
+    "OSHA_1910_137": "29 CFR 1910.137 - Electrical Protective Equipment",
+    "OSHA_1926_500": "29 CFR 1926 Subpart M - Fall Protection",
+    "NFPA_70E": "NFPA 70E Standard for Electrical Safety in the Workplace",
+    "NFPA_2112": "NFPA 2112 Standard on Flame-Resistant Clothing for Industrial Personnel"
+  },
+
+  "categories": {
+    "head_protection": {
+      "category_name": "Head Protection",
+      "standard": "ANSI/ISEA Z89.1-2014",
+      "osha_reference": "29 CFR 1926.100",
+      "items": [
+        {
+          "id": "head_001",
+          "name": "Hard Hat - Type I, Class E",
+          "description": "Standard construction hard hat. Top impact protection. Electrical insulation rated to 20,000V.",
+          "type": "Type I (top impact only)",
+          "class": "Class E (Electrical, 20kV)",
+          "when_required": "Always required on industrial construction sites. Universal minimum.",
+          "common_models": ["MSA V-Gard", "3M H-700", "Honeywell North Zone", "Pyramex Ridgeline"],
+          "standard_site_ppe": true,
+          "inspection": {
+            "frequency": "Daily before use",
+            "check_for": ["Cracks, dents, or deformation in shell", "Degraded suspension system", "UV damage (chalky/faded appearance)", "Missing or damaged suspension clips", "Chemical damage or discoloration"],
+            "replace_when": ["Any crack or penetration in shell", "Suspension is torn, frayed, or no longer adjustable", "After any significant impact", "Manufacturer recommends replacement (typically 2-5 years)", "UV degradation visible after prolonged outdoor use"]
+          }
+        },
+        {
+          "id": "head_002",
+          "name": "Hard Hat - Type II, Class E",
+          "description": "Enhanced hard hat with lateral (side) impact protection in addition to top impact. Electrical insulation rated to 20,000V.",
+          "type": "Type II (top + side impact)",
+          "class": "Class E (Electrical, 20kV)",
+          "when_required": "Required for confined space entry, work near overhead obstructions, scaffold work, steel erection. Many refineries (ExxonMobil, Shell) now mandate Type II site-wide.",
+          "common_models": ["MSA V-Gard 500", "3M SecureFit H-800", "Milwaukee Type 2", "Petzl Vertex"],
+          "standard_site_ppe": false,
+          "inspection": {
+            "frequency": "Daily before use",
+            "check_for": ["Same as Type I plus: side impact foam integrity", "Chin strap condition (if equipped)"],
+            "replace_when": ["Same criteria as Type I", "Side impact foam is compressed, cracked, or missing"]
+          }
+        },
+        {
+          "id": "head_003",
+          "name": "Hard Hat - Type I, Class G",
+          "description": "General purpose hard hat. Electrical insulation rated to 2,200V. Suitable for non-electrical trades.",
+          "type": "Type I (top impact only)",
+          "class": "Class G (General, 2.2kV)",
+          "when_required": "Acceptable for non-electrical trades where arc flash and high-voltage contact are not hazards. Pipe fitters, ironworkers, operators.",
+          "standard_site_ppe": false,
+          "notes": "Many sites standardize on Class E for all trades to avoid confusion."
+        },
+        {
+          "id": "head_004",
+          "name": "Hard Hat - Type I, Class C",
+          "description": "Conductive hard hat. NO electrical insulation. Ventilated for comfort.",
+          "type": "Type I (top impact only)",
+          "class": "Class C (Conductive, no electrical protection)",
+          "when_required": "NOT permitted on most industrial/refinery sites. Only acceptable in areas with zero electrical hazard. Typically banned site-wide.",
+          "standard_site_ppe": false,
+          "notes": "PROHIBITED on most refinery and industrial sites. Do not use."
+        },
+        {
+          "id": "head_005",
+          "name": "Bump Cap",
+          "description": "Lightweight head protection for low-clearance areas. NOT a hard hat replacement.",
+          "when_required": "Low-clearance areas where full hard hat is impractical AND no overhead falling object hazard exists. Rare on construction sites. Used in mechanical rooms, under-deck work.",
+          "standard_site_ppe": false,
+          "notes": "Does NOT meet ANSI Z89.1. Cannot replace a hard hat where hard hats are required."
+        },
+        {
+          "id": "head_006",
+          "name": "Welding Hood / Helmet",
+          "description": "Full face and head protection for welding operations. Auto-darkening or fixed shade lens.",
+          "when_required": "All arc welding operations (SMAW, GMAW, FCAW, GTAW, SAW). Must be worn in addition to hard hat (adapter bracket required) on construction sites.",
+          "standard_site_ppe": false,
+          "shade_guide": {
+            "SMAW_stick": "Shade 10-12 (depending on amperage)",
+            "GMAW_MIG": "Shade 10-12",
+            "FCAW_flux_core": "Shade 10-12",
+            "GTAW_TIG": "Shade 8-12 (lower amp TIG can use shade 8)",
+            "SAW_submerged_arc": "Shade 12-14",
+            "Oxy_fuel_cutting": "Shade 3-5",
+            "Oxy_fuel_welding": "Shade 4-8",
+            "Plasma_cutting": "Shade 8-12",
+            "Carbon_arc_gouging": "Shade 12-14"
+          },
+          "inspection": {
+            "frequency": "Before each use",
+            "check_for": ["Cracked or pitted lens", "Auto-darkening function (test with lighter/flashlight)", "Headgear adjustment and comfort", "Gaskets and seals intact", "Filter lens rating matches process"],
+            "replace_when": ["Cracked filter or cover lens", "Auto-darkening sensor fails", "Headgear broken beyond adjustment"]
+          }
+        },
+        {
+          "id": "head_007",
+          "name": "Hard Hat Winter Liner / Balaclava",
+          "description": "Insulating liner that fits under hard hat for cold weather protection.",
+          "when_required": "Cold weather operations below 40F. Must be compatible with hard hat suspension — cannot interfere with fit.",
+          "standard_site_ppe": false,
+          "notes": "Must be FR-rated if worn in FR-required areas. Non-FR liners can melt and cause worse burns."
+        }
+      ]
+    },
+
+    "eye_face_protection": {
+      "category_name": "Eye & Face Protection",
+      "standard": "ANSI/ISEA Z87.1-2020",
+      "osha_reference": "29 CFR 1926.102",
+      "items": [
+        {
+          "id": "eye_001",
+          "name": "Safety Glasses - Clear Lens",
+          "description": "Basic impact-rated safety glasses with side shields. ANSI Z87.1+ high-impact rated.",
+          "rating": "Z87.1+ (high impact)",
+          "when_required": "Always required on industrial construction sites. Universal minimum.",
+          "common_models": ["3M SecureFit", "Uvex Genesis", "Pyramex Intruder", "Gateway StarLite"],
+          "standard_site_ppe": true,
+          "notes": "Must have side shields. Non-prescription safety glasses with ANSI Z87.1+ marking. Prescription safety glasses must also meet Z87.1."
+        },
+        {
+          "id": "eye_002",
+          "name": "Safety Glasses - Tinted/Shaded Lens",
+          "description": "Impact-rated safety glasses with tinted lens for outdoor glare reduction.",
+          "rating": "Z87.1+ (high impact)",
+          "when_required": "Outdoor work in bright conditions. Smoke, gray, or amber tint. NOT for welding.",
+          "standard_site_ppe": false,
+          "notes": "Must swap to clear lens when entering buildings, shade, or low-light conditions."
+        },
+        {
+          "id": "eye_003",
+          "name": "Safety Glasses - Indoor/Outdoor Lens",
+          "description": "Transitional lens that works in both indoor and outdoor conditions.",
+          "rating": "Z87.1+ (high impact)",
+          "when_required": "Workers who move frequently between indoor and outdoor areas.",
+          "standard_site_ppe": false
+        },
+        {
+          "id": "eye_004",
+          "name": "Chemical Splash Goggles",
+          "description": "Sealed goggles with indirect ventilation to prevent chemical splash entry.",
+          "rating": "ANSI Z87.1 D3 (splash/droplet)",
+          "when_required": "Any work involving liquid chemicals, acids, caustics, solvents. Battery work (sulfuric acid). Chemical cleaning operations. Line opening where process fluids may be present.",
+          "standard_site_ppe": false,
+          "notes": "Must seal completely around eyes. D3 rating required for splash protection. Can be worn over prescription glasses."
+        },
+        {
+          "id": "eye_005",
+          "name": "Dust Goggles",
+          "description": "Sealed goggles to protect against fine dust and particulate.",
+          "rating": "ANSI Z87.1 D4 (dust)",
+          "when_required": "Concrete cutting, abrasive blasting observation, dusty environments, sandblasting.",
+          "standard_site_ppe": false
+        },
+        {
+          "id": "eye_006",
+          "name": "Welding Helmet - Auto-Darkening",
+          "description": "Electronic welding helmet with variable shade auto-darkening filter.",
+          "rating": "ANSI Z87.1 + Z49.1",
+          "shade_range": "Shade 4-13 variable (most common 9-13)",
+          "when_required": "All arc welding processes. See shade guide under head protection.",
+          "standard_site_ppe": false,
+          "notes": "Must be worn WITH safety glasses underneath as backup. Sensitivity and delay settings must match the welding process."
+        },
+        {
+          "id": "eye_007",
+          "name": "Welding Goggles - Fixed Shade",
+          "description": "Goggle-style eye protection for oxy-fuel cutting and brazing.",
+          "rating": "ANSI Z87.1",
+          "shade": "Shade 3-5 for cutting, 4-8 for welding",
+          "when_required": "Oxy-acetylene cutting, brazing, soldering, torch heating.",
+          "standard_site_ppe": false
+        },
+        {
+          "id": "eye_008",
+          "name": "Face Shield - Clear",
+          "description": "Full face shield that mounts to hard hat or headgear. Provides splash and impact protection for full face.",
+          "rating": "ANSI Z87.1+",
+          "when_required": "Grinding, chipping, wire wheel operations, chemical handling, potential splash. ALWAYS worn IN ADDITION TO safety glasses (face shield alone is not sufficient).",
+          "standard_site_ppe": false,
+          "notes": "Safety glasses MUST be worn under face shield. Face shield alone does not protect from particles entering from below."
+        },
+        {
+          "id": "eye_009",
+          "name": "Face Shield - IR/UV Coated",
+          "description": "Face shield with infrared/ultraviolet coating for radiant heat and light.",
+          "rating": "ANSI Z87.1+",
+          "when_required": "Furnace observation, molten metal proximity, high-temperature operations.",
+          "standard_site_ppe": false
+        }
+      ],
+      "inspection": {
+        "frequency": "Daily before use",
+        "check_for": ["Scratched, pitted, or cracked lenses", "Damaged or missing side shields", "Loose or broken frames", "Fogging (anti-fog coating deteriorated)", "UV degradation"],
+        "replace_when": ["Vision impaired by scratches or pitting", "Side shields missing or broken", "Frames cracked or won't stay adjusted", "Lens coating peeling or delaminated"]
+      }
+    },
+
+    "hand_protection": {
+      "category_name": "Hand Protection",
+      "standard": "ANSI/ISEA 105-2016 (cut), ASTM F696 (electrical), EN 388 (mechanical)",
+      "osha_reference": "29 CFR 1926.95, 1910.137 (electrical)",
+      "items": [
+        {
+          "id": "hand_001",
+          "name": "Leather Work Gloves",
+          "description": "General purpose leather work gloves for material handling.",
+          "when_required": "Standard site PPE for most material handling tasks. Minimum hand protection on industrial sites.",
+          "standard_site_ppe": true,
+          "common_types": ["Cowhide palm", "Pigskin palm", "Goatskin (dexterity)", "Split leather (economy)"],
+          "notes": "Many sites now require cut-resistant gloves as minimum instead of basic leather."
+        },
+        {
+          "id": "hand_002",
+          "name": "Cut-Resistant Gloves - A2 Rating",
+          "description": "Light-duty cut-resistant gloves. Suitable for general construction, light material handling.",
+          "cut_rating": "ANSI A2 (500-999g cut force)",
+          "when_required": "General material handling, light sheet metal, pulling wire, handling strut/conduit.",
+          "standard_site_ppe": false,
+          "notes": "Some owners (Chevron, ExxonMobil) now require A2 minimum as standard site PPE."
+        },
+        {
+          "id": "hand_003",
+          "name": "Cut-Resistant Gloves - A4 Rating",
+          "description": "Medium-duty cut-resistant gloves. For handling sharp materials and moderate cut hazards.",
+          "cut_rating": "ANSI A4 (1500-2199g cut force)",
+          "when_required": "Handling sharp steel, pipe cutting debris, sheet metal, broken glass, razor wire, cable pulling with sharp edges.",
+          "standard_site_ppe": false,
+          "common_models": ["HexArmor 9014", "Ansell HyFlex 11-840", "Mechanix CG Cut-5", "Superior Tenactiv"],
+          "notes": "Most popular rating for industrial construction. Good balance of cut protection and dexterity."
+        },
+        {
+          "id": "hand_004",
+          "name": "Cut-Resistant Gloves - A6 Rating",
+          "description": "Heavy-duty cut-resistant gloves. For severe cut hazards.",
+          "cut_rating": "ANSI A6 (3000-3999g cut force)",
+          "when_required": "Heavy steel erection, handling sharp pipe ends, demolition, handling rebar, working with reciprocating saws.",
+          "standard_site_ppe": false
+        },
+        {
+          "id": "hand_005",
+          "name": "Cut-Resistant Gloves - A9 Rating",
+          "description": "Maximum cut-resistant gloves. For extreme cut hazards.",
+          "cut_rating": "ANSI A9 (6000g+ cut force)",
+          "when_required": "Glass handling, razor-sharp material handling, extreme demolition. Rare in general construction.",
+          "standard_site_ppe": false,
+          "notes": "Reduced dexterity. Only for tasks with extreme cut exposure."
+        },
+        {
+          "id": "hand_006",
+          "name": "Rubber Insulating Gloves - Class 00",
+          "description": "Electrical insulating gloves rated to 500V AC / 750V DC. Lowest voltage class.",
+          "voltage_rating": "500V AC / 750V DC max use",
+          "test_voltage": "2,500V AC proof test",
+          "color": "Beige",
+          "when_required": "Low-voltage electrical work up to 500V AC. 120/208V panel work, 277/480V work with reduced exposure.",
+          "standard_site_ppe": false,
+          "standards": "ASTM D120, OSHA 1910.137",
+          "notes": "Must be worn with leather protector gloves over them. Must be tested every 6 months by certified lab. Air test before each use."
+        },
+        {
+          "id": "hand_007",
+          "name": "Rubber Insulating Gloves - Class 0",
+          "description": "Electrical insulating gloves rated to 1,000V AC / 1,500V DC.",
+          "voltage_rating": "1,000V AC / 1,500V DC max use",
+          "test_voltage": "5,000V AC proof test",
+          "color": "Red",
+          "when_required": "Standard voltage class for most industrial electrical work: 480V systems, 600V systems, motor control centers. Most common class for electricians on industrial sites.",
+          "standard_site_ppe": false,
+          "standards": "ASTM D120, OSHA 1910.137",
+          "notes": "Most commonly issued to electricians. Must be tested every 6 months. Air test before each use. Leather protectors required."
+        },
+        {
+          "id": "hand_008",
+          "name": "Rubber Insulating Gloves - Class 1",
+          "description": "Electrical insulating gloves rated to 7,500V AC / 11,250V DC.",
+          "voltage_rating": "7,500V AC / 11,250V DC max use",
+          "test_voltage": "10,000V AC proof test",
+          "color": "White",
+          "when_required": "Medium-voltage work: 2.4kV, 4.16kV systems. Substation work. Transformer connections.",
+          "standard_site_ppe": false,
+          "standards": "ASTM D120, OSHA 1910.137"
+        },
+        {
+          "id": "hand_009",
+          "name": "Rubber Insulating Gloves - Class 2",
+          "description": "Electrical insulating gloves rated to 17,000V AC / 25,500V DC.",
+          "voltage_rating": "17,000V AC / 25,500V DC max use",
+          "test_voltage": "20,000V AC proof test",
+          "color": "Yellow",
+          "when_required": "High-voltage work: 13.8kV systems, utility interconnections.",
+          "standard_site_ppe": false,
+          "standards": "ASTM D120, OSHA 1910.137"
+        },
+        {
+          "id": "hand_010",
+          "name": "Rubber Insulating Gloves - Class 3",
+          "description": "Electrical insulating gloves rated to 26,500V AC / 39,750V DC.",
+          "voltage_rating": "26,500V AC / 39,750V DC max use",
+          "test_voltage": "30,000V AC proof test",
+          "color": "Green",
+          "when_required": "High-voltage work: 26.4kV, 34.5kV systems. Utility work. Rare in plant construction.",
+          "standard_site_ppe": false,
+          "standards": "ASTM D120, OSHA 1910.137"
+        },
+        {
+          "id": "hand_011",
+          "name": "Rubber Insulating Gloves - Class 4",
+          "description": "Electrical insulating gloves rated to 36,000V AC / 54,000V DC. Maximum protection class.",
+          "voltage_rating": "36,000V AC / 54,000V DC max use",
+          "test_voltage": "40,000V AC proof test",
+          "color": "Orange",
+          "when_required": "Extra-high-voltage work: up to 36kV systems. Utility transmission. Extremely rare in plant work.",
+          "standard_site_ppe": false,
+          "standards": "ASTM D120, OSHA 1910.137"
+        },
+        {
+          "id": "hand_012",
+          "name": "Leather Protector Gloves (for Rubber Insulating Gloves)",
+          "description": "Leather over-gloves worn on top of rubber insulating gloves to prevent puncture damage.",
+          "when_required": "ALWAYS when wearing rubber insulating gloves. OSHA 1910.137(c)(2)(ii) — protectors are required unless they would prevent the task from being performed safely.",
+          "standard_site_ppe": false,
+          "standards": "ASTM F696",
+          "notes": "Must match or exceed the length of the rubber gloves. Inspect for holes, abrasion, or embedded metal."
+        },
+        {
+          "id": "hand_013",
+          "name": "Chemical-Resistant Gloves - Nitrile",
+          "description": "Chemical-resistant nitrile gloves for protection against oils, fuels, solvents, and many chemicals.",
+          "when_required": "Handling petroleum products, solvents, oils, mild acids. Common on refinery sites for any liquid hydrocarbon contact.",
+          "standard_site_ppe": false,
+          "thickness_options": ["4 mil (disposable)", "8 mil (light duty)", "15 mil (medium duty)", "22 mil (heavy duty)"],
+          "notes": "Check SDS for chemical compatibility. Nitrile is NOT suitable for ketones, strong oxidizers, or some chlorinated solvents."
+        },
+        {
+          "id": "hand_014",
+          "name": "Chemical-Resistant Gloves - Neoprene",
+          "description": "Chemical-resistant neoprene gloves for protection against acids, caustics, alcohols, and many solvents.",
+          "when_required": "Acid handling, caustic handling, alcohol contact, broader chemical resistance needed than nitrile.",
+          "standard_site_ppe": false,
+          "notes": "Better than nitrile for acids and caustics. Check SDS for specific chemical compatibility."
+        },
+        {
+          "id": "hand_015",
+          "name": "Chemical-Resistant Gloves - PVC",
+          "description": "PVC-coated gloves for wet and chemical environments.",
+          "when_required": "Extended wet work, oil and grease handling, mild chemical contact. Common for pipe cleaning and degreasing.",
+          "standard_site_ppe": false
+        },
+        {
+          "id": "hand_016",
+          "name": "Chemical-Resistant Gloves - Butyl",
+          "description": "Butyl rubber gloves for ketone, ester, and gas/vapor protection.",
+          "when_required": "Ketone handling (MEK, acetone), gas/vapor environments, highest chemical permeation resistance.",
+          "standard_site_ppe": false,
+          "notes": "Expensive but necessary for specific chemicals where nitrile and neoprene fail."
+        },
+        {
+          "id": "hand_017",
+          "name": "Chemical-Resistant Gloves - Viton",
+          "description": "Viton (fluoroelastomer) gloves for chlorinated solvents and aromatics.",
+          "when_required": "Chlorinated solvents (TCE, PCE), aromatic hydrocarbons (benzene, toluene, xylene), PCBs.",
+          "standard_site_ppe": false,
+          "notes": "Most expensive chemical glove. Required for benzene and chlorinated solvent exposure in refinery work."
+        },
+        {
+          "id": "hand_018",
+          "name": "Welding Gloves - Stick/MIG",
+          "description": "Heavy-duty leather gauntlet gloves for stick and MIG welding.",
+          "when_required": "SMAW (stick) and GMAW (MIG) welding. Must cover forearm (gauntlet length).",
+          "standard_site_ppe": false,
+          "notes": "Split cowhide or elk skin. Must be dry — wet welding gloves conduct electricity."
+        },
+        {
+          "id": "hand_019",
+          "name": "Welding Gloves - TIG",
+          "description": "Thin leather gloves for TIG welding, allowing fine dexterity.",
+          "when_required": "GTAW (TIG) welding. Thinner for filler rod control.",
+          "standard_site_ppe": false,
+          "notes": "Goatskin or deerskin preferred for dexterity. Less heat protection than stick/MIG gloves."
+        },
+        {
+          "id": "hand_020",
+          "name": "Anti-Vibration Gloves",
+          "description": "Gloves with vibration-dampening material in palm for power tool use.",
+          "when_required": "Extended use of vibrating tools: grinders, chipping hammers, impact wrenches, pneumatic drills, concrete vibrators.",
+          "standard_site_ppe": false,
+          "standard": "ANSI S2.73 / ISO 10819",
+          "notes": "Reduces risk of Hand-Arm Vibration Syndrome (HAVS). Should be combined with work/rest rotation."
+        },
+        {
+          "id": "hand_021",
+          "name": "Cold Weather / Insulated Gloves",
+          "description": "Insulated work gloves for cold weather protection while maintaining dexterity.",
+          "when_required": "Temperatures below 40F. Extended outdoor work in cold conditions.",
+          "standard_site_ppe": false,
+          "notes": "Must maintain adequate dexterity for the task. Some are also cut-resistant."
+        },
+        {
+          "id": "hand_022",
+          "name": "Impact-Resistant Gloves",
+          "description": "Gloves with TPR (thermoplastic rubber) knuckle and finger guards for impact protection.",
+          "when_required": "Pipe fitting, hammer use, working near pinch points, striking tools, drilling.",
+          "standard_site_ppe": false,
+          "standard": "ANSI/ISEA 138-2019 (Impact Performance)",
+          "notes": "Levels 1-3. Level 2 most common on industrial sites. Protects knuckles and fingers from crushing/impact."
+        }
+      ],
+      "inspection": {
+        "frequency": "Before each use",
+        "check_for": ["Holes, tears, or punctures", "Chemical degradation (swelling, stiffness, discoloration)", "Loss of flexibility or elasticity", "Contamination from previous use"],
+        "rubber_insulating_glove_specific": {
+          "air_test": "Roll glove from gauntlet toward fingers, trapping air. Listen and feel for leaks. If air escapes, glove is compromised — remove from service immediately.",
+          "dielectric_test_interval": "Every 6 months by certified testing lab (ASTM D120). Date stamp on glove. Do NOT use expired gloves.",
+          "storage": "Store in glove bag, away from sunlight, ozone sources, and sharp objects. Keep flat or in canister — do not fold."
+        }
+      }
+    },
+
+    "foot_protection": {
+      "category_name": "Foot Protection",
+      "standard": "ASTM F2413-2018",
+      "osha_reference": "29 CFR 1926.96",
+      "items": [
+        {
+          "id": "foot_001",
+          "name": "Steel Toe Boots - EH Rated",
+          "description": "Steel toe cap work boots with electrical hazard (EH) rating. Standard industrial construction footwear.",
+          "ratings": "ASTM F2413 I/75 C/75 EH",
+          "when_required": "Standard site PPE for all industrial construction sites.",
+          "standard_site_ppe": true,
+          "notes": "I/75 = 75 ft-lb impact resistance. C/75 = 2,500 lb compression resistance. EH = insulated sole, no exposed metal, protects against 18,000V open circuit in dry conditions. 6-inch minimum boot height required on most industrial sites."
+        },
+        {
+          "id": "foot_002",
+          "name": "Composite Toe Boots - EH Rated",
+          "description": "Non-metallic composite toe cap boots. Lighter than steel, no thermal conductivity, airport/security friendly.",
+          "ratings": "ASTM F2413 I/75 C/75 EH",
+          "when_required": "Same protection as steel toe. Preferred by electricians (no metal near energized equipment). Required in some MRI/magnetic environments.",
+          "standard_site_ppe": true,
+          "notes": "Equivalent protection to steel toe per ASTM F2413. Lighter weight. Does not conduct heat or cold like steel."
+        },
+        {
+          "id": "foot_003",
+          "name": "Metatarsal Guard Boots",
+          "description": "Boots with internal or external metatarsal guard protecting the top of the foot.",
+          "ratings": "ASTM F2413 I/75 C/75 Mt/75 EH",
+          "when_required": "Heavy material handling, pipe laying, steel erection, working with heavy tools that could fall on top of foot. Some owners (ExxonMobil, Shell) require metatarsal guards for all craft workers.",
+          "standard_site_ppe": false,
+          "notes": "Mt/75 = metatarsal impact protection. Internal guards preferred (no snag hazard, lighter). External strap-on guards also acceptable."
+        },
+        {
+          "id": "foot_004",
+          "name": "Chemical-Resistant Boots / Overboots",
+          "description": "Rubber or PVC boots or overboots for chemical splash protection.",
+          "when_required": "Chemical spill cleanup, working in standing water contaminated with chemicals, tank cleaning, acid/caustic areas.",
+          "standard_site_ppe": false,
+          "notes": "Material must be compatible with specific chemicals per SDS. PVC for most acids. Nitrile for solvents."
+        },
+        {
+          "id": "foot_005",
+          "name": "Dielectric (Non-Conductive) Boots",
+          "description": "Boots with no metal components and insulating soles for maximum electrical protection.",
+          "when_required": "Energized electrical work, substation entry, high-voltage proximity. For electricians working on live equipment per NFPA 70E.",
+          "standard_site_ppe": false,
+          "notes": "No steel toe, no steel shank, no metal eyelets. All composite or rubber. EH rating alone is not sufficient for live electrical work — true dielectric boots required."
+        },
+        {
+          "id": "foot_006",
+          "name": "Rubber/Muck Boots - Steel Toe",
+          "description": "Waterproof rubber boots with steel toe for wet/muddy conditions.",
+          "when_required": "Standing water, muddy conditions, concrete pour, tank cleaning, wet excavations.",
+          "standard_site_ppe": false,
+          "notes": "Must still meet ASTM F2413 if steel toe is required. Many available with metatarsal guard."
+        },
+        {
+          "id": "foot_007",
+          "name": "Puncture-Resistant Boots",
+          "description": "Boots with puncture-resistant plate in sole.",
+          "ratings": "ASTM F2413 PR (puncture resistant)",
+          "when_required": "Demolition areas, areas with nails or sharp objects on ground, scrap yards.",
+          "standard_site_ppe": false,
+          "notes": "Composite or steel puncture-resistant plate. Some sites require this for all workers during demolition phases."
+        }
+      ],
+      "inspection": {
+        "frequency": "Daily visual, monthly detailed",
+        "check_for": ["Sole separation or excessive wear", "Exposed toe cap (worn through leather)", "Damaged laces or broken eyelets", "Compromised waterproofing", "Cracked or split leather/uppers", "EH rating compromised by metal penetration (nails, staples)"],
+        "replace_when": ["Sole separation or smooth worn soles (slip hazard)", "Toe cap exposed through leather", "Seam failure allowing water entry", "Any metal penetration for EH-rated boots"]
+      }
+    },
+
+    "body_protection": {
+      "category_name": "Body / Torso Protection",
+      "standard": "NFPA 2112, NFPA 70E, ANSI/ISEA 107",
+      "osha_reference": "29 CFR 1926.95, 1910.269",
+      "items": [
+        {
+          "id": "body_001",
+          "name": "FR Clothing - CAT 1 (4 cal/cm2)",
+          "description": "Flame-resistant clothing rated for Arc Flash Category 1. Minimum arc thermal performance value (ATPV) of 4 cal/cm2.",
+          "arc_rating": "4 cal/cm2 minimum ATPV",
+          "nfpa_70e_category": "Category 1",
+          "when_required": "Low-energy electrical tasks: voltage testing, operating breakers with covers closed, panel inspection on 240V or less systems.",
+          "standard_site_ppe": false,
+          "typical_garments": ["FR long-sleeve shirt", "FR pants"],
+          "notes": "Not commonly used on industrial sites — most sites standardize on CAT 2."
+        },
+        {
+          "id": "body_002",
+          "name": "FR Clothing - CAT 2 (8 cal/cm2)",
+          "description": "Flame-resistant clothing rated for Arc Flash Category 2. ATPV of 8 cal/cm2.",
+          "arc_rating": "8 cal/cm2 minimum ATPV",
+          "nfpa_70e_category": "Category 2",
+          "when_required": "Most electrical work on industrial sites: 480V systems, MCC work, panel work with covers open, breaker racking. ALSO required in ALL areas of most refineries where flash fire potential exists.",
+          "standard_site_ppe": true,
+          "typical_garments": ["FR long-sleeve shirt (minimum 8.7 cal)", "FR pants (minimum 12 cal)", "FR coveralls (single layer)"],
+          "notes": "THE STANDARD for industrial/refinery construction. Most refineries (ExxonMobil, Chevron, Shell, Valero, Marathon) require CAT 2 FR for ALL personnel site-wide, regardless of trade. Cotton is NOT FR. 100% cotton is only acceptable if rated and labeled per NFPA 2112. Nomex, Protera, Tecasafe are common FR fabrics.",
+          "common_brands": ["Bulwark", "Carhartt FR", "Ariat FR", "Wrangler FR", "Benchmark FR", "National Safety Apparel (NSA)"]
+        },
+        {
+          "id": "body_003",
+          "name": "FR Clothing - CAT 3 (25 cal/cm2)",
+          "description": "Flame-resistant clothing rated for Arc Flash Category 3. ATPV of 25 cal/cm2.",
+          "arc_rating": "25 cal/cm2 minimum ATPV",
+          "nfpa_70e_category": "Category 3",
+          "when_required": "Higher-energy electrical tasks: 4.16kV and above switchgear, breaker racking on medium-voltage equipment, transformer work.",
+          "standard_site_ppe": false,
+          "typical_garments": ["FR coveralls PLUS FR shirt/pants underneath (layered system)", "Arc-rated smock/coat over standard FR"],
+          "notes": "Achieved through layering CAT 2 garments or using heavy-weight single garments."
+        },
+        {
+          "id": "body_004",
+          "name": "FR Clothing - CAT 4 (40 cal/cm2)",
+          "description": "Flame-resistant clothing rated for Arc Flash Category 4. Maximum NFPA 70E category. ATPV of 40 cal/cm2.",
+          "arc_rating": "40 cal/cm2 minimum ATPV",
+          "nfpa_70e_category": "Category 4",
+          "when_required": "Highest-energy electrical tasks: switchgear work >13.8kV, work within arc flash boundary on high-energy equipment. If arc flash study shows >40 cal/cm2, the work CANNOT be done live.",
+          "standard_site_ppe": false,
+          "typical_garments": ["Full arc flash suit (hood, coat, pants, gloves)", "Multi-layer FR system"],
+          "notes": "If incident energy exceeds 40 cal/cm2, NFPA 70E says the equipment MUST be de-energized. No PPE is rated above 40 cal/cm2 for standard practice."
+        },
+        {
+          "id": "body_005",
+          "name": "Arc Flash Suit / Flash Suit",
+          "description": "Complete arc flash protection suit including hood with face shield, coat, and pants or coverall.",
+          "arc_rating": "25-140 cal/cm2 depending on suit",
+          "when_required": "When arc flash study requires protection above what standard FR clothing provides. Medium and high-voltage switching, racking breakers, transformer work.",
+          "standard_site_ppe": false,
+          "notes": "Specific suit rating must meet or exceed the incident energy calculated in the arc flash study for that equipment. Includes: arc-rated hood with face shield, arc-rated jacket/coat, arc-rated bib overalls/pants."
+        },
+        {
+          "id": "body_006",
+          "name": "Chemical Splash Suit - Tyvek (Type 5/6)",
+          "description": "Disposable protective coverall for dry particulate and light liquid splash.",
+          "when_required": "Insulation removal (asbestos awareness), painting, coating application, light chemical splash, general contamination barrier.",
+          "standard_site_ppe": false,
+          "notes": "NOT for heavy chemical exposure. Tyvek is particulate barrier, not chemical vapor barrier. Available with or without hood/boot covers. Use Tychem for chemical splash resistance."
+        },
+        {
+          "id": "body_007",
+          "name": "Chemical Splash Suit - Tychem / Saranex (Level C)",
+          "description": "Chemical-resistant coverall for known chemical splash hazards. Used with APR respirator.",
+          "epa_level": "Level C",
+          "when_required": "Chemical cleaning, decontamination, known chemical splash hazard with identified chemicals and adequate respiratory protection via APR.",
+          "standard_site_ppe": false
+        },
+        {
+          "id": "body_008",
+          "name": "Chemical Vapor Suit - Level B",
+          "description": "Encapsulating chemical suit for vapor and splash protection. Used with SCBA or SAR.",
+          "epa_level": "Level B",
+          "when_required": "Unknown chemical environments, HAZMAT response, high-concentration vapor exposure. SCBA or SAR required.",
+          "standard_site_ppe": false,
+          "notes": "Requires specialized training. Not for routine construction work."
+        },
+        {
+          "id": "body_009",
+          "name": "Chemical Vapor Suit - Level A",
+          "description": "Fully encapsulated, vapor-tight suit. Maximum chemical protection. Positive pressure SCBA inside suit.",
+          "epa_level": "Level A",
+          "when_required": "Worst-case chemical scenarios, unknown IDLH environments, highest vapor concentrations. HAZMAT team response.",
+          "standard_site_ppe": false,
+          "notes": "Requires specialized HAZMAT training. Extreme heat stress risk. Time-limited use. Not for construction — emergency response only."
+        },
+        {
+          "id": "body_010",
+          "name": "High-Visibility Vest - Class 2",
+          "description": "ANSI 107 Class 2 high-visibility vest or shirt. 775 sq in background material, 201 sq in retroreflective material.",
+          "standard": "ANSI/ISEA 107-2020 Class 2",
+          "when_required": "Standard site PPE on most industrial construction sites. Required for all personnel.",
+          "standard_site_ppe": true,
+          "notes": "Fluorescent yellow-green or fluorescent orange-red. Must have retroreflective bands on torso. Class 2 is the minimum for most construction sites."
+        },
+        {
+          "id": "body_011",
+          "name": "High-Visibility Vest - Class 3",
+          "description": "ANSI 107 Class 3 high-visibility garment. Most visible class. Requires sleeves with retroreflective material.",
+          "standard": "ANSI/ISEA 107-2020 Class 3",
+          "when_required": "Night work, roadway/highway adjacent work, areas with vehicle traffic, low-visibility conditions. Required for flaggers.",
+          "standard_site_ppe": false,
+          "notes": "Full shirt/jacket with sleeves required (vest alone cannot achieve Class 3). 1,240 sq in background material."
+        },
+        {
+          "id": "body_012",
+          "name": "FR Rain Gear",
+          "description": "Flame-resistant rated rain suit for wet weather protection in FR-required areas.",
+          "when_required": "Rain/wet conditions in any area requiring FR clothing. Standard non-FR rain gear is PROHIBITED in FR areas because it melts.",
+          "standard_site_ppe": false,
+          "notes": "CRITICAL: Non-FR rain gear melts on skin and causes severe burns. All rain gear in refinery/industrial FR zones MUST be FR-rated. Common oversight and audit finding."
+        },
+        {
+          "id": "body_013",
+          "name": "Welding Jacket / Cape / Sleeves",
+          "description": "Leather or FR cotton welding protective garments for upper body during welding.",
+          "when_required": "All welding and cutting operations. Protects arms, chest, and back from sparks and UV radiation.",
+          "standard_site_ppe": false,
+          "types": ["Full leather jacket", "Cape with sleeves (chest/arm coverage)", "Sleeve-only (for light welding)"]
+        },
+        {
+          "id": "body_014",
+          "name": "Cooling Vest",
+          "description": "Evaporative or phase-change cooling vest for heat stress prevention.",
+          "when_required": "Hot weather operations, work in heat index >105F, inside vessels/tanks, wearing chemical suits or heavy PPE layers.",
+          "standard_site_ppe": false,
+          "types": ["Evaporative (soak in water)", "Phase-change (ice/gel inserts)", "Active cooling (circulating coolant)"],
+          "notes": "Evaporative vests don't work in high humidity. Phase-change preferred in Gulf Coast refineries."
+        }
+      ],
+      "inspection": {
+        "fr_clothing": {
+          "frequency": "Before each wear / after each laundering",
+          "check_for": ["Holes, tears, or thinning fabric", "Chemical contamination (staining from flammable substances)", "Damaged closures (zippers, snaps, Velcro)", "Loss of FR properties from improper laundering (bleach, fabric softener)"],
+          "replace_when": ["Holes or tears that expose skin", "Chemical contamination that cannot be laundered out", "Fabric is visibly thin or worn", "After excessive laundering cycles (follow manufacturer guidance, typically 50-100 washes)"],
+          "laundering_rules": ["NO bleach (degrades FR properties)", "NO fabric softener (adds flammable coating)", "NO starch (some brands, check manufacturer)", "Follow garment manufacturer wash instructions", "Industrial laundering preferred"]
+        }
+      }
+    },
+
+    "fall_protection": {
+      "category_name": "Fall Protection",
+      "standard": "ANSI Z359 series, OSHA 1926 Subpart M",
+      "osha_reference": "29 CFR 1926.501-503",
+      "trigger_height": "6 feet in construction (OSHA 1926.501(b)(1)). Many owners require 100% tie-off above 4 feet.",
+      "items": [
+        {
+          "id": "fall_001",
+          "name": "Full Body Harness - Standard",
+          "description": "Full body fall arrest harness with dorsal D-ring. The only acceptable body wear for fall arrest.",
+          "standard": "ANSI Z359.11",
+          "when_required": "Any work at 6 feet or above where other fall protection (guardrails, nets) is not in place. Required in boom lifts/aerial platforms (in addition to guardrails).",
+          "standard_site_ppe": false,
+          "key_features": {
+            "dorsal_d_ring": "For fall arrest - located between shoulder blades",
+            "sternal_d_ring": "For ladder climbing systems (optional)",
+            "hip_d_rings": "For work positioning (optional)",
+            "shoulder_d_rings": "For confined space retrieval (optional)"
+          },
+          "notes": "Body belts are NOT acceptable for fall arrest (banned by OSHA since 1998). Only full body harnesses. Must be properly sized and adjusted — loose harness can cause suspension trauma."
+        },
+        {
+          "id": "fall_002",
+          "name": "Full Body Harness - Arc Flash Rated",
+          "description": "Fall arrest harness constructed with arc-rated materials for use in electrical arc flash environments.",
+          "standard": "ANSI Z359.11 + ASTM F887",
+          "when_required": "Elevated electrical work where arc flash hazard exists (e.g., working on energized equipment from a lift or scaffold).",
+          "standard_site_ppe": false,
+          "notes": "Standard nylon/polyester harnesses can melt during arc flash event, causing burns and failure. Arc-rated harnesses use Nomex, Kevlar, or other arc-resistant webbing."
+        },
+        {
+          "id": "fall_003",
+          "name": "Shock-Absorbing Lanyard (6 ft)",
+          "description": "Energy-absorbing lanyard that limits fall arrest forces to 1,800 lbs or less on the worker's body.",
+          "standard": "ANSI Z359.13",
+          "when_required": "Connected from harness dorsal D-ring to anchor point for fall arrest. Standard fall arrest connecting device.",
+          "standard_site_ppe": false,
+          "notes": "Maximum deployed length with shock absorber is 3.5 feet (pack) + 6 feet (lanyard) = 9.5 feet. Worker must have at least 18.5 feet of clear fall distance below anchor point (6 ft lanyard + 3.5 ft deceleration + 6 ft worker height + 3 ft safety margin). If not enough clearance, use SRL instead."
+        },
+        {
+          "id": "fall_004",
+          "name": "Twin-Leg (Y-Leg) Shock-Absorbing Lanyard",
+          "description": "Dual-leg lanyard for 100% tie-off. One leg always connected while transitioning to new anchor point.",
+          "standard": "ANSI Z359.13",
+          "when_required": "Steel erection, climbing, any work requiring frequent anchor point transitions. Enables 100% tie-off policy compliance.",
+          "standard_site_ppe": false,
+          "notes": "One leg connected at all times during transition. Do NOT connect both legs to same anchor point (creates fall arrest force issues)."
+        },
+        {
+          "id": "fall_005",
+          "name": "Self-Retracting Lifeline (SRL) - Standard",
+          "description": "Retractable lifeline that allows worker movement while providing fall arrest in 2 feet or less.",
+          "standard": "ANSI Z359.14 Class B",
+          "when_required": "When fall clearance is limited (less than 18.5 ft), frequent up/down movement, overhead anchor points. Preferred by most major contractors for superior fall arrest performance.",
+          "standard_site_ppe": false,
+          "lengths": ["6 ft (personal SRL/PFL)", "11 ft", "20 ft", "30 ft", "50 ft"],
+          "notes": "Arrests fall within 24 inches (much less than 3.5 ft shock absorber). Reduces required fall clearance significantly. Leading edge rated SRLs required when anchor is at foot level."
+        },
+        {
+          "id": "fall_006",
+          "name": "Self-Retracting Lifeline (SRL) - Leading Edge",
+          "description": "SRL rated for foot-level anchor points and leading edge conditions where cable may contact sharp edge during fall.",
+          "standard": "ANSI Z359.14 Class B-LE",
+          "when_required": "When anchor point is at foot level (deck/floor), working near roof edges, steel erection where SRL cable could contact sharp steel edge during fall.",
+          "standard_site_ppe": false,
+          "notes": "Standard SRLs are designed for overhead anchors. Using standard SRL at foot level creates swing hazard and cable-over-edge cut risk. Leading edge SRLs have reinforced cable/webbing."
+        },
+        {
+          "id": "fall_007",
+          "name": "Personal Fall Limiter (PFL)",
+          "description": "Compact SRL, typically 6-11 feet, that attaches directly to harness. Ultra-portable fall arrest.",
+          "standard": "ANSI Z359.14",
+          "when_required": "Where workers need constant fall protection but move frequently between areas. Attaches directly to harness D-ring.",
+          "standard_site_ppe": false,
+          "notes": "NOT a substitute for full SRL in all situations. Check fall clearance requirements."
+        },
+        {
+          "id": "fall_008",
+          "name": "Positioning Lanyard / Chain",
+          "description": "Adjustable lanyard for work positioning (not fall arrest). Allows hands-free work while leaning back against support.",
+          "standard": "ANSI Z359.3",
+          "when_required": "Utility pole work, rebar tying, work positioning on structural steel. Must ALWAYS be used with separate fall arrest system.",
+          "standard_site_ppe": false,
+          "notes": "Positioning systems are NOT fall arrest. Worker must have independent fall arrest (SRL or shock-absorbing lanyard) in addition to positioning lanyard."
+        },
+        {
+          "id": "fall_009",
+          "name": "Rope Grab + Vertical Lifeline",
+          "description": "Rope grab device on vertical lifeline rope for climbing protection.",
+          "standard": "ANSI Z359.15",
+          "when_required": "Fixed ladder climbing, vertical structure climbing, rope access work.",
+          "standard_site_ppe": false,
+          "notes": "Rope must be 5/8 inch minimum polyester or nylon, terminated with proper end connection. Rope grab must be compatible with the specific rope."
+        },
+        {
+          "id": "fall_010",
+          "name": "Horizontal Lifeline (HLL)",
+          "description": "Cable or webbing system spanning between two anchor points to allow horizontal movement while maintaining fall arrest.",
+          "standard": "ANSI Z359.6",
+          "when_required": "Roof work, bridge work, long structural members where workers need lateral movement.",
+          "standard_site_ppe": false,
+          "notes": "Must be designed by a qualified person. Anchor points must handle forces from multiple workers simultaneously. Maximum sag and swing fall calculations required."
+        },
+        {
+          "id": "fall_011",
+          "name": "Beam Clamp / Structural Anchor",
+          "description": "Temporary anchor point that clamps to structural steel beams.",
+          "when_required": "When no permanent anchor points are available. Clamped to I-beams, wide-flange beams for temporary fall arrest anchor.",
+          "standard_site_ppe": false,
+          "anchor_strength": "5,000 lbs minimum strength required per OSHA 1926.502(d)(15) for personal fall arrest anchor points, or designed by qualified person for 2x maximum arrest force.",
+          "notes": "Must fit the beam flange. Must be inspected before each use. Do NOT clamp to pipe, conduit, or non-structural members."
+        },
+        {
+          "id": "fall_012",
+          "name": "Guardrail System",
+          "description": "Physical barrier system as fall prevention. Top rail at 42 inches (+/- 3 inches), mid-rail, toe board.",
+          "standard": "OSHA 1926.502(b)",
+          "when_required": "Open-sided floors, platforms, runways at 6 feet or more. Primary fall prevention where feasible.",
+          "standard_site_ppe": false,
+          "specifications": {
+            "top_rail_height": "42 inches +/- 3 inches",
+            "mid_rail_height": "21 inches (midpoint)",
+            "toe_board": "4 inches minimum height at floor level",
+            "strength": "200 lbs applied in any outward or downward direction at any point along top rail"
+          }
+        },
+        {
+          "id": "fall_013",
+          "name": "Safety Net System",
+          "description": "Net installed below work area to catch falling workers.",
+          "standard": "OSHA 1926.502(c)",
+          "when_required": "Bridge construction, structural steel erection where harness systems are impractical. Must be within 30 feet of work surface.",
+          "standard_site_ppe": false,
+          "notes": "Rare on industrial sites compared to harness systems. More common in bridge and structural erection."
+        },
+        {
+          "id": "fall_014",
+          "name": "Rescue Equipment - Tripod and Winch",
+          "description": "Rescue tripod with mechanical advantage winch for retrieval from confined spaces or below-grade.",
+          "standard": "ANSI Z359.4",
+          "when_required": "Any confined space entry. Required as part of rescue plan.",
+          "standard_site_ppe": false,
+          "notes": "Must be on-site and ready for immediate use during confined space entry. Rescue team must be trained and able to respond within minutes."
+        },
+        {
+          "id": "fall_015",
+          "name": "Suspension Trauma Straps",
+          "description": "Straps that deploy from harness to allow worker to stand in harness during post-fall suspension, preventing suspension trauma (harness hang syndrome).",
+          "when_required": "All workers wearing fall arrest harnesses. Should be integrated into or attached to all harnesses.",
+          "standard_site_ppe": false,
+          "notes": "Suspension trauma can cause death within 15-30 minutes if worker is unconscious and hanging in harness. These straps allow the worker to push against them with feet, improving blood circulation. Rescue must occur within 15 minutes."
+        }
+      ],
+      "inspection": {
+        "frequency": "Before each use by user, annually by competent person",
+        "check_for": ["Frayed, cut, or burned webbing", "Cracked, bent, or corroded hardware (buckles, D-rings, snap hooks)", "Missing or illegible labels", "Damaged stitching", "SRL: retraction/extension smooth, no cable fraying", "Lanyards: shock absorber not deployed (if deployed, remove from service)"],
+        "remove_from_service_when": ["Any fall arrest event (inspect and potentially destroy)", "Exposed to chemicals, heat, or electrical arc", "Hardware damaged or corroded", "Webbing cut, burned, or frayed", "Shock absorber deployed", "SRL cable frayed or kinked", "Labels missing or illegible", "Past manufacturer inspection interval"]
+      }
+    },
+
+    "respiratory_protection": {
+      "category_name": "Respiratory Protection",
+      "standard": "NIOSH 42 CFR 84, OSHA 1910.134",
+      "osha_reference": "29 CFR 1910.134 - Respiratory Protection Program required",
+      "prerequisite": "Written respiratory protection program, medical evaluation, and fit testing required BEFORE any worker uses a respirator (except voluntary use of filtering facepiece N95).",
+      "items": [
+        {
+          "id": "resp_001",
+          "name": "N95 Filtering Facepiece Respirator",
+          "description": "Disposable particulate respirator. Filters at least 95% of airborne particles.",
+          "assigned_protection_factor": "APF 10 (reduces exposure by 10x)",
+          "filter_type": "N95 (not resistant to oil)",
+          "when_required": "Nuisance dust, grinding particulate, sweeping, general construction dust. Voluntary use does not require fit test (but must provide Appendix D information). When required by employer, fit test is needed.",
+          "standard_site_ppe": false,
+          "notes": "Does NOT protect against gases, vapors, or oxygen-deficient atmospheres. N-series not resistant to oil mist. R95 or P95 needed for oil environments."
+        },
+        {
+          "id": "resp_002",
+          "name": "Half-Face Air Purifying Respirator (APR)",
+          "description": "Reusable half-face respirator with replaceable cartridges/filters. Covers nose and mouth.",
+          "assigned_protection_factor": "APF 10 (reduces exposure by 10x)",
+          "when_required": "Known contaminants at up to 10x PEL (Permissible Exposure Limit). Welding fumes, painting/coating, solvent vapors, dust/particulate above N95 capacity.",
+          "standard_site_ppe": false,
+          "common_models": ["3M 6000/7500 series", "Honeywell North 7700", "MSA Advantage 420"],
+          "cartridge_types": {
+            "P100": "Particulate (purple) - welding fumes, asbestos, silica",
+            "OV": "Organic Vapor (black) - solvents, paints, fuels",
+            "AG": "Acid Gas (white) - HCl, SO2, chlorine",
+            "AM": "Ammonia/Methylamine (green) - ammonia",
+            "OV_P100": "Combo Organic Vapor + P100 (magenta/black) - most common combo",
+            "Multi_gas_P100": "Multi-gas + P100 (olive) - broadest protection"
+          },
+          "fit_test_required": true,
+          "fit_test_types": {
+            "qualitative": "Taste/smell test (Bitrex, saccharin, irritant smoke). Acceptable for half-face only.",
+            "quantitative": "Machine-measured fit factor using PortaCount or similar. Minimum fit factor 100 for half-face."
+          },
+          "notes": "Cannot be used in IDLH (Immediately Dangerous to Life or Health) atmospheres. Cannot be used in oxygen-deficient (<19.5%) atmospheres. Must know the specific contaminant and concentration to select proper cartridge."
+        },
+        {
+          "id": "resp_003",
+          "name": "Full-Face Air Purifying Respirator (APR)",
+          "description": "Reusable full-face respirator with replaceable cartridges. Covers entire face including eyes.",
+          "assigned_protection_factor": "APF 50 (reduces exposure by 50x)",
+          "when_required": "Known contaminants at up to 50x PEL. When eye protection from airborne chemicals is needed in addition to respiratory protection. Higher concentrations than half-face can handle.",
+          "standard_site_ppe": false,
+          "common_models": ["3M 6000FF/6800", "Honeywell North 7600", "MSA Advantage 4200"],
+          "fit_test_required": true,
+          "fit_test_types": {
+            "quantitative": "Machine-measured fit factor. Minimum fit factor 500 for full-face."
+          },
+          "notes": "Same cartridge types as half-face but with higher protection factor. Provides eye/face splash protection simultaneously."
+        },
+        {
+          "id": "resp_004",
+          "name": "Powered Air Purifying Respirator (PAPR)",
+          "description": "Battery-powered blower with filters that delivers purified air to a hood, helmet, or tight-fitting facepiece.",
+          "assigned_protection_factor": "APF 25 (loose-fitting hood) or APF 1000 (tight-fitting facepiece)",
+          "when_required": "Workers who cannot pass fit test for tight-fitting respirators (beards, facial scars). Extended respirator use where breathing resistance is a concern. High-particulate environments.",
+          "standard_site_ppe": false,
+          "notes": "Loose-fitting PAPR (hood style) does NOT require fit test — good for workers with beards. Battery life typically 4-8 hours. Heavier than APR but easier to breathe through."
+        },
+        {
+          "id": "resp_005",
+          "name": "Supplied Air Respirator (SAR / Airline)",
+          "description": "Respirator connected by hose to a remote source of breathable air (compressor or cylinder).",
+          "assigned_protection_factor": "APF 10-1000 depending on facepiece type",
+          "when_required": "IDLH atmospheres (with escape bottle), oxygen-deficient environments, confined space entry, abrasive blasting, spray painting in enclosed areas, high-concentration chemical environments.",
+          "standard_site_ppe": false,
+          "types": ["Half-face SAR (APF 10)", "Full-face SAR (APF 50)", "Hood/helmet SAR (APF 25)", "Full-face SAR pressure-demand (APF 1000)"],
+          "notes": "Requires Grade D breathing air (per CGA G-7.1). Air hose maximum 300 feet. Must have 5-minute escape bottle for IDLH entry."
+        },
+        {
+          "id": "resp_006",
+          "name": "Self-Contained Breathing Apparatus (SCBA)",
+          "description": "Portable air supply carried by the worker. Maximum respiratory protection.",
+          "assigned_protection_factor": "APF 10,000 (pressure demand)",
+          "when_required": "IDLH atmospheres, unknown atmospheres, firefighting, emergency response, rescue operations in contaminated environments.",
+          "standard_site_ppe": false,
+          "duration": "30-minute or 60-minute cylinders typical",
+          "notes": "Heaviest respiratory option (~25-35 lbs). Requires extensive training. Duration limited by air supply. Annual fit test required."
+        },
+        {
+          "id": "resp_007",
+          "name": "Emergency Escape Breathing Device (EEBD)",
+          "description": "Portable escape-only respirator for emergency evacuation from hazardous atmosphere.",
+          "when_required": "Workers in H2S areas, chemical plant units, areas where sudden atmospheric hazard could develop. Provides 5-15 minutes of breathing air for escape ONLY.",
+          "standard_site_ppe": false,
+          "notes": "NOT for entry or rescue. Escape only. Commonly required in H2S >10 ppm areas at refineries. Must be immediately accessible (belt-mounted or fixed station).",
+          "common_models": ["MSA S-CAP", "Drager PARAT", "Honeywell ER2000"]
+        }
+      ],
+      "fit_testing": {
+        "frequency": "Annual minimum, plus whenever: new respirator model, significant weight change (>20 lbs), dental work affecting seal, facial surgery or injury",
+        "qualitative_methods": ["Bitrex (bitter taste) - most common", "Saccharin (sweet taste)", "Isoamyl acetate (banana smell) - older method", "Irritant smoke (stannic chloride)"],
+        "quantitative_methods": ["PortaCount (ambient aerosol counting)", "Generated aerosol method", "CNP (controlled negative pressure)"],
+        "clean_shave_requirement": "Tight-fitting respirators require clean-shaven face where facepiece seals to skin. No beards, goatees, or stubble in seal area."
+      },
+      "cartridge_change_schedule": {
+        "description": "Cartridges must be changed on a schedule determined by employer based on contaminant, concentration, humidity, and breathing rate. OSHA requires a written change-out schedule.",
+        "general_guidelines": [
+          "When breathing becomes difficult (particulate filters loading up)",
+          "When you can smell or taste contaminant through respirator (breakthrough)",
+          "Per manufacturer's service life calculator for the specific chemical",
+          "At end of each shift (conservative default for most organic vapor cartridges)",
+          "When cartridge feels heavy (particulate accumulation)"
+        ]
+      },
+      "inspection": {
+        "frequency": "Before each use",
+        "check_for": ["Facepiece: cracks, tears, distortion, dirty/clogged valves", "Headstraps: elasticity, breaks, missing buckles", "Cartridges: correct type, within change schedule, properly seated", "Inhalation/exhalation valves: function test (positive/negative pressure checks)", "SCBA: cylinder pressure, regulator function, low-air alarm"],
+        "storage": "Clean, dry location away from sunlight and contaminants. Sealed bag preferred."
+      }
+    },
+
+    "hearing_protection": {
+      "category_name": "Hearing Protection",
+      "standard": "ANSI S3.19 / ANSI S12.6",
+      "osha_reference": "29 CFR 1926.52, 1910.95",
+      "action_levels": {
+        "85_dBA_TWA": "Hearing conservation program required. Hearing protection available.",
+        "90_dBA_TWA": "Hearing protection required (OSHA PEL for construction).",
+        "exposure_guideline": "NIOSH recommends hearing protection at 85 dBA TWA. OSHA construction standard 1926.52 requires protection at 90 dBA TWA. Most industrial owners follow the more protective 85 dBA threshold."
+      },
+      "items": [
+        {
+          "id": "hear_001",
+          "name": "Foam Ear Plugs - Disposable",
+          "description": "Single-use, roll-down foam ear plugs. Expand to fit ear canal.",
+          "nrr_range": "NRR 29-33",
+          "when_required": "Standard hearing protection on industrial sites. Required in posted high-noise areas (>85 dBA). Grinding, hammering, pneumatic tools, near heavy equipment, near operating machinery.",
+          "standard_site_ppe": false,
+          "common_models": ["3M 1100 (NRR 29)", "3M EAR Classic (NRR 29)", "Howard Leight MAX (NRR 33)", "Moldex Pura-Fit (NRR 33)"],
+          "notes": "Must be properly rolled and inserted deep into ear canal for rated protection. Most workers only achieve 50% of labeled NRR due to improper insertion. Training critical."
+        },
+        {
+          "id": "hear_002",
+          "name": "Reusable Ear Plugs",
+          "description": "Washable, multi-use ear plugs. Flanged or custom molded.",
+          "nrr_range": "NRR 22-27",
+          "when_required": "Same as foam plugs. Workers who prefer reusable option or need frequent insertion/removal.",
+          "standard_site_ppe": false,
+          "types": ["Triple-flange push-in", "Custom molded (audiologist fitted)", "Pre-molded flanged"],
+          "notes": "Lower NRR than foam but more consistent fit since they don't require rolling. Custom molded plugs provide best consistent fit."
+        },
+        {
+          "id": "hear_003",
+          "name": "Earmuffs - Passive",
+          "description": "Over-the-ear hearing protection. Cushioned cups seal around ears.",
+          "nrr_range": "NRR 22-31",
+          "when_required": "High-noise areas, especially where plugs alone are insufficient. Can be worn alone or in combination with plugs for dual protection.",
+          "standard_site_ppe": false,
+          "types": ["Over-the-head band", "Hard-hat mounted (slot into helmet accessory rails)", "Behind-the-neck band (for use with hard hat without slots)"],
+          "common_models": ["3M Peltor Optime (NRR 30)", "Honeywell Howard Leight Thunder (NRR 30)", "MSA HPE (NRR 27)"],
+          "notes": "Hard-hat mounted versions are most practical for construction. NRR may be reduced by safety glasses temples breaking the seal."
+        },
+        {
+          "id": "hear_004",
+          "name": "Electronic Earmuffs",
+          "description": "Earmuffs with built-in microphones that amplify speech and ambient sounds at safe levels while blocking impulse noise (>82 dB).",
+          "nrr_range": "NRR 22-26",
+          "when_required": "Workers who need to communicate while in high-noise areas. Supervisors, crane signal persons, workers near intermittent noise.",
+          "standard_site_ppe": false,
+          "common_models": ["3M Peltor ProTac III (NRR 26)", "Howard Leight Impact Sport (NRR 22)", "MSA Supreme Pro (NRR 18)"],
+          "features": ["Level-dependent sound amplification", "Impulse noise cutoff", "Some models have Bluetooth/radio", "AM/FM radio capable models"],
+          "notes": "Lower passive NRR than standard earmuffs. Battery required. More expensive but greatly improves communication and situational awareness."
+        },
+        {
+          "id": "hear_005",
+          "name": "Canal Caps / Banded Ear Plugs",
+          "description": "Semi-insert ear plugs on a flexible band. Quick on/off for intermittent noise.",
+          "nrr_range": "NRR 17-22",
+          "when_required": "Intermittent noise exposure where frequent donning/doffing is needed. Workers moving between noisy and quiet areas.",
+          "standard_site_ppe": false,
+          "notes": "Lowest NRR of hearing protection options. Convenience of quick on/off is the advantage. Not suitable for continuous high-noise exposure."
+        },
+        {
+          "id": "hear_006",
+          "name": "Dual Protection (Plugs + Muffs)",
+          "description": "Wearing both foam plugs AND earmuffs simultaneously for maximum attenuation.",
+          "combined_nrr": "NRR of higher-rated device + 5 dB (OSHA calculation method). Example: NRR 33 plugs + NRR 30 muffs = effective NRR ~36 (not additive).",
+          "when_required": "Extremely high noise (>100 dBA TWA): impact hammer, pneumatic riveting, shot blasting, inside large vessels during blasting/grinding.",
+          "standard_site_ppe": false,
+          "notes": "The ONLY option for noise above ~100 dBA. Even dual protection has limits — at extremely high levels, bone conduction transmits sound regardless of ear protection."
+        }
+      ],
+      "inspection": {
+        "frequency": "Before each use",
+        "check_for": ["Earmuffs: cracked or hardened cushions, broken headband, damaged cups", "Foam plugs: use fresh pair each time (single use)", "Reusable plugs: cracks, hardening, dirt buildup", "Electronic: battery level, microphone function, cutoff test"],
+        "replace_when": ["Cushion seals cracked, hardened, or no longer seal (every 6-12 months)", "Headband loses tension", "Electronic components malfunction"]
+      }
+    },
+
+    "other_specialized": {
+      "category_name": "Other / Specialized PPE",
+      "items": [
+        {
+          "id": "other_001",
+          "name": "4-Gas Monitor (Personal)",
+          "description": "Portable atmospheric monitor measuring O2, LEL (combustible gas), H2S, and CO simultaneously.",
+          "when_required": "Confined space entry, any area with potential atmospheric hazard, H2S areas, tank farms, process units during turnarounds. Some refineries require for ALL personnel in process areas.",
+          "standard_site_ppe": false,
+          "alarm_setpoints": {
+            "O2_low": "19.5% (oxygen deficient)",
+            "O2_high": "23.5% (oxygen enriched)",
+            "LEL": "10% LEL (combustible gas)",
+            "H2S_low": "10 ppm (OSHA ceiling)",
+            "H2S_stel": "15 ppm (short-term exposure limit)",
+            "CO": "35 ppm (OSHA TWA = 50 ppm)"
+          },
+          "calibration": "Daily bump test required. Full calibration per manufacturer schedule (typically monthly or quarterly).",
+          "common_models": ["MSA ALTAIR 4XR", "Honeywell BW Clip4", "RKI GX-2012", "Industrial Scientific Ventis MX4"]
+        },
+        {
+          "id": "other_002",
+          "name": "Personal H2S Monitor",
+          "description": "Single-gas H2S monitor worn on collar near breathing zone.",
+          "when_required": "All personnel working in H2S potential areas (refineries, sour gas facilities). Some sites issue to every worker.",
+          "standard_site_ppe": false,
+          "notes": "TWA alarm at 10 ppm, STEL alarm at 15 ppm. Must be within 12 inches of breathing zone."
+        },
+        {
+          "id": "other_003",
+          "name": "Voltage Detector / Proximity Alert",
+          "description": "Non-contact voltage detector worn on hard hat or person that alerts to nearby energized conductors.",
+          "when_required": "Electricians, anyone working near electrical equipment. Passive detection of AC voltage fields.",
+          "standard_site_ppe": false,
+          "common_models": ["Safeguard EWP Alert", "Fluke LVD2", "Greenlee GT-16"],
+          "notes": "NOT a replacement for proper voltage testing with a meter. Supplemental awareness device only."
+        },
+        {
+          "id": "other_004",
+          "name": "Knee Pads",
+          "description": "Protective knee pads for kneeling work.",
+          "when_required": "Conduit installation at floor level, pipe fitting, instrument installation at grade, any extended kneeling work.",
+          "standard_site_ppe": false,
+          "notes": "Often overlooked PPE. Prevents knee injuries and long-term joint damage."
+        },
+        {
+          "id": "other_005",
+          "name": "Life Jacket / Personal Flotation Device (PFD)",
+          "description": "USCG-approved personal flotation device for over-water work.",
+          "when_required": "Any work over or adjacent to water where drowning hazard exists. Dock work, barge work, offshore, work on bridges or piers.",
+          "standard_site_ppe": false,
+          "standard": "USCG Type III or Type V work vest"
+        },
+        {
+          "id": "other_006",
+          "name": "Welding Blanket / Fire Blanket",
+          "description": "Fire-resistant blanket used to protect nearby workers, equipment, and materials from welding sparks.",
+          "when_required": "All hot work (welding, cutting, grinding) where sparks could contact flammable materials, other workers, or sensitive equipment.",
+          "standard_site_ppe": false,
+          "notes": "Part of the hot work permit requirements. Not personal PPE per se, but required equipment for the task."
+        },
+        {
+          "id": "other_007",
+          "name": "Barricade / Warning Tape and Cones",
+          "description": "Visual barriers to delineate hazardous areas.",
+          "when_required": "Below elevated work (overhead protection zone), around open holes, electrical hazard boundaries, construction zones.",
+          "standard_site_ppe": false,
+          "types": {
+            "yellow_caution": "Caution — hazard exists, may enter with awareness",
+            "red_danger": "Danger — do NOT enter without authorization",
+            "orange_cones": "General traffic/area control"
+          }
+        }
+      ]
+    }
+  },
+
+  "ppe_by_trade": {
+    "description": "Standard PPE loadout by trade on industrial construction sites. These are the BASELINE — additional PPE added based on specific task hazards.",
+    "trades": {
+      "electrician": {
+        "trade_name": "Electrician",
+        "standard_daily_ppe": [
+          "Hard Hat - Type I or II, Class E (electrical rated MANDATORY)",
+          "Safety Glasses - Clear (ANSI Z87.1+)",
+          "FR Clothing - CAT 2 minimum (8 cal/cm2)",
+          "Steel or Composite Toe Boots - EH rated",
+          "High-Visibility Vest - Class 2",
+          "Leather Work Gloves or Cut-Resistant A2+"
+        ],
+        "task_specific_additions": {
+          "conduit_installation": ["Cut-Resistant Gloves A4", "Knee Pads (floor work)", "Hearing Protection (power tools)"],
+          "wire_pulling": ["Cut-Resistant Gloves A4", "Leather Work Gloves (over cut-resistant for cable pulling)"],
+          "panel_work_de_energized": ["Voltage Detector", "Rubber Insulating Gloves Class 0 (verify dead)"],
+          "panel_work_energized_480v": ["Arc Flash PPE per label (minimum CAT 2)", "Rubber Insulating Gloves Class 0 with leather protectors", "Voltage Detector", "Face Shield (arc rated)", "Leather footwear (non-conductive)"],
+          "panel_work_energized_4kv_plus": ["Arc Flash Suit (per arc flash study)", "Rubber Insulating Gloves Class 1+ (per voltage)", "Dielectric Boots", "Face Shield (arc rated)", "Voltage Detector"],
+          "underground_conduit": ["Cut-Resistant Gloves A4", "Rubber Boots", "Hearing Protection"],
+          "elevated_work": ["Full Body Harness + SRL or Shock-Absorbing Lanyard", "Tool lanyards for hand tools"],
+          "confined_space_electrical": ["4-Gas Monitor", "Full Body Harness with shoulder D-rings (retrieval)", "Type II Hard Hat", "Communication device"]
+        }
+      },
+      "pipefitter": {
+        "trade_name": "Pipe Fitter / Welder",
+        "standard_daily_ppe": [
+          "Hard Hat - Type I, Class E or G",
+          "Safety Glasses - Clear (ANSI Z87.1+)",
+          "FR Clothing - CAT 2 (refinery sites) or standard cotton (non-FR sites)",
+          "Steel Toe Boots (metatarsal guards if required by site)",
+          "High-Visibility Vest - Class 2",
+          "Leather Work Gloves or Cut-Resistant A4"
+        ],
+        "task_specific_additions": {
+          "pipe_cutting_threading": ["Face Shield", "Hearing Protection (NRR 25+)", "Cut-Resistant Gloves A4+"],
+          "welding_smaw_stick": ["Welding Helmet (shade 10-12)", "Welding Gloves (gauntlet)", "Welding Jacket or Sleeves", "Ear Plugs (under helmet)"],
+          "welding_gtaw_tig": ["Welding Helmet (shade 8-12)", "TIG Welding Gloves", "FR long sleeve shirt"],
+          "grinding": ["Face Shield (over safety glasses)", "Hearing Protection (NRR 25+)", "Leather Gloves", "Leather apron (heavy grinding)"],
+          "hydro_testing": ["Face Shield", "Chemical-Resistant Gloves (if chemicals in test medium)", "Full-length sleeves", "Keep away from pressurized connections"],
+          "elevated_work": ["Full Body Harness + SRL", "Tool lanyards"],
+          "line_breaking": ["Chemical Splash Goggles", "Chemical-Resistant Gloves", "Face Shield", "FR Clothing", "Respiratory protection (per SDS)"],
+          "hot_tapping": ["Full FR ensemble", "Face Shield", "Welding PPE", "Fire extinguisher within reach"]
+        }
+      },
+      "ironworker": {
+        "trade_name": "Ironworker / Structural Steel Erector",
+        "standard_daily_ppe": [
+          "Hard Hat - Type I or II, Class E or G",
+          "Safety Glasses - Clear (ANSI Z87.1+)",
+          "Work Clothing (FR if site requires)",
+          "Steel Toe Boots with metatarsal guards",
+          "High-Visibility Vest - Class 2",
+          "Cut-Resistant Gloves A4+"
+        ],
+        "task_specific_additions": {
+          "steel_erection": ["Full Body Harness + Twin-Leg Lanyard (100% tie-off)", "Cut-Resistant Gloves A6", "Hearing Protection"],
+          "welding_connections": ["Welding Helmet", "Welding Gloves", "FR Clothing", "Fire Blanket"],
+          "bolt_up": ["Impact-Resistant Gloves", "Hearing Protection (impact wrench)", "Face Shield (if using pneumatic)"],
+          "rigging": ["Cut-Resistant Gloves A4", "Hearing Protection", "Full Body Harness", "Signal person vest (orange)"],
+          "grinding_burning": ["Face Shield", "Hearing Protection", "Welding Goggles (burning)", "Leather Apron", "Fire Watch equipment"]
+        }
+      },
+      "instrumentation_technician": {
+        "trade_name": "Instrumentation Technician",
+        "standard_daily_ppe": [
+          "Hard Hat - Type I, Class E",
+          "Safety Glasses - Clear (ANSI Z87.1+)",
+          "FR Clothing - CAT 2 (refinery sites)",
+          "Composite Toe Boots - EH rated",
+          "High-Visibility Vest - Class 2",
+          "Leather or Cut-Resistant Gloves A2"
+        ],
+        "task_specific_additions": {
+          "tubing_installation": ["Cut-Resistant Gloves A4 (for tube cutting)", "Safety Glasses", "Knee Pads"],
+          "calibration": ["ESD-safe gloves (if calibrating sensitive electronics)", "Knee Pads (field instruments at grade)"],
+          "panel_wiring": ["Voltage Detector", "Cut-Resistant Gloves A2"],
+          "process_connections": ["Chemical Splash Goggles", "Chemical-Resistant Gloves (Nitrile)", "Face Shield", "Respiratory protection (per process fluid SDS)"],
+          "elevated_work": ["Full Body Harness + SRL", "Tool lanyards for instruments"],
+          "confined_space": ["4-Gas Monitor", "Full Body Harness with shoulder D-rings", "Type II Hard Hat", "Communication device"]
+        }
+      },
+      "general_labor": {
+        "trade_name": "General Laborer / Helper",
+        "standard_daily_ppe": [
+          "Hard Hat - Type I, Class E or G",
+          "Safety Glasses - Clear (ANSI Z87.1+)",
+          "Work Clothing (FR if site requires)",
+          "Steel Toe Boots",
+          "High-Visibility Vest - Class 2",
+          "Leather Work Gloves"
+        ],
+        "task_specific_additions": {
+          "material_handling": ["Cut-Resistant Gloves A4", "Metatarsal Guards (heavy items)", "Back support belt (optional, training preferred)"],
+          "housekeeping_cleanup": ["Dust Mask (N95) for sweeping", "Chemical-Resistant Gloves if handling chemicals", "Rubber Boots (wet areas)"],
+          "fire_watch": ["Fire extinguisher", "Radio/communication", "Fire Watch training/certification", "FR Clothing"],
+          "traffic_flagging": ["High-Visibility Vest Class 3", "Sign paddle", "Whistle"],
+          "scaffold_assistance": ["Full Body Harness (while on scaffold)", "Hard Hat", "Tool lanyards"]
+        }
+      }
+    }
+  },
+
+  "common_violations": {
+    "title": "Top PPE Violations on Industrial Construction Sites",
+    "description": "Based on OSHA citation data and contractor safety audit findings.",
+    "violations": [
+      {
+        "rank": 1,
+        "violation": "Safety glasses not worn or worn on top of head",
+        "osha_standard": "1926.102(a)(1)",
+        "frequency": "Most common PPE violation on every site"
+      },
+      {
+        "rank": 2,
+        "violation": "Fall protection harness not worn or not connected at height",
+        "osha_standard": "1926.501(b)(1)",
+        "frequency": "OSHA's #1 most cited standard every year"
+      },
+      {
+        "rank": 3,
+        "violation": "Non-FR clothing in FR-required areas (especially non-FR rain gear, hoodies, undergarments)",
+        "osha_standard": "1910.269, NFPA 70E",
+        "frequency": "Very common in cold/wet weather"
+      },
+      {
+        "rank": 4,
+        "violation": "Gloves not worn or wrong type for task",
+        "osha_standard": "1926.95(a)",
+        "frequency": "Common during fine-dexterity tasks"
+      },
+      {
+        "rank": 5,
+        "violation": "Hearing protection not worn in high-noise areas",
+        "osha_standard": "1926.52(b)",
+        "frequency": "Common — noise is invisible hazard"
+      },
+      {
+        "rank": 6,
+        "violation": "Expired rubber insulating gloves (past 6-month test date)",
+        "osha_standard": "1910.137(c)(2)(viii)",
+        "frequency": "Electrician-specific, very common audit finding"
+      },
+      {
+        "rank": 7,
+        "violation": "Hard hat on backwards without being rated for reverse wear",
+        "osha_standard": "1926.100(b)",
+        "frequency": "Common — some hard hats are NOT reverse-wear rated"
+      },
+      {
+        "rank": 8,
+        "violation": "Using fall arrest equipment after a fall event without inspection/replacement",
+        "osha_standard": "1926.502(d)(21)",
+        "frequency": "Potentially catastrophic if equipment is reused"
+      },
+      {
+        "rank": 9,
+        "violation": "Respirator use without fit test, medical evaluation, or training",
+        "osha_standard": "1910.134(e)(1), (f)(2)",
+        "frequency": "Common with new hires and temporary workers"
+      },
+      {
+        "rank": 10,
+        "violation": "Face shield worn WITHOUT safety glasses underneath",
+        "osha_standard": "1926.102(a)(1)",
+        "frequency": "Common misconception — face shield alone is insufficient"
+      },
+      {
+        "rank": 11,
+        "violation": "4-gas monitor not bump tested daily or calibration expired",
+        "osha_standard": "1926.1204(c)(1) - confined space atmosphere monitoring",
+        "frequency": "Common, especially on sites without dedicated gas tech"
+      },
+      {
+        "rank": 12,
+        "violation": "Synthetic clothing (polyester, nylon) worn under or instead of FR clothing",
+        "osha_standard": "NFPA 2112, 70E",
+        "frequency": "Dangerous — synthetics melt onto skin causing severe burns. T-shirts, underwear, and socks should all be natural fiber or FR in flash fire areas."
+      }
+    ]
+  },
+
+  "updated_at": "2026-03-24T00:00:00.000Z"
+}

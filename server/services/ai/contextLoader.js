@@ -27,10 +27,10 @@ function loadSafetyBasics() {
 /**
  * Load person and template context for AI prompts
  */
-async function loadPersonContext(personId) {
+async function loadPersonContext(personId, dbOverride) {
   if (!personId) return '';
   try {
-    const person = await DB.people.getById(personId);
+    const person = await (dbOverride || DB).people.getById(personId);
     if (!person || !person.template_id) return '';
 
     const tplPath = path.join(ROOT, 'templates', `${person.template_id}.json`);
@@ -41,6 +41,30 @@ async function loadPersonContext(personId) {
     if (template.vocabulary && template.vocabulary.terms) {
       context += `\nIndustry vocabulary they may use: ${template.vocabulary.terms.slice(0, 40).join(', ')}`;
     }
+
+    // Load knowledge files for deeper person context
+    try {
+      const knowledgeRows = (await (dbOverride || DB).db.query(
+        "SELECT title, text_content FROM knowledge_files WHERE person_id = $1 AND text_content IS NOT NULL AND text_content != '' ORDER BY created_at DESC LIMIT 3",
+        [person.id]
+      )).rows;
+      if (knowledgeRows.length > 0) {
+        let totalChars = 0;
+        const maxChars = 4000;
+        for (const kf of knowledgeRows) {
+          const text = kf.text_content || '';
+          if (totalChars + text.length > maxChars) {
+            context += `\n\nKnowledge file (${kf.title}, truncated):\n${text.substring(0, maxChars - totalChars)}`;
+            break;
+          }
+          context += `\n\nKnowledge file (${kf.title}):\n${text}`;
+          totalChars += text.length;
+        }
+      }
+    } catch (kErr) {
+      console.error('Knowledge load in personContext:', kErr.message);
+    }
+
     return context;
   } catch (e) {
     return '';

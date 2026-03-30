@@ -1,0 +1,36 @@
+{
+  "category": "coordination",
+  "description": "Construction sequence, trade dependencies, interference resolution, prefabrication",
+  "refinery_construction_sequence": [
+    "Phase 1: Site prep — survey, grading, temp power/lighting, laydown areas",
+    "Phase 2: Underground — piling, underground piping, ground grid, duct banks, conduit, foundations",
+    "Phase 3: Structural & equipment — steel erection, vessels, heavy equipment, transformers, control room",
+    "Phase 4: Bulk work — piping, cable tray, conduit, tubing runs, fireproofing",
+    "Phase 5: Termination — pipe welding, cable pulling, terminations, instrument mounting/wiring, pressure testing, heat tracing",
+    "Phase 6: Pre-commissioning — megger testing, switchgear checks, calibration, loop checks, motor bumps, flushing",
+    "Phase 7: Commissioning — energization, instrument air startup, DCS/SIS checkout, interlock testing, process introduction"
+  ],
+  "electrical_needs_from_others": {
+    "civil": ["Duct banks complete and inspected", "Equipment foundations poured/cured", "Cable trench structures complete", "Ground grid installed (inspect before backfill)", "Building slabs poured"],
+    "structural": ["Steel erected for cable tray mounting", "Platforms and grating installed for access", "Equipment support steel in place"],
+    "mechanical": ["Major equipment set on foundations", "Rotating equipment set and aligned", "HVAC operational in electrical rooms before energization"],
+    "piping": ["Process connections complete and hydro tested before instrument tie-in", "Pipe supports in place before routing conduit on pipe racks"]
+  },
+  "instrumentation_needs_from_others": {
+    "piping": ["Process taps installed and hydro tested", "Thermowells installed with pipe", "Control valve bodies in line", "Piping flushing complete before inline instruments"],
+    "electrical": ["Instrument power panels energized", "Marshalling cabinet power", "Grounding at instrument locations", "IS barriers installed"],
+    "civil": ["Instrument pads poured", "Control room weather-tight"],
+    "mechanical": ["Equipment with instruments set and aligned"]
+  },
+  "interference_resolution": {
+    "priority_order": "Process piping > structural steel > electrical trays > instrument trays > HVAC",
+    "process": ["Field identifies interference", "Area coordinator calls meeting with affected foremen", "Engineering provides disposition within 24-48 hrs (4 hrs for critical path)", "Document all — often becomes change order backup"],
+    "common_interferences": ["Cable tray blocked by piping routed differently than model", "Instrument tubing through space now occupied by bracing", "Conduit blocked by HVAC duct", "Valve handwheel conflicts with cable tray", "Motor JB orientation wrong for conduit route"]
+  },
+  "prefabrication": {
+    "electrical": ["Cable tray sections pre-assembled", "Conduit rack assemblies with pre-welded supports", "Junction boxes pre-wired with terminal strips", "Ground grid assemblies pre-Cadwelded", "Motor connection kits pre-assembled"],
+    "instrumentation": ["Tubing manifold assemblies", "Control valve assemblies (valve+actuator+positioner) bench-tested", "Junction boxes pre-wired", "Analyzer sample systems pre-built", "Instrument stands pre-fabricated to height"],
+    "benefit": "Prefab achieves 3-4x field productivity. 8 hours in field = 2 hours in shop (controlled environment, proper tooling, bench-height, no permits).",
+    "rule": "Only prefab from APPROVED FOR CONSTRUCTION (AFC) drawings. Prefabbing from IFR drawings = rework."
+  }
+}

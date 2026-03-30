@@ -1,0 +1,50 @@
+{
+  "trade": "Electrical",
+  "category": "safety",
+  "description": "Safety requirements by task type for electrical construction",
+  "tasks": {
+    "cable_pulling": {
+      "ppe": ["Hard hat", "Safety glasses", "Leather gloves", "Steel-toe boots", "High-vis vest", "Hearing protection if pulling machine exceeds 85 dB"],
+      "jsa_items": ["Verify pulling tension won't exceed cable max sidewall bearing pressure", "Check conduit for obstructions/burrs before pull", "Verify correct cable staged (check tag vs pull ticket)", "Adequate manpower at each pull point", "Communication established between pull points (radios)", "Pulling lubricant compatible with cable jacket", "Pulling rope/grip rated for load", "Sheaves and rollers inspected"],
+      "hazards": ["Pinch points at conduit entries and sheaves", "Cable whip if rope/grip fails", "Overhead pulls: falling cable", "Tripping on cable coils", "Chemical exposure from lubricant", "Proximity to energized circuits"],
+      "permits": ["General work permit", "Hot work permit if near hot work areas", "Confined space permit if pulling into vaults/manholes", "Energized work permit if adjacent circuits live", "Fall protection plan if at elevation"]
+    },
+    "conduit_installation": {
+      "overhead_ppe": ["Hard hat", "Safety glasses", "Gloves", "Fall protection above 6 ft", "Tool lanyards"],
+      "overhead_safety": ["Scaffold/lift inspected and tagged", "100% tie-off on lifts", "Barricade below overhead work", "Never use conduit as support for climbing"],
+      "underground_hazards": ["Trench collapse — shore or slope per OSHA", "Striking existing utilities — verify dig permit", "Water accumulation", "Underground gas lines in refinery"],
+      "hazardous_area_rules": ["RMC or MI cable required in Class I Div 1 — EMT NOT permitted", "All fittings listed for classification", "Sealing fittings within 18 in of enclosure in Div 1", "Seals at boundary from classified to unclassified", "5 full threads minimum on RMC in hazardous locations"]
+    },
+    "terminations": {
+      "loto": ["Follow site LOTO procedure — zero energy verification required", "Each worker applies own lock and tag", "Verify zero energy with rated voltage tester", "Test tester on known live source before and after", "Stored energy: discharge capacitors, release springs"],
+      "arc_flash_categories": {
+        "cat1_4to8_cal": "Arc-rated shirt/pants min 4 cal, face shield, hard hat, leather gloves",
+        "cat2_8to25_cal": "Arc-rated clothing min 8 cal, flash hood or face shield/balaclava",
+        "cat3_25to40_cal": "Arc-rated flash suit min 25 cal, flash hood, rubber insulating gloves",
+        "cat4_40_cal": "Arc-rated flash suit min 40 cal, full flash suit hood"
+      },
+      "best_practices": ["Verify conductor size matches lug rating", "Strip insulation to correct length", "Correct crimp die for compression lugs", "Torque all connections to manufacturer spec", "Anti-oxidant on all aluminum terminations", "Verify phase rotation before connecting 3-phase"]
+    },
+    "testing_megger": {
+      "safety": ["Never megger energized circuits", "Test voltage is HIGH — treat as energized work", "Discharge cable after testing — ground for 4x test duration", "Barricade test area, warning signs", "Only qualified persons to operate"],
+      "test_voltages": {"under_250V": "500V megger", "250_to_600V": "1000V megger", "601_to_5000V": "2500V megger"}
+    },
+    "testing_hipot": {
+      "safety": ["HIGH VOLTAGE — lethal voltages", "Barricade with minimum 10 ft clearance", "Dedicated safety watch at each cable end", "All workers clear — verbal confirmation chain", "Written procedure required", "Discharge and verify zero volts before approaching"]
+    },
+    "panel_mcc_work": {
+      "de_energized": ["Request outage through proper channels", "LOTO per site procedure", "Verify zero energy with CAT III/IV rated tester", "Test tester before and after", "Ground phase conductors for MV equipment"],
+      "energized_work_requires": ["Energized Electrical Work Permit (EEWP)", "Justification why cannot be de-energized", "Shock and arc flash analysis", "PPE requirements documented", "Only qualified persons", "Insulated tools rated for voltage", "Remove conductive jewelry"]
+    },
+    "cable_tray": {
+      "fall_protection": ["Required above 6 ft", "Do NOT walk on cable tray unless rated and approved", "Tool lanyards required — dropped bolt from height is lethal"],
+      "installation": ["Support spacing per manufacturer (5-8 ft ladder, 4-6 ft solid)", "Don't exceed tray fill per NEC 392.22", "Maintain power/control separation", "Bond tray sections per NEC 392.60", "Firestop all rated penetrations"]
+    },
+    "confined_space": {
+      "requirements": ["Confined space permit per OSHA", "Atmospheric monitoring: O2, LEL, CO, H2S", "Attendant at entry at all times", "Rescue plan before entry", "All tools GFCI protected", "Use 12V/24V lighting in wet spaces", "De-energize circuits in space if possible"]
+    },
+    "hot_work_near_electrical": {
+      "requirements": ["Hot work permit required within 35 ft of combustibles", "Fire watch during and 30 min after", "Cover cables with welding blankets", "Never use conduit as welding ground path", "Ground welding leads directly to workpiece", "Shield cable insulation from grinding sparks"]
+    }
+  }
+}

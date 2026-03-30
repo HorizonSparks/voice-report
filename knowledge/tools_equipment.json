@@ -1,0 +1,28 @@
+{
+  "category": "tools",
+  "description": "Essential tool kits, specialty tools, test equipment, inspection requirements",
+  "electrician_essential_tools": {
+    "always_on_person": ["Lineman's pliers 9in", "Diagonal cutters 8in", "Needle-nose 8in", "Channel-locks 10in and 12in", "Wire strippers", "Cable cutters (ratcheting)", "Screwdrivers: #1 #2 Phillips, 1/4 5/16 slotted", "Nut drivers: 1/4 to 1/2", "Allen keys SAE and metric", "Tape measure 25ft", "Torpedo level", "Cable knife/utility knife", "Electrical tape (black red blue white green)", "Voltage tester (non-contact AND contact)", "Multimeter CAT III 600V minimum", "Flashlight/headlamp"],
+    "gang_box": ["Conduit bender set (1/2 3/4 1in)", "Knockout punch set", "Fish tape", "Cable pulling grips", "Torque wrench", "Torque screwdriver", "Crimping tools (insulated terminal + compression lug)", "Hole saw kit", "Wire pulling lubricant"]
+  },
+  "instrument_tech_additional": ["Precision screwdriver set", "Tubing cutter 1/4 and 1/2in", "Tubing bender", "Flaring tool", "Tube deburring tool", "Open-end wrenches (9/16 and 11/16 are common fitting sizes)", "Loop calibrator (Fluke 709 or equiv)", "Pressure calibrator/hand pump", "HART communicator", "Decade resistance box (RTD simulation)", "Thermocouple simulator", "RTD simulator"],
+  "multimeter_cat_ratings": {
+    "CAT_I": "Electronic equipment — NOT for industrial",
+    "CAT_II": "Residential receptacles — NOT for industrial",
+    "CAT_III": "Industrial panels, bus, feeders — MINIMUM for industrial work",
+    "CAT_IV": "Utility entrance, outdoor — highest protection",
+    "critical_rule": "Underrated meter on industrial systems risks EXPLOSIVE failure (arc flash). Both voltage AND category must be adequate."
+  },
+  "torque_wrench_rules": ["Annual calibration minimum", "Calibrate after being dropped or overloaded", "Click-type most common, beam-type for verification", "NIST-traceable calibration certificate required"],
+  "tool_inspection": {
+    "insulated_tools": "Must meet IEC 60900 / ASTM F1505 (1000V AC). Inspect before each use — any crack or cut = retire tool. Annual dielectric testing recommended.",
+    "calibration_cycles": {
+      "torque_wrenches": "Annual",
+      "multimeters": "Annual (6-month for calibration-grade)",
+      "pressure_gauges": "6-month for calibration use",
+      "loop_calibrators": "Annual",
+      "meggers": "Annual"
+    },
+    "rule": "All calibration traceable to NIST. Visible sticker with due date on tool."
+  }
+}

@@ -20,6 +20,8 @@ router.post('/login', async (req, res) => {
         is_admin: true,
         role_level: 5,
         trade: null,
+        company_id: 'company_horizon_sparks',
+        sparks_role: 'admin',
         user_agent: req.headers['user-agent'],
         ip_address: req.ip,
       });
@@ -29,18 +31,22 @@ router.post('/login', async (req, res) => {
         person_id: ADMIN_ID,
         name: 'Admin',
         role_title: 'Administrator',
+        company_id: 'company_horizon_sparks',
+        sparks_role: 'admin',
         session_id: session.id,
       });
     }
 
     const person = await DB.people.getByPin(pin);
     if (person) {
-      // Person login — create session
+      // Person login — create session with company_id and sparks_role
       const session = await DB.sessions.create({
         person_id: person.id,
         is_admin: false,
         role_level: person.role_level || 1,
         trade: person.trade || null,
+        company_id: person.company_id || null,
+        sparks_role: person.sparks_role || null,
         user_agent: req.headers['user-agent'],
         ip_address: req.ip,
       });
@@ -55,6 +61,8 @@ router.post('/login', async (req, res) => {
         trade: person.trade || '',
         photo: person.photo || null,
         supervisor_id: person.supervisor_id || null,
+        company_id: person.company_id || null,
+        sparks_role: person.sparks_role || null,
         session_id: session.id,
       });
     }
@@ -91,6 +99,8 @@ router.get('/me', async (req, res) => {
       name: 'Admin',
       role_title: 'Administrator',
       role_level: 5,
+      company_id: 'company_horizon_sparks',
+      sparks_role: 'admin',
     });
   }
 
@@ -107,6 +117,8 @@ router.get('/me', async (req, res) => {
       trade: person.trade || '',
       photo: person.photo || null,
       supervisor_id: person.supervisor_id || null,
+      company_id: person.company_id || null,
+      sparks_role: person.sparks_role || null,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

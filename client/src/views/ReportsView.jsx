@@ -108,7 +108,7 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
       { level: 5, label: 'Project Management' },
     ],
   };
-  const roleGroups = roleGroupsByTrade[activeTrade] || roleGroupsByTrade.Electrical;
+  const roleGroups = activeTrade ? (roleGroupsByTrade[activeTrade] || roleGroupsByTrade.Electrical) : [];
 
   // Timeline grouping — defined here so full-screen category can use it
   const getWeekKey2 = (dateStr) => {

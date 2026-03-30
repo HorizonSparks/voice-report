@@ -101,78 +101,152 @@ async function trackRefineFunnel({ person_id, session_id, funnel_id, context_typ
 async function getDashboard(filters = {}) {
   const from = filters.from || '2000-01-01';
   const to = filters.to || '2099-12-31';
+  const companyId = filters.company_id || null;
+  const companyParams = companyId ? [from, to, companyId] : [from, to];
 
   const summary = (await db.query(
-    'SELECT COUNT(*) as total_api_calls, COUNT(DISTINCT person_id) as unique_users FROM analytics_api_calls WHERE created_at BETWEEN $1 AND $2', [from, to]
+    companyId
+      ? 'SELECT COUNT(*) as total_api_calls, COUNT(DISTINCT c.person_id) as unique_users FROM analytics_api_calls c INNER JOIN voicereport.people cp ON c.person_id = cp.id AND cp.company_id = $3 WHERE c.created_at BETWEEN $1 AND $2'
+      : 'SELECT COUNT(*) as total_api_calls, COUNT(DISTINCT person_id) as unique_users FROM analytics_api_calls WHERE created_at BETWEEN $1 AND $2',
+    companyParams
   )).rows[0];
 
   const totalCost = (await db.query(
-    'SELECT COALESCE(SUM(estimated_cost_cents), 0) as total_cost_cents FROM analytics_ai_costs WHERE created_at BETWEEN $1 AND $2', [from, to]
+    companyId
+      ? 'SELECT COALESCE(SUM(c.estimated_cost_cents), 0) as total_cost_cents FROM analytics_ai_costs c INNER JOIN voicereport.people cp ON c.person_id = cp.id AND cp.company_id = $3 WHERE c.created_at BETWEEN $1 AND $2'
+      : 'SELECT COALESCE(SUM(estimated_cost_cents), 0) as total_cost_cents FROM analytics_ai_costs WHERE created_at BETWEEN $1 AND $2',
+    companyParams
   )).rows[0];
 
   const costByProvider = (await db.query(
-    `SELECT provider, service, COUNT(*) as total_calls, SUM(estimated_cost_cents) as total_cost_cents,
-     AVG(estimated_cost_cents)::INTEGER as avg_cost_cents, SUM(input_tokens) as total_input_tokens, SUM(output_tokens) as total_output_tokens
-     FROM analytics_ai_costs WHERE created_at BETWEEN $1 AND $2 GROUP BY provider, service ORDER BY total_cost_cents DESC`, [from, to]
+    companyId
+      ? `SELECT c.provider, c.service, COUNT(*) as total_calls, SUM(c.estimated_cost_cents) as total_cost_cents,
+         AVG(c.estimated_cost_cents)::INTEGER as avg_cost_cents, SUM(c.input_tokens) as total_input_tokens, SUM(c.output_tokens) as total_output_tokens
+         FROM analytics_ai_costs c INNER JOIN voicereport.people cp ON c.person_id = cp.id AND cp.company_id = $3
+         WHERE c.created_at BETWEEN $1 AND $2 GROUP BY c.provider, c.service ORDER BY total_cost_cents DESC`
+      : `SELECT provider, service, COUNT(*) as total_calls, SUM(estimated_cost_cents) as total_cost_cents,
+         AVG(estimated_cost_cents)::INTEGER as avg_cost_cents, SUM(input_tokens) as total_input_tokens, SUM(output_tokens) as total_output_tokens
+         FROM analytics_ai_costs WHERE created_at BETWEEN $1 AND $2 GROUP BY provider, service ORDER BY total_cost_cents DESC`,
+    companyParams
   )).rows;
 
   const costByPerson = (await db.query(
-    `SELECT c.person_id, p.name as person_name, SUM(c.estimated_cost_cents) as total_cost_cents, COUNT(*) as call_count
-     FROM analytics_ai_costs c LEFT JOIN people p ON c.person_id = p.id
-     WHERE c.created_at BETWEEN $1 AND $2 GROUP BY c.person_id, p.name ORDER BY total_cost_cents DESC LIMIT 20`, [from, to]
+    companyId
+      ? `SELECT c.person_id, p.name as person_name, SUM(c.estimated_cost_cents) as total_cost_cents, COUNT(*) as call_count
+         FROM analytics_ai_costs c LEFT JOIN voicereport.people p ON c.person_id = p.id
+         WHERE c.created_at BETWEEN $1 AND $2 AND p.company_id = $3 GROUP BY c.person_id, p.name ORDER BY total_cost_cents DESC LIMIT 20`
+      : `SELECT c.person_id, p.name as person_name, SUM(c.estimated_cost_cents) as total_cost_cents, COUNT(*) as call_count
+         FROM analytics_ai_costs c LEFT JOIN people p ON c.person_id = p.id
+         WHERE c.created_at BETWEEN $1 AND $2 GROUP BY c.person_id, p.name ORDER BY total_cost_cents DESC LIMIT 20`,
+    companyParams
   )).rows;
 
   const costByDay = (await db.query(
-    `SELECT created_at::date as date,
-     SUM(CASE WHEN provider = 'anthropic' THEN estimated_cost_cents ELSE 0 END) as anthropic_cents,
-     SUM(CASE WHEN provider = 'openai' THEN estimated_cost_cents ELSE 0 END) as openai_cents,
-     SUM(estimated_cost_cents) as total_cents
-     FROM analytics_ai_costs WHERE created_at BETWEEN $1 AND $2
-     GROUP BY created_at::date ORDER BY date DESC LIMIT 30`, [from, to]
+    companyId
+      ? `SELECT c.created_at::date as date,
+         SUM(CASE WHEN c.provider = 'anthropic' THEN c.estimated_cost_cents ELSE 0 END) as anthropic_cents,
+         SUM(CASE WHEN c.provider = 'openai' THEN c.estimated_cost_cents ELSE 0 END) as openai_cents,
+         SUM(c.estimated_cost_cents) as total_cents
+         FROM analytics_ai_costs c INNER JOIN voicereport.people cp ON c.person_id = cp.id AND cp.company_id = $3
+         WHERE c.created_at BETWEEN $1 AND $2
+         GROUP BY c.created_at::date ORDER BY date DESC LIMIT 30`
+      : `SELECT created_at::date as date,
+         SUM(CASE WHEN provider = 'anthropic' THEN estimated_cost_cents ELSE 0 END) as anthropic_cents,
+         SUM(CASE WHEN provider = 'openai' THEN estimated_cost_cents ELSE 0 END) as openai_cents,
+         SUM(estimated_cost_cents) as total_cents
+         FROM analytics_ai_costs WHERE created_at BETWEEN $1 AND $2
+         GROUP BY created_at::date ORDER BY date DESC LIMIT 30`,
+    companyParams
   )).rows;
 
   const apiPerformance = (await db.query(
-    `SELECT endpoint, COUNT(*) as call_count, AVG(duration_ms)::INTEGER as avg_duration_ms,
-     MAX(duration_ms) as max_duration_ms,
-     ROUND(100.0 * SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) / COUNT(*), 1) as error_rate_pct
-     FROM analytics_api_calls WHERE created_at BETWEEN $1 AND $2 GROUP BY endpoint ORDER BY call_count DESC`, [from, to]
+    companyId
+      ? `SELECT a.endpoint, COUNT(*) as call_count, AVG(a.duration_ms)::INTEGER as avg_duration_ms,
+         MAX(a.duration_ms) as max_duration_ms,
+         ROUND(100.0 * SUM(CASE WHEN a.status_code >= 400 THEN 1 ELSE 0 END) / COUNT(*), 1) as error_rate_pct
+         FROM analytics_api_calls a INNER JOIN voicereport.people cp ON a.person_id = cp.id AND cp.company_id = $3
+         WHERE a.created_at BETWEEN $1 AND $2 GROUP BY a.endpoint ORDER BY call_count DESC`
+      : `SELECT endpoint, COUNT(*) as call_count, AVG(duration_ms)::INTEGER as avg_duration_ms,
+         MAX(duration_ms) as max_duration_ms,
+         ROUND(100.0 * SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) / COUNT(*), 1) as error_rate_pct
+         FROM analytics_api_calls WHERE created_at BETWEEN $1 AND $2 GROUP BY endpoint ORDER BY call_count DESC`,
+    companyParams
   )).rows;
 
   const apiErrors = (await db.query(
-    `SELECT endpoint, status_code, COUNT(*) as count, MAX(error_message) as latest_error
-     FROM analytics_api_calls WHERE status_code >= 400 AND created_at BETWEEN $1 AND $2
-     GROUP BY endpoint, status_code ORDER BY count DESC LIMIT 20`, [from, to]
+    companyId
+      ? `SELECT a.endpoint, a.status_code, COUNT(*) as count, MAX(a.error_message) as latest_error
+         FROM analytics_api_calls a INNER JOIN voicereport.people cp ON a.person_id = cp.id AND cp.company_id = $3
+         WHERE a.status_code >= 400 AND a.created_at BETWEEN $1 AND $2
+         GROUP BY a.endpoint, a.status_code ORDER BY count DESC LIMIT 20`
+      : `SELECT endpoint, status_code, COUNT(*) as count, MAX(error_message) as latest_error
+         FROM analytics_api_calls WHERE status_code >= 400 AND created_at BETWEEN $1 AND $2
+         GROUP BY endpoint, status_code ORDER BY count DESC LIMIT 20`,
+    companyParams
   )).rows;
 
   const screenViews = (await db.query(
-    `SELECT event_name as screen, COUNT(*) as view_count, AVG(duration_ms)::INTEGER as avg_duration_ms,
-     COUNT(DISTINCT person_id) as unique_users
-     FROM analytics_client_events WHERE event_type = 'screen_view' AND created_at BETWEEN $1 AND $2
-     GROUP BY event_name ORDER BY view_count DESC`, [from, to]
+    companyId
+      ? `SELECT e.event_name as screen, COUNT(*) as view_count, AVG(e.duration_ms)::INTEGER as avg_duration_ms,
+         COUNT(DISTINCT e.person_id) as unique_users
+         FROM analytics_client_events e INNER JOIN voicereport.people cp ON e.person_id = cp.id AND cp.company_id = $3
+         WHERE e.event_type = 'screen_view' AND e.created_at BETWEEN $1 AND $2
+         GROUP BY e.event_name ORDER BY view_count DESC`
+      : `SELECT event_name as screen, COUNT(*) as view_count, AVG(duration_ms)::INTEGER as avg_duration_ms,
+         COUNT(DISTINCT person_id) as unique_users
+         FROM analytics_client_events WHERE event_type = 'screen_view' AND created_at BETWEEN $1 AND $2
+         GROUP BY event_name ORDER BY view_count DESC`,
+    companyParams
   )).rows;
 
   const refineFunnel = (await db.query(
-    'SELECT stage, COUNT(*) as count FROM analytics_refine_funnels WHERE created_at BETWEEN $1 AND $2 GROUP BY stage', [from, to]
+    companyId
+      ? `SELECT r.stage, COUNT(*) as count FROM analytics_refine_funnels r
+         INNER JOIN voicereport.people cp ON r.person_id = cp.id AND cp.company_id = $3
+         WHERE r.created_at BETWEEN $1 AND $2 GROUP BY r.stage`
+      : 'SELECT stage, COUNT(*) as count FROM analytics_refine_funnels WHERE created_at BETWEEN $1 AND $2 GROUP BY stage',
+    companyParams
   )).rows;
 
   const refineOutcomes = (await db.query(
-    'SELECT outcome, COUNT(*) as count FROM analytics_refine_funnels WHERE outcome IS NOT NULL AND created_at BETWEEN $1 AND $2 GROUP BY outcome', [from, to]
+    companyId
+      ? `SELECT r.outcome, COUNT(*) as count FROM analytics_refine_funnels r
+         INNER JOIN voicereport.people cp ON r.person_id = cp.id AND cp.company_id = $3
+         WHERE r.outcome IS NOT NULL AND r.created_at BETWEEN $1 AND $2 GROUP BY r.outcome`
+      : 'SELECT outcome, COUNT(*) as count FROM analytics_refine_funnels WHERE outcome IS NOT NULL AND created_at BETWEEN $1 AND $2 GROUP BY outcome',
+    companyParams
   )).rows;
 
   const refineByContext = (await db.query(
-    `SELECT context_type, COUNT(DISTINCT funnel_id) as conversations, AVG(round) as avg_rounds
-     FROM analytics_refine_funnels WHERE created_at BETWEEN $1 AND $2 GROUP BY context_type`, [from, to]
+    companyId
+      ? `SELECT r.context_type, COUNT(DISTINCT r.funnel_id) as conversations, AVG(r.round) as avg_rounds
+         FROM analytics_refine_funnels r INNER JOIN voicereport.people cp ON r.person_id = cp.id AND cp.company_id = $3
+         WHERE r.created_at BETWEEN $1 AND $2 GROUP BY r.context_type`
+      : `SELECT context_type, COUNT(DISTINCT funnel_id) as conversations, AVG(round) as avg_rounds
+         FROM analytics_refine_funnels WHERE created_at BETWEEN $1 AND $2 GROUP BY context_type`,
+    companyParams
   )).rows;
 
   const knowledgeUsage = (await db.query(
-    `SELECT knowledge_modules, COUNT(*) as load_count FROM analytics_ai_costs
-     WHERE knowledge_modules IS NOT NULL AND created_at BETWEEN $1 AND $2
-     GROUP BY knowledge_modules ORDER BY load_count DESC LIMIT 20`, [from, to]
+    companyId
+      ? `SELECT c.knowledge_modules, COUNT(*) as load_count FROM analytics_ai_costs c
+         INNER JOIN voicereport.people cp ON c.person_id = cp.id AND cp.company_id = $3
+         WHERE c.knowledge_modules IS NOT NULL AND c.created_at BETWEEN $1 AND $2
+         GROUP BY c.knowledge_modules ORDER BY load_count DESC LIMIT 20`
+      : `SELECT knowledge_modules, COUNT(*) as load_count FROM analytics_ai_costs
+         WHERE knowledge_modules IS NOT NULL AND created_at BETWEEN $1 AND $2
+         GROUP BY knowledge_modules ORDER BY load_count DESC LIMIT 20`,
+    companyParams
   )).rows;
 
   const sessionStats = (await db.query(
-    `SELECT COUNT(*) as total_sessions, AVG(screens_visited) as avg_screens, AVG(ai_calls_made) as avg_ai_calls
-     FROM analytics_sessions WHERE started_at BETWEEN $1 AND $2`, [from, to]
+    companyId
+      ? `SELECT COUNT(*) as total_sessions, AVG(s.screens_visited) as avg_screens, AVG(s.ai_calls_made) as avg_ai_calls
+         FROM analytics_sessions s INNER JOIN voicereport.people cp ON s.person_id = cp.id AND cp.company_id = $3
+         WHERE s.started_at BETWEEN $1 AND $2`
+      : `SELECT COUNT(*) as total_sessions, AVG(screens_visited) as avg_screens, AVG(ai_calls_made) as avg_ai_calls
+         FROM analytics_sessions WHERE started_at BETWEEN $1 AND $2`,
+    companyParams
   )).rows[0];
 
   return {

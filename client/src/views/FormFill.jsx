@@ -33,8 +33,8 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
 
   useEffect(() => {
     if (!templateId) return;
-    const fetches = [fetch(`/api/forms/templates/${templateId}`).then(r => r.json())];
-    if (loopId) fetches.push(fetch(`/api/forms/loops/${loopId}`).then(r => r.json()));
+    const fetches = [fetch(`/api/forms/templates/${templateId}`).then(r => r.ok ? r.json() : null)];
+    if (loopId) fetches.push(fetch(`/api/forms/loops/${loopId}`).then(r => r.ok ? r.json() : null));
 
     Promise.all(fetches).then(([formData, loopData]) => {
       setForm(formData);
@@ -188,6 +188,7 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) throw new Error('Server error');
       const data = await res.json();
       if (onSubmitted) onSubmitted(data.id);
     } catch (e) {

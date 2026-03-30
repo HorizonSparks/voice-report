@@ -8,10 +8,10 @@ import { TRADES } from '../utils/helpers.js';
 import usePeopleData from '../hooks/usePeopleData.js';
 import usePersonDashboard from '../hooks/usePersonDashboard.js';
 
-export default forwardRef(function PeopleView({ activeTrade, onOpenReport, persistedViewingId, setPeopleViewingId, user, setView, navigateTo }, ref) {
+export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, onOpenReport, persistedViewingId, setPeopleViewingId, user, setView, navigateTo, readOnly }, ref) {
   const { t } = useTranslation();
   // Data hooks
-  const { people, setPeople, templates, loading, reload: reloadPeople } = usePeopleData({ user });
+  const { people, setPeople, templates, loading, reload: reloadPeople } = usePeopleData({ user, activeTrade });
   const [viewing, setViewing] = useState(persistedViewingId || null);
   const dashboard = usePersonDashboard({ personId: viewing });
   const viewingPerson = dashboard.person;
@@ -299,6 +299,7 @@ export default forwardRef(function PeopleView({ activeTrade, onOpenReport, persi
     <PeopleListSection
       user={user}
       activeTrade={activeTrade}
+      activeRoleLevels={activeRoleLevels}
       people={people}
       templates={templates}
       expandedCategory={expandedCategory}

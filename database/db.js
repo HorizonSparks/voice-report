@@ -28,7 +28,7 @@ const db = pool;
 // ============================================
 const templates = {
   async getAll() {
-    const { rows } = await pool.query('SELECT *, is_system FROM templates ORDER BY trade, role_level');
+    const { rows } = await (this._pool || pool).query('SELECT *, is_system FROM templates ORDER BY trade, role_level');
     return rows.map(t => ({
       ...t,
       output_sections: JSON.parse(t.output_sections || '[]'),
@@ -40,7 +40,7 @@ const templates = {
   },
 
   async getById(id) {
-    const { rows } = await pool.query('SELECT * FROM templates WHERE id = $1', [id]);
+    const { rows } = await (this._pool || pool).query('SELECT * FROM templates WHERE id = $1', [id]);
     const t = rows[0];
     if (!t) return null;
     return {
@@ -53,8 +53,41 @@ const templates = {
     };
   },
 
+  /**
+   * Rank fallback: find the nearest template ABOVE the given role level
+   * within the SAME trade. Trades never cross — each trade is its own universe.
+   * If no template exists above, returns the highest available template in the trade.
+   * If no templates exist for the trade at all, returns null.
+   */
+  async getFallbackForTrade(trade, roleLevel) {
+    if (!trade) return null;
+    // Look for templates at the same level or above, ordered by closest first
+    const { rows } = await (this._pool || pool).query(
+      'SELECT * FROM templates WHERE trade = $1 AND role_level >= $2 ORDER BY role_level ASC LIMIT 1',
+      [trade, roleLevel]
+    );
+    let t = rows[0];
+    // If nothing above, get the highest template in this trade
+    if (!t) {
+      const { rows: fallback } = await (this._pool || pool).query(
+        'SELECT * FROM templates WHERE trade = $1 ORDER BY role_level DESC LIMIT 1',
+        [trade]
+      );
+      t = fallback[0];
+    }
+    if (!t) return null;
+    return {
+      ...t,
+      output_sections: JSON.parse(t.output_sections || '[]'),
+      vocabulary: JSON.parse(t.vocabulary || '{}'),
+      safety_rules: JSON.parse(t.safety_rules || '[]'),
+      safety_vocabulary: JSON.parse(t.safety_vocabulary || '[]'),
+      tools_and_equipment: JSON.parse(t.tools_and_equipment || '[]'),
+    };
+  },
+
   async create(t) {
-    await pool.query(`
+    await (this._pool || pool).query(`
       INSERT INTO templates (id, template_name, role_level, role_level_title, trade,
         role_description, report_focus, output_sections, vocabulary, language_notes,
         safety_rules, safety_vocabulary, tools_and_equipment, created_at)
@@ -74,7 +107,7 @@ const templates = {
     const existing = await this.getById(id);
     if (!existing) return null;
     // Protect system templates from client-level edits to core fields
-    const { rows } = await pool.query('SELECT is_system FROM templates WHERE id = $1', [id]);
+    const { rows } = await (this._pool || pool).query('SELECT is_system FROM templates WHERE id = $1', [id]);
     const isSystem = rows[0];
     if (isSystem && isSystem.is_system && callerLevel !== 'superadmin') {
       const allowed = ['vocabulary', 'language_notes'];
@@ -84,7 +117,7 @@ const templates = {
       }
     }
     const merged = { ...existing, ...data };
-    await pool.query(`
+    await (this._pool || pool).query(`
       UPDATE templates SET template_name=$1, role_level=$2, role_level_title=$3, trade=$4,
         role_description=$5, report_focus=$6, output_sections=$7, vocabulary=$8, language_notes=$9,
         safety_rules=$10, safety_vocabulary=$11, tools_and_equipment=$12, updated_at=$13
@@ -102,13 +135,13 @@ const templates = {
   },
 
   async deleteTemplate(id, callerLevel = 'admin') {
-    const { rows } = await pool.query('SELECT is_system FROM templates WHERE id = $1', [id]);
+    const { rows } = await (this._pool || pool).query('SELECT is_system FROM templates WHERE id = $1', [id]);
     const tmpl = rows[0];
     if (!tmpl) return { error: 'Template not found' };
     if (tmpl.is_system && callerLevel !== 'superadmin') {
       return { error: 'Cannot delete system template. Contact Horizon Sparks support.' };
     }
-    await pool.query('DELETE FROM templates WHERE id = $1', [id]);
+    await (this._pool || pool).query('DELETE FROM templates WHERE id = $1', [id]);
     return { success: true };
   },
 };
@@ -117,16 +150,21 @@ const templates = {
 // PEOPLE
 // ============================================
 const people = {
-  async getAll() {
-    const { rows } = await pool.query(`
-      SELECT id, name, role_title, status, pin, template_id, role_level, photo, supervisor_id, trade
-      FROM people ORDER BY role_level DESC, name
-    `);
+  async getAll(companyId) {
+    let sql = `SELECT id, name, role_title, status, pin, template_id, role_level, photo, supervisor_id, trade, company_id
+      FROM people`;
+    const params = [];
+    if (companyId) {
+      sql += ' WHERE company_id = $1';
+      params.push(companyId);
+    }
+    sql += ' ORDER BY role_level DESC, name';
+    const { rows } = await (this._pool || pool).query(sql, params);
     return rows;
   },
 
   async getById(id) {
-    const { rows } = await pool.query('SELECT * FROM people WHERE id = $1', [id]);
+    const { rows } = await (this._pool || pool).query('SELECT * FROM people WHERE id = $1', [id]);
     const p = rows[0];
     if (!p) return null;
     // Reconstruct personal_context for backward compatibility
@@ -142,23 +180,30 @@ const people = {
       notes: p.notes || '',
     };
     // Include template data if not overridden
+    // Rank fallback: if person's template is missing, find the nearest template
+    // UP in the same trade. Trades never cross.
+    let tmpl = null;
     if (p.template_id) {
-      const tmpl = await templates.getById(p.template_id);
-      if (tmpl) {
-        if (!p.personal_context.role_description) p.personal_context.role_description = tmpl.role_description;
-        if (!p.personal_context.report_focus) p.personal_context.report_focus = tmpl.report_focus;
-        if (p.personal_context.output_sections.length === 0) p.personal_context.output_sections = tmpl.output_sections;
-        if (p.personal_context.safety_rules.length === 0) p.personal_context.safety_rules = tmpl.safety_rules;
-        p.personal_context.safety_vocabulary = tmpl.safety_vocabulary || [];
-        p.personal_context.tools_and_equipment = tmpl.tools_and_equipment || [];
-        if (tmpl.language_notes) p.personal_context.language_preference = p.language_preference || tmpl.language_notes;
-      }
+      tmpl = await templates.getById(p.template_id);
+    }
+    if (!tmpl && p.trade) {
+      // Fallback: find nearest template above this person's role level, same trade only
+      tmpl = await templates.getFallbackForTrade(p.trade, p.role_level || 0);
+    }
+    if (tmpl) {
+      if (!p.personal_context.role_description) p.personal_context.role_description = tmpl.role_description;
+      if (!p.personal_context.report_focus) p.personal_context.report_focus = tmpl.report_focus;
+      if (p.personal_context.output_sections.length === 0) p.personal_context.output_sections = tmpl.output_sections;
+      if (p.personal_context.safety_rules.length === 0) p.personal_context.safety_rules = tmpl.safety_rules;
+      p.personal_context.safety_vocabulary = tmpl.safety_vocabulary || [];
+      p.personal_context.tools_and_equipment = tmpl.tools_and_equipment || [];
+      if (tmpl.language_notes) p.personal_context.language_preference = p.language_preference || tmpl.language_notes;
     }
     return p;
   },
 
   async getByPin(pin) {
-    const { rows } = await pool.query('SELECT * FROM people WHERE pin = $1 AND status = $2', [pin, 'active']);
+    const { rows } = await (this._pool || pool).query('SELECT * FROM people WHERE pin = $1 AND status = $2', [pin, 'active']);
     const p = rows[0];
     if (!p) return null;
     return this.getById(p.id);
@@ -174,13 +219,13 @@ const people = {
       if (tmpl) trade = tmpl.trade;
     }
 
-    await pool.query(`
+    await (this._pool || pool).query(`
       INSERT INTO people (id, name, pin, template_id, role_title, role_level, trade,
         supervisor_id, status, project_id, photo, is_admin,
         experience, specialties, certifications, language_preference, notes,
         custom_role_description, custom_report_focus, custom_output_sections, custom_safety_rules,
-        webauthn_credential_id, webauthn_raw_id, webauthn_public_key, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+        webauthn_credential_id, webauthn_raw_id, webauthn_public_key, company_id, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
     `, [
       id, data.name, data.pin, data.template_id || null,
       data.role_title || '', data.role_level || 1, trade,
@@ -193,6 +238,7 @@ const people = {
       pc.safety_rules ? JSON.stringify(pc.safety_rules) : null,
       data.webauthn_credential_id || null, data.webauthn_raw_id || null,
       data.webauthn_public_key || null,
+      data.company_id || null,
       new Date().toISOString()
     ]);
 
@@ -202,7 +248,7 @@ const people = {
   },
 
   async update(id, data) {
-    const { rows: existRows } = await pool.query('SELECT * FROM people WHERE id = $1', [id]);
+    const { rows: existRows } = await (this._pool || pool).query('SELECT * FROM people WHERE id = $1', [id]);
     if (existRows.length === 0) return null;
 
     const pc = data.personal_context || {};
@@ -240,7 +286,7 @@ const people = {
       let paramIdx = 1;
       const setClauses = keys.map(k => `${k} = $${paramIdx++}`).join(', ');
       const values = [...Object.values(updates), new Date().toISOString(), id];
-      await pool.query(`UPDATE people SET ${setClauses}, updated_at = $${paramIdx++} WHERE id = $${paramIdx}`, values);
+      await (this._pool || pool).query(`UPDATE people SET ${setClauses}, updated_at = $${paramIdx++} WHERE id = $${paramIdx}`, values);
     }
 
     // Rebuild visibility if supervisor changed
@@ -254,21 +300,21 @@ const people = {
   async delete(id, callerLevel = 'admin') {
     if (callerLevel === 'superadmin') {
       // Hard delete — only platform superadmin can do this
-      await pool.query('DELETE FROM report_visibility WHERE person_id = $1 OR viewer_id = $1', [id]);
-      await pool.query('DELETE FROM people WHERE id = $1', [id]);
+      await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1 OR viewer_id = $1', [id]);
+      await (this._pool || pool).query('DELETE FROM people WHERE id = $1', [id]);
       return { success: true, type: 'hard_delete' };
     }
     // Soft delete — deactivate instead. Reports stay in the system.
     const now = new Date().toISOString();
-    await pool.query(`UPDATE people SET status = 'inactive', deactivated_at = $1, updated_at = $2 WHERE id = $3`, [now, now, id]);
+    await (this._pool || pool).query(`UPDATE people SET status = 'inactive', deactivated_at = $1, updated_at = $2 WHERE id = $3`, [now, now, id]);
     // Remove from visibility chain (they're inactive, reports should still be searchable)
-    await pool.query('DELETE FROM report_visibility WHERE person_id = $1', [id]);
+    await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1', [id]);
     return { success: true, type: 'deactivated' };
   },
 
   // Get people who report to this person
   async getTeam(supervisorId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT id, name, role_title, role_level, pin, status, photo, trade
       FROM people WHERE supervisor_id = $1 AND status = 'active'
       ORDER BY role_level DESC, name
@@ -278,25 +324,25 @@ const people = {
 
   // Find by WebAuthn credential
   async getByWebAuthn(credentialId) {
-    const { rows } = await pool.query('SELECT * FROM people WHERE webauthn_credential_id = $1', [credentialId]);
+    const { rows } = await (this._pool || pool).query('SELECT * FROM people WHERE webauthn_credential_id = $1', [credentialId]);
     return rows[0] || null;
   },
 
   // Rebuild visibility chain for one person
   async _rebuildVisibility(personId) {
-    await pool.query('DELETE FROM report_visibility WHERE person_id = $1', [personId]);
+    await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1', [personId]);
     // Self can always see own
-    await pool.query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, personId]);
+    await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, personId]);
     // Walk up supervisor chain
-    const { rows } = await pool.query('SELECT supervisor_id FROM people WHERE id = $1', [personId]);
+    const { rows } = await (this._pool || pool).query('SELECT supervisor_id FROM people WHERE id = $1', [personId]);
     const person = rows[0];
     if (!person) return;
     let currentSup = person.supervisor_id;
     const visited = new Set();
     while (currentSup && !visited.has(currentSup)) {
       visited.add(currentSup);
-      await pool.query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, currentSup]);
-      const { rows: supRows } = await pool.query('SELECT supervisor_id FROM people WHERE id = $1', [currentSup]);
+      await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, currentSup]);
+      const { rows: supRows } = await (this._pool || pool).query('SELECT supervisor_id FROM people WHERE id = $1', [currentSup]);
       const sup = supRows[0];
       currentSup = sup ? sup.supervisor_id : null;
     }
@@ -304,15 +350,15 @@ const people = {
 
   // Rebuild all visibility (when supervisor changes)
   async _rebuildAllVisibility() {
-    await pool.query('DELETE FROM report_visibility');
-    const { rows: allPeople } = await pool.query('SELECT id, supervisor_id FROM people');
+    await (this._pool || pool).query('DELETE FROM report_visibility');
+    const { rows: allPeople } = await (this._pool || pool).query('SELECT id, supervisor_id FROM people');
     for (const p of allPeople) {
-      await pool.query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, p.id]);
+      await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, p.id]);
       let currentSup = p.supervisor_id;
       const visited = new Set();
       while (currentSup && !visited.has(currentSup)) {
         visited.add(currentSup);
-        await pool.query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, currentSup]);
+        await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, currentSup]);
         const sup = allPeople.find(x => x.id === currentSup);
         currentSup = sup ? sup.supervisor_id : null;
       }
@@ -341,6 +387,10 @@ const reports = {
       sql += ` AND person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
       params.push(filters.viewer_id);
     }
+    if (filters.company_id) {
+      sql += ` AND company_id = $${paramIdx++}`;
+      params.push(filters.company_id);
+    }
 
     sql += ' ORDER BY created_at DESC';
 
@@ -349,7 +399,7 @@ const reports = {
       params.push(filters.limit);
     }
 
-    const { rows } = await pool.query(sql, params);
+    const { rows } = await (this._pool || pool).query(sql, params);
     return rows.map(r => ({
       ...r,
       audio_files: JSON.parse(r.audio_files || '[]'),
@@ -360,7 +410,7 @@ const reports = {
   },
 
   async getById(id) {
-    const { rows } = await pool.query('SELECT * FROM reports WHERE id = $1', [id]);
+    const { rows } = await (this._pool || pool).query('SELECT * FROM reports WHERE id = $1', [id]);
     const r = rows[0];
     if (!r) return null;
     return {
@@ -377,17 +427,24 @@ const reports = {
     // Get trade from person
     let trade = data.trade || null;
     if (!trade && data.person_id) {
-      const { rows } = await pool.query('SELECT trade FROM people WHERE id = $1', [data.person_id]);
+      const { rows } = await (this._pool || pool).query('SELECT trade FROM people WHERE id = $1', [data.person_id]);
       const person = rows[0];
       if (person) trade = person.trade;
     }
 
-    await pool.query(`
+    // Get company_id from person if not provided
+    let companyId = data.company_id || null;
+    if (!companyId && data.person_id) {
+      const { rows: pRows } = await (this._pool || pool).query('SELECT company_id FROM people WHERE id = $1', [data.person_id]);
+      if (pRows[0]) companyId = pRows[0].company_id;
+    }
+
+    await (this._pool || pool).query(`
       INSERT INTO reports (id, person_id, person_name, role_title, template_id, trade,
         project_id, status, created_at, duration_seconds, audio_files,
         transcript_raw, markdown_verbatim, markdown_structured, conversation_turns,
-        photos, messages_addressed)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        photos, messages_addressed, company_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
     `, [
       id, data.person_id, data.person_name || '', data.role_title || '',
       data.template_id || null, trade,
@@ -399,13 +456,14 @@ const reports = {
       data.markdown_structured || '',
       JSON.stringify(data.conversation_turns || []),
       JSON.stringify(data.photos || []),
-      JSON.stringify(data.messages_addressed || [])
+      JSON.stringify(data.messages_addressed || []),
+      companyId
     ]);
     return { success: true, id };
   },
 
   // Full-text search across all reports
-  async search(query, viewerId) {
+  async search(query, viewerId, companyId) {
     // Use ILIKE fallback instead of FTS5 MATCH
     const searchPattern = `%${query}%`;
     let sql = `
@@ -421,9 +479,13 @@ const reports = {
       sql += ` AND r.person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
       params.push(viewerId);
     }
+    if (companyId) {
+      sql += ` AND r.company_id = $${paramIdx++}`;
+      params.push(companyId);
+    }
 
     sql += ' ORDER BY r.created_at DESC LIMIT 50';
-    const { rows } = await pool.query(sql, params);
+    const { rows } = await (this._pool || pool).query(sql, params);
     return rows;
   },
 };
@@ -433,7 +495,7 @@ const reports = {
 // ============================================
 const messages = {
   async getConversation(personA, personB) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT * FROM messages
       WHERE (from_id = $1 AND to_id = $2) OR (from_id = $2 AND to_id = $1)
       ORDER BY created_at ASC
@@ -445,7 +507,7 @@ const messages = {
   },
 
   async getForPerson(personId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT * FROM messages
       WHERE from_id = $1 OR to_id = $1
       ORDER BY created_at DESC
@@ -457,7 +519,7 @@ const messages = {
   },
 
   async getUnread(personId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT * FROM messages
       WHERE to_id = $1 AND read_at IS NULL
       ORDER BY created_at DESC
@@ -467,7 +529,7 @@ const messages = {
 
   async create(data) {
     const id = data.id || 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-    await pool.query(`
+    await (this._pool || pool).query(`
       INSERT INTO messages (id, from_id, to_id, from_name, to_name, type, content,
         audio_file, photo, metadata, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -481,13 +543,13 @@ const messages = {
   },
 
   async markRead(messageId) {
-    await pool.query('UPDATE messages SET read_at = $1 WHERE id = $2', [new Date().toISOString(), messageId]);
+    await (this._pool || pool).query('UPDATE messages SET read_at = $1 WHERE id = $2', [new Date().toISOString(), messageId]);
   },
 
   // Search messages (privacy-scoped)
   async search(query, personId) {
     const searchPattern = `%${query}%`;
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT m.* FROM messages m
       WHERE m.content ILIKE $1
         AND (m.from_id = $2 OR m.to_id = $2)
@@ -503,7 +565,7 @@ const messages = {
 const contacts = {
   // Get all people this person is allowed to message
   async getForPerson(personId) {
-    const { rows: personRows } = await pool.query('SELECT id, supervisor_id, role_level, trade FROM people WHERE id = $1', [personId]);
+    const { rows: personRows } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level, trade FROM people WHERE id = $1', [personId]);
     const person = personRows[0];
     if (!person) return [];
 
@@ -514,19 +576,19 @@ const contacts = {
       contactIds.add(person.supervisor_id);
     }
 
-    // 2. Direct reports (one level DOWN)
-    const { rows: directReports } = await pool.query("SELECT id FROM people WHERE supervisor_id = $1 AND status = 'active'", [personId]);
+    // 2. Direct reports (one level DOWN) — same company only
+    const { rows: directReports } = await (this._pool || pool).query("SELECT id FROM people WHERE supervisor_id = $1 AND status = 'active' AND company_id = (SELECT company_id FROM people WHERE id = $2)", [personId, personId]);
     directReports.forEach(r => contactIds.add(r.id));
 
     // 3. Sideways — same supervisor (same crew)
     if (person.supervisor_id) {
-      const { rows: siblings } = await pool.query("SELECT id FROM people WHERE supervisor_id = $1 AND id != $2 AND status = 'active'", [person.supervisor_id, personId]);
+      const { rows: siblings } = await (this._pool || pool).query("SELECT id FROM people WHERE supervisor_id = $1 AND id != $2 AND status = 'active'", [person.supervisor_id, personId]);
       siblings.forEach(s => contactIds.add(s.id));
     }
 
     // 4. For supervisors (role_level >= 3): can also reach everyone below them (not just direct reports)
     if (person.role_level >= 3) {
-      const { rows: allBelow } = await pool.query("SELECT person_id FROM report_visibility WHERE viewer_id = $1 AND person_id != $1", [personId]);
+      const { rows: allBelow } = await (this._pool || pool).query("SELECT person_id FROM report_visibility WHERE viewer_id = $1 AND person_id != $1", [personId]);
       allBelow.forEach(r => contactIds.add(r.person_id));
     }
 
@@ -538,7 +600,7 @@ const contacts = {
     // Fetch contact details
     const ids = [...contactIds];
     const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT id, name, role_title, role_level, photo, trade, supervisor_id, is_lead_man
       FROM people WHERE id IN (${placeholders}) AND status = 'active'
       ORDER BY role_level DESC, is_lead_man DESC, name
@@ -548,8 +610,8 @@ const contacts = {
 
   // Check if person A is allowed to message person B
   async canMessage(fromId, toId) {
-    const { rows: fromRows } = await pool.query('SELECT id, supervisor_id, role_level FROM people WHERE id = $1', [fromId]);
-    const { rows: toRows } = await pool.query('SELECT id, supervisor_id, role_level FROM people WHERE id = $1', [toId]);
+    const { rows: fromRows } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level FROM people WHERE id = $1', [fromId]);
+    const { rows: toRows } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level FROM people WHERE id = $1', [toId]);
     const from = fromRows[0];
     const to = toRows[0];
     if (!from || !to) return false;
@@ -562,7 +624,7 @@ const contacts = {
     if (from.supervisor_id && from.supervisor_id === to.supervisor_id) return true;
     // Supervisors (level 3+) can reach anyone below them
     if (from.role_level >= 3) {
-      const { rows: vis } = await pool.query('SELECT 1 FROM report_visibility WHERE person_id = $1 AND viewer_id = $2', [toId, fromId]);
+      const { rows: vis } = await (this._pool || pool).query('SELECT 1 FROM report_visibility WHERE person_id = $1 AND viewer_id = $2', [toId, fromId]);
       if (vis.length > 0) return true;
     }
     return false;
@@ -570,7 +632,7 @@ const contacts = {
 
   // Get conversation list (recent conversations with unread counts)
   async getConversationList(personId) {
-    const { rows: conversations } = await pool.query(`
+    const { rows: conversations } = await (this._pool || pool).query(`
       SELECT
         CASE WHEN from_id = $1 THEN to_id ELSE from_id END as contact_id,
         CASE WHEN from_id = $1 THEN to_name ELSE from_name END as contact_name,
@@ -585,9 +647,9 @@ const contacts = {
     // Enrich with person details
     const results = [];
     for (const c of conversations) {
-      const { rows: contactRows } = await pool.query('SELECT id, name, role_title, role_level, photo, is_lead_man FROM people WHERE id = $1', [c.contact_id]);
+      const { rows: contactRows } = await (this._pool || pool).query('SELECT id, name, role_title, role_level, photo, is_lead_man FROM people WHERE id = $1', [c.contact_id]);
       const contact = contactRows[0];
-      const { rows: lastMsgRows } = await pool.query(`
+      const { rows: lastMsgRows } = await (this._pool || pool).query(`
         SELECT content, type, from_id FROM messages
         WHERE (from_id = $1 AND to_id = $2) OR (from_id = $2 AND to_id = $1)
         ORDER BY created_at DESC LIMIT 1
@@ -632,7 +694,7 @@ const legacyMessages = {
 // ============================================
 const aiConversations = {
   async getHistory(personId, limit = 50) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT * FROM ai_conversations
       WHERE person_id = $1
       ORDER BY created_at DESC LIMIT $2
@@ -641,7 +703,7 @@ const aiConversations = {
   },
 
   async addTurn(personId, sessionId, role, content) {
-    await pool.query(`
+    await (this._pool || pool).query(`
       INSERT INTO ai_conversations (person_id, session_id, role, content)
       VALUES ($1, $2, $3, $4)
     `, [personId, sessionId, role, content]);
@@ -654,7 +716,7 @@ const aiConversations = {
 const ppeRequests = {
   async create(data) {
     const id = 'ppe_' + Date.now();
-    await pool.query(`
+    await (this._pool || pool).query(`
       INSERT INTO ppe_requests (id, requester_id, assigned_to, requester_name, items, status, notes)
       VALUES ($1, $2, $3, $4, $5, 'pending', $6)
     `, [id, data.requester_id, data.assigned_to || null, data.requester_name || '',
@@ -663,7 +725,7 @@ const ppeRequests = {
   },
 
   async getForPerson(personId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT * FROM ppe_requests
       WHERE requester_id = $1 OR assigned_to = $1
       ORDER BY created_at DESC
@@ -672,7 +734,7 @@ const ppeRequests = {
   },
 
   async updateStatus(id, status, notes) {
-    await pool.query('UPDATE ppe_requests SET status = $1, notes = $2, resolved_at = $3 WHERE id = $4',
+    await (this._pool || pool).query('UPDATE ppe_requests SET status = $1, notes = $2, resolved_at = $3 WHERE id = $4',
       [status, notes || null, status === 'delivered' || status === 'denied' ? new Date().toISOString() : null, id]);
   },
 };
@@ -683,7 +745,7 @@ const ppeRequests = {
 const safetyObservations = {
   async create(data) {
     const id = 'safety_' + Date.now();
-    await pool.query(`
+    await (this._pool || pool).query(`
       INSERT INTO safety_observations (id, person_id, person_name, type, severity,
         description, location, photo, assigned_to)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -700,7 +762,7 @@ const safetyObservations = {
     if (filters.status) { sql += ` AND status = $${paramIdx++}`; params.push(filters.status); }
     if (filters.type) { sql += ` AND type = $${paramIdx++}`; params.push(filters.type); }
     sql += ' ORDER BY created_at DESC';
-    const { rows } = await pool.query(sql, params);
+    const { rows } = await (this._pool || pool).query(sql, params);
     return rows;
   },
 };
@@ -711,13 +773,13 @@ const safetyObservations = {
 const dailyPlans = {
   async create(data) {
     const id = 'plan_' + Date.now();
-    await pool.query(`INSERT INTO daily_plans (id, date, created_by, trade, notes) VALUES ($1, $2, $3, $4, $5)`,
+    await (this._pool || pool).query(`INSERT INTO daily_plans (id, date, created_by, trade, notes) VALUES ($1, $2, $3, $4, $5)`,
       [id, data.date, data.created_by, data.trade || null, data.notes || null]);
     return { success: true, id };
   },
 
   async getByDate(date, createdBy) {
-    const { rows } = await pool.query('SELECT * FROM daily_plans WHERE date = $1 AND created_by = $2', [date, createdBy]);
+    const { rows } = await (this._pool || pool).query('SELECT * FROM daily_plans WHERE date = $1 AND created_by = $2', [date, createdBy]);
     return rows[0] || null;
   },
 
@@ -725,14 +787,14 @@ const dailyPlans = {
     let plan = await this.getByDate(date, createdBy);
     if (!plan) {
       const result = await this.create({ date, created_by: createdBy, trade });
-      const { rows } = await pool.query('SELECT * FROM daily_plans WHERE id = $1', [result.id]);
+      const { rows } = await (this._pool || pool).query('SELECT * FROM daily_plans WHERE id = $1', [result.id]);
       plan = rows[0];
     }
     return plan;
   },
 
   async getPlansForPerson(personId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT DISTINCT dp.* FROM daily_plans dp
       JOIN daily_plan_tasks t ON t.plan_id = dp.id
       WHERE t.assigned_to = $1
@@ -743,7 +805,7 @@ const dailyPlans = {
 
   async addTask(data) {
     const id = 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-    await pool.query(`INSERT INTO daily_plan_tasks (id, plan_id, assigned_to, title, description, status, priority, form_id, folder_data, attachments, sort_order)
+    await (this._pool || pool).query(`INSERT INTO daily_plan_tasks (id, plan_id, assigned_to, title, description, status, priority, form_id, folder_data, attachments, sort_order)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [id, data.plan_id, data.assigned_to || null, data.title, data.description || null,
         data.status || 'pending', data.priority || 'normal', data.form_id || null,
@@ -753,12 +815,12 @@ const dailyPlans = {
   },
 
   async getTasks(planId) {
-    const { rows } = await pool.query('SELECT * FROM daily_plan_tasks WHERE plan_id = $1 ORDER BY sort_order, created_at', [planId]);
+    const { rows } = await (this._pool || pool).query('SELECT * FROM daily_plan_tasks WHERE plan_id = $1 ORDER BY sort_order, created_at', [planId]);
     return rows.map(t => ({ ...t, attachments: JSON.parse(t.attachments || '[]'), folder_data: t.folder_data ? JSON.parse(t.folder_data) : null }));
   },
 
   async getTasksForPerson(personId, date) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT t.*, dp.date, dp.created_by FROM daily_plan_tasks t
       JOIN daily_plans dp ON dp.id = t.plan_id
       WHERE t.assigned_to = $1 AND dp.date = $2
@@ -780,19 +842,19 @@ const dailyPlans = {
     if (data.completed_notes !== undefined) { sets.push(`completed_notes = $${paramIdx++}`); vals.push(data.completed_notes); }
     if (sets.length === 0) return { success: false };
     vals.push(taskId);
-    await pool.query(`UPDATE daily_plan_tasks SET ${sets.join(', ')} WHERE id = $${paramIdx}`, vals);
+    await (this._pool || pool).query(`UPDATE daily_plan_tasks SET ${sets.join(', ')} WHERE id = $${paramIdx}`, vals);
     return { success: true };
   },
 
   async deleteTask(taskId) {
-    await pool.query('DELETE FROM daily_plan_tasks WHERE id = $1', [taskId]);
+    await (this._pool || pool).query('DELETE FROM daily_plan_tasks WHERE id = $1', [taskId]);
     return { success: true };
   },
 
   // ── Persistent task queries ──
 
   async getActiveTasks(personId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT t.*, dp.date as plan_date, dp.created_by as plan_created_by,
         creator.name as created_by_name, assignee.name as assigned_to_name, assignee.role_title as assigned_to_role
       FROM daily_plan_tasks t
@@ -808,7 +870,7 @@ const dailyPlans = {
   },
 
   async getActiveTasksForSupervisor(supervisorId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT t.*, dp.date as plan_date, dp.created_by as plan_created_by,
         assignee.name as assigned_to_name, assignee.role_title as assigned_to_role
       FROM daily_plan_tasks t
@@ -823,7 +885,7 @@ const dailyPlans = {
   },
 
   async getTaskById(taskId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT t.*, dp.date as plan_date, dp.created_by as plan_created_by,
         creator.name as created_by_name, assignee.name as assigned_to_name, assignee.role_title as assigned_to_role
       FROM daily_plan_tasks t
@@ -850,7 +912,7 @@ const dailyPlans = {
     let paramIdx = 2;
     if (filters.status) { where += ` AND t.status = $${paramIdx++}`; params.push(filters.status); }
     if (filters.trade) { where += ` AND (t.trade = $${paramIdx++} OR dp.trade = $${paramIdx++})`; params.push(filters.trade, filters.trade); }
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT t.*, dp.date as plan_date, dp.created_by as plan_created_by,
         creator.name as created_by_name, assignee.name as assigned_to_name, assignee.role_title as assigned_to_role
       FROM daily_plan_tasks t
@@ -870,7 +932,7 @@ const dailyPlans = {
 const taskDays = {
   async create(data) {
     const id = 'td_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-    await pool.query(`INSERT INTO task_days (id, task_id, date, person_id, jsa_id, shift_notes, shift_audio, shift_transcript, shift_structured, shift_conversation, photos, forms, hours_worked, weather)
+    await (this._pool || pool).query(`INSERT INTO task_days (id, task_id, date, person_id, jsa_id, shift_notes, shift_audio, shift_transcript, shift_structured, shift_conversation, photos, forms, hours_worked, weather)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [id, data.task_id, data.date, data.person_id, data.jsa_id || null,
         data.shift_notes || null, data.shift_audio || null, data.shift_transcript || null,
@@ -881,7 +943,7 @@ const taskDays = {
   },
 
   async getForTask(taskId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT td.*, j.status as jsa_status, j.jsa_number, j.form_data as jsa_form_data
       FROM task_days td
       LEFT JOIN jsa_records j ON j.id = td.jsa_id
@@ -898,7 +960,7 @@ const taskDays = {
   },
 
   async getForDate(taskId, date) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT td.*, j.status as jsa_status, j.jsa_number, j.form_data as jsa_form_data
       FROM task_days td
       LEFT JOIN jsa_records j ON j.id = td.jsa_id
@@ -941,12 +1003,12 @@ const taskDays = {
     if (data.notes !== undefined) { sets.push(`notes = $${paramIdx++}`); vals.push(JSON.stringify(data.notes)); }
     if (sets.length === 0) return { success: false };
     vals.push(id);
-    await pool.query(`UPDATE task_days SET ${sets.join(', ')} WHERE id = $${paramIdx}`, vals);
+    await (this._pool || pool).query(`UPDATE task_days SET ${sets.join(', ')} WHERE id = $${paramIdx}`, vals);
     return { success: true };
   },
 
   async getRecentForTask(taskId, limit = 3) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT td.date, td.shift_structured, td.shift_notes, td.hours_worked,
         j.jsa_number, j.form_data as jsa_form_data
       FROM task_days td
@@ -964,12 +1026,12 @@ const taskDays = {
 const punchList = {
   async create(data) {
     const id = 'punch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-    await pool.query(`INSERT INTO punch_items (id, title, description, location, trade, system_name, status, priority, photo, created_by, assigned_to, form_id, task_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    await (this._pool || pool).query(`INSERT INTO punch_items (id, title, description, location, trade, system_name, status, priority, photo, created_by, assigned_to, form_id, task_id, company_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [id, data.title, data.description || null, data.location || null, data.trade || null,
         data.system_name || null, data.status || 'open', data.priority || 'normal',
         data.photo || null, data.created_by, data.assigned_to || null,
-        data.form_id || null, data.task_id || null]);
+        data.form_id || null, data.task_id || null, data.company_id || null]);
     return { success: true, id };
   },
 
@@ -981,13 +1043,14 @@ const punchList = {
     if (filters.trade) { sql += ` AND p.trade = $${paramIdx++}`; params.push(filters.trade); }
     if (filters.assigned_to) { sql += ` AND p.assigned_to = $${paramIdx++}`; params.push(filters.assigned_to); }
     if (filters.created_by) { sql += ` AND p.created_by = $${paramIdx++}`; params.push(filters.created_by); }
+    if (filters.company_id) { sql += ` AND p.company_id = $${paramIdx++}`; params.push(filters.company_id); }
     sql += " ORDER BY CASE p.priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 WHEN 'low' THEN 3 END, p.created_at DESC";
-    const { rows } = await pool.query(sql, params);
+    const { rows } = await (this._pool || pool).query(sql, params);
     return rows;
   },
 
   async getForPerson(personId) {
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT p.*, creator.name as created_by_name, assignee.name as assigned_to_name
       FROM punch_items p
       LEFT JOIN people creator ON creator.id = p.created_by
@@ -1016,12 +1079,12 @@ const punchList = {
     sets.push(`updated_at = NOW()`);
     if (sets.length === 1) return { success: false }; // only updated_at, no real changes
     vals.push(id);
-    await pool.query(`UPDATE punch_items SET ${sets.join(', ')} WHERE id = $${paramIdx}`, vals);
+    await (this._pool || pool).query(`UPDATE punch_items SET ${sets.join(', ')} WHERE id = $${paramIdx}`, vals);
     return { success: true };
   },
 
   async delete(id) {
-    await pool.query('DELETE FROM punch_items WHERE id = $1', [id]);
+    await (this._pool || pool).query('DELETE FROM punch_items WHERE id = $1', [id]);
     return { success: true };
   },
 
@@ -1031,7 +1094,8 @@ const punchList = {
     let paramIdx = 1;
     if (filters.trade) { where += ` AND trade = $${paramIdx++}`; params.push(filters.trade); }
     if (filters.created_by) { where += ` AND created_by = $${paramIdx++}`; params.push(filters.created_by); }
-    const { rows: stats } = await pool.query(`
+    if (filters.company_id) { where += ` AND company_id = $${paramIdx++}`; params.push(filters.company_id); }
+    const { rows: stats } = await (this._pool || pool).query(`
       SELECT status, COUNT(*) as count FROM punch_items WHERE ${where} GROUP BY status
     `, params);
     return { open: 0, in_progress: 0, ready_recheck: 0, closed: 0, ...Object.fromEntries(stats.map(s => [s.status, parseInt(s.count, 10)])) };
@@ -1042,20 +1106,20 @@ const punchList = {
 // SESSIONS
 // ============================================
 const sessions = {
-  async create({ person_id, is_admin, role_level, trade, user_agent, ip_address }) {
+  async create({ person_id, is_admin, role_level, trade, company_id, sparks_role, user_agent, ip_address }) {
     const { v4: uuidv4 } = require('uuid');
     const id = uuidv4();
     const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
-    await pool.query(`
-      INSERT INTO app_sessions (id, person_id, is_admin, role_level, trade, expires_at, user_agent, ip_address)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [id, person_id, is_admin ? 1 : 0, role_level || 1, trade || null, expires_at, user_agent || null, ip_address || null]);
-    return { id, person_id, is_admin: !!is_admin, role_level: role_level || 1, trade, expires_at };
+    await (this._pool || pool).query(`
+      INSERT INTO app_sessions (id, person_id, is_admin, role_level, trade, company_id, sparks_role, expires_at, user_agent, ip_address)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `, [id, person_id, is_admin ? 1 : 0, role_level || 1, trade || null, company_id || null, sparks_role || null, expires_at, user_agent || null, ip_address || null]);
+    return { id, person_id, is_admin: !!is_admin, role_level: role_level || 1, trade, company_id, sparks_role, expires_at };
   },
 
   async getById(sessionId) {
     if (!sessionId) return null;
-    const { rows } = await pool.query(`
+    const { rows } = await (this._pool || pool).query(`
       SELECT * FROM app_sessions WHERE id = $1 AND expires_at > NOW()
     `, [sessionId]);
     if (!rows[0]) return null;
@@ -1065,6 +1129,8 @@ const sessions = {
       is_admin: rows[0].is_admin === 1,
       role_level: rows[0].role_level,
       trade: rows[0].trade,
+      company_id: rows[0].company_id,
+      sparks_role: rows[0].sparks_role,
       issued_at: rows[0].issued_at,
       last_seen_at: rows[0].last_seen_at,
       expires_at: rows[0].expires_at,
@@ -1072,20 +1138,20 @@ const sessions = {
   },
 
   async touch(sessionId) {
-    await pool.query(`UPDATE app_sessions SET last_seen_at = NOW() WHERE id = $1`, [sessionId]);
+    await (this._pool || pool).query(`UPDATE app_sessions SET last_seen_at = NOW() WHERE id = $1`, [sessionId]);
   },
 
   async delete(sessionId) {
-    await pool.query(`DELETE FROM app_sessions WHERE id = $1`, [sessionId]);
+    await (this._pool || pool).query(`DELETE FROM app_sessions WHERE id = $1`, [sessionId]);
   },
 
   async deleteExpired() {
-    const { rowCount } = await pool.query(`DELETE FROM app_sessions WHERE expires_at < NOW()`);
+    const { rowCount } = await (this._pool || pool).query(`DELETE FROM app_sessions WHERE expires_at < NOW()`);
     return rowCount;
   },
 
   async deleteForPerson(personId) {
-    await pool.query(`DELETE FROM app_sessions WHERE person_id = $1`, [personId]);
+    await (this._pool || pool).query(`DELETE FROM app_sessions WHERE person_id = $1`, [personId]);
   },
 };
 
@@ -1096,7 +1162,7 @@ const webauthnCredentials = {
   async create({ person_id, credential_id, public_key, counter, transports, device_type, backed_up }) {
     const { v4: uuidv4 } = require('uuid');
     const id = uuidv4();
-    await pool.query(`
+    await (this._pool || pool).query(`
       INSERT INTO webauthn_credentials (id, person_id, credential_id, public_key, counter, transports, device_type, backed_up)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `, [id, person_id, credential_id, public_key, counter || 0, transports || null, device_type || null, backed_up ? 1 : 0]);
@@ -1104,22 +1170,159 @@ const webauthnCredentials = {
   },
 
   async getByCredentialId(credentialId) {
-    const { rows } = await pool.query(`SELECT * FROM webauthn_credentials WHERE credential_id = $1`, [credentialId]);
+    const { rows } = await (this._pool || pool).query(`SELECT * FROM webauthn_credentials WHERE credential_id = $1`, [credentialId]);
     return rows[0] || null;
   },
 
   async getForPerson(personId) {
-    const { rows } = await pool.query(`SELECT * FROM webauthn_credentials WHERE person_id = $1 ORDER BY created_at DESC`, [personId]);
+    const { rows } = await (this._pool || pool).query(`SELECT * FROM webauthn_credentials WHERE person_id = $1 ORDER BY created_at DESC`, [personId]);
     return rows;
   },
 
   async updateCounter(credentialId, newCounter) {
-    await pool.query(`UPDATE webauthn_credentials SET counter = $1, last_used_at = NOW() WHERE credential_id = $2`, [newCounter, credentialId]);
+    await (this._pool || pool).query(`UPDATE webauthn_credentials SET counter = $1, last_used_at = NOW() WHERE credential_id = $2`, [newCounter, credentialId]);
   },
 
   async delete(credentialId) {
-    await pool.query(`DELETE FROM webauthn_credentials WHERE credential_id = $1`, [credentialId]);
+    await (this._pool || pool).query(`DELETE FROM webauthn_credentials WHERE credential_id = $1`, [credentialId]);
   },
 };
 
-module.exports = { db, templates, people, reports, messages, contacts, legacyMessages, aiConversations, ppeRequests, safetyObservations, dailyPlans, taskDays, punchList, sessions, webauthnCredentials };
+
+
+// ============================================
+// PLANS
+// ============================================
+const plans = {
+  async getAll() {
+    const { rows } = await (this._pool || pool).query("SELECT * FROM plans WHERE status = 'active' ORDER BY price_cents ASC");
+    return rows;
+  },
+
+  async getById(id) {
+    const { rows } = await (this._pool || pool).query('SELECT * FROM plans WHERE id = $1', [id]);
+    return rows[0] || null;
+  },
+};
+
+// ============================================
+// SUBSCRIPTIONS
+// ============================================
+const subscriptions = {
+  async getByCompanyId(companyId) {
+    const { rows } = await (this._pool || pool).query(
+      "SELECT cs.*, p.name as plan_name, p.price_cents, p.max_trades, p.max_people, p.max_projects, p.includes_ai, p.includes_forms, p.includes_relation_data FROM company_subscriptions cs JOIN plans p ON cs.plan_id = p.id WHERE cs.company_id = $1 AND cs.status != 'cancelled' ORDER BY cs.created_at DESC LIMIT 1",
+      [companyId]
+    );
+    return rows[0] || null;
+  },
+
+  async create(data) {
+    const { v4: uuidv4 } = require('uuid');
+    const id = data.id || uuidv4();
+    await (this._pool || pool).query(
+      `INSERT INTO company_subscriptions (id, company_id, plan_id, status, started_at, current_period_start, current_period_end, next_billing_date, stripe_subscription_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [id, data.company_id, data.plan_id, data.status || 'active', data.started_at || new Date(), data.current_period_start || new Date(), data.current_period_end, data.next_billing_date, data.stripe_subscription_id || null]
+    );
+    return { id, ...data };
+  },
+
+  async update(id, data) {
+    const updates = [];
+    const values = [];
+    let idx = 1;
+    for (const [key, val] of Object.entries(data)) {
+      if (val !== undefined && key !== 'id') {
+        updates.push(`${key} = $${idx++}`);
+        values.push(val);
+      }
+    }
+    updates.push('updated_at = NOW()');
+    values.push(id);
+    await (this._pool || pool).query(`UPDATE company_subscriptions SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+  },
+
+  async cancel(id) {
+    await (this._pool || pool).query(
+      "UPDATE company_subscriptions SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW() WHERE id = $1",
+      [id]
+    );
+  },
+};
+
+// ============================================
+// INVOICES
+// ============================================
+const invoicesMod = {
+  async getByCompanyId(companyId) {
+    const { rows } = await (this._pool || pool).query(
+      'SELECT * FROM invoices WHERE company_id = $1 ORDER BY due_date DESC',
+      [companyId]
+    );
+    return rows;
+  },
+
+  async create(data) {
+    const { v4: uuidv4 } = require('uuid');
+    const id = data.id || uuidv4();
+    await (this._pool || pool).query(
+      `INSERT INTO invoices (id, company_id, subscription_id, amount_cents, status, description, due_date, stripe_invoice_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, data.company_id, data.subscription_id, data.amount_cents, data.status || 'pending', data.description, data.due_date, data.stripe_invoice_id || null]
+    );
+    return { id, ...data };
+  },
+
+  async markPaid(id) {
+    await (this._pool || pool).query(
+      "UPDATE invoices SET status = 'paid', paid_at = NOW() WHERE id = $1",
+      [id]
+    );
+  },
+};
+
+
+// ============================================
+// POOL INJECTION — Database-per-company support
+// ============================================
+/**
+ * Create a DB interface bound to a specific pool (company database).
+ * All namespace methods use this._pool when rebound.
+ * Templates, sessions, plans, subscriptions, invoices always use shared pool.
+ *
+ * Usage:
+ *   const companyDb = DB.withPool(companyPool);
+ *   const people = await companyDb.people.getAll();
+ *   // → queries the company's database, not the shared one
+ */
+function withPool(targetPool) {
+  function bindNamespace(ns) {
+    const bound = Object.create(ns);
+    bound._pool = targetPool;
+    return bound;
+  }
+  return {
+    db: targetPool,                              // Raw pool for direct queries
+    templates: bindNamespace(templates),          // Templates rebound — copied to each company DB so queries work on either pool
+    people: bindNamespace(people),
+    reports: bindNamespace(reports),
+    messages: bindNamespace(messages),
+    contacts: bindNamespace(contacts),
+    legacyMessages: legacyMessages,              // File-based, no pool
+    aiConversations: bindNamespace(aiConversations),
+    ppeRequests: bindNamespace(ppeRequests),
+    safetyObservations: bindNamespace(safetyObservations),
+    dailyPlans: bindNamespace(dailyPlans),
+    taskDays: bindNamespace(taskDays),
+    punchList: bindNamespace(punchList),
+    sessions: sessions,                          // ALWAYS shared — login is cross-company
+    webauthnCredentials: bindNamespace(webauthnCredentials),
+    plans: plans,                                // ALWAYS shared — billing is platform-level
+    subscriptions: subscriptions,                // ALWAYS shared
+    invoices: invoicesMod,                       // ALWAYS shared
+    withPool: withPool,                          // Allow chaining
+  };
+}
+
+module.exports = { db, templates, people, reports, messages, contacts, legacyMessages, aiConversations, ppeRequests, safetyObservations, dailyPlans, taskDays, punchList, sessions, webauthnCredentials, plans, subscriptions, invoices: invoicesMod, withPool };

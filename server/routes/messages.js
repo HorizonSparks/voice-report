@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const DB = require('../../database/db');
-const { requireAuth, requireRoleLevel } = require('../middleware/sessionAuth');
+const {requireAuth, requireRoleLevel, requireSparksEditMode} = require('../middleware/sessionAuth');
 const { getActor, canMessage } = require('../auth/authz');
 
 const router = Router();
@@ -16,37 +16,42 @@ router.get('/messages/:person_id', requireAuth, async (req, res) => {
     if (actor.person_id !== req.params.person_id && !actor.is_admin && actor.role_level < 3) {
       return res.status(403).json({ error: 'Not authorized' });
     }
-    res.json(await DB.legacyMessages.getForPerson(req.params.person_id));
+    res.json(await (req.db || DB).legacyMessages.getForPerson(req.params.person_id));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/messages/:person_id', requireAuth, async (req, res) => {
+router.post('/messages/:person_id', requireAuth, requireSparksEditMode, async (req, res) => {
   try {
     const actor = getActor(req);
     // Only admin/supervisors can send legacy messages
     if (!actor.is_admin && actor.role_level < 3) {
       return res.status(403).json({ error: 'Not authorized' });
     }
-    let msgs = await DB.legacyMessages.getForPerson(req.params.person_id);
+    let msgs = await (req.db || DB).legacyMessages.getForPerson(req.params.person_id);
     const msg = {
       id: 'msg_' + Date.now(),
-      from: actor.is_admin ? 'Admin' : (await DB.people.getById(actor.person_id))?.name || 'Unknown',
+      from: actor.is_admin ? 'Admin' : (await (req.db || DB).people.getById(actor.person_id))?.name || 'Unknown',
       from_role: req.body.from_role || 'Supervisor',
       text: req.body.text,
       created_at: new Date().toISOString(), addressed_in_report: null,
     };
     msgs.push(msg);
-    await DB.legacyMessages.save(req.params.person_id, msgs);
+    await (req.db || DB).legacyMessages.save(req.params.person_id, msgs);
     res.json({ success: true, message: msg });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/messages/:person_id/mark-addressed', requireAuth, async (req, res) => {
+router.put('/messages/:person_id/mark-addressed', requireAuth, requireSparksEditMode, async (req, res) => {
   try {
-    let msgs = await DB.legacyMessages.getForPerson(req.params.person_id);
+    const actor = getActor(req);
+    // Only the recipient (person_id), the sender, or supervisor+ can mark messages addressed
+    if (actor.person_id !== req.params.person_id && !actor.is_admin && actor.role_level < 3) {
+      return res.status(403).json({ error: 'Not authorized to mark these messages' });
+    }
+    let msgs = await (req.db || DB).legacyMessages.getForPerson(req.params.person_id);
     const { message_ids, report_id } = req.body;
     msgs = msgs.map(m => message_ids.includes(m.id) ? { ...m, addressed_in_report: report_id } : m);
-    await DB.legacyMessages.save(req.params.person_id, msgs);
+    await (req.db || DB).legacyMessages.save(req.params.person_id, msgs);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -57,7 +62,7 @@ router.get('/v2/contacts/:person_id', requireAuth, async (req, res) => {
     const actor = getActor(req);
     // Use actor's own person_id for contacts (ignore URL param for self, allow admin override)
     const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
-    res.json(await DB.contacts.getForPerson(targetId));
+    res.json(await (req.db || DB).contacts.getForPerson(targetId));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -65,7 +70,7 @@ router.get('/v2/conversations/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
-    res.json(await DB.contacts.getConversationList(targetId));
+    res.json(await (req.db || DB).contacts.getConversationList(targetId));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -76,18 +81,18 @@ router.get('/v2/messages/:person_id/:contact_id', requireAuth, async (req, res) 
     if (!actor.is_admin && actor.person_id !== req.params.person_id) {
       return res.status(403).json({ error: 'Not authorized to view this conversation' });
     }
-    if (!(await DB.contacts.canMessage(req.params.person_id, req.params.contact_id))) {
+    if (!(await (req.db || DB).contacts.canMessage(req.params.person_id, req.params.contact_id))) {
       return res.status(403).json({ error: 'Not authorized to view this conversation' });
     }
-    const msgs = await DB.messages.getConversation(req.params.person_id, req.params.contact_id);
-    await DB.db.query('UPDATE messages SET read_at = $1 WHERE to_id = $2 AND from_id = $3 AND read_at IS NULL',
+    const msgs = await (req.db || DB).messages.getConversation(req.params.person_id, req.params.contact_id);
+    await (req.db || DB).db.query('UPDATE messages SET read_at = $1 WHERE to_id = $2 AND from_id = $3 AND read_at IS NULL',
       [new Date().toISOString(), req.params.person_id, req.params.contact_id]);
     res.json(msgs);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // POST /v2/messages — DERIVE from_id from session, accept to_id from body
-router.post('/v2/messages', requireAuth, async (req, res) => {
+router.post('/v2/messages', requireAuth, requireSparksEditMode, async (req, res) => {
   try {
     const actor = getActor(req);
     const { to_id, content, type } = req.body;
@@ -97,12 +102,12 @@ router.post('/v2/messages', requireAuth, async (req, res) => {
     if (!from_id || !to_id || !content) return res.status(400).json({ error: 'to_id and content required' });
 
     // No bypass for safety_alert — always check authorization
-    if (!(await canMessage(actor, to_id))) {
+    if (!(await canMessage(actor, to_id, req.db))) {
       return res.status(403).json({ error: 'Not authorized to message this person.' });
     }
-    const fromPerson = from_id ? (await DB.db.query('SELECT name FROM people WHERE id = $1', [from_id])).rows[0] : null;
-    const toPerson = (await DB.db.query('SELECT name FROM people WHERE id = $1', [to_id])).rows[0];
-    res.json(await DB.messages.create({
+    const fromPerson = from_id ? (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [from_id])).rows[0] : null;
+    const toPerson = (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [to_id])).rows[0];
+    res.json(await (req.db || DB).messages.create({
       from_id, to_id, from_name: fromPerson?.name || (actor.is_admin ? 'Admin' : ''), to_name: toPerson?.name || '',
       content, type: type || 'text', audio_file: req.body.audio_file || null,
       photo: req.body.photo || null, metadata: req.body.metadata || {},
@@ -111,17 +116,17 @@ router.post('/v2/messages', requireAuth, async (req, res) => {
 });
 
 // Group messages — require supervisor role, derive from_id from session
-router.post('/v2/messages/group', requireAuth, requireRoleLevel(2), async (req, res) => {
+router.post('/v2/messages/group', requireAuth, requireSparksEditMode, requireRoleLevel(2), async (req, res) => {
   try {
     const actor = getActor(req);
     const from_id = actor.person_id;
     const { content, type } = req.body;
     if (!content) return res.status(400).json({ error: 'content required' });
-    const fromPerson = (await DB.db.query('SELECT name, role_level FROM people WHERE id = $1', [from_id])).rows[0];
-    const team = await DB.people.getTeam(from_id);
+    const fromPerson = (await (req.db || DB).db.query('SELECT name, role_level FROM people WHERE id = $1', [from_id])).rows[0];
+    const team = await (req.db || DB).people.getTeam(from_id);
     const results = [];
     for (const member of team) {
-      results.push(await DB.messages.create({
+      results.push(await (req.db || DB).messages.create({
         from_id, to_id: member.id, from_name: fromPerson?.name || '', to_name: member.name,
         content, type: type || 'text', metadata: { group: true },
       }));
@@ -139,15 +144,16 @@ const msgPhotoStorage = multer.diskStorage({
 });
 const msgPhotoUpload = multer({ storage: msgPhotoStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-router.post('/v2/messages/photo', requireAuth, msgPhotoUpload.single('photo'), async (req, res) => {
+router.post('/v2/messages/photo', requireAuth, requireSparksEditMode, msgPhotoUpload.single('photo'), async (req, res) => {
   try {
     const actor = getActor(req);
     const from_id = actor.person_id;
     const { to_id } = req.body;
     if (!from_id || !to_id || !req.file) return res.status(400).json({ error: 'to_id and photo required' });
-    const fromPerson = (await DB.db.query('SELECT name FROM people WHERE id = $1', [from_id])).rows[0];
-    const toPerson = (await DB.db.query('SELECT name FROM people WHERE id = $1', [to_id])).rows[0];
-    res.json(await DB.messages.create({
+    if (!(await canMessage(actor, to_id, req.db))) return res.status(403).json({ error: "Not authorized to message this person" });
+    const fromPerson = (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [from_id])).rows[0];
+    const toPerson = (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [to_id])).rows[0];
+    res.json(await (req.db || DB).messages.create({
       from_id, to_id, from_name: fromPerson?.name || '', to_name: toPerson?.name || '',
       content: 'Photo', type: 'photo', photo: req.file.filename, metadata: {},
     }));
@@ -157,18 +163,31 @@ router.post('/v2/messages/photo', requireAuth, msgPhotoUpload.single('photo'), a
 // Voice messages — derive from_id from session
 const msgAudioDir = path.join(__dirname, '../../message-audio');
 if (!fs.existsSync(msgAudioDir)) fs.mkdirSync(msgAudioDir, { recursive: true });
+// File attachments
+const msgFileDir = path.join(__dirname, '../../message-files');
+if (!fs.existsSync(msgFileDir)) fs.mkdirSync(msgFileDir, { recursive: true });
+const msgFileStorage = multer.diskStorage({
+  destination: msgFileDir,
+  filename: (req, file, cb) => {
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, 'msg_' + Date.now() + '_' + safeName);
+  }
+});
+const msgFileUpload = multer({ storage: msgFileStorage, limits: { fileSize: 50 * 1024 * 1024 } });
+
 const msgAudioStorage = multer.diskStorage({
   destination: msgAudioDir,
   filename: (req, file, cb) => { const ext = file.originalname.split('.').pop() || 'webm'; cb(null, `msg_${Date.now()}_audio.${ext}`); }
 });
 const msgAudioUpload = multer({ storage: msgAudioStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-router.post('/v2/messages/voice', requireAuth, msgAudioUpload.single('audio'), async (req, res) => {
+router.post('/v2/messages/voice', requireAuth, requireSparksEditMode, msgAudioUpload.single('audio'), async (req, res) => {
   try {
     const actor = getActor(req);
     const from_id = actor.person_id;
     const { to_id } = req.body;
     if (!from_id || !to_id || !req.file) return res.status(400).json({ error: 'to_id and audio required' });
+    if (!(await canMessage(actor, to_id, req.db))) return res.status(403).json({ error: "Not authorized to message this person" });
     let transcript = '';
     try {
       const audioBuffer = fs.readFileSync(req.file.path);
@@ -184,9 +203,9 @@ router.post('/v2/messages/voice', requireAuth, msgAudioUpload.single('audio'), a
       });
       if (whisperRes.ok) { const data = await whisperRes.json(); transcript = data.text || ''; }
     } catch (e) { console.error('Voice msg transcription error:', e); }
-    const fromPerson = (await DB.db.query('SELECT name FROM people WHERE id = $1', [from_id])).rows[0];
-    const toPerson = (await DB.db.query('SELECT name FROM people WHERE id = $1', [to_id])).rows[0];
-    res.json(await DB.messages.create({
+    const fromPerson = (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [from_id])).rows[0];
+    const toPerson = (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [to_id])).rows[0];
+    res.json(await (req.db || DB).messages.create({
       from_id, to_id, from_name: fromPerson?.name || '', to_name: toPerson?.name || '',
       content: 'Voice message', type: 'voice', audio_file: req.file.filename, metadata: { transcript },
     }));
@@ -198,8 +217,73 @@ router.get('/v2/unread/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
-    res.json({ count: (await DB.messages.getUnread(targetId)).length });
+    res.json({ count: (await (req.db || DB).messages.getUnread(targetId)).length });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// Delete a message (sender or admin/supervisor can delete)
+router.delete('/v2/messages/:message_id', requireAuth, requireSparksEditMode, async (req, res) => {
+  try {
+    const actor = getActor(req);
+    const message = (await (req.db || DB).db.query('SELECT * FROM messages WHERE id = $1', [req.params.message_id])).rows[0];
+    if (!message) return res.status(404).json({ error: 'Message not found' });
+
+    // Only sender, admin, or supervisor can delete
+    if (message.from_id !== actor.person_id && !actor.is_admin && actor.role_level < 3) {
+      return res.status(403).json({ error: 'Not authorized to delete this message' });
+    }
+
+    // Delete attached files if any
+    if (message.audio_file) {
+      const audioPath = path.join(__dirname, '../../message-audio', message.audio_file);
+      if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+    }
+    if (message.photo) {
+      const photoPath = path.join(__dirname, '../../message-photos', message.photo);
+      if (fs.existsSync(photoPath)) fs.unlinkSync(photoPath);
+    }
+
+    await (req.db || DB).db.query('DELETE FROM messages WHERE id = $1', [req.params.message_id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// Send file attachment message — DERIVE from_id from session
+router.post('/v2/messages/file', requireAuth, requireSparksEditMode, msgFileUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file' });
+    const actor = getActor(req);
+    const from_id = actor.person_id;
+    const { to_id } = req.body;
+    if (!from_id || !to_id) return res.status(400).json({ error: 'to_id required' });
+    if (!(await canMessage(actor, to_id, req.db))) return res.status(403).json({ error: "Not authorized to message this person" });
+
+    const fromPerson = await (req.db || DB).people.getById(from_id);
+    const toPerson = await (req.db || DB).people.getById(to_id);
+    const id = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
+    await (req.db || DB).db.query(
+      "INSERT INTO messages (id, from_id, to_id, from_name, to_name, type, content, metadata, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [id, from_id, to_id,
+       fromPerson ? fromPerson.name : 'Unknown',
+       toPerson ? toPerson.name : 'Unknown',
+       'file',
+       req.file.originalname,
+       JSON.stringify({ filename: req.file.filename, original_name: req.file.originalname, mime_type: req.file.mimetype, size: req.file.size }),
+       new Date().toISOString()]
+    );
+
+    res.json({ success: true, message: { id, from_id, to_id, type: 'file', content: req.file.originalname, metadata: { filename: req.file.filename, original_name: req.file.originalname, mime_type: req.file.mimetype, size: req.file.size }, created_at: new Date().toISOString() } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Serve message files
+router.get('/message-files/:filename', requireAuth, (req, res) => {
+  const filePath = path.join(__dirname, '../../message-files', req.params.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+  res.download(filePath);
 });
 
 module.exports = router;

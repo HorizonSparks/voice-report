@@ -101,14 +101,14 @@ describe('promptBuilder module', () => {
     expect(result).toContain('PPE');
   });
 
-  test('buildContextPackage returns null for missing person/template', () => {
-    expect(buildContextPackage(null, null)).toBeNull();
-    expect(buildContextPackage(null, {})).toBeNull();
-    expect(buildContextPackage({}, null)).toBeNull();
+  test('buildContextPackage returns null for missing person/template', async () => {
+    expect(await buildContextPackage(null, null)).toBeNull();
+    expect(await buildContextPackage(null, {})).toBeNull();
+    expect(await buildContextPackage({}, null)).toBeNull();
   });
 
-  test('buildContextPackage builds correct shape', () => {
-    const ctx = buildContextPackage(
+  test('buildContextPackage builds correct shape', async () => {
+    const ctx = await buildContextPackage(
       { name: 'Steve', role_title: 'Electrician', personal_context: {} },
       { role_description: 'Journeyman', report_focus: 'Daily work', output_sections: ['Summary', 'Details'], vocabulary: { terms: ['conduit', 'MCC'] }, safety_rules: ['Wear PPE'] }
     );

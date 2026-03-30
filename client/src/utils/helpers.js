@@ -14,4 +14,4 @@ export function getSupportedMimeType() {
   return 'audio/webm';
 }
 
-export const TRADES = ['Electrical', 'Instrumentation', 'Pipe Fitting', 'Industrial Erection', 'Safety'];
+export const TRADES = ['Electrical', 'Instrumentation', 'Pipe Fitting', 'Industrial Erection', 'Safety', 'Sparks'];

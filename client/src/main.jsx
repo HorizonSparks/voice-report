@@ -10,6 +10,11 @@ window.fetch = (url, options = {}) => {
   // Only add credentials for same-origin /api/ calls
   if (typeof url === 'string' && url.startsWith('/api')) {
     options = { ...options, credentials: 'include' };
+    // Inject company_id when simulating a company (Sparks admin viewing as a company)
+    if (window.__simulatingCompanyId && !url.includes('company_id=')) {
+      const sep = url.includes('?') ? '&' : '?';
+      url = url + sep + 'company_id=' + encodeURIComponent(window.__simulatingCompanyId);
+    }
   }
   return originalFetch(url, options);
 };
@@ -41,3 +46,39 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </ErrorBoundary>
 );
+
+// Register service worker in production — with update detection
+if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        console.log('SW registered:', reg.scope);
+
+        // Check for updates every 5 minutes
+        setInterval(() => {
+          reg.update().catch(() => {});
+        }, 5 * 60 * 1000);
+
+        // When a new SW is found waiting
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version installed but waiting — notify the app
+                window.dispatchEvent(new CustomEvent('sw-update-available'));
+              }
+            });
+          }
+        });
+      })
+      .catch(err => console.log('SW registration failed:', err));
+
+    // Listen for SW_UPDATED message from the service worker
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SW_UPDATED') {
+        window.dispatchEvent(new CustomEvent('sw-update-available'));
+      }
+    });
+  });
+}

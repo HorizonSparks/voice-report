@@ -15,10 +15,11 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
   const [liveText, setLiveText] = useState('');
   const [recordTime, setRecordTime] = useState(0);
   const [error, setError] = useState('');
-  const [voiceMode, setVoiceMode] = useState('walkie'); // walkie-talkie default until Flow mode is production-ready
+  const [voiceMode, setVoiceMode] = useState(defaultVoiceMode || 'walkie'); // honor caller's preferred mode, fallback to walkie
   const [flowBannerPulse, setFlowBannerPulse] = useState(false);
   const [chatText, setChatText] = useState('');
   const chatPhotoRef = useRef(null);
+  const pendingPhotoRef = useRef(null); // base64 photo waiting to be sent with next message
   const stageRef = useRef('idle'); // mirror of stage for closure-safe access
 
   const recorderRef = useRef(null);
@@ -288,6 +289,10 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
 
       const currentConv = [...conversation];
       // Use combined refine-speak endpoint — AI thinking + TTS in one round-trip (saves 2-3s)
+      // Include pending photo if the user attached one
+      const photoToSend = pendingPhotoRef.current || null;
+      if (photoToSend) pendingPhotoRef.current = null; // clear after sending
+
       const refineRes = await fetch('/api/refine-speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -300,6 +305,7 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
           phase: 'dialogue',
           person_id: personId || '',
           task_context: taskContext || undefined,
+          image_data: photoToSend || undefined,
         }),
       });
       const data = await refineRes.json();
@@ -575,10 +581,12 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
   const handleChatPhoto = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Add photo as a user message with preview
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setChatHistory(prev => [...prev, { role: 'user', text: '📷 Photo attached', photo: ev.target.result }]);
+      const base64Full = ev.target.result; // data:image/jpeg;base64,...
+      // Store for next API call so the AI can actually see the photo
+      pendingPhotoRef.current = base64Full;
+      setChatHistory(prev => [...prev, { role: 'user', text: 'Photo attached — the AI will see this with your next message.', photo: base64Full }]);
     };
     reader.readAsDataURL(file);
     e.target.value = '';

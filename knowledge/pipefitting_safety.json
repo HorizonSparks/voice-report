@@ -1,0 +1,131 @@
+{
+  "category": "pipefitting_safety",
+  "description": "Safety requirements by task type for pipe fitting, welding, rigging, and industrial erection work",
+  "safety_by_task": {
+    "welding_SMAW": {
+      "process_name": "Shielded Metal Arc Welding (Stick)",
+      "common_rods": ["E6010 (root pass, open root)", "E7018 (fill and cap, low hydrogen)"],
+      "PPE": ["Welding hood (shade 10-12 for SMAW)", "FR clothing — long sleeves, no cuffs", "Welding gloves (leather gauntlet)", "Steel-toe boots (leather, no mesh)", "Ear plugs when overhead or in confined areas", "Respiratory protection if galvanized, stainless, or chrome-moly (hex chrome fumes)"],
+      "hazards": ["Arc flash/UV burns (eye, skin)", "Molten slag ejection", "Hex chrome fumes from stainless/chrome-moly", "Zinc fumes from galvanized (metal fume fever)", "Burns from hot metal and slag", "Fire from sparks/slag (up to 35 ft travel)", "Electrical shock (especially wet conditions)", "Confined space fume accumulation"],
+      "permits_required": ["Hot work permit", "Confined space permit if in vessel/tank", "Radiation work permit if near radiography"],
+      "JSA_items": ["Verify fire watch assigned and equipped", "Check welding leads for damage — no bare spots", "Verify ventilation/exhaust for fume control", "Confirm electrode oven operational (7018 must be kept at 250-300F)", "Ground clamp within 10 ft of work", "Remove combustibles within 35 ft or cover with fire blankets", "Check for overhead workers who could be hit by slag", "Verify scaffold/platform is rated for welding (no aluminum planks)"],
+      "fire_watch_requirements": {
+        "during_welding": "Continuous fire watch with extinguisher within reach",
+        "after_welding": "30 minutes minimum, 60 minutes for elevated/combustible areas",
+        "extinguisher_type": "ABC dry chemical minimum 20 lb, or as specified by site"
+      }
+    },
+    "welding_GTAW": {
+      "process_name": "Gas Tungsten Arc Welding (TIG)",
+      "common_filler": ["ER70S-2 (carbon steel)", "ER308L (304 stainless)", "ER309L (dissimilar metals, CS to SS)", "ER316L (316 stainless)", "ER80S-B2 (1-1/4 chrome-moly)", "ER90S-B3 (2-1/4 chrome-moly)"],
+      "PPE": ["Welding hood (shade 8-10 for TIG, lower amperage)", "FR clothing", "TIG gloves (thin leather for dexterity)", "Steel-toe boots", "Respiratory protection for stainless/chrome-moly/exotic alloys"],
+      "hazards": ["Intense UV radiation (even more than SMAW due to clean arc)", "Argon gas displacement in confined spaces — ODORLESS, HEAVIER THAN AIR", "Thoriated tungsten is mildly radioactive (grinding dust)", "High-frequency start can interfere with pacemakers", "Burns from hot filler rod and base metal", "Ozone generation from UV hitting oxygen"],
+      "permits_required": ["Hot work permit", "Confined space permit if in vessel/tank"],
+      "JSA_items": ["Verify argon bottle secured upright and regulator in good condition", "Check gas flow rate (15-25 CFH typical)", "Verify purge setup for pipe (dam, purge gas flow, O2 monitoring)", "Confirm ventilation — argon displaces oxygen in low areas", "O2 monitor required in confined/semi-confined spaces with argon", "Use ceriated or lanthanated tungsten instead of thoriated when possible", "If grinding thoriated tungsten, use local exhaust ventilation"],
+      "purge_requirements": {
+        "carbon_steel": "Purge preferred but not always required, depends on spec",
+        "stainless_steel": "MANDATORY — purge to below 1% O2, many specs require 0.5% or less",
+        "chrome_moly": "MANDATORY — purge to below 1% O2",
+        "titanium": "MANDATORY — purge to below 50 ppm O2, trailing shield required",
+        "purge_gas": "Argon (most common), nitrogen acceptable for some carbon steel applications",
+        "monitoring": "Use oxygen analyzer at purge exit dam to verify O2 level before striking arc"
+      }
+    },
+    "welding_FCAW": {
+      "process_name": "Flux-Cored Arc Welding",
+      "common_wire": ["E71T-1 (gas shielded, CO2 or 75/25)", "E71T-8 (self-shielded, no gas needed — outdoor/wind)", "E81T1-Ni1 (for low-temp service)"],
+      "PPE": ["Welding hood (shade 10-12)", "FR clothing — heavy spatter process", "Welding gloves (heavy leather)", "Steel-toe boots", "Hearing protection (louder process)", "Respiratory protection — high fume generation"],
+      "hazards": ["VERY HIGH fume generation — worst of common processes", "Heavy spatter — burns through clothing faster", "Slag entrapment if not cleaned between passes", "CO2 gas displacement in confined spaces", "Wire feed mechanism pinch points", "Electromagnetic fields from high amperage"],
+      "permits_required": ["Hot work permit", "Confined space permit if applicable"],
+      "JSA_items": ["Mandatory fume extraction/ventilation — higher fume rate than SMAW", "Extra fire watch diligence due to heavy spatter", "Inspect wire feeder and gun liner", "Verify gas type matches WPS (CO2 vs 75/25 Ar/CO2)", "Wind screens needed — gas shielded FCAW affected by wind over 5 mph", "Self-shielded FCAW acceptable in wind but check WPS"]
+    },
+    "cutting_grinding": {
+      "PPE": ["Face shield over safety glasses (grinding)", "Cutting goggles (shade 3-5 for oxy-fuel cutting)", "FR clothing", "Leather gloves", "Steel-toe boots", "Hearing protection", "Respiratory protection if cutting stainless, galvanized, or coated materials"],
+      "hazards": ["Flying debris and sparks (grinder discs can shatter)", "Kickback from grinder catching on work", "Burns from hot metal and sparks", "Noise exposure (grinders typically 95-105 dB)", "Silica dust if cutting concrete", "Oxy-fuel flashback and hose fire", "Acetylene is explosive above 15 psi — NEVER exceed", "Propane/propylene heavier than air — pools in low spots"],
+      "permits_required": ["Hot work permit for any spark-producing work", "Confined space permit if applicable"],
+      "JSA_items": ["Inspect grinder disc for cracks, correct RPM rating, correct guard position", "Never use cut-off wheel for grinding or grind wheel for cutting", "Check oxy-fuel hoses for leaks (soapy water test)", "Flashback arrestors installed on both regulators", "Acetylene pressure never above 15 psi", "Secure gas bottles upright, caps on when moving", "Minimum 20 ft between oxygen and fuel gas in storage", "No oil or grease on oxygen equipment — spontaneous combustion risk", "Blanket or shield combustibles below cutting operations"]
+    },
+    "rigging_crane_operations": {
+      "PPE": ["Hard hat (mandatory in lift zone)", "Safety glasses", "Steel-toe boots", "Leather gloves for handling rigging", "High-visibility vest", "Fall protection if on load or at height during rigging"],
+      "hazards": ["Struck by — #1 killer in rigging operations", "Crushing between load and fixed object", "Rigging failure (overload, damaged slings, wrong hardware)", "Crane tip-over", "Boom contact with power lines (10 ft minimum clearance, 20 ft for >350kV)", "Wind effects on load (stop lifts typically at 20-25 mph sustained)", "Pinch points during load setting", "Tag line entanglement"],
+      "permits_required": ["Crane lift permit/plan for all lifts", "Critical lift plan for loads >75% capacity, dual crane lifts, lifts over occupied areas, blind lifts", "Hot work permit if welding after setting", "Barricade/exclusion zone required"],
+      "JSA_items": ["Verify crane inspection current (annual + daily pre-use)", "Check all rigging gear — slings, shackles, spreader bars (color-coded quarterly inspection)", "Verify load weight including rigging weight", "Check ground conditions for outrigger/crawler stability", "Identify overhead obstructions and power lines", "Establish swing radius barricade", "Confirm signal person designated and qualified", "Review hand signals with crew", "Tag lines on all loads — minimum 2 for long/wide loads", "Never stand under suspended load", "Wind speed monitoring — suspend operations per plan", "Verify lift radius and capacity from load chart"]
+    },
+    "working_at_heights": {
+      "trigger": "6 feet or above (OSHA 1926.501)",
+      "PPE": ["Full body harness (inspected before each use)", "Shock-absorbing lanyard OR self-retracting lifeline (SRL)", "Anchor point rated for 5,000 lbs per person", "Hard hat with chin strap", "Tool lanyards for all tools"],
+      "hazards": ["Falls — leading cause of death in construction", "Dropped objects injuring workers below", "Scaffold collapse", "Ladder tip-over", "Aerial lift tip-over or ejection", "Wind at height", "Heat stress — more severe at height with harness"],
+      "permits_required": ["Fall protection plan on file", "Scaffold erection/inspection tag system", "Aerial lift operator certification"],
+      "JSA_items": ["Inspect harness — stitching, D-rings, buckles, labels legible", "Inspect lanyard — no cuts, burns, chemical damage", "Verify anchor point — rated, independent of work platform", "Calculate fall distance — 6ft lanyard + 3.5ft deceleration + 6ft worker height = 15.5ft minimum clearance", "SRL preferred where fall clearance is limited", "All tools lanyard'd — dropped wrench from 100 ft is lethal", "Barricade below for overhead work", "Scaffold tag must be green — inspect before each shift", "Never climb on piping, steel, or equipment without approved access", "Wind policy — most sites stop elevated work at 25-30 mph"]
+    },
+    "confined_space_entry": {
+      "definition": "Space large enough to enter, limited entry/exit, not designed for continuous occupancy (vessels, tanks, columns, exchangers, large pipe >24 inch)",
+      "PPE": ["4-gas monitor (O2, LEL, CO, H2S) — CONTINUOUS monitoring", "SCBA or airline respirator if atmosphere IDLH or unknown", "Full body harness with retrieval line", "Non-sparking tools if flammable atmosphere possible", "Communication device (radio or hardwired)", "FR clothing"],
+      "atmospheric_limits": {
+        "oxygen_low": "19.5% minimum (normal is 20.9%)",
+        "oxygen_high": "23.5% maximum (enriched = fire/explosion risk)",
+        "LEL": "Less than 10% of LEL for entry",
+        "H2S": "10 ppm 8-hr TWA, 20 ppm ceiling, 50 ppm IDLH",
+        "CO": "25 ppm 8-hr TWA, 200 ppm IDLH",
+        "benzene": "1 ppm TWA, 5 ppm STEL"
+      },
+      "permits_required": ["Confined space entry permit (valid one shift only)", "Hot work permit if welding inside", "Lockout/Tagout of ALL energy sources", "Blind/blank list verified (all connecting piping isolated)"],
+      "JSA_items": ["Atmosphere tested BEFORE entry — top, middle, bottom of space", "Continuous atmospheric monitoring during work", "Attendant at entry point at ALL times — never leaves", "Communication between entrant and attendant verified", "Rescue plan in place — on-site rescue team or fire department notified", "Retrieval system rigged (tripod and winch for vertical entry)", "All connecting piping blinded or double-blocked-and-bled", "Electrical isolation of any equipment in the space", "Ventilation — continuous forced air, fresh air inlet at bottom, exhaust at top", "Rescue harness worn with retrieval line attached", "Hot work inside confined space: 3 separate permits needed (confined space + hot work + safe work)", "No compressed gas bottles inside confined space", "Welding machine and gas bottles OUTSIDE, leads/hoses routed in"]
+    },
+    "hydrostatic_testing": {
+      "purpose": "Pressure test completed piping systems with water to verify integrity",
+      "test_pressure": "1.5x design pressure (ASME B31.3) held for minimum 10 minutes, typically 4 hours in refinery work",
+      "PPE": ["Safety glasses (mandatory in test zone)", "Hard hat", "Steel-toe boots", "Hearing protection (pumps)", "Face shield when checking connections under pressure"],
+      "hazards": ["Catastrophic failure — high energy water release", "Joint/flange leaks — high pressure water jet can cut skin", "Trapped air — acts like pneumatic test, much more dangerous", "Test equipment failure (gauges, hoses, pumps)", "Dropped test blinds (heavy)", "Slip hazards from water", "Cold weather — freeze damage to piping and gauges", "Water hammer from rapid valve operation"],
+      "permits_required": ["Hydro test permit/package with sign-offs", "Barricade/exclusion zone", "Pressure test safety plan"],
+      "JSA_items": ["Verify test package complete — P&IDs marked, test boundaries identified", "ALL temporary blinds rated for test pressure", "Vent ALL high points to remove trapped air — CRITICAL", "Fill from lowest point, vent from highest", "Pressure up slowly — 25% increments with hold and inspection", "Barricade test zone — no unauthorized personnel", "Test gauges calibrated and within range (25-75% of gauge range)", "Relief device set at 110% of test pressure or test pump has pressure limiting", "Visual inspection at 50% of test pressure", "Hold at test pressure and walk down ALL joints — look for leaks, distortion", "Document: start time, pressure, temperature, hold time, sign-offs", "Drain plan — where does test water go? Environmental requirements", "If glycol used (freeze protection), contain and dispose properly"]
+    },
+    "pneumatic_testing": {
+      "purpose": "Pressure test with air or nitrogen when water cannot be used (catalyst systems, systems that cannot be dried, air-sensitive materials)",
+      "test_pressure": "1.1x design pressure (ASME B31.3 paragraph 345.5.4)",
+      "WARNING": "PNEUMATIC TESTS ARE EXTREMELY DANGEROUS — stored energy in compressed gas is exponentially higher than hydro. A pneumatic test failure is equivalent to an EXPLOSION.",
+      "PPE": ["Full PPE — hard hat, safety glasses, steel-toe boots", "Face shield when approaching test zone", "Hearing protection"],
+      "hazards": ["EXPLOSIVE FAILURE — pneumatic tests store enormous energy", "Shrapnel from pipe or fitting failure", "Blast wave — can cause injury even without contact", "Missile hazard from blown blinds or gaskets", "Noise from leak or failure can cause permanent hearing damage", "Asphyxiation risk if testing with nitrogen in enclosed area"],
+      "permits_required": ["Pneumatic test permit (higher level approval than hydro, often requires engineering manager sign-off)", "Barricade/exclusion zone — LARGER than hydro test zone", "Safety review/meeting before test"],
+      "JSA_items": ["Engineering approval REQUIRED for all pneumatic tests", "Pressure up in stages: 25 psi initial hold and check, then 50% of test pressure, then increments of 10% to test pressure", "EVERYONE out of test zone during pressure-up above 25 psi", "Extended exclusion zone — typically 100 ft or more per site policy", "Hold at test pressure for 10 minutes minimum", "Walk-down for leaks only AFTER full pressure hold is stable", "Use soapy water for leak detection, NEVER use hands to feel for leaks", "Nitrogen purge required if system had hydrocarbons", "Oxygen monitoring if nitrogen test — N2 displaces O2", "Pressure relief device MANDATORY", "Document everything — multiple witness signatures required"]
+    },
+    "hot_tapping": {
+      "definition": "Cutting into a live (pressurized, in-service) pipe or vessel to create a new connection without shutdown",
+      "PPE": ["Full FR clothing", "Face shield over safety glasses", "Welding PPE if welding the fitting", "H2S monitor if sour service", "4-gas monitor", "Fire-resistant gloves"],
+      "hazards": ["Welding on pressurized, possibly hydrocarbon-containing pipe", "Product release if burn-through occurs", "Fire/explosion if flammable service", "H2S exposure in sour service", "Hot product release during coupon removal", "Pipe wall too thin for welding (minimum wall thickness check CRITICAL)"],
+      "permits_required": ["Hot tap permit (engineering approval)", "Hot work permit", "Process safety management review", "Pipe wall thickness verification (UT scan)", "Material verification (PMI)", "Pressure/temperature limitations verified"],
+      "JSA_items": ["UT scan pipe wall — minimum remaining wall must support weld without burn-through", "PMI verify pipe material — must match welding procedure", "Process conditions reviewed — temperature, pressure, product, flow", "Minimum wall thickness typically 0.25 inch for hot tap welding", "Valve on fitting tested before cutting", "Qualified hot tap crew and machine operator", "Fire suppression standing by", "Area gas tested continuously", "Downstream effects of new connection evaluated"]
+    },
+    "line_breaking": {
+      "definition": "Opening a sealed piping system — breaking flanges, removing valves, cutting pipe in a system that has been in service",
+      "PPE": ["Full FR clothing", "Chemical splash goggles or face shield", "Chemical-resistant gloves appropriate for product", "Chemical-resistant apron if splash potential", "SCBA or airline respirator available if H2S/toxic service", "4-gas monitor"],
+      "hazards": ["Residual product release — even 'drained' lines contain product in low spots", "H2S release from sour service (deadly at 100 ppm)", "Chemical burns (caustic, acid services)", "Benzene exposure (carcinogen — 1 ppm TWA limit)", "LEL/fire risk from residual hydrocarbons", "Trapped pressure behind valves", "Product in dead legs and low points"],
+      "permits_required": ["Line break permit (also called safe work permit)", "Lockout/Tagout of upstream/downstream isolation", "Blind list (all blinds installed verified)", "Atmospheric monitoring"],
+      "JSA_items": ["Verify line has been drained, depressured, and purged per procedure", "Isolation verified — double block and bleed or blind", "Loosen bolts on far side first (away from you), gradually break seal", "Have containment ready (drip tray, absorbent, drain connection)", "Monitor atmosphere continuously — LEL, H2S, benzene", "Know the product and have SDS available", "Emergency escape route identified (upwind)", "Wind direction evaluated — position upwind", "Decon/wash station nearby for chemical services"]
+    },
+    "steam_blowing": {
+      "definition": "Using high-pressure steam to clean new piping systems of construction debris (weld slag, scale, debris) before commissioning",
+      "PPE": ["Full FR clothing", "Face shield", "Hearing protection (EXTREMELY LOUD — 120+ dB)", "Heat-resistant gloves", "Steel-toe boots", "Full body coverage — steam burns are severe"],
+      "hazards": ["EXTREME noise (can cause permanent hearing damage)", "Steam burns — invisible superheated steam is most dangerous", "Thermal expansion of pipe — can move pipe off supports", "Missile hazard from debris blown out of pipe", "Trip hazards from temporary piping and silencer", "Burns from touching hot pipe (600F+ surface temperature)"],
+      "permits_required": ["Steam blow procedure (engineering document)", "Exclusion zone permit/barricade", "Environmental notification (noise)"],
+      "JSA_items": ["Exclusion zone around blow path — 200 ft minimum typical", "Verify all temporary supports and restraints in place", "Target plate installed at blow point to verify cleanliness", "All spring hangers locked/pinned during steam blow", "Verify expansion loops and guides can handle thermal movement", "Blowdown path clear of personnel, equipment, and structures", "Silencer (if used) properly installed and anchored", "Communication plan — radio contact between control room and field", "Monitor pipe movement during each blow — stop if excessive", "Multiple blows required — polish target plate between blows until clean"]
+    },
+    "chemical_cleaning": {
+      "definition": "Circulating chemical solutions through piping to remove mill scale, rust, oil, and construction debris",
+      "common_chemicals": ["Citric acid (mild, common for stainless systems)", "Hydrochloric acid (inhibited) for carbon steel descaling", "Ammoniated citric acid", "Alkaline solutions (degreasing)", "Chelant-based cleaners"],
+      "PPE": ["Chemical splash goggles and face shield", "Chemical-resistant suit (Tyvek minimum, PVC for acid)", "Chemical-resistant gloves (check compatibility chart)", "Chemical-resistant boots", "SCBA available for acid/toxic fume potential", "Emergency eyewash/shower within 10 seconds travel"],
+      "hazards": ["Chemical burns — acid and alkaline solutions", "Toxic fume generation (especially HCl)", "Hydrogen generation during acid cleaning (explosion risk)", "Environmental spill", "Pump and hose failure — high pressure chemical release", "Mixing incompatible chemicals (acid + bleach = chlorine gas)"],
+      "permits_required": ["Chemical cleaning procedure (engineering)", "Environmental permit/containment plan", "Hot work restricted in area", "Safe work permit"],
+      "JSA_items": ["SDS for ALL chemicals reviewed with crew", "Containment for all chemical solutions — no ground release", "Neutralization chemicals on-site and ready", "Emergency shower and eyewash tested", "Spill kit appropriate for chemicals in use", "Continuous atmospheric monitoring", "Hydrogen monitor if acid cleaning (H2 generation)", "Chemical waste disposal plan in place", "Temporary piping rated for chemical service and pressure", "All connections checked for leaks at low pressure before increasing"]
+    }
+  },
+  "universal_safety_reminders": {
+    "stop_work_authority": "EVERY worker has the RIGHT and OBLIGATION to stop work they believe is unsafe. No retaliation.",
+    "JSA_requirement": "Job Safety Analysis must be completed and reviewed with ALL crew members before starting ANY task. Update JSA when conditions change.",
+    "emergency_numbers": "Know your site emergency number, muster point, nearest first aid, AED, and emergency shower/eyewash locations",
+    "reporting": "Report ALL incidents, near-misses, and unsafe conditions immediately. Near-misses are FREE LESSONS.",
+    "housekeeping": "Clean as you go. Organized work areas prevent injuries. Secure all materials and tools against falling.",
+    "heat_stress": "Monitor crew for heat illness — confusion, heavy sweating that stops, rapid pulse. Cool and hydrate. Call 911 for heat stroke.",
+    "cold_stress": "Monitor for hypothermia and frostbite. Provide warming shelters and warm fluids. Watch for shivering that stops (dangerous sign)."
+  }
+}

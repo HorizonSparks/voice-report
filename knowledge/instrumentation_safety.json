@@ -1,0 +1,44 @@
+{
+  "trade": "Instrumentation",
+  "category": "safety",
+  "description": "Safety requirements by task type for instrumentation construction",
+  "tasks": {
+    "instrument_installation": {
+      "ppe": ["Safety glasses", "Hard hat", "Steel-toe boots", "Chemical-resistant gloves", "FR clothing", "Face shield when breaking containment"],
+      "jsa_items": ["Verify line depressurized and drained before opening connections", "Use bleed valve to confirm zero energy", "Install root valves first, close before connecting transmitter", "Never stand in front of open process connection", "Use thread sealant compatible with process fluid", "Never use Teflon tape on oxygen service"],
+      "hazards": ["Stored energy in process lines", "Hot/cold surfaces", "Toxic/flammable process fluids", "High-pressure blowout from open connections"],
+      "permits": ["Hot work permit if welding connections", "Confined space if inside vessels", "Line break permit for opening live process connections"]
+    },
+    "tubing_runs": {
+      "ppe": ["Safety glasses (mandatory — tubing spring-back is common eye injury)", "Cut-resistant gloves", "Fall protection above 6 ft"],
+      "jsa_items": ["Deburr ALL tubing cuts inside and outside", "Blow out tubing with clean dry air/N2 before connecting", "Never use copper for instrument air — use 316SS", "Pressure test ALL tubing before connecting to instruments", "Cap open tubing ends at end of each shift"],
+      "hazards": ["Sharp tubing ends", "Eye hazard from spring-back during bending", "Compressed air stored energy", "Falls during routing"],
+      "support_spacing": {"half_inch_SS_horizontal": "5 ft max", "half_inch_SS_vertical": "8 ft max"}
+    },
+    "control_valve_installation": {
+      "ppe": ["Steel-toe boots", "Hard hat", "Hearing protection near pressure letdown", "Rigging gloves"],
+      "jsa_items": ["Verify tag number matches P&ID and line number", "Check flow direction arrow matches process flow", "Remove shipping blocks from actuator", "Verify actuator air supply pressure matches nameplate", "Stroke valve full range before connecting to process", "Verify fail position matches data sheet"],
+      "hazards": ["Heavy equipment (hundreds to thousands of pounds)", "Pinch points during rigging", "Stored energy in actuator springs", "High noise"]
+    },
+    "calibration": {
+      "safety": ["Use intrinsically safe calibrators in classified areas", "LOTO before disconnecting wiring", "Never apply test pressure exceeding instrument rated range", "Secure calibration gas cylinders upright"],
+      "documentation": ["Record as-found and as-left readings", "Apply calibration sticker with date and initials"]
+    },
+    "loop_testing": {
+      "safety": ["Notify operations/control room before ANY loop test", "Verify DCS/PLC in manual or test mode before driving outputs", "Place warning tags on control valves being tested", "Confirm safety interlocks bypassed with proper authorization", "Two-person communication required — one at field, one at control room"],
+      "test_order": "Verify power → check signal at field device → verify at marshalling panel → verify in DCS/PLC → drive output to verify actuator"
+    },
+    "hazardous_areas": {
+      "requirements": ["ALL instruments must have appropriate classification rating (XP, IS, or nonincendive)", "IS barriers in safe area marshalling cabinets", "XP junction boxes: ALL cover bolts installed — no missing bolts", "Seal fittings within 18 in of enclosure in Div 1", "Only approved tools — no unapproved phones, cameras, radios", "Hot work permits for any spark-producing activity"],
+      "classifications": {"div_1": "Flammable present under NORMAL conditions", "div_2": "Flammable present only under ABNORMAL conditions"}
+    },
+    "pneumatic_systems": {
+      "safety": ["Bleed pressure before disconnecting fittings", "Instrument air must be clean, dry, oil-free", "Typical supply: 20 psi for instruments, 60-80 psi for valve actuators", "Install filter/regulators at each air supply takeoff"],
+      "hazards": ["Stored energy in air headers", "Whipping lines if connections fail", "Eye injury from blown debris"]
+    },
+    "working_near_process_piping": {
+      "safety": ["Identify pipe contents from labels or P&ID before working near any pipe", "Maintain safe distance from uninsulated hot pipes", "Never route instrument tubing in direct contact with hot process piping", "Report any leaks (hissing, frost, discoloration) immediately"],
+      "hazards": ["Burns from steam/hot oil (can exceed 700F)", "Frostbite from cryogenic lines", "Chemical exposure from leaks"]
+    }
+  }
+}

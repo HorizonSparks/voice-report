@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export default function JSAView({ user, goHome, activeTrade }) {
+export default function JSAView({ user, goHome, activeTrade, readOnly }) {
   const { t } = useTranslation();
   const [team, setTeam] = useState([]);
   const [jsaList, setJsaList] = useState([]);

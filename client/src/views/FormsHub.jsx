@@ -6,15 +6,8 @@ import FormFill from './FormFill.jsx';
 import SubmissionView from './SubmissionView.jsx';
 import SubmissionList from './SubmissionList.jsx';
 
-const TRADE_ICONS = {
-  'Electrical': '⚡',
-  'Instrumentation': '🔧',
-  'Pipe Fitting': '🔩',
-  'Industrial Erection': '🏗️',
-  'Safety': '⛑️',
-};
 
-export default function FormsHub({ user, goHome, activeTrade }) {
+export default function FormsHub({ user, goHome, activeTrade, readOnly }) {
   const { t } = useTranslation();
   const [activeForm, setActiveForm] = useState(null);
   const [savedFormId, setSavedFormId] = useState(null);
@@ -33,23 +26,23 @@ export default function FormsHub({ user, goHome, activeTrade }) {
 
   useEffect(() => {
     fetch('/api/forms/templates')
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : [])
       .then(data => setDbTemplates(Array.isArray(data) ? data : []))
       .catch(() => {});
 
     // Auto-seed if no templates exist
     fetch('/api/forms/seed', { method: 'POST' })
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : {})
       .then(data => {
         if (data.count > 0) {
-          fetch('/api/forms/templates').then(r => r.json()).then(d => setDbTemplates(Array.isArray(d) ? d : []));
+          fetch('/api/forms/templates').then(r => r.ok ? r.json() : []).then(d => setDbTemplates(Array.isArray(d) ? d : []));
         }
       })
       .catch(() => {});
 
     // Load company settings
     fetch('/api/settings')
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : {})
       .then(data => { setSettings(data); setCompanyName(data.company_name || ''); })
       .catch(() => {});
   }, []);
@@ -72,6 +65,7 @@ export default function FormsHub({ user, goHome, activeTrade }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logo_data: reader.result, logo_filename: file.name }),
       });
+      if (!res.ok) { setSaving(false); return; }
       const updated = await res.json();
       setSettings(updated);
       setSaving(false);
@@ -83,7 +77,7 @@ export default function FormsHub({ user, goHome, activeTrade }) {
   const handleRemoveLogo = async () => {
     setSaving(true);
     await fetch('/api/settings/logo', { method: 'DELETE' });
-    const updated = await fetch('/api/settings').then(r => r.json());
+    const updated = await fetch('/api/settings').then(r => r.ok ? r.json() : {});
     setSettings(updated);
     setSaving(false);
     showMsg('Logo removed.');
@@ -97,6 +91,7 @@ export default function FormsHub({ user, goHome, activeTrade }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ company_name: companyName }),
     });
+    if (!res.ok) { setSaving(false); return; }
     const updated = await res.json();
     setSettings(updated);
     setSaving(false);
@@ -113,7 +108,7 @@ export default function FormsHub({ user, goHome, activeTrade }) {
           <p>Your form has been saved.</p>
           <div className="form-saved-actions">
             <button className="btn-primary" onClick={() => { setSavedFormId(null); setActiveForm(null); setSelectedTemplate(null); }}>← {t('nav.back')}</button>
-            <button className="btn-secondary" onClick={goHome}>Home</button>
+            
           </div>
         </div>
       </div>
@@ -157,7 +152,7 @@ export default function FormsHub({ user, goHome, activeTrade }) {
 
           {/* Logo Preview */}
           <div style={{
-            border: '2px dashed #ccc', borderRadius: '10px', padding: '20px',
+            border: '2px dashed #48484A', borderRadius: '10px', padding: '20px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             marginBottom: '16px', minHeight: '80px', background: '#fafafa',
           }}>
@@ -181,7 +176,7 @@ export default function FormsHub({ user, goHome, activeTrade }) {
             {settings?.logo_data && (
               <button onClick={handleRemoveLogo} disabled={saving} style={{
                 flex: 1, padding: '12px', background: 'white', color: 'var(--charcoal)',
-                border: '2px solid #ccc', borderRadius: '8px', fontSize: '14px',
+                border: '2px solid #48484A', borderRadius: '8px', fontSize: '14px',
                 fontWeight: 700, cursor: 'pointer',
               }}>
                 Remove Logo
@@ -203,7 +198,7 @@ export default function FormsHub({ user, goHome, activeTrade }) {
               onChange={e => setCompanyName(e.target.value)}
               placeholder="Company name"
               style={{
-                flex: 1, padding: '12px', border: '2px solid #ccc', borderRadius: '8px',
+                flex: 1, padding: '12px', border: '2px solid #48484A', borderRadius: '8px',
                 fontSize: '15px', fontWeight: 600, color: 'var(--charcoal)', fontFamily: 'inherit',
               }}
             />

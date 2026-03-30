@@ -1,0 +1,350 @@
+{
+  "category": "pipefitting_troubleshooting",
+  "description": "Common rework causes, troubleshooting, trade coordination needs, and field calculations for pipe fitting and industrial erection",
+  "top_rework_causes_pipefitting": {
+    "ranked_by_frequency": [
+      {
+        "rank": 1,
+        "issue": "Wrong material or wrong specification",
+        "details": "Installing A106 Gr B where A335 P11 is specified. Mixing 304 and 316 components. Wrong flange rating. Wrong gasket material.",
+        "prevention": "PMI all alloy materials. Verify marking against MTR. Color code piping materials in laydown. Double-check spec class on ISO.",
+        "cost_impact": "High — entire spool may need replacement. If found after welding, even worse."
+      },
+      {
+        "rank": 2,
+        "issue": "Weld defects requiring repair",
+        "details": "Porosity (wet rods), lack of fusion (low heat), incomplete penetration (bad fit-up), cracks (hydrogen, no preheat).",
+        "prevention": "Rod oven discipline. Proper fit-up and root gap. Preheat compliance. Qualified welders.",
+        "cost_impact": "Medium to high — weld repair is 3-5x the cost of original weld. Multiple repairs may require cut-out and re-weld."
+      },
+      {
+        "rank": 3,
+        "issue": "Dimensional errors — fabricated to wrong dimensions",
+        "details": "Spool too long, too short, wrong angle on miter, wrong orientation. Fabricating from wrong revision drawing.",
+        "prevention": "Verify drawing revision. Measure twice, cut once. Account for weld shrinkage (approximately 1/16 to 1/8 inch per butt weld). Use field fit pieces.",
+        "cost_impact": "Medium to high — may require re-fabrication of entire spool."
+      },
+      {
+        "rank": 4,
+        "issue": "Flange bolt hole orientation wrong",
+        "details": "Bolt holes not straddling centerline (vertical or horizontal per spec). Discovered after spool is welded and NDE'd.",
+        "prevention": "Mark bolt hole orientation BEFORE welding. Check spec — most require bolt holes to straddle centerline (not sit on it).",
+        "cost_impact": "Medium — requires cutting flange off and re-welding in correct orientation."
+      },
+      {
+        "rank": 5,
+        "issue": "Fit-up out of tolerance — hi-lo, gap, alignment",
+        "details": "Internal misalignment exceeding 1/16 inch. Root gap outside WPS range. Pipe not aligned to mating equipment nozzle.",
+        "prevention": "Use proper fit-up clamps. Measure with gauges (not eyeball). Check tolerances before tacking.",
+        "cost_impact": "Low if caught before welding (re-fit). High if caught after welding and NDE (cut out and re-do)."
+      },
+      {
+        "rank": 6,
+        "issue": "PWHT not performed or improperly performed",
+        "details": "Forgot PWHT on chrome-moly weld. PWHT temperature too low/high. Heating rate exceeded. Found at hardness testing.",
+        "prevention": "PWHT tracking system. Thermocouple monitoring and recording. Hardness testing after PWHT.",
+        "cost_impact": "High — may require re-PWHT (costly mobilization) or complete re-weld if microstructure damaged."
+      },
+      {
+        "rank": 7,
+        "issue": "Preheat not maintained",
+        "details": "Preheat dropped below minimum during welding (torch preheat burned out, blankets failed, wind). Causes hydrogen cracking.",
+        "prevention": "Continuous temperature monitoring. Use electric resistance heating pads with controllers. Wind screens.",
+        "cost_impact": "High if cracking occurs — may not be detected until NDE days later. Full cut-out and re-weld."
+      },
+      {
+        "rank": 8,
+        "issue": "Pipe supports missing, wrong, or in wrong location",
+        "details": "Pipe installed without proper supports. Supports at wrong elevation. Missing spring hangers. Wrong spring range.",
+        "prevention": "Install supports BEFORE pipe runs. Verify support drawing against pipe ISO. Check spring hanger tags against schedule.",
+        "cost_impact": "Low to medium — but can delay hydro test and commissioning significantly."
+      }
+    ]
+  },
+  "flange_leak_troubleshooting": {
+    "common_causes": [
+      {
+        "cause": "Uneven bolt torque",
+        "diagnosis": "Check torque with calibrated wrench. Look for uneven gap between flanges (wider on one side).",
+        "fix": "Re-torque using proper star pattern, 4-pass sequence. May need to break joint and start over with new gasket."
+      },
+      {
+        "cause": "Wrong gasket for application",
+        "diagnosis": "Verify gasket material and type match piping spec class. Check gasket rating vs operating conditions.",
+        "fix": "Replace with correct gasket. NEVER reuse gaskets."
+      },
+      {
+        "cause": "Damaged flange face",
+        "diagnosis": "Inspect for scratches, gouges, corrosion across serrations. Use straightedge to check for warpage.",
+        "fix": "Machine flange face if damage is minor. Replace flange if warped or deeply gouged."
+      },
+      {
+        "cause": "Flange misalignment — flanges not parallel",
+        "diagnosis": "Measure gap at 4 points 90 degrees apart. Variation exceeding 1/16 inch per foot of OD indicates problem.",
+        "fix": "Re-align pipe and flanges. Do NOT use bolts to pull flanges together — this spring-loads the joint."
+      },
+      {
+        "cause": "Bolt relaxation after initial torque",
+        "diagnosis": "Re-check torque 4-24 hours after initial bolt-up. Gasket embedment causes initial relaxation.",
+        "fix": "Re-torque to target value. Some specs require a second re-torque after 24 hours."
+      },
+      {
+        "cause": "Thermal cycling — bolts expand differently than flanges",
+        "diagnosis": "Leak appears after system heats up or cools down. Common with B7 bolts on stainless flanges.",
+        "fix": "Use live-loading (Belleville washers) on flanges subject to thermal cycling. Re-torque at operating temperature."
+      },
+      {
+        "cause": "Gasket not centered",
+        "diagnosis": "Gasket protruding on one side or visible off-center through inspection port.",
+        "fix": "Break joint, re-center gasket, re-torque."
+      },
+      {
+        "cause": "Inadequate bolt-up lubricant",
+        "diagnosis": "Bolts show galling (stainless), or torque wrench clicks but bolt tension is low (dry bolt gets ~50% less clamp load).",
+        "fix": "Use specified anti-seize/lubricant. Replace galled bolts."
+      }
+    ]
+  },
+  "pipe_support_issues": {
+    "common_problems": [
+      {
+        "issue": "Pipe sagging between supports",
+        "cause": "Supports too far apart, support elevation wrong, spring hanger not carrying load",
+        "effect": "Low spots collect condensate (water hammer in steam, corrosion in any service), stress on welds",
+        "fix": "Add intermediate support, re-level existing supports, check spring hanger load"
+      },
+      {
+        "issue": "Pipe vibration",
+        "cause": "Flow-induced vibration, mechanical vibration from equipment, unsupported small-bore connections",
+        "effect": "Fatigue cracking at welds and branch connections. Socket weld branch connections most vulnerable.",
+        "fix": "Add supports or braces at vibration nodes. Stiffen small-bore connections. Add snubbers for dynamic loads."
+      },
+      {
+        "issue": "Spring hanger topped out or bottomed out",
+        "cause": "Wrong spring range selected, unexpected thermal growth, support elevation wrong",
+        "effect": "Pipe carries full dead weight (spring topped out) or spring overloaded (bottomed out). Nozzle loads on equipment exceeded.",
+        "fix": "Verify spring against hanger schedule. Re-set or replace with correct spring range. Check pipe elevation and thermal growth."
+      },
+      {
+        "issue": "Pipe shoe lifting off support",
+        "cause": "Thermal growth lifting pipe at support location. Anchor point arrangement causing uplift.",
+        "effect": "Pipe unsupported — overloads adjacent supports. Noise from pipe banging down on support.",
+        "fix": "Add hold-down clamp or change support type to guided/restrained. Engineering review of flexibility analysis."
+      },
+      {
+        "issue": "Excessive pipe expansion damaging pipe or equipment",
+        "cause": "No expansion loops or expansion joints, anchors in wrong location, guides too tight",
+        "effect": "Equipment nozzle overload, cracked welds, displaced pipe",
+        "fix": "Engineering review of pipe flexibility. Add expansion loops, expansion joints, or re-route pipe. Adjust guide clearances."
+      }
+    ]
+  },
+  "alignment_problems": {
+    "pipe_to_equipment_nozzle": {
+      "problem": "Pipe doesn't line up with equipment nozzle after fabrication",
+      "causes": ["Equipment nozzle location different from drawing (tolerance stack-up)", "Foundation/equipment settlement", "Fabrication dimensional error", "Thermal growth not accounted for in cold position"],
+      "solutions": ["Use field-fit closure spools — leave one joint per system as field-measured/cut", "Adjust pipe supports to bring pipe into alignment", "Cold spring per engineering approval ONLY (intentional misalignment in cold that aligns at operating temp)", "NEVER force pipe into position — this loads equipment nozzles and causes failure"]
+    },
+    "pipe_to_pipe": {
+      "problem": "Mating spools don't align — offset, rotated, or wrong length",
+      "solutions": ["Re-measure both spools against drawings", "Field-fit closure piece between spools", "If offset small (<1/4 inch), may be possible to absorb in flange gasket (engineering approval needed)", "Check for cumulative tolerance stack-up — many small errors add up on long runs"]
+    },
+    "structural_steel_alignment": {
+      "problem": "Steel members not plumb, level, or dimensionally correct",
+      "impact": "Pipe supports, equipment foundations, and platform elevations all depend on steel being right",
+      "solutions": ["Survey check steel against drawings before piping starts", "Shim pipe supports to correct for steel out-of-tolerance", "Report significant deviations to engineering for disposition"]
+    }
+  },
+  "trade_coordination_pipefitting": {
+    "what_pipe_fitters_need_from_other_trades": {
+      "civil": [
+        "Equipment foundations complete, surveyed, and accepted — pipe cannot connect to equipment that isn't set",
+        "Pipe support foundations/embed plates installed at correct elevation and location",
+        "Underground piping sleeves and penetrations cast in foundations before concrete pour",
+        "Pipe trench/rack foundations complete",
+        "Fireproofing complete on structural steel before piping starts (pipe blocks fireproofing access)"
+      ],
+      "structural_steel": [
+        "Pipe rack steel erected and bolted/welded — pipe cannot be set on incomplete racks",
+        "Platforms and access steel complete for elevated pipe work",
+        "Pipe support steel (clip angles, beam clamps, dummy leg supports) installed",
+        "Column and beam fireproofing complete before pipe runs (access issue)"
+      ],
+      "electrical": [
+        "Heat trace circuits designed and cables available for installation with piping",
+        "Power available for welding machines at work locations",
+        "Temporary lighting at elevated work areas",
+        "Electrical heat trace installed AFTER hydro test but BEFORE insulation"
+      ],
+      "instrumentation": [
+        "Instrument connection details (thermowell lengths, orifice flange tap locations, control valve face-to-face dimensions)",
+        "Instrument air available for pneumatic testing",
+        "Control valve bodies delivered for in-line installation (pipe fitters install the valve body, instrument techs install actuator/positioner)"
+      ],
+      "insulation": [
+        "All piping hydro tested and accepted BEFORE insulation",
+        "All NDE complete and accepted",
+        "Steam tracing installed and tested BEFORE insulation",
+        "All pipe supports correct (insulation goes over shoes)",
+        "Touch-up paint/coating complete before insulation"
+      ]
+    },
+    "what_other_trades_need_from_pipe_fitters": {
+      "instrument_connections": [
+        "Process taps (nipples, valves, orifice flanges) installed and hydro tested before instrument installation",
+        "Thermowells welded into pipe during fabrication — cannot add after hydro",
+        "Control valve bodies in line and flanged connections made up",
+        "Sample connections installed and tested"
+      ],
+      "electrical": [
+        "Conduit supports on pipe racks — electricians need pipe rack steel AND pipe fitters to provide support locations",
+        "Grounding connections on piping systems where specified",
+        "Clearance for cable tray routing — pipe fitters need to maintain routing corridors per 3D model"
+      ],
+      "structural": [
+        "Pipe loads provided to structural engineer for pipe support design",
+        "Hot pipe expansion data for support/guide design",
+        "Location of heavy valves for dedicated support steel"
+      ],
+      "civil": [
+        "Underground pipe locations and elevations for civil excavation",
+        "Pipe sleeve sizes for foundation penetrations",
+        "Anchor bolt patterns for pipe support foundations"
+      ]
+    },
+    "coordination_meetings": {
+      "daily_foreman_meeting": "All trade foremen meet daily to discuss next-day work, identify conflicts, request support",
+      "weekly_area_coordination": "Area coordinator leads meeting to review 3-week look-ahead, sequence work, resolve interferences",
+      "interference_resolution": "When trades conflict for same space: process piping typically has priority, but all interferences require engineering disposition"
+    }
+  },
+  "field_calculations": {
+    "hydro_test_pressure": {
+      "formula": "Test Pressure = 1.5 x Design Pressure (per ASME B31.3 for standard hydro test)",
+      "examples": [
+        "150# system designed for 285 psi: Test pressure = 285 x 1.5 = 427.5 psi",
+        "300# system designed for 740 psi: Test pressure = 740 x 1.5 = 1110 psi",
+        "600# system designed for 1480 psi: Test pressure = 1480 x 1.5 = 2220 psi"
+      ],
+      "temperature_correction": "If test temperature is higher than design temperature (unusual), multiply by stress ratio: Pt = 1.5 x P x (St_at_test / St_at_design). Usually test temp is lower, so this increases test pressure slightly.",
+      "note": "Test pressure must not exceed maximum allowable pressure of weakest component in test boundary (flanges, valves, vessels connected to test system)"
+    },
+    "pneumatic_test_pressure": {
+      "formula": "Test Pressure = 1.1 x Design Pressure (per ASME B31.3 paragraph 345.5)",
+      "examples": [
+        "System designed for 285 psi: Pneumatic test = 285 x 1.1 = 313.5 psi",
+        "System designed for 740 psi: Pneumatic test = 740 x 1.1 = 814 psi"
+      ],
+      "note": "Pneumatic test pressure is LOWER than hydro because stored energy is much higher with gas. Still extremely dangerous."
+    },
+    "bolt_torque_calculation": {
+      "simplified_formula": "T = K x D x F",
+      "where": {
+        "T": "Torque (ft-lbs or in-lbs)",
+        "K": "Nut factor (dimensionless) — accounts for friction. K = 0.20 for lubricated steel, 0.15 for moly-based anti-seize, 0.30 for dry steel",
+        "D": "Nominal bolt diameter (inches)",
+        "F": "Desired bolt tension (lbs) — typically 60-70% of bolt yield strength"
+      },
+      "example": "1-inch B7 stud (yield = 105,000 psi, stress area = 0.606 sq in), target 60% yield: F = 0.60 x 105,000 x 0.606 = 38,178 lbs. With K = 0.20: T = 0.20 x 1.0 x 38,178 = 7,636 in-lbs = 636 ft-lbs. With anti-seize K = 0.15: T = 0.15 x 1.0 x 38,178 = 5,727 in-lbs = 477 ft-lbs.",
+      "IMPORTANT": "Nut factor K varies enormously with lubrication condition. ALWAYS use project-specified torque values when provided. This calculation is for reference/verification only."
+    },
+    "thermal_expansion": {
+      "formula": "Delta_L = alpha x L x Delta_T",
+      "where": {
+        "Delta_L": "Change in length (inches)",
+        "alpha": "Coefficient of thermal expansion (inches per inch per degree F)",
+        "L": "Original length (inches)",
+        "Delta_T": "Temperature change from ambient (degrees F)"
+      },
+      "coefficients": {
+        "carbon_steel": "6.5 x 10^-6 in/in/F (or approximately 0.78 inches per 100 feet per 100F)",
+        "stainless_steel_304_316": "9.6 x 10^-6 in/in/F (approximately 1.15 inches per 100 feet per 100F)",
+        "chrome_moly_2_25Cr": "7.1 x 10^-6 in/in/F (approximately 0.85 inches per 100 feet per 100F)",
+        "duplex_stainless": "7.2 x 10^-6 in/in/F"
+      },
+      "quick_reference": {
+        "carbon_steel_growth": {
+          "per_100ft_per_100F": "0.78 inches",
+          "100ft_at_300F_rise": "2.34 inches",
+          "100ft_at_500F_rise": "3.90 inches",
+          "100ft_at_700F_rise": "5.46 inches"
+        },
+        "stainless_steel_growth": {
+          "per_100ft_per_100F": "1.15 inches",
+          "100ft_at_300F_rise": "3.45 inches",
+          "100ft_at_500F_rise": "5.75 inches"
+        }
+      },
+      "practical_use": [
+        "Determines expansion loop size needed",
+        "Determines spring hanger travel range",
+        "Determines pipe guide and anchor spacing",
+        "Determines cold-spring offset for equipment nozzle alignment"
+      ]
+    },
+    "pipe_takeoff_basics": {
+      "fitting_takeout_dimensions": {
+        "explanation": "When calculating cut length, subtract fitting takeout from center-to-center dimension. Takeout is measured from fitting center (or end of fitting face) to the weld end.",
+        "90_degree_long_radius_elbow": {
+          "formula": "Takeout = 1.5 x Nominal Pipe Size (for standard long-radius elbows)",
+          "2_inch": "3 inches",
+          "3_inch": "4.5 inches",
+          "4_inch": "6 inches",
+          "6_inch": "9 inches",
+          "8_inch": "12 inches",
+          "10_inch": "15 inches",
+          "12_inch": "18 inches",
+          "16_inch": "24 inches",
+          "20_inch": "30 inches",
+          "24_inch": "36 inches"
+        },
+        "90_degree_short_radius_elbow": {
+          "formula": "Takeout = Nominal Pipe Size",
+          "example_4_inch": "4 inches"
+        },
+        "45_degree_elbow": {
+          "formula": "Takeout = 0.625 x Nominal Pipe Size (approximately)",
+          "2_inch": "1.25 inches",
+          "4_inch": "2.5 inches",
+          "6_inch": "3.75 inches",
+          "8_inch": "5 inches",
+          "12_inch": "7.5 inches"
+        },
+        "tee_run": "Takeout from center of tee to each run end. Equals fitting catalog dimension.",
+        "tee_branch": "Takeout from center of tee to branch end."
+      },
+      "weld_shrinkage_allowance": {
+        "butt_weld": "Allow 1/16 to 1/8 inch per weld for shrinkage during welding",
+        "note": "Add this to cut length — weld shrinks the overall pipe length slightly"
+      },
+      "cut_length_formula": "Cut Length = Center-to-Center dimension - Fitting Takeout(s) - Root Gap(s) + Weld Shrinkage Allowance(s)"
+    },
+    "pipe_weight_per_foot_CS": {
+      "formula": "Weight (lbs/ft) = 10.69 x (OD - wall thickness) x wall thickness",
+      "common_values_lbs_per_ft": {
+        "1_inch_SCH_40": 1.68,
+        "1_5_inch_SCH_40": 2.72,
+        "2_inch_SCH_40": 3.65,
+        "2_inch_SCH_80": 5.02,
+        "3_inch_SCH_40": 7.58,
+        "4_inch_SCH_40": 10.79,
+        "4_inch_SCH_80": 14.98,
+        "6_inch_SCH_40": 18.97,
+        "6_inch_SCH_80": 28.57,
+        "8_inch_SCH_40": 28.55,
+        "8_inch_SCH_80": 43.39,
+        "10_inch_SCH_40": 40.48,
+        "12_inch_STD": 49.56,
+        "14_inch_STD": 54.57,
+        "16_inch_STD": 62.58,
+        "18_inch_STD": 70.59,
+        "20_inch_STD": 78.60,
+        "24_inch_STD": 94.62,
+        "30_inch_STD": 118.65,
+        "36_inch_STD": 142.68
+      },
+      "for_stainless": "Multiply carbon steel weight by 1.015 (stainless is about 1.5% heavier — negligible difference for field work)",
+      "water_filled_add": "Add water weight = 0.3405 x ID^2 (lbs per foot, where ID in inches)"
+    }
+  }
+}

@@ -1,0 +1,251 @@
+{
+  "category": "pipefitting_quality_inspection",
+  "description": "Weld inspection methods, fit-up tolerances, NDE acceptance criteria, documentation, and common weld defects for pipe fitting QC",
+  "weld_inspection_methods": {
+    "visual_inspection_VT": {
+      "when": "100% of ALL welds — the first and most important inspection",
+      "what_to_check": {
+        "root_pass": ["Full penetration (no lack of root penetration)", "No root concavity exceeding limits", "No burn-through", "Uniform root reinforcement (not excessive)"],
+        "completed_weld": ["Weld profile — flush to slightly convex for butt welds, proper size for fillets", "No cracks (transverse or longitudinal)", "No undercut (max 1/32 inch for pressure piping)", "No porosity on surface", "No overlap (cold lap)", "No arc strikes on base metal", "Proper tie-in at start/stop locations", "Weld properly cleaned — all slag removed", "Weld width covers the groove fully", "No excessive reinforcement (crown) — typically max 1/16 to 3/32 inch"]
+      },
+      "tools": ["Good lighting (minimum 50 foot-candles, 100 fc preferred)", "Magnifying lens (10x)", "Weld gauges (hi-lo gauge, fillet gauge, reinforcement gauge, undercut gauge)", "Flashlight", "Mirror for internal inspection", "Borescope for internal inspection of small bore welds"]
+    },
+    "liquid_penetrant_testing_PT": {
+      "also_called": "Dye penetrant, LPI, LPT",
+      "method": "Apply penetrant to surface, allow dwell time, remove excess, apply developer, inspect for indications (bleed-back shows defects)",
+      "detects": "Surface-breaking defects only — cracks, porosity, lack of fusion at surface, laps",
+      "does_NOT_detect": "Subsurface defects (buried porosity, lack of fusion below surface, slag inclusions)",
+      "steps": [
+        "1. Clean surface — remove all paint, scale, slag, oil, grease. Wire brush and solvent clean.",
+        "2. Apply penetrant (red visible or fluorescent) — spray or brush evenly over test area",
+        "3. Dwell time — 10-30 minutes typical (longer for tight cracks in stainless). Minimum per procedure.",
+        "4. Remove excess penetrant — wipe with lint-free cloth dampened with cleaner. Do NOT spray cleaner directly on surface (washes penetrant out of defects).",
+        "5. Apply developer — thin even coat. White powder (dry developer) or spray.",
+        "6. Inspect after minimum development time (10-30 minutes) — look for red (or fluorescent) indications bleeding through developer",
+        "7. Evaluate indications — linear, rounded, or relevant per acceptance criteria",
+        "8. Clean surface after inspection"
+      ],
+      "temperature_limits": "Penetrant materials rated 40F to 125F standard. Special materials for high/low temp.",
+      "when_used": "Socket welds, attachment welds, nozzle welds, branch connections, areas where RT is impractical, stainless steel welds, on top of root pass before fill (some specs), final surface of any weld per ITP",
+      "acceptance_per_ASME_B31_3": {
+        "no_cracks": "NO cracks — any crack is rejectable regardless of size",
+        "linear_indications": "Max 1/16 inch for thickness under 3/4 inch, max 3/32 inch for thickness 3/4 inch and over",
+        "rounded_indications": "Max 3/16 inch or 1/4T (whichever is less)",
+        "four_or_more": "4 or more indications in a line separated by less than 1/16 inch edge-to-edge = rejectable"
+      }
+    },
+    "magnetic_particle_testing_MT": {
+      "also_called": "Mag particle, MPI, MT",
+      "method": "Magnetize area, apply iron particles (dry powder or wet fluorescent) — particles cluster at defects that interrupt magnetic field",
+      "detects": "Surface and NEAR-surface defects — cracks, lack of fusion, inclusions close to surface",
+      "limitation": "Only works on ferromagnetic materials (carbon steel, chrome-moly). Does NOT work on stainless steel, aluminum, or non-ferrous metals. For stainless, use PT.",
+      "methods": {
+        "yoke": "Electromagnetic yoke — most common field method. Portable, no risk of arc strike.",
+        "prods": "Direct current through prods — RISK OF ARC STRIKES. Many project specs prohibit prods on pressure piping.",
+        "coil": "Wrap coil around pipe — good for circumferential welds"
+      },
+      "steps": [
+        "1. Clean surface — remove slag, scale, paint. Must be clean and dry.",
+        "2. Apply magnetizing force (yoke or other method)",
+        "3. Apply magnetic particles while magnetized — wet fluorescent (UV light needed) or dry visible (use in white light)",
+        "4. Inspect for indications — particles accumulate at defects",
+        "5. Evaluate indications per acceptance criteria",
+        "6. Demagnetize if required (critical for equipment that will be near instruments or for materials going into service where residual magnetism causes problems)"
+      ],
+      "acceptance_per_ASME_B31_3": "Same as PT criteria — no cracks, linear and rounded indication limits apply"
+    },
+    "radiographic_testing_RT": {
+      "also_called": "X-ray, gamma ray, radiography",
+      "method": "Radiation source (X-ray tube or gamma source like Ir-192, Co-60) on one side of weld, film or digital detector on other side. Radiation passes through weld — defects show as density changes on film.",
+      "detects": "Volumetric defects — porosity, slag inclusions, lack of fusion, incomplete penetration, cracks (if oriented properly)",
+      "limitation": "Planar defects (cracks, lack of fusion) oriented parallel to radiation beam may be missed. Cannot inspect fillet welds effectively. Cannot inspect socket welds.",
+      "safety": {
+        "radiation": "EXTREMELY DANGEROUS — radiation exposure can cause cancer and death. ONLY qualified radiographers handle sources.",
+        "exclusion_zone": "Rope off area with radiation warning signs and flashing lights. Typically 50-150 ft radius depending on source and setup.",
+        "schedule": "Often done on night shift or off-hours to minimize personnel exposure. Swing/night shift RT = coordinate with all trades.",
+        "badges": "All personnel in potential exposure area must wear dosimeters/film badges.",
+        "if_you_see_source": "If you see an unshielded gamma source (small metal cylinder, usually on cable or guide tube) — LEAVE THE AREA IMMEDIATELY and notify radiation safety."
+      },
+      "film_quality": {
+        "IQI_penetrameter": "Image Quality Indicator placed on source side — must be visible on film to verify technique quality",
+        "density": "Film density 1.8-4.0 for adequate reading (2.0-3.5 preferred)"
+      },
+      "acceptance_per_ASME_B31_3_Table_341_3_2": {
+        "slag_inclusions": {
+          "elongated": "Max length: Lesser of 1/3T or 3/4 inch for T up to 3/4 inch. Lesser of 1/3T or 2 inches for T over 3/4 inch.",
+          "isolated": "Max width 2/3T or 3/4 inch whichever is less"
+        },
+        "porosity": {
+          "individual_pore": "Max size: Lesser of 1/4T or 1/16 inch for T under 1/4 inch. 1/4T or 3/16 inch for T 1/4 to 3/4 inch.",
+          "cluster": "Total area of porosity in any 6-inch length not to exceed 1% of area",
+          "distribution": "Per Table in B31.3 — depends on wall thickness"
+        },
+        "incomplete_penetration": {
+          "IP_without_concavity": "Permitted up to limits based on thickness and aggregate length per Table",
+          "IP_with_concavity": "Rejectable if greater than specified limits"
+        },
+        "cracks": "NO cracks permitted — any crack visible on RT is rejectable",
+        "lack_of_fusion": "Generally rejectable unless very small and within specific limits per code"
+      }
+    },
+    "ultrasonic_testing_UT": {
+      "also_called": "UT, ultrasonic, shear wave",
+      "method": "Sound waves transmitted into weld — reflections from defects displayed on screen. Operator interprets signals to identify defect type, size, and location.",
+      "detects": "EXCELLENT for planar defects — cracks, lack of fusion. Also detects porosity, slag inclusions.",
+      "advantages_over_RT": [
+        "Detects planar (crack-like) defects better than RT",
+        "No radiation hazard — can be done while other trades work nearby",
+        "Immediate results (no film processing)",
+        "Can determine depth and through-wall extent of defects",
+        "Works on thick sections where RT is impractical"
+      ],
+      "limitations": [
+        "Highly operator dependent — requires skilled technician",
+        "Difficult on thin wall (under 5/16 inch for shear wave)",
+        "Difficult on coarse-grained materials (some castings, austenitic stainless welds)",
+        "Documentation is less intuitive than RT film (no permanent picture of defect)",
+        "TOFD and phased array methods address some limitations but require more advanced equipment"
+      ],
+      "advanced_methods": {
+        "TOFD": "Time of Flight Diffraction — uses diffracted signals for sizing. More accurate crack sizing than conventional UT.",
+        "phased_array": "Multiple element transducer — can sweep angles electronically. Faster scanning, better coverage, produces image (S-scan).",
+        "AUT": "Automated UT — mechanized scanning for consistent results. Common on pipeline girth welds as alternative to RT."
+      },
+      "acceptance": "Per ASME B31.3 Table 344.6.2.1 or project specification — based on indication length and amplitude relative to reference reflectors"
+    }
+  },
+  "fitup_tolerances_summary": {
+    "butt_welds_ASME_B31_3": {
+      "internal_misalignment_hi_lo": {
+        "equal_wall": "1/16 inch maximum",
+        "unequal_wall": "Thinner wall must not be less than thicker wall minus 1/16 inch (may need to taper thicker pipe 30 degrees)",
+        "project_spec_often": "1/32 inch for critical service (chrome-moly, stainless high integrity, lethal service)"
+      },
+      "root_gap": "Per WPS — typically 1/16 to 3/32 inch for GTAW root, 3/32 to 1/8 inch for SMAW root, 0 for consumable insert",
+      "out_of_round": "Less than 1% of pipe OD at weld joint"
+    },
+    "socket_welds": {
+      "gap": "1/16 inch between pipe end and socket bottom — MANDATORY. Prevents stress cracking from thermal cycling.",
+      "fillet_size": "Minimum equal to wall thickness of pipe or fitting socket, whichever is thinner. Often specified as 1.09x Tn minimum.",
+      "passes": "Minimum 2 passes per ASME B31.3 (B31.1 requires 2 passes as well)"
+    },
+    "branch_connections": {
+      "set_on": "Branch pipe sets ON header — no protrusion through header wall (unless reinforced set-through per drawing)",
+      "full_penetration": "Most project specs require full penetration groove weld at branch-to-header connection",
+      "contour": "Weld profile must have smooth transition to base metal — no sharp notches"
+    },
+    "flange_alignment": {
+      "parallel": "1/16 inch per foot of flange OD maximum gap variation around circumference",
+      "rotational": "1/8 inch bolt hole offset maximum",
+      "lateral_offset": "1/16 inch maximum",
+      "perpendicular_to_pipe": "Flange face must be square to pipe centerline — check with straightedge on face and level on pipe"
+    }
+  },
+  "documentation_requirements": {
+    "weld_map": "Shows location and joint number of every weld in the system. Traceable to welder, WPS, NDE reports, and MTRs.",
+    "welder_qualification_record": "WPQ per ASME IX on file for every welder. Must cover the process, position, material P-number, filler metal F-number, and thickness range being welded.",
+    "WPS": "Welding Procedure Specification on file for every joint type. Must be qualified by PQR.",
+    "MTR_CMTR": "Material Test Report / Certified MTR for every heat of material (pipe, fittings, flanges, bolts, gaskets where required). Traces material to mill/manufacturer.",
+    "NDE_reports": {
+      "RT": "Film/digital images stored, reader sheet documenting each weld examined, acceptance/rejection, technician certification",
+      "UT": "Scan data, calibration records, indication evaluation, technician certification",
+      "MT_PT": "Technique used, acceptance/rejection, technician certification",
+      "VT": "Inspection report with acceptance/rejection, inspector certification"
+    },
+    "pressure_test_records": {
+      "contents": ["System/line number", "Test boundaries", "Blind list", "Test pressure and design pressure", "Test medium and temperature", "Gauge calibration certificates", "Start time and end time", "Pressure readings during hold", "Leak check results", "Witness signatures (contractor QC, owner inspector, third party if required)"]
+    },
+    "bolt_torque_records": {
+      "contents": ["Joint number/tag", "Bolt specification", "Lubricant used", "Target torque value", "Torque tool ID and calibration date", "Pass sequence completed", "Technician signature", "Date"]
+    },
+    "PMI_records": {
+      "contents": ["Item tested (weld, pipe, fitting, flange, bolt)", "Material specified", "PMI result (alloy composition)", "Pass/fail", "Instrument ID and calibration", "Technician and date"]
+    }
+  },
+  "common_weld_defects_and_causes": {
+    "porosity": {
+      "appearance": "Gas pockets in weld — round voids visible on RT or cross-section",
+      "causes": [
+        "Contamination — oil, grease, moisture, paint on base metal or filler",
+        "Wet or damaged electrodes (especially 7018 not kept in oven)",
+        "Wind blowing away shielding gas (GTAW, GMAW, FCAW-G)",
+        "Insufficient gas flow or gas contamination",
+        "Excessive arc length (SMAW)",
+        "Moisture in purge gas lines",
+        "Rusty filler wire"
+      ],
+      "prevention": "Clean thoroughly before welding. Keep electrodes dry. Protect from wind. Proper gas flow. Clean filler wire."
+    },
+    "slag_inclusions": {
+      "appearance": "Non-metallic material trapped in weld — shows as dark irregular shapes on RT",
+      "causes": [
+        "Inadequate cleaning between passes — not removing all slag before next pass",
+        "Too narrow a groove — slag trapped in tight corners",
+        "Welding over undercut without cleaning — slag caught in undercut",
+        "Improper weaving technique — slag rolls ahead of puddle",
+        "Welding too cold — slag doesn't float to surface"
+      ],
+      "prevention": "Thorough inter-pass cleaning (grinder + wire brush). Proper groove geometry. Adequate heat input."
+    },
+    "lack_of_fusion_LOF": {
+      "appearance": "Weld metal not fused to base metal or previous pass — planar defect, very dangerous",
+      "causes": [
+        "Insufficient heat input — too fast travel speed or too low amperage",
+        "Improper electrode angle — not directing arc into sidewall",
+        "Cold base metal — need preheat",
+        "Oxide on joint surface (especially stainless and aluminum)",
+        "Groove too narrow for electrode access"
+      ],
+      "prevention": "Proper amperage and travel speed. Correct electrode angle. Adequate preheat. Clean surfaces. Proper groove design."
+    },
+    "incomplete_penetration_IP": {
+      "appearance": "Root of weld not fully penetrated through joint — visible on internal surface or RT",
+      "causes": [
+        "Root gap too tight — electrode can't reach root",
+        "Root face too thick — need thinner land or larger gap",
+        "Insufficient heat at root — low amperage or fast travel",
+        "Hi-lo misalignment blocking root access",
+        "Electrode too large for root gap"
+      ],
+      "prevention": "Proper root gap and root face per WPS. Correct amperage. Good fit-up (hi-lo within tolerance). Correct electrode size."
+    },
+    "cracks": {
+      "types": {
+        "hot_cracks": "Occur during solidification — centerline cracking from high sulfur/phosphorus, crater cracks from not filling crater",
+        "cold_cracks_hydrogen": "Occur hours to days after welding — caused by hydrogen, high restraint, and susceptible microstructure. THE most dangerous defect.",
+        "PWHT_reheat_cracks": "Occur during PWHT — more common in thick-section chrome-moly and some nickel alloys"
+      },
+      "causes_cold_cracking": [
+        "Hydrogen from moisture in electrodes (7018 not kept in oven — #1 cause)",
+        "Insufficient preheat",
+        "Cooling too fast after welding (high restraint, cold weather, wind)",
+        "Susceptible microstructure (high-carbon steel, chrome-moly without PWHT)",
+        "High residual stress (thick sections, rigid joints)"
+      ],
+      "prevention": "Keep electrodes dry (oven!). Preheat per WPS. Maintain interpass temperature. Slow cool (preheat blankets after welding). PWHT when required. Use low-hydrogen processes."
+    },
+    "undercut": {
+      "appearance": "Groove melted into base metal along weld toe — reduces wall thickness",
+      "causes": [
+        "Excessive amperage",
+        "Too long an arc",
+        "Incorrect electrode angle",
+        "Travel speed too fast",
+        "Excessive weaving"
+      ],
+      "acceptance": "Max 1/32 inch depth for pressure piping (some specs less). Sharp undercut worse than rounded.",
+      "prevention": "Correct amperage. Proper technique. Slow down at toes of weld."
+    },
+    "burn_through": {
+      "appearance": "Hole melted through root of weld — excessive penetration",
+      "causes": ["Too much heat (high amperage)", "Too slow travel speed", "Root gap too wide", "Root face too thin", "Thin-wall pipe"],
+      "prevention": "Reduce amperage. Increase travel speed. Proper fit-up. Correct root face dimension."
+    },
+    "arc_strikes": {
+      "description": "Inadvertent arc contact on base metal outside the weld zone — creates hard spot and potential crack initiation",
+      "problem": "Creates untempered martensite on alloy steels. Stress concentration and corrosion initiation site.",
+      "code_requirement": "Arc strikes on pressure piping must be ground smooth and examined by MT or PT. Some specs require grinding to remove all affected material.",
+      "prevention": "Use proper technique. Strike arc in the groove only. Use run-off tabs for practice starts."
+    }
+  }
+}

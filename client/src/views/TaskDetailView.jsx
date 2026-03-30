@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import VoiceRefinePanel from '../components/VoiceRefinePanel.jsx';
 
-const statusColors = { pending: '#F99440', in_progress: '#48484A', completed: '#4CAF50', cancelled: '#999' };
+const statusColors = { pending: '#F99440', in_progress: '#48484A', completed: '#4CAF50', cancelled: '#48484A' };
 const statusLabels = { pending: 'Pending', in_progress: 'In Progress', completed: 'Completed', cancelled: 'Cancelled' };
 const priorityColors = { critical: '#C45500', high: '#F99440' };
 
-export default function TaskDetailView({ user, taskId, goBack, onNavigate, activeTrade }) {
+export default function TaskDetailView({ user, taskId, goBack, onNavigate, activeTrade, readOnly }) {
   const { t } = useTranslation();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +30,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
   const loadTask = async () => {
     try {
       const res = await fetch(`/api/tasks/${taskId}`);
+      if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();
       setTask(data);
     } catch (e) {
@@ -40,11 +41,12 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
 
   const updateStatus = async (status) => {
     try {
-      await fetch(`/api/tasks/${taskId}`, {
+      const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
       loadTask();
     } catch (e) {
       console.error('Failed to update status:', e);
@@ -59,10 +61,11 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
       for (const file of files) {
         const formData = new FormData();
         formData.append('photo', file);
-        await fetch(`/api/tasks/${taskId}/days/${today}/photos`, {
+        const res = await fetch(`/api/tasks/${taskId}/days/${today}/photos`, {
           method: 'POST',
           body: formData,
         });
+        if (!res.ok) throw new Error(`Upload failed ${res.status}`);
       }
       loadTask();
     } catch (e) {
@@ -76,11 +79,12 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
     if (!noteText.trim()) return;
     setSavingNote(true);
     try {
-      await fetch(`/api/tasks/${taskId}/note`, {
+      const res = await fetch(`/api/tasks/${taskId}/note`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note: noteText.trim(), date: today, person_id: personId }),
       });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
       setNoteText('');
       setShowAddNote(false);
       loadTask();
@@ -94,6 +98,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
     setLoadingJSAs(true);
     try {
       const res = await fetch(`/api/jsa/person/${personId}/today?date=${today}`);
+      if (!res.ok) { setMyTodayJSAs([]); return; }
       const jsas = await res.json();
       setMyTodayJSAs(Array.isArray(jsas) ? jsas : []);
     } catch (e) { console.error('Failed to load JSAs:', e); }
@@ -103,11 +108,12 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
   const linkJsaToTask = async (jsaId) => {
     setLinkingJsa(true);
     try {
-      await fetch(`/api/tasks/${taskId}/days/${today}/link-jsa`, {
+      const res = await fetch(`/api/tasks/${taskId}/days/${today}/link-jsa`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jsa_id: jsaId }),
       });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
       setShowJsaOptions(false);
       setMyTodayJSAs([]);
       loadTask();
@@ -167,7 +173,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
             previous_updates: recentUpdates,
           }}
           onAccept={async (fields) => {
-            await fetch(`/api/tasks/${taskId}/days/${today}/shift`, {
+            const res = await fetch(`/api/tasks/${taskId}/days/${today}/shift`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -177,6 +183,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
                 hours_worked: fields.hours_worked,
               }),
             });
+            if (!res.ok) console.error('Shift update failed:', res.status);
             setShowShiftUpdate(false);
             loadTask();
           }}
@@ -209,7 +216,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <span style={{
           padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700,
-          color: 'white', background: statusColors[task.status] || '#999',
+          color: 'white', background: statusColors[task.status] || '#48484A',
         }}>
           {statusLabels[task.status] || task.status}
         </span>
@@ -229,7 +236,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
           </>
         )}
         {task.status === 'completed' && (
-          <button onClick={() => updateStatus('in_progress')} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', background: '#999', color: 'white' }}>
+          <button onClick={() => updateStatus('in_progress')} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', background: '#48484A', color: 'white' }}>
             Reopen
           </button>
         )}
@@ -283,7 +290,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
               <span style={{
                 ...styles.infoValue,
                 color: 'white',
-                background: priorityColors[task.priority] || '#999',
+                background: priorityColors[task.priority] || '#48484A',
                 padding: '2px 10px',
                 borderRadius: '12px',
                 fontSize: '12px',
@@ -452,7 +459,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
                 placeholder="Add a note..."
                 rows={2}
                 style={{
-                  flex: 1, padding: '10px', border: '2px solid #ccc', borderRadius: '8px',
+                  flex: 1, padding: '10px', border: '2px solid #48484A', borderRadius: '8px',
                   fontSize: '14px', resize: 'none', fontFamily: 'inherit', color: '#48484A',
                 }}
               />
@@ -471,7 +478,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
                 <button
                   onClick={() => { setShowAddNote(false); setNoteText(''); }}
                   style={{
-                    background: 'white', color: 'var(--charcoal)', border: '1px solid #ccc', borderRadius: '8px',
+                    background: 'white', color: 'var(--charcoal)', border: '1px solid #48484A', borderRadius: '8px',
                     padding: '6px 10px', fontSize: '12px', cursor: 'pointer',
                   }}
                 >
@@ -550,7 +557,7 @@ const styles = {
   },
   entryRow: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '12px 0', borderTop: '1px solid #eee',
+    padding: '12px 0', borderTop: '1px solid rgba(72,72,74,0.15)',
   },
   actionBtn: {
     border: 'none', borderRadius: '10px', padding: '12px 24px',

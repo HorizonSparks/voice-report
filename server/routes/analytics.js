@@ -17,8 +17,8 @@ router.post('/events', requireAuth, async (req, res) => {
 // GET /dashboard — admin only
 router.get('/dashboard', requireAdmin, async (req, res) => {
   try {
-    const { from, to, person_id } = req.query;
-    res.json(await analytics.getDashboard({ from, to, person_id }));
+    const { from, to, person_id, company_id } = req.query;
+    res.json(await analytics.getDashboard({ from, to, person_id, company_id }));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

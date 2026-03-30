@@ -1,0 +1,369 @@
+{
+  "category": "pipefitting_procedures",
+  "description": "Step-by-step craft procedures for pipe fitting, structural steel erection, and equipment setting",
+  "pipe_fitup_and_alignment": {
+    "steps": [
+      "1. Verify isometric drawing (ISO) is current revision — check AFC stamp",
+      "2. Check bill of materials — confirm all pipe, fittings, flanges, gaskets, bolts on hand",
+      "3. Verify material markings match MTR/CMTR and isometric requirements (size, schedule, material grade, heat number)",
+      "4. Cut pipe to length — add root gap allowance for each butt weld (typically 1/16 to 3/32 inch per weld)",
+      "5. Bevel pipe ends per WPS — 37.5 degree bevel is standard (75 degree included angle) with 1/16 inch root face",
+      "6. Clean bevel and 1 inch back from each side — remove oil, scale, paint, galvanizing",
+      "7. Fit pipe using alignment clamps (external or internal depending on size and access)",
+      "8. Check root gap with gap gauge — must match WPS (typically 1/16 to 3/32 for GTAW root, 3/32 to 1/8 for SMAW root)",
+      "9. Check hi-lo (internal misalignment) — maximum 1/16 inch per B31.3, less for some project specs",
+      "10. Level and plumb check — use torpedo level on pipe, measure from established reference points",
+      "11. Tack weld — minimum 4 tacks equally spaced for pipe over 6 inch diameter. Use qualified WPS and qualified welder.",
+      "12. Remove alignment clamp after tacking (for external clamp). For internal lineup clamp, remove per procedure.",
+      "13. Inspect tacks before welding — no cracks, proper size, ground to feather edges if incorporated into weld",
+      "14. Mark weld joint with welder ID stamp (downstream side or per project procedure)"
+    ],
+    "alignment_methods": {
+      "pipe_to_pipe": "External chain clamp or strap clamp for same-size pipe. Jack screws for alignment. Wedges NOT recommended.",
+      "pipe_to_fitting": "Fit-up clamp or dogs (tack-welded alignment pieces — must be ground off and areas inspected after removal)",
+      "pipe_to_flange": "Flange must be perpendicular to pipe centerline. Check with straightedge and framing square. Flange bolt holes must straddle centerline (not sit on centerline) unless drawing says otherwise.",
+      "large_bore_over_24_inch": "Internal lineup clamp preferred. Hi-lo critical on large bore — small misalignment becomes large at weld root.",
+      "small_bore_under_2_inch": "Socket weld fittings common. Pipe must bottom out in socket, then back off 1/16 inch (gap prevents stress cracking). Use witness marks."
+    },
+    "common_mistakes": [
+      "Not checking drawing revision — welding to superseded drawing = rework",
+      "Wrong root gap — too tight means lack of penetration, too wide means burn-through or concavity",
+      "Hi-lo over tolerance — even 1/32 inch matters on high-integrity welds",
+      "Flange bolt holes not straddling centerline — entire spool must be redone",
+      "Not backing off socket weld 1/16 inch — thermal stress cracking in service",
+      "Forcing pipe into alignment with come-alongs — spring-loaded fit-up causes cracking and stress",
+      "Not cleaning bevels — contamination causes porosity and lack of fusion",
+      "Tack welds by unqualified welder — code violation, all tacks must be removed"
+    ]
+  },
+  "tack_welding": {
+    "requirements": [
+      "Tacker must be qualified welder using qualified WPS",
+      "Preheat per WPS before tacking (same as production welding)",
+      "Minimum tack length: 1/2 inch for pipe under 2 inch, 1 inch for pipe 2-12 inch, 2 inches for pipe over 12 inch",
+      "Number of tacks: minimum 3 for pipe under 6 inch, minimum 4 for pipe 6-24 inch, 6-8 for pipe over 24 inch",
+      "Space tacks equally around circumference",
+      "Tacks must be free of defects — inspect visually before production welding",
+      "If tacks will be incorporated: grind start and stop to feather edge",
+      "If tacks will be removed: remove completely and inspect area before welding"
+    ]
+  },
+  "flange_bolt_up": {
+    "steps": [
+      "1. Inspect flange faces — no damage, corrosion, scoring across sealing surface",
+      "2. Verify flange rating matches spec (check flange markings: 150, 300, 600, 900, 1500, 2500)",
+      "3. Verify gasket material and type match spec and flange type (RF gets spiral wound, RTJ gets ring gasket)",
+      "4. Clean flange faces thoroughly — wire brush radial serrations, remove old gasket material",
+      "5. Check flange alignment — parallel within 1/16 inch per foot of flange diameter, bolt holes aligned",
+      "6. Insert gasket — center properly. DO NOT use gasket paste/sealant unless specified.",
+      "7. Insert all bolts — nuts hand-tight. Verify correct bolt length (stud extends past nut by 1-3 threads minimum)",
+      "8. Number the bolts on the flange for tracking during torque sequence",
+      "9. Torque in star/cross pattern — 4 passes minimum:",
+      "   Pass 1: 30% of target torque in star pattern",
+      "   Pass 2: 60% of target torque in star pattern",
+      "   Pass 3: 100% of target torque in star pattern",
+      "   Pass 4: 100% of target torque going CLOCKWISE around the flange (rotational pass)",
+      "10. Apply witness marks (paint line across nut and flange) to verify no bolt relaxation",
+      "11. Document: joint number, torque value, gasket type, bolt spec, date, fitter/bolter ID"
+    ],
+    "torque_values_ft_lbs": {
+      "B7_studs_lubricated": {
+        "note": "These are APPROXIMATE values for B7 studs with anti-seize lubricant. ALWAYS use project-specified torque values when provided. Values vary significantly with lubricant type.",
+        "1_2_inch": 30,
+        "5_8_inch": 60,
+        "3_4_inch": 110,
+        "7_8_inch": 175,
+        "1_inch": 260,
+        "1_1_8_inch": 370,
+        "1_1_4_inch": 520,
+        "1_3_8_inch": 700,
+        "1_1_2_inch": 920,
+        "1_5_8_inch": 1165,
+        "1_3_4_inch": 1460,
+        "1_7_8_inch": 1810,
+        "2_inch": 2195
+      },
+      "note_on_B8_stainless_bolts": "B8 (304SS) and B8M (316SS) bolts have MUCH lower torque values than B7. Never use B7 torque values for B8 bolts. B8 Class 1 (solution annealed) is very low strength — commonly specified where process requires stainless.",
+      "note_on_L7_bolts": "B7M and L7 bolts for low-temperature service. Similar torque to B7.",
+      "anti_seize": "CRITICAL: Always use anti-seize/lubricant as specified. Dry bolts require 50-70% MORE torque for same clamp load. Wrong lubricant changes everything.",
+      "hydraulic_tensioning": "Flanges over 2 inch stud diameter often use hydraulic bolt tensioners instead of torque wrenches. Target tension (not torque) is specified."
+    },
+    "gasket_selection": {
+      "spiral_wound_304_graphite": "Standard for raised face flanges in hydrocarbon service. 304SS windings with flexible graphite filler. Inner ring prevents buckling, outer ring centers gasket.",
+      "spiral_wound_316_graphite": "For corrosive services — acids, chlorides. 316SS windings.",
+      "spiral_wound_321_graphite": "High temperature service where 304 sensitizes",
+      "ring_joint_RTJ": "Metal ring for RTJ flanges — used in high pressure (typically 600# and above, always on 900#, 1500#, 2500#). Octagonal preferred over oval (better sealing). Material: soft iron, 304SS, 316SS as specified.",
+      "sheet_PTFE": "Low pressure, non-critical, chemical service. Not for hydrocarbons in refinery (fire risk — PTFE creeps).",
+      "corrugated_metal_graphite": "Heat exchanger flanges — conforms to wide sealing surfaces",
+      "kammprofile": "Premium gasket — corrugated metal core with graphite facing. Excellent for critical service, high bolt-load-to-gasket stress.",
+      "common_mistakes": [
+        "Wrong gasket for flange type (spiral wound on RTJ flange = LEAK)",
+        "Spiral wound without inner ring on RF flange = gasket can buckle into pipe bore",
+        "Old gasket left on face — always use NEW gasket, NEVER reuse",
+        "Gasket not centered — uneven compression = leak",
+        "Wrong material for service — check piping spec class"
+      ]
+    },
+    "flange_alignment_tolerances": {
+      "parallelism": "1/16 inch per foot of flange OD (1/32 inch per foot for high integrity)",
+      "rotational_alignment": "Bolt holes must be aligned — 1/8 inch max offset",
+      "gap": "Flange gap should be uniform and equal to gasket thickness + 1/16 to 1/8 inch for gasket insertion",
+      "offset": "Flange face offset (lateral): 1/16 inch maximum",
+      "do_NOT": "Never use bolts to pull flanges into alignment — this spring-loads the joint and causes leaks. Re-fit the spool."
+    }
+  },
+  "valve_installation": {
+    "steps": [
+      "1. Verify valve tag number matches line list / isometric",
+      "2. Verify valve rating, size, material, and type match specification",
+      "3. Inspect valve — no shipping damage, hand-operate to verify function, check seat seal",
+      "4. Remove shipping covers — inspect internals for debris",
+      "5. Verify flow direction arrow matches installation orientation",
+      "6. For gate and globe valves — install with stem vertical or above horizontal (never inverted unless specifically designed for it)",
+      "7. For check valves — verify flow direction, install per manufacturer orientation requirements",
+      "8. Support valve weight independently — do NOT hang pipe weight on valves (especially large valves)",
+      "9. Ensure valve handwheel/actuator is accessible for operation after insulation",
+      "10. For flanged valves — follow flange bolt-up procedure above",
+      "11. For butt-weld valves — protect internals during welding (remove soft seats, open gate/ball to protect seats from heat)",
+      "12. Leave valves in specified position for hydro test (typically open, check valves may need to be removed or bypassed)"
+    ],
+    "special_considerations": {
+      "ball_valves": "Support on BOTH sides — heavy. Align actuator before final bolt-up. Full-port vs reduced-port matters for flow.",
+      "globe_valves": "High pressure drop — install with pressure under disc (flow direction matters for valve operation and safety)",
+      "check_valves": "Swing check needs horizontal or angled run (never vertical down). Piston check can be vertical. Dual-plate check needs to be oriented properly (hinge pin horizontal).",
+      "butterfly_valves": "Disc must clear pipe bore — check gasket thickness doesn't protrude. Wafer style trapped between flanges.",
+      "control_valves": "Instrument connection — coordinate with instrument tech. Install with actuator UP. Allow space for maintenance access."
+    }
+  },
+  "expansion_joint_installation": {
+    "steps": [
+      "1. Review expansion joint spec and piping flexibility analysis",
+      "2. Do NOT remove shipping bars/restraints until ready to install — expansion joints are fragile",
+      "3. Verify cold set (pre-compression or pre-extension) matches engineering specification",
+      "4. Install with proper anchoring — main anchors on each side of expansion joint must resist full pressure thrust force",
+      "5. Install pipe guides per manufacturer spacing requirements — first guide within 4 pipe diameters, second guide within 14 pipe diameters",
+      "6. Do NOT rotate or torque the expansion joint during installation",
+      "7. For bellows type — protect from weld spatter, impact, and arc strike (cover with fire blanket during nearby welding)",
+      "8. Remove shipping bars ONLY after all anchors and guides are complete and piping is fully supported",
+      "9. Document installed length (cold position) for commissioning reference"
+    ],
+    "critical_notes": [
+      "NEVER use expansion joints to make up for pipe misalignment — they are NOT alignment devices",
+      "Main anchors must resist pressure thrust force — this can be thousands of pounds. Under-designed anchors = catastrophic failure.",
+      "Pipe guides prevent lateral movement and buckling — missing/wrong guides cause bellows failure",
+      "Expansion joints have VERY limited cycle life — overstressing shortens life dramatically"
+    ]
+  },
+  "pipe_support_hanger_installation": {
+    "types": {
+      "rigid_supports": {
+        "shoes": "Standard pipe rest. Weld to pipe, set on steel support. Common sizes: 3-inch, 6-inch, 12-inch high.",
+        "clamps": "U-bolts, band clamps, riser clamps. Do NOT over-tighten — allow thermal movement unless fixed point.",
+        "saddles": "For large bore pipe. Distribute weight over larger arc of pipe surface.",
+        "anchors": "Fixed points — weld to pipe AND support. Prevents ALL movement at that point. Per flexibility analysis.",
+        "guides": "Prevents lateral movement but allows axial movement. Spider guides, channel guides.",
+        "dummy_legs": "Welded support leg, typically on elbows. Carries pipe weight to structural steel or foundation."
+      },
+      "spring_supports": {
+        "variable_spring": "Most common spring hanger. Supports load that varies with thermal movement. MUST be set to cold load/position during installation.",
+        "constant_spring": "Load remains constant through travel range. Used where load variation must be minimized (turbine connections, critical equipment nozzles).",
+        "installation_steps": [
+          "1. Verify spring tag number matches support drawing",
+          "2. Verify cold load setting matches hanger schedule",
+          "3. Install with travel stop pin/shipping pin IN PLACE",
+          "4. Verify spring scale indicator reads at cold position mark",
+          "5. After hydro test — check that spring can support hydro load (water-filled pipe is heavier)",
+          "6. Remove travel stop pins ONLY when directed during commissioning/startup",
+          "7. After system reaches operating temperature — verify spring indicator at hot position mark",
+          "8. Document: hanger tag, cold setting, hot reading, travel observed"
+        ]
+      },
+      "snubbers": {
+        "purpose": "Dynamic restraints — allow slow thermal movement but resist rapid movement (seismic, water hammer, relief valve discharge)",
+        "types": ["Hydraulic snubbers", "Mechanical snubbers"],
+        "testing": "Must be stroke-tested per manufacturer requirements before installation"
+      }
+    },
+    "general_rules": [
+      "Support pipe per span tables — DO NOT exceed maximum pipe support spacing",
+      "Typical spans: 2-inch pipe = 10 ft, 4-inch = 14 ft, 6-inch = 17 ft, 8-inch = 19 ft, 12-inch = 23 ft, 16-inch = 27 ft, 24-inch = 32 ft (CS liquid service — check project tables for actual)",
+      "Support at EVERY change of direction (elbow, tee)",
+      "Support within 2 feet of every valve",
+      "Do NOT weld supports to alloy pipe without qualified WPS and preheat/PWHT as required",
+      "Insulation clearance — support must account for insulation thickness",
+      "Use pre-insulated pipe shoes on insulated lines to prevent heat bridges"
+    ]
+  },
+  "hydrostatic_testing_procedure": {
+    "steps": [
+      "1. Test package preparation:",
+      "   - Identify test boundaries on P&ID and isometric",
+      "   - Install test blinds at boundaries (rated for test pressure)",
+      "   - Remove or isolate relief devices, instruments, expansion joints, check valves as required",
+      "   - Verify ALL welds complete and NDE accepted",
+      "   - Verify ALL supports and spring hanger pins in place",
+      "   - Post test zone boundaries with signs and barricades",
+      "2. Fill system:",
+      "   - Connect test pump and fill line at LOW POINT",
+      "   - Open ALL high point vents",
+      "   - Fill slowly from bottom up — this displaces air upward",
+      "   - Close vents when SOLID water stream (no air bubbles) flows from each vent. Start with lowest vent, work up.",
+      "   - CRITICAL: All air MUST be removed. Trapped air is dangerous and gives false readings.",
+      "3. Pressure up:",
+      "   - Install calibrated test gauges (readable from outside barricade if possible, or remote digital gauge)",
+      "   - Pressure up to 25% of test pressure — hold and inspect",
+      "   - Pressure up to 50% of test pressure — hold and walk down all joints",
+      "   - Continue to test pressure in increments",
+      "   - If leak found: depressure completely, repair, restart sequence",
+      "4. Hold at test pressure:",
+      "   - Minimum 10 minutes at full test pressure (many projects require 4 hours for leak tightness)",
+      "   - Record pressure and temperature at start and end of hold",
+      "   - Pressure will vary with temperature — account for thermal effects (sun on pipe causes pressure rise)",
+      "   - Walk down ALL joints, welds, flanges — look for leaks, deformation, distortion",
+      "5. Document and release:",
+      "   - Record all data: pressures, temperatures, times, leaks found, repairs made",
+      "   - QC inspector and owner witness sign test report",
+      "   - Depressure slowly through drain valve",
+      "   - Remove test blinds and reinstall permanent blinds/spectacle blinds per P&ID",
+      "   - Drain and dry system as required (especially stainless — chloride stress cracking from trapped water)"
+    ]
+  },
+  "steam_tracing_installation": {
+    "steps": [
+      "1. Review steam tracing drawings — identify tracer size, attachment method, supply/return headers",
+      "2. Typical tracer: 1/2 inch or 3/4 inch copper or stainless steel tubing",
+      "3. Run tracer straight along bottom or side of process pipe — secure every 3-6 feet with wire ties or bands",
+      "4. At valves: wrap tracer around valve body (3-4 wraps typically)",
+      "5. At flanges: loop tracer around flange pair",
+      "6. At instruments: loop tracer to maintain temperature at process connection",
+      "7. Maintain continuous fall toward condensate return (1/4 inch per foot minimum)",
+      "8. Install steam traps at low points and end of each tracer circuit",
+      "9. Test tracer circuits before insulation — verify flow through each tracer, check for leaks",
+      "10. Document tracer circuits for commissioning — tag each supply valve and trap"
+    ],
+    "notes": [
+      "Aluminum heat transfer compound increases efficiency at contact points",
+      "Tracer must be installed BEFORE insulation crews arrive",
+      "Number one problem: dead legs and condensate pooling from improper slope — causes water hammer"
+    ]
+  },
+  "structural_steel_erection_sequence": {
+    "steps": [
+      "1. Pre-erection:",
+      "   - Verify anchor bolts/base plates installed, surveyed, and grouted (if pre-grouted)",
+      "   - Lay out steel delivery sequence to match erection plan",
+      "   - Inspect all members — straightness, connection holes, shop welds, paint",
+      "   - Verify bolt packages for each connection (number, size, grade)",
+      "2. Column erection:",
+      "   - Set columns on anchor bolts/base plates first — these establish the grid",
+      "   - Plumb columns using transit/theodolite — within 1:500 (L/500) plumbness tolerance per AISC",
+      "   - Temporarily brace columns with cable guys or temporary bracing",
+      "   - Tighten anchor bolt nuts, but allow for final plumbing adjustment",
+      "3. Primary beam erection:",
+      "   - Set beams between columns — establishes structural bays",
+      "   - Make connections (bolted or field-welded per design)",
+      "   - For high-strength bolts: snug-tight, then turn-of-nut or tension-indicating methods",
+      "4. Secondary framing:",
+      "   - Install bracing, girts, purlins, stair stringers",
+      "   - Permanent bracing must be installed as erection progresses — cannot leave unbraced bays",
+      "5. Decking/grating:",
+      "   - Install floor plate, grating, checker plate per drawings",
+      "   - Tack weld or clip grating per spec",
+      "   - Must provide safe walking surface for subsequent trades",
+      "6. Miscellaneous steel:",
+      "   - Handrails, toe plates, ladders, cages, platform supports",
+      "   - Pipe support steel — must be in place before piping can start",
+      "7. Field welding:",
+      "   - All field welds per AWS D1.1 or project specification",
+      "   - Inspect per ITP (Inspection and Test Plan)",
+      "8. Touch-up and final:",
+      "   - Touch up paint/fireproofing damage from erection",
+      "   - Final survey — verify dimensions, elevations, plumbness",
+      "   - Punch list and turnover"
+    ],
+    "bolt_tightening_methods": {
+      "snug_tight": "For common bolts and specified snug-tight connections. Defined as full effort of one ironworker with spud wrench.",
+      "turn_of_nut": "Snug tight first, then additional rotation: 1/3 turn for bolt length up to 4d, 1/2 turn for 4d-8d, 2/3 turn for 8d-12d. Mark with crayon before turning.",
+      "calibrated_wrench": "Torque wrench calibrated daily to achieve required tension",
+      "tension_indicating": "Direct tension indicating (DTI) washers — squeeze to specified gap, or tension-indicating bolts with splined tip that shears at target tension",
+      "bolt_grades": {
+        "A325": "120 ksi tensile, most common structural bolt. Replaced by F3125 Grade A325.",
+        "A490": "150 ksi tensile, heavy connections. Replaced by F3125 Grade A490. NEVER galvanize A490.",
+        "A307": "60 ksi tensile, secondary connections, handrails, grating clips"
+      }
+    },
+    "AISC_tolerances": {
+      "column_plumbness": "1/500 of height, max 1 inch total for multi-story",
+      "beam_sweep": "L/1000 or 1/4 inch, whichever is greater",
+      "beam_elevation": "+/- 3/8 inch from theoretical",
+      "column_base_elevation": "+/- 1/8 inch from theoretical",
+      "anchor_bolt_location": "+/- 1/8 inch from center of bolt group"
+    }
+  },
+  "equipment_setting_with_cranes": {
+    "steps": [
+      "1. Planning:",
+      "   - Get equipment weight from vendor data (include internals if shipped separate)",
+      "   - Add rigging weight (slings, shackles, spreader bars, trunnions)",
+      "   - Determine lift radius (center of crane rotation to center of gravity of load)",
+      "   - Select crane based on load chart capacity at required radius",
+      "   - For critical lifts (>75% capacity): develop written lift plan with engineer sign-off",
+      "2. Site preparation:",
+      "   - Verify ground bearing capacity for crane (mats required if insufficient)",
+      "   - Crane set-up area level within 1% slope",
+      "   - Outriggers fully extended and on proper pads/mats",
+      "   - Identify underground utilities — no outrigger loads on buried pipe/conduit",
+      "   - Verify clear swing path — check overhead obstructions, power lines",
+      "3. Foundation readiness:",
+      "   - Foundation survey complete — anchor bolts within tolerance",
+      "   - Grout pads poured and cured (if pre-grouted design)",
+      "   - Shim packs prepared to correct elevation",
+      "   - Foundation ready letter from civil/structural engineer",
+      "4. Rigging:",
+      "   - Select slings based on sling angle and load per leg",
+      "   - All rigging inspected (current color code tag)",
+      "   - Attach rigging per lift plan — rigging above center of gravity",
+      "   - Minimum 2 tag lines — positioned to control rotation and swing",
+      "   - Trial lift: lift 6-12 inches, hold, verify stability and balance",
+      "5. Set equipment:",
+      "   - Lift and swing to position — slow and controlled",
+      "   - Lower onto foundation — guide onto anchor bolts",
+      "   - Set equipment level using precision level — shim to tolerance per vendor (typically 0.002 inch per foot for rotating equipment, 1/8 inch per 10 feet for vessels)",
+      "   - Tighten anchor bolts to vendor specification",
+      "   - For rotating equipment: preliminary alignment before releasing crane",
+      "6. Post-set:",
+      "   - Remove rigging only after equipment secured",
+      "   - Document: set date, weight, crane used, final elevation, level readings",
+      "   - For rotating equipment: proceed to precision alignment",
+      "   - For vessels/columns: check plumbness and orientation (nozzles in correct position)"
+    ],
+    "common_equipment_weights": {
+      "note": "These are ROUGH estimates for planning. ALWAYS use actual vendor data for lift planning.",
+      "shell_and_tube_exchanger": {
+        "small_12x8_ft": "5,000 - 15,000 lbs",
+        "medium_20x10_ft": "20,000 - 50,000 lbs",
+        "large_40x12_ft": "60,000 - 150,000 lbs"
+      },
+      "pressure_vessels": {
+        "small_4ft_dia_x_10ft": "3,000 - 8,000 lbs",
+        "medium_8ft_dia_x_30ft": "25,000 - 60,000 lbs",
+        "large_12ft_dia_x_60ft": "80,000 - 200,000 lbs"
+      },
+      "columns_towers": {
+        "small_3ft_dia_x_40ft": "10,000 - 30,000 lbs",
+        "medium_6ft_dia_x_80ft": "50,000 - 150,000 lbs",
+        "large_12ft_dia_x_120ft": "200,000 - 600,000 lbs"
+      },
+      "pumps": {
+        "centrifugal_small": "500 - 2,000 lbs",
+        "centrifugal_medium": "3,000 - 10,000 lbs",
+        "large_API_pump": "10,000 - 40,000 lbs with baseplate and motor"
+      },
+      "compressors": {
+        "reciprocating_small": "10,000 - 50,000 lbs",
+        "centrifugal_medium": "30,000 - 100,000 lbs",
+        "large_centrifugal_with_driver": "100,000 - 500,000 lbs"
+      }
+    }
+  }
+}

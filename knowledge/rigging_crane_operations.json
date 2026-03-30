@@ -1,0 +1,288 @@
+{
+  "category": "rigging_crane_operations",
+  "description": "Sling types, rigging hardware, load calculations, crane signals, critical lifts, and inspection for riggers and iron workers",
+  "sling_types": {
+    "wire_rope_slings": {
+      "construction": "Typically 6x19 or 6x37 classification — number of strands x wires per strand",
+      "types": {
+        "single_leg": "Straight vertical hitch",
+        "two_leg_bridle": "Two legs from single hook to two points on load",
+        "three_and_four_leg": "Multi-point pick — distributes load evenly"
+      },
+      "hitches": {
+        "vertical": "100% of rated capacity — load hangs straight down from sling",
+        "choker": "75% of rated capacity — sling wrapped around load and back through eye",
+        "basket": "200% of rated capacity at 90 degrees (both legs vertical). Reduces with sling angle."
+      },
+      "rated_capacities_single_leg_vertical": {
+        "3_8_inch": "2,000 lbs",
+        "1_2_inch": "2,800 lbs (6x19), 2,600 lbs (6x37)",
+        "5_8_inch": "4,400 lbs",
+        "3_4_inch": "6,400 lbs",
+        "7_8_inch": "8,800 lbs",
+        "1_inch": "11,200 lbs",
+        "1_1_8_inch": "14,400 lbs",
+        "1_1_4_inch": "17,600 lbs",
+        "note": "These are APPROXIMATE. Always check manufacturer tag and rated capacity. Actual capacity varies by construction."
+      },
+      "inspection_rejection_criteria": [
+        "6 randomly broken wires in one rope lay, or 3 broken wires in one strand in one lay",
+        "Kinking, crushing, birdcaging, or core protrusion",
+        "Heat damage (discoloration or visible damage from welding, torch, electrical contact)",
+        "Corrosion — pitting on wire surfaces",
+        "End fitting damage — cracked, bent, or worn eyes/sockets/thimbles",
+        "Missing or illegible tag",
+        "Any visible distortion or evidence of overload"
+      ]
+    },
+    "synthetic_web_slings": {
+      "materials": {
+        "nylon": "Most common. Good for general lifting. Stretches 8-10% — absorbs shock loads. NOT for acid or hot (over 180F).",
+        "polyester": "Low stretch (3%). Better chemical resistance than nylon. Not for alkaline solutions. Temp limit 180F.",
+        "polypropylene": "Chemical resistant, floats. Lower strength than nylon/polyester."
+      },
+      "rated_capacities_vertical_hitch": {
+        "1_inch_1_ply": "1,000 lbs",
+        "2_inch_1_ply": "1,600 lbs",
+        "3_inch_1_ply": "2,400 lbs",
+        "4_inch_1_ply": "3,200 lbs",
+        "6_inch_1_ply": "4,800 lbs",
+        "note": "2-ply doubles capacity. Always check manufacturer tag."
+      },
+      "inspection_rejection_criteria": [
+        "Cuts, tears, or holes",
+        "Burns (from welding, grinding, friction)",
+        "Melted or fused fibers",
+        "Acid or chemical damage (discoloration, soft spots, brittleness)",
+        "Broken or worn stitching (red core yarn visible = replacement)",
+        "Knots (reduce capacity 50%)",
+        "Missing or illegible tag",
+        "UV degradation (powdery surface, faded color)"
+      ],
+      "DO_NOT": "Never use synthetic slings near welding/cutting. One spark can sever a web sling instantly."
+    },
+    "chain_slings": {
+      "grade": "Grade 80 (orange/purple) or Grade 100 (blue) only for overhead lifting. NEVER use Grade 30 (proof coil) or Grade 43 (high-test) for overhead lifting.",
+      "rated_capacities_single_leg_vertical_grade_80": {
+        "1_4_inch": "3,500 lbs",
+        "3_8_inch": "7,100 lbs",
+        "1_2_inch": "12,000 lbs",
+        "5_8_inch": "18,100 lbs",
+        "3_4_inch": "28,300 lbs",
+        "7_8_inch": "34,200 lbs",
+        "1_inch": "47,700 lbs",
+        "note": "Grade 100 is approximately 25% higher capacity than Grade 80 at same size"
+      },
+      "advantages": "Heat resistant (to 400F for Grade 80), can be shortened with grab hooks, long lasting, can use in sling angles",
+      "inspection_rejection_criteria": [
+        "Stretch — any link stretched more than 5% of original length",
+        "Wear — links worn more than 10% of original diameter",
+        "Nicks, gouges, or cracks in links",
+        "Bent or twisted links",
+        "Heat damage (discoloration above 600F for Grade 80 — derate or remove)",
+        "Missing or illegible tag",
+        "Weld repairs (NEVER field weld chain sling components)"
+      ]
+    },
+    "sling_angle_effects": {
+      "explanation": "As the sling angle from vertical increases, the tension in each sling leg increases dramatically. This is the most common cause of rigging failure.",
+      "tension_multiplier_per_leg": {
+        "90_degrees_vertical": "1.000 x load per leg (sling straight up and down)",
+        "60_degrees": "1.155 x load per leg",
+        "45_degrees": "1.414 x load per leg",
+        "30_degrees": "2.000 x load per leg — DOUBLE THE LOAD",
+        "below_30_degrees": "NEVER rig below 30 degrees — sling tension increases exponentially"
+      },
+      "rule_of_thumb": "The wider the spread, the higher the sling tension. Keep sling angles above 45 degrees whenever possible. NEVER below 30 degrees.",
+      "formula": "Tension per leg = Total Load / (Number of legs x Sine of sling angle from horizontal). Or use: Load / (N x cos(angle from vertical))"
+    }
+  },
+  "rigging_hardware": {
+    "shackles": {
+      "types": {
+        "anchor_shackle_bow": "Wider body — use when multiple slings connect to one point, or when load shifts direction",
+        "chain_shackle_D": "Narrower — for straight-line loading only"
+      },
+      "sizing": "Rated by Working Load Limit (WLL). Safety factor is 5:1 (shackle will break at 5x WLL).",
+      "pin": "Always use the shackle's own pin. Never substitute bolts or rebar. Pin must be fully seated and cotter-pinned (safety-wired for alloy shackles).",
+      "common_WLL": {
+        "1_2_inch_pin": "2,000 lbs",
+        "5_8_inch_pin": "3,250 lbs",
+        "3_4_inch_pin": "4,750 lbs",
+        "7_8_inch_pin": "6,500 lbs",
+        "1_inch_pin": "8,500 lbs",
+        "1_1_4_inch_pin": "12,000 lbs",
+        "1_1_2_inch_pin": "17,000 lbs",
+        "1_3_4_inch_pin": "25,000 lbs",
+        "2_inch_pin": "35,000 lbs"
+      },
+      "inspection": "Check for deformation, wear on pin and body, legible markings, proper pin engagement, no corrosion pitting"
+    },
+    "turnbuckles": {
+      "use": "Adjusting length/tension of wire rope, guy wires, bracing, plumbing columns and vessels",
+      "types": ["Jaw-jaw", "Eye-eye", "Jaw-eye", "Stub-stub"],
+      "note": "Not typically rated for overhead lifting unless specifically designed and rated for it. Use for alignment and bracing.",
+      "safety": "Safety-wire or cotter-pin open body turnbuckles to prevent accidental loosening from vibration"
+    },
+    "beam_clamps": {
+      "use": "Temporary attachment point on structural steel for rigging, fall protection, or hoisting",
+      "types": {
+        "C_clamp_style": "Clamps onto flange. Verify flange thickness within clamp range.",
+        "girder_clamp": "Adjustable jaw with set screw. For attaching chain falls or come-alongs.",
+        "beam_trolley": "Rolls on bottom flange — allows horizontal movement of hoist."
+      },
+      "CRITICAL": "Verify WLL marked on clamp. Ensure clamp is fully seated and tightened. Load must be within rated angle. Never exceed WLL.",
+      "inspection": "Check jaw for wear, screw threads for damage, swivel for free rotation, markings legible"
+    },
+    "spreader_bars_and_lifting_beams": {
+      "spreader_bar": "Compression member between two sling legs — reduces sling angle, distributes pick points wider. Must be engineered and rated.",
+      "lifting_beam": "Beam that attaches to crane hook at center — load hangs from multiple points below beam. Used for long/awkward loads.",
+      "requirements": [
+        "Must have engineering design and rated WLL marked on beam",
+        "Inspect before each use — welds, connections, straightness",
+        "Proof tested to 125% of rated load",
+        "Store properly — do not allow damage from storage"
+      ]
+    },
+    "come_alongs_chain_falls": {
+      "come_along_lever_hoist": "Manual lever-operated hoist. Used for pulling, tensioning, and short-distance lifts. Rated capacity marked on unit.",
+      "chain_fall_chain_hoist": "Chain-operated hoist. Faster operation than come-along for lifting. Hand chain operates through geared mechanism.",
+      "inspection": [
+        "Check chain for damage, wear, stretch, twist",
+        "Test brake — load should hold at any position",
+        "Check hooks for deformation and latch operation",
+        "Verify load chain feeds freely through mechanism",
+        "Capacity tag legible"
+      ],
+      "NEVER": "Never use a come-along or chain fall as a permanent support. They are for temporary positioning only."
+    }
+  },
+  "crane_hand_signals": {
+    "note": "Standard hand signals per ASME B30.5 and OSHA 1926.1419-1422. Signal person must be qualified.",
+    "signals": {
+      "HOIST_raise_load": "Right arm extended, index finger pointing up, rotate hand in small circle",
+      "LOWER": "Right arm extended, index finger pointing down, rotate hand in small circle",
+      "BOOM_UP": "Right arm extended, thumb pointing up, fingers closed",
+      "BOOM_DOWN": "Right arm extended, thumb pointing down, fingers closed",
+      "SWING_LEFT": "Right arm extended, point in direction of swing with index finger",
+      "SWING_RIGHT": "Right arm extended, point in direction of swing with index finger",
+      "STOP": "Right arm extended palm down, move arm back and forth horizontally",
+      "EMERGENCY_STOP": "Both arms extended palm down, move arms back and forth horizontally",
+      "TRAVEL_move_crane": "Both fists in front of body, rotate around each other (direction of travel indicated by pointing)",
+      "DOG_EVERYTHING_hold_position": "Clasp hands together in front of body",
+      "EXTEND_BOOM_telescoping": "Both fists in front, thumbs pointing outward",
+      "RETRACT_BOOM": "Both fists in front, thumbs pointing toward each other",
+      "RAISE_BOOM_AND_LOWER_LOAD": "Right arm extended thumb up with fingers opening and closing",
+      "LOWER_BOOM_AND_RAISE_LOAD": "Right arm extended thumb down with fingers opening and closing"
+    },
+    "rules": [
+      "Only ONE designated signal person at a time",
+      "Signal person must be in clear view of operator at all times",
+      "ANYONE can give STOP or EMERGENCY STOP signal — operator must obey from anyone",
+      "If operator loses sight of signal person: STOP all operations",
+      "Use radios for blind picks — but hand signals are primary method",
+      "Signal person wears high-visibility vest/gloves for visibility"
+    ]
+  },
+  "load_calculation_basics": {
+    "steps": [
+      "1. Determine load weight (certified weight from vendor, calculated weight, or weigh on scale)",
+      "2. Add rigging weight (slings, shackles, spreader bars, softeners, tag lines — typically 3-5% of load weight for planning)",
+      "3. Determine lift radius (center of crane rotation to center of gravity of load)",
+      "4. Look up crane capacity at that radius from load chart (specific to boom length and configuration)",
+      "5. Compare: Load + rigging weight must be LESS than crane capacity at that radius",
+      "6. Apply safety margin — most sites require crane to be at less than 75% of chart capacity for routine lifts. Over 75% = critical lift requiring written plan."
+    ],
+    "pipe_weight_reference_lbs_per_foot": {
+      "2_inch_SCH_40": 3.65,
+      "2_inch_SCH_80": 5.02,
+      "3_inch_SCH_40": 7.58,
+      "3_inch_SCH_80": 10.25,
+      "4_inch_SCH_40": 10.79,
+      "4_inch_SCH_80": 14.98,
+      "6_inch_SCH_40": 18.97,
+      "6_inch_SCH_80": 28.57,
+      "8_inch_SCH_40": 28.55,
+      "8_inch_SCH_80": 43.39,
+      "10_inch_SCH_40": 40.48,
+      "10_inch_SCH_80": 54.74,
+      "12_inch_STD": 49.56,
+      "12_inch_SCH_40": 53.52,
+      "12_inch_SCH_80": 65.42,
+      "16_inch_STD": 62.58,
+      "16_inch_SCH_40": 82.77,
+      "20_inch_STD": 78.60,
+      "20_inch_SCH_40": 104.13,
+      "24_inch_STD": 94.62,
+      "24_inch_SCH_40": 125.49,
+      "note": "These are EMPTY steel pipe weights. Add water weight for hydro test: water = 8.34 lbs/gallon. Use pipe volume tables to calculate."
+    },
+    "structural_steel_weight_reference": {
+      "W8x31": "31 lbs/ft",
+      "W10x49": "49 lbs/ft",
+      "W12x65": "65 lbs/ft",
+      "W14x90": "90 lbs/ft",
+      "W16x100": "100 lbs/ft",
+      "W18x119": "119 lbs/ft",
+      "W21x147": "147 lbs/ft",
+      "W24x176": "176 lbs/ft",
+      "W36x300": "300 lbs/ft",
+      "note": "W-shape designation: W(depth in inches)x(weight in lbs per ft). Always verify from steel mill cert."
+    },
+    "water_weight_in_pipe_lbs_per_foot": {
+      "2_inch_SCH_40": 1.45,
+      "4_inch_SCH_40": 4.52,
+      "6_inch_SCH_40": 9.73,
+      "8_inch_SCH_40": 16.69,
+      "10_inch_SCH_40": 26.00,
+      "12_inch_SCH_40": 36.46,
+      "16_inch_SCH_40": 62.04,
+      "20_inch_SCH_40": 95.50,
+      "24_inch_SCH_40": 136.50,
+      "note": "CRITICAL for hydro test lifts — water-filled pipe weighs 30-60% more than empty pipe depending on size/schedule"
+    }
+  },
+  "critical_lift_planning": {
+    "definition": "A lift requiring extra planning and approval. Triggers vary by site but commonly include:",
+    "triggers": [
+      "Load exceeds 75% of crane rated capacity at operating radius",
+      "Multi-crane (tandem) lifts",
+      "Lifts over occupied buildings or active process areas",
+      "Blind lifts (operator cannot see load)",
+      "Lifts near power lines (less than 20 ft clearance before lift begins)",
+      "Lifts involving personnel platforms (man baskets)",
+      "Lifts in confined or congested areas",
+      "Night lifts",
+      "Lifts in wind above specified limits",
+      "Any lift the competent person determines requires extra planning"
+    ],
+    "plan_contents": [
+      "Load weight calculation with COG (center of gravity) location",
+      "Rigging plan with sling/hardware selection and calculations",
+      "Crane selection with load chart showing adequate capacity at all radii during lift",
+      "Ground bearing capacity verification",
+      "Lift sequence step by step",
+      "Hazard identification and mitigation",
+      "Personnel exclusion zones",
+      "Communication plan",
+      "Weather restrictions",
+      "Engineering review and approval signatures",
+      "Pre-lift meeting documentation"
+    ]
+  },
+  "rigging_inspection_program": {
+    "frequency": {
+      "before_each_use": "Visual inspection by competent person",
+      "quarterly": "Documented inspection with color-coded tag/tape (colors change quarterly: typically Jan=green, Apr=blue, Jul=yellow, Oct=red — varies by site)",
+      "annual": "Comprehensive documented inspection"
+    },
+    "color_code_system": "All rigging equipment receives color-coded tag or tape at quarterly inspection. If color doesn't match current quarter, DO NOT USE — it hasn't been inspected.",
+    "storage": [
+      "Hang slings on racks — never on the ground where vehicles can run over them",
+      "Keep wire rope slings lubricated",
+      "Protect synthetic slings from UV, chemicals, and heat",
+      "Store shackles with pins installed",
+      "Keep all rigging clean and dry"
+    ]
+  }
+}

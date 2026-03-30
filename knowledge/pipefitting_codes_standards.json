@@ -1,0 +1,225 @@
+{
+  "category": "pipefitting_codes_standards",
+  "description": "Key code requirements from ASME, AWS, API, and OSHA that field workers need to know for pipe fitting and structural steel work",
+  "ASME_B31_3_process_piping": {
+    "scope": "Piping in petroleum refineries, chemical plants, pharmaceutical, textile, paper, semiconductor, cryogenic — the most common code in refinery/plant construction",
+    "key_requirements": {
+      "materials": {
+        "traceability": "All pipe, fittings, flanges, and bolting must have material traceability (heat number traceable to MTR/CMTR)",
+        "PMI": "Positive Material Identification required for alloy materials (chrome-moly, stainless, nickel alloys). Random PMI on carbon steel per project spec.",
+        "storage": "Stainless steel must be stored separately from carbon steel. No carbon steel tools on stainless (contamination causes corrosion).",
+        "low_temp_service": "Materials below -20F require impact testing (Charpy). Common: A333 Gr 6 pipe, A350 LF2 flanges/fittings."
+      },
+      "fabrication": {
+        "welding": "All welding per qualified WPS (Welding Procedure Specification) with qualified welders per ASME Section IX",
+        "fit_up_tolerance": {
+          "internal_misalignment": "Max 1/16 inch (1.6mm) for butt welds unless WPS allows more",
+          "root_opening": "Per WPS, typically 1/16 to 3/32 inch for GTAW root, 3/32 to 1/8 inch for SMAW root",
+          "out_of_round": "Pipe ends must not be out of round more than 1% of OD"
+        },
+        "tack_welds": "Must be made by qualified welders using qualified WPS. Tacks incorporated into final weld must be ground to feather edge and inspected for defects.",
+        "preheat": {
+          "P1_carbon_steel": "Preheat to 50F minimum when ambient below 32F. Preheat to 200F for wall thickness over 1 inch.",
+          "P3_low_alloy": "Preheat 250F minimum for 1/2 to 1 inch wall, 300F for over 1 inch",
+          "P4_chrome_moly": "Preheat 300F minimum (1-1/4 Cr), 400F for 2-1/4 Cr and above",
+          "P5_chrome_moly": "Preheat 400F minimum (5 Cr and 9 Cr)",
+          "P8_stainless": "Generally no preheat required. Maximum interpass temperature 350F."
+        },
+        "PWHT": {
+          "definition": "Post Weld Heat Treatment — stress relieving the weld",
+          "P1_carbon_steel": "Required when wall thickness exceeds 3/4 inch (19mm). Typical: 1100-1200F for 1 hr per inch.",
+          "P4_chrome_moly_1_25Cr": "Required for all thicknesses. 1300-1375F minimum.",
+          "P5A_chrome_moly_5Cr": "Required for all thicknesses. 1325-1375F.",
+          "P5B_chrome_moly_9Cr": "Required for all thicknesses. 1350-1400F.",
+          "heating_rate": "Max 600F/hr divided by max thickness in inches (not to exceed 600F/hr)",
+          "cooling_rate": "Max 600F/hr divided by max thickness in inches down to 600F, then cool in still air",
+          "band_width": "Heated band minimum 3x wall thickness on each side of weld"
+        }
+      },
+      "examination": {
+        "NDE_requirements": "Per engineering design — fluid service category and piping class determine NDE extent",
+        "normal_fluid_service": "Minimum 5% random radiography (RT) or equivalent",
+        "category_D": "Severe cyclic conditions — 100% RT",
+        "category_M": "Lethal service (H2S, HF, phosgene, chlorine) — 100% RT",
+        "high_pressure": "Chapter IX high pressure — 100% RT plus 100% UT",
+        "visual_examination": "Required on ALL welds — 100%, no exceptions"
+      },
+      "pressure_testing": {
+        "hydrostatic": {
+          "test_pressure": "1.5 x design pressure x (stress ratio at test temp / stress ratio at design temp). For most cases: 1.5 x design pressure.",
+          "hold_time": "Minimum 10 minutes at test pressure",
+          "temperature": "Test medium temperature must be between 60F and 120F unless freeze protection added",
+          "documentation": "Record test pressure, hold time, ambient and fluid temperature, system description, witness signatures"
+        },
+        "pneumatic": {
+          "test_pressure": "1.1 x design pressure",
+          "when_used": "Only when hydro is impractical (cannot get water out, freeze risk, weight concern, catalyst contamination)",
+          "special_requirements": "Requires documented engineering approval. Increased exclusion zone. Incremental pressure-up procedure.",
+          "pressure_up_sequence": "25 psi initial check, then 50% test pressure hold and inspect, then increments of 10% to full test pressure"
+        },
+        "leak_test_alternative": {
+          "pressure": "Design pressure (no multiplier)",
+          "method": "Sensitive leak test (bubble test, mass spectrometer, halide detector)",
+          "when_used": "Sometimes used in lieu of full pneumatic test when approved by engineer"
+        }
+      }
+    }
+  },
+  "ASME_B31_1_power_piping": {
+    "scope": "Piping in power plants — boiler external piping, steam, feedwater, condensate. Key differences from B31.3.",
+    "key_differences_from_B31_3": {
+      "NDE": "Generally more NDE required than B31.3 normal service. 100% RT on all pressure welds in many cases.",
+      "preheat": "Slightly different preheat requirements — generally more conservative",
+      "PWHT": "Required at lower thickness thresholds in some cases",
+      "hydro_test": "1.5 x design pressure (same as B31.3) but minimum hold time is longer in some applications",
+      "materials": "Stricter material requirements for high-temperature steam service",
+      "socket_welds": "Minimum 2-pass on socket welds (B31.3 allows single pass in some cases)",
+      "branch_connections": "Different reinforcement calculation requirements"
+    },
+    "field_notes": {
+      "boiler_external_piping": "Highest quality requirements — often 100% RT, 100% PMI, PWHT on everything",
+      "spring_hangers": "Must be set to cold position during installation, released to hot position during startup",
+      "high_temp_materials": "P91 (9Cr-1Mo-V) common in modern power plants — VERY strict welding, preheat (400F min), PWHT (1375-1425F), and hardness requirements"
+    }
+  },
+  "ASME_Section_IX": {
+    "scope": "Welding and brazing qualifications — the bible for welding procedure and welder qualification",
+    "key_concepts": {
+      "WPS": {
+        "definition": "Welding Procedure Specification — the recipe for making the weld",
+        "essential_variables": "If an essential variable changes beyond its limits, the WPS must be requalified",
+        "key_essential_variables": [
+          "Base metal P-number (material group)",
+          "Filler metal F-number and A-number",
+          "Welding process (SMAW, GTAW, FCAW, etc.)",
+          "Thickness range qualified",
+          "Preheat temperature (decrease is essential variable)",
+          "PWHT (adding or deleting is essential variable)",
+          "Position (for procedure qualification)",
+          "Electrical characteristics (transfer mode for GMAW)"
+        ]
+      },
+      "PQR": {
+        "definition": "Procedure Qualification Record — the test results proving the WPS works",
+        "testing": "Tensile tests, bend tests (side, face, root), impact tests if required, hardness if required",
+        "must_be_welded": "A PQR must be an actual test weld that was destructively tested"
+      },
+      "welder_qualification": {
+        "test_types": "Groove weld test qualifies for groove and fillet. Fillet weld test qualifies for fillet only.",
+        "positions": {
+          "1G_1F": "Flat — pipe rotated or plate flat",
+          "2G_2F": "Horizontal — pipe vertical axis, weld horizontal",
+          "3G_3F": "Vertical — plate vertical, weld vertical",
+          "4G_4F": "Overhead",
+          "5G": "Pipe fixed horizontal — welder moves around pipe (qualifies 1G through 4G on pipe)",
+          "6G": "Pipe fixed at 45 degrees — THE MONEY TEST — qualifies ALL positions",
+          "6GR": "6G with restriction ring — qualifies for tight-access pipe welding"
+        },
+        "essential_variables_welder": [
+          "Welding process",
+          "Type of weld (groove or fillet)",
+          "Filler metal F-number",
+          "Backing (with or without backing — open root is harder)",
+          "Pipe diameter range (small pipe is harder — under 2-7/8 inch OD separate qualification)",
+          "Position"
+        ],
+        "expiration": "Welder qualification does not expire as long as welder uses the process within any 6-month period. If 6+ months without welding that process, requalification required.",
+        "continuity_log": "Employer must maintain welder continuity records showing process use within each 6-month period"
+      }
+    },
+    "P_numbers_common": {
+      "P1": "Carbon steel (A106, A53, A105, A234 WPB)",
+      "P3": "Low alloy steel, 1/2% - 2% total alloy (A335 P1)",
+      "P4": "1-1/4 Cr - 1/2 Mo (A335 P11, A182 F11)",
+      "P5A": "2-1/4 Cr - 1 Mo (A335 P22, A182 F22)",
+      "P5B_Group1": "5 Cr - 1/2 Mo (A335 P5)",
+      "P5B_Group2": "9 Cr - 1 Mo (A335 P9)",
+      "P5C": "9 Cr - 1 Mo - V (P91 — SPECIAL REQUIREMENTS)",
+      "P8": "Austenitic stainless steel (304, 316, 321, 347)",
+      "P10H": "Duplex stainless steel",
+      "P41_43_45": "Nickel alloys (Inconel, Monel, Hastelloy)"
+    },
+    "F_numbers_common": {
+      "F1": "E6010 (SMAW cellulosic rod — root pass rod)",
+      "F2": "Not commonly used in pipe",
+      "F3": "E316L-16 type coated stainless rods",
+      "F4": "E7018 (SMAW low-hydrogen rod — fill and cap)",
+      "F5": "E309L-type stainless rods",
+      "F6": "ER70S-2, ER70S-6 (GTAW/GMAW carbon steel wire)",
+      "F43": "ER308L, ER309L, ER316L (GTAW stainless wire)"
+    }
+  },
+  "AWS_D1_1_structural_welding": {
+    "scope": "Structural steel welding — applies to buildings, bridges, and other structures. Used for pipe supports, platforms, structural steel erection.",
+    "key_requirements": {
+      "prequalified_joints": "AWS D1.1 has prequalified joint details — if you match the detail exactly, no PQR testing needed (unlike ASME IX which always requires PQR)",
+      "welder_qualification": "Welders must be qualified per AWS D1.1 — separate from ASME IX qualification",
+      "inspection": {
+        "visual": "100% of all structural welds",
+        "NDT": "Per engineer of record and project specification",
+        "fillet_weld_size": "Must meet minimum specified size — use fillet weld gauge",
+        "undercut": "Max 1/32 inch for primary members, 1/16 inch for secondary",
+        "porosity": "Max 3/8 inch diameter, sum not to exceed 3/4 inch in 12 inches"
+      },
+      "preheat_AWS": {
+        "A36_A992_under_3_4_inch": "32F minimum (no preheat above freezing) for SMAW with low-hydrogen",
+        "A36_A992_3_4_to_1_5_inch": "150F minimum",
+        "A36_A992_1_5_to_2_5_inch": "225F minimum",
+        "A36_A992_over_2_5_inch": "300F minimum"
+      },
+      "weld_symbols": "All structural welds must conform to weld symbols on drawings per AWS A2.4",
+      "backing_bars": "Commonly used in structural CJP (Complete Joint Penetration) welds. Must be continuous or spliced with full penetration weld.",
+      "run_off_tabs": "Required at ends of CJP groove welds. Remove and grind smooth after welding."
+    }
+  },
+  "API_1104_pipeline_welding": {
+    "scope": "Welding of pipelines and related facilities — cross-country pipelines, tank farm piping, pipeline stations",
+    "key_differences": {
+      "vs_ASME_IX": "API 1104 has its OWN welder qualification rules separate from ASME IX. Welders qualified to ASME IX are NOT automatically qualified to API 1104.",
+      "qualification_test": "Typically 6G fixed position butt weld on pipe. Destructive testing: nick break, root and face bend, tensile.",
+      "essential_variables": "Different from ASME IX — change in process, wall thickness group, direction of welding (uphill vs downhill), change in joint design",
+      "acceptance_criteria": "Different from ASME B31.3 — pipeline has its own acceptance criteria for defects",
+      "repair_limits": "Strict limits on number of repairs allowed on pipeline welds"
+    },
+    "field_notes": {
+      "downhill_welding": "Pipeline tradition uses downhill progression with cellulosic rods (6010 root, 8010 hot pass and fill). Faster than uphill but requires different technique.",
+      "uphill_welding": "Used for heavier wall pipe and when required by procedure. Low-hydrogen rods (7018) or GTAW root with SMAW fill.",
+      "automatic_welding": "Increasingly common — orbital GMAW or FCAW with bug machines. Separate qualification requirements.",
+      "coating": "Pipeline coating must be repaired/applied at field joints after welding and NDE acceptance"
+    }
+  },
+  "OSHA_requirements": {
+    "scaffolding_1926_subpart_L": {
+      "capacity": "Must support 4x maximum intended load",
+      "platform_width": "Minimum 18 inches wide",
+      "guardrails": "Top rail at 42 inches +/- 3 inches, mid rail, and toeboard",
+      "access": "Ladder, stair, or ramp access — no climbing on cross-braces",
+      "inspection": "Competent person must inspect before each shift and after any event that could affect integrity",
+      "tag_system": "Green tag = safe to use, Red tag = do not use, Yellow tag = use with restrictions",
+      "erection": "Only by trained, competent scaffold erectors. Fall protection required during erection/dismantling.",
+      "base_plates": "Required on all legs. Mudsills on soft ground. Must be level.",
+      "planking": "Scaffold grade planks or manufactured decking. No gaps >1 inch. Overlap minimum 12 inches. Extend 6-12 inches past support."
+    },
+    "fall_protection_1926_subpart_M": {
+      "trigger_height": "6 feet for general construction",
+      "methods": ["Guardrail systems", "Safety net systems", "Personal fall arrest systems (harness/lanyard)", "Positioning devices (for specific tasks)", "Warning line systems (only on roofs with monitor)"],
+      "harness_inspection": "Before each use: check stitching, D-rings, buckles, labels, no burns/cuts/chemical damage",
+      "anchor_points": "Must support 5,000 lbs per worker OR be designed by qualified person for 2x arrest force",
+      "fall_distance": "Calculate before use: lanyard length + deceleration distance + harness stretch + worker height + safety factor. Minimum clearance below worker: ~18.5 ft for 6 ft lanyard with shock absorber.",
+      "rescue_plan": "Must have rescue plan before any work at height. Self-rescue or prompt rescue required (suspension trauma can be fatal within 30 minutes)."
+    },
+    "crane_requirements_1926_subpart_CC": {
+      "operator_certification": "Operators must be certified by accredited organization (NCCCO, CIC, etc.)",
+      "daily_inspection": "Operator performs pre-shift inspection per manufacturer requirements",
+      "annual_inspection": "Comprehensive inspection by qualified person — documented",
+      "load_charts": "Must be in cab and accessible. Operator must use load chart for EVERY lift.",
+      "power_line_clearance": {
+        "up_to_350kV": "Minimum 10 ft clearance for boom, load, and rigging",
+        "350kV_to_1000kV": "Minimum 20 ft clearance",
+        "unknown_voltage": "Assume 20 ft minimum"
+      },
+      "signal_person": "Required when operator cannot see load landing area or load travel path. Must be qualified.",
+      "critical_lifts": "Lifts exceeding 75% of chart capacity, multi-crane lifts, lifts over occupied buildings, blind lifts — require written lift plan reviewed by competent person."
+    }
+  }
+}

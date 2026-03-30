@@ -56,11 +56,11 @@ router.post('/register-options', requireAuth, async (req, res) => {
     const personId = req.auth.person_id;
     if (!personId) return res.status(400).json({ error: 'Person session required for registration' });
 
-    const person = await DB.people.getById(personId);
+    const person = await (req.db || DB).people.getById(personId);
     if (!person) return res.status(404).json({ error: 'Person not found' });
 
     // Get existing credentials to exclude
-    const existingCreds = await DB.webauthnCredentials.getForPerson(personId);
+    const existingCreds = await (req.db || DB).webauthnCredentials.getForPerson(personId);
 
     const options = await generateRegistrationOptions({
       rpName: 'Voice Report - Horizon Sparks',
@@ -114,7 +114,7 @@ router.post('/register', requireAuth, async (req, res) => {
     const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
 
     // Store in webauthn_credentials table
-    await DB.webauthnCredentials.create({
+    await (req.db || DB).webauthnCredentials.create({
       person_id: personId,
       credential_id: Buffer.from(credential.id).toString('base64url'),
       public_key: Buffer.from(credential.publicKey).toString('base64url'),
@@ -125,7 +125,7 @@ router.post('/register', requireAuth, async (req, res) => {
     });
 
     // Also update legacy fields on people table for backward compat
-    await DB.people.update(personId, {
+    await (req.db || DB).people.update(personId, {
       webauthn_credential_id: Buffer.from(credential.id).toString('base64url'),
       webauthn_raw_id: Buffer.from(credential.id).toString('base64url'),
     });
@@ -145,8 +145,8 @@ router.post('/register', requireAuth, async (req, res) => {
 router.post('/login-options', async (req, res) => {
   try {
     // Check if any credentials exist (in new table first, fallback to legacy)
-    const newCreds = (await DB.db.query('SELECT credential_id FROM webauthn_credentials')).rows;
-    const legacyCreds = (await DB.db.query("SELECT id, webauthn_credential_id FROM people WHERE webauthn_credential_id IS NOT NULL AND status = 'active'")).rows;
+    const newCreds = (await (req.db || DB).db.query('SELECT credential_id FROM webauthn_credentials')).rows;
+    const legacyCreds = (await (req.db || DB).db.query("SELECT id, webauthn_credential_id FROM people WHERE webauthn_credential_id IS NOT NULL AND status = 'active'")).rows;
 
     const allCreds = [
       ...newCreds.map(c => ({ id: c.credential_id, type: 'public-key' })),
@@ -184,15 +184,15 @@ router.post('/login', async (req, res) => {
     if (!expectedChallenge) return res.status(400).json({ error: 'Challenge expired or missing. Please try again.' });
 
     // Look up credential — try new table first, then legacy
-    let storedCred = await DB.webauthnCredentials.getByCredentialId(credentialIdFromAssertion);
+    let storedCred = await (req.db || DB).webauthnCredentials.getByCredentialId(credentialIdFromAssertion);
     let person;
     let isLegacy = false;
 
     if (storedCred) {
-      person = await DB.people.getById(storedCred.person_id);
+      person = await (req.db || DB).people.getById(storedCred.person_id);
     } else {
       // Legacy lookup
-      person = await DB.people.getByWebAuthn(credentialIdFromAssertion);
+      person = await (req.db || DB).people.getByWebAuthn(credentialIdFromAssertion);
       if (person) {
         isLegacy = true;
         // For legacy creds, we can't do full signature verification
@@ -223,7 +223,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Update counter for replay protection
-        await DB.webauthnCredentials.updateCounter(
+        await (req.db || DB).webauthnCredentials.updateCounter(
           storedCred.credential_id,
           verification.authenticationInfo.newCounter
         );
@@ -234,7 +234,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Create session (same as PIN login)
-    const session = await DB.sessions.create({
+    const session = await (req.db || DB).sessions.create({
       person_id: person.id,
       is_admin: false,
       role_level: person.role_level || 1,

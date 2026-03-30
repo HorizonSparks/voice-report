@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { v4: uuidv4 } = require('uuid');
 const DB = require('../../database/db');
-const { requireAuth, requireAdmin } = require('../middleware/sessionAuth');
+const {requireAuth, requireAdmin, requireSparksEditMode} = require('../middleware/sessionAuth');
 const { getActor } = require('../auth/authz');
 const { serializeFieldValue, deserializeValues } = require('../services/forms/fieldSerializer');
 const { insertForm } = require('../services/forms/seedHelpers');
@@ -11,16 +11,16 @@ const router = Router();
 // Form templates
 router.get('/templates', requireAuth, async (req, res) => {
   try {
-    const templates = (await DB.db.query('SELECT * FROM form_templates_v2 ORDER BY trade, form_code')).rows;
+    const templates = (await (req.db || DB).db.query('SELECT * FROM form_templates_v2 ORDER BY trade, form_code')).rows;
     res.json(templates);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/templates/:id', requireAuth, async (req, res) => {
   try {
-    const template = (await DB.db.query('SELECT * FROM form_templates_v2 WHERE id = $1', [req.params.id])).rows[0];
+    const template = (await (req.db || DB).db.query('SELECT * FROM form_templates_v2 WHERE id = $1', [req.params.id])).rows[0];
     if (!template) return res.status(404).json({ error: 'Form template not found' });
-    const fields = (await DB.db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [req.params.id])).rows;
+    const fields = (await (req.db || DB).db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [req.params.id])).rows;
     res.json({ ...template, fields });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -28,45 +28,65 @@ router.get('/templates/:id', requireAuth, async (req, res) => {
 // Loops
 router.get('/loops', requireAuth, async (req, res) => {
   try {
-    const loops = (await DB.db.query('SELECT * FROM form_loops ORDER BY tag_number')).rows;
+    const loops = (await (req.db || DB).db.query('SELECT * FROM form_loops ORDER BY tag_number')).rows;
     res.json(loops);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/loops/:id', requireAuth, async (req, res) => {
   try {
-    const loop = (await DB.db.query('SELECT * FROM form_loops WHERE id = $1', [req.params.id])).rows[0];
+    const loop = (await (req.db || DB).db.query('SELECT * FROM form_loops WHERE id = $1', [req.params.id])).rows[0];
     if (!loop) return res.status(404).json({ error: 'Loop not found' });
     res.json(loop);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Submissions
+// Submissions — filtered by company via person's company_id
 router.get('/submissions', requireAuth, async (req, res) => {
   try {
-    let query = `SELECT s.*, ft.form_code, ft.form_title
-       FROM form_submissions s
-       JOIN form_templates_v2 ft ON ft.id = s.template_id
-       ORDER BY s.created_at DESC`;
-    const subs = (await DB.db.query(query)).rows;
+    let query, params = [];
+    if (req.companyId) {
+      query = `SELECT s.*, ft.form_code, ft.form_title
+         FROM form_submissions s
+         JOIN form_templates_v2 ft ON ft.id = s.template_id
+         LEFT JOIN people p ON p.id = s.person_id
+         WHERE p.company_id = $1
+         ORDER BY s.created_at DESC`;
+      params = [req.companyId];
+    } else {
+      query = `SELECT s.*, ft.form_code, ft.form_title
+         FROM form_submissions s
+         JOIN form_templates_v2 ft ON ft.id = s.template_id
+         ORDER BY s.created_at DESC`;
+    }
+    const subs = (await (req.db || DB).db.query(query, params)).rows;
     res.json(subs);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/submissions/:id', requireAuth, async (req, res) => {
   try {
-    const sub = (await DB.db.query(
-      `SELECT s.*, ft.form_code, ft.form_title, ft.id as tid
+    let subQuery, subParams;
+    if (req.companyId) {
+      subQuery = `SELECT s.*, ft.form_code, ft.form_title, ft.id as tid
        FROM form_submissions s
        JOIN form_templates_v2 ft ON ft.id = s.template_id
-       WHERE s.id = $1`,
-      [req.params.id]
-    )).rows[0];
+       LEFT JOIN people p ON p.id = s.person_id
+       WHERE s.id = $1 AND p.company_id = $2`;
+      subParams = [req.params.id, req.companyId];
+    } else {
+      subQuery = `SELECT s.*, ft.form_code, ft.form_title, ft.id as tid
+       FROM form_submissions s
+       JOIN form_templates_v2 ft ON ft.id = s.template_id
+       WHERE s.id = $1`;
+      subParams = [req.params.id];
+    }
+    const sub = (await (req.db || DB).db.query(subQuery, subParams)).rows[0];
     if (!sub) return res.status(404).json({ error: 'Submission not found' });
 
-    const values = (await DB.db.query('SELECT * FROM form_submission_values WHERE submission_id = $1', [req.params.id])).rows;
-    const calPoints = (await DB.db.query('SELECT * FROM form_calibration_points WHERE submission_id = $1 ORDER BY percent_range', [req.params.id])).rows;
-    const fields = (await DB.db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [sub.tid])).rows;
+    const values = (await (req.db || DB).db.query('SELECT * FROM form_submission_values WHERE submission_id = $1', [req.params.id])).rows;
+    const calPoints = (await (req.db || DB).db.query('SELECT * FROM form_calibration_points WHERE submission_id = $1 ORDER BY percent_range', [req.params.id])).rows;
+    const fields = (await (req.db || DB).db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [sub.tid])).rows;
 
     const valuesMap = deserializeValues(values);
 
@@ -74,10 +94,11 @@ router.get('/submissions/:id', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/submissions', requireAuth, async (req, res) => {
-  const client = await DB.db.connect();
+router.post('/submissions', requireAuth, requireSparksEditMode, async (req, res) => {
+  const client = await (req.db || DB).db.connect();
   try {
-    const { template_id, loop_id, technician_name, person_id, values, calibration_points } = req.body;
+    const { template_id, loop_id, technician_name, values, calibration_points } = req.body;
+    const person_id = req.auth.person_id;
     const template = (await client.query('SELECT * FROM form_templates_v2 WHERE id = $1', [template_id])).rows[0];
     if (!template) { client.release(); return res.status(400).json({ error: 'Template not found' }); }
 
@@ -123,18 +144,18 @@ router.post('/submissions', requireAuth, async (req, res) => {
 });
 
 // Reseed endpoint — wipe and reseed all 27 templates
-router.post('/reseed', requireAdmin, async (req, res) => {
+router.post("/reseed", requireAdmin, requireSparksEditMode, async (req, res) => {
   try {
-    await DB.db.query('DELETE FROM form_fields_v2');
-    await DB.db.query('DELETE FROM form_templates_v2');
+    await (req.db || DB).db.query('DELETE FROM form_fields_v2');
+    await (req.db || DB).db.query('DELETE FROM form_templates_v2');
     // Fall through to seed logic below via redirect
     res.redirect(307, '/api/forms/seed');
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Seed endpoint — loads form templates from JSON config
-router.post('/seed', requireAdmin, async (req, res) => {
-  const client = await DB.db.connect();
+router.post("/seed", requireAdmin, requireSparksEditMode, async (req, res) => {
+  const client = await (req.db || DB).db.connect();
   try {
     const formDefs = require('../config/form-templates.json');
     const existing = (await client.query('SELECT COUNT(*) as cnt FROM form_templates_v2')).rows[0];
