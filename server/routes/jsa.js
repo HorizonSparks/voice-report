@@ -9,7 +9,17 @@ module.exports = function(db) {
   // ============================================
   // JSA Tables — async initialization
   // ============================================
-  (async () => {
+  (async (retries = 5) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await db.query('SELECT 1');
+        break;
+      } catch (e) {
+        console.log(`Waiting for database... attempt ${i + 1}/${retries}`);
+        await new Promise(r => setTimeout(r, 2000));
+        if (i === retries - 1) { console.error('JSA init: database unavailable, skipping table creation'); return; }
+      }
+    }
     // Main JSA record (the "Setup" — created by foreman or lead worker)
     await db.query(`
       CREATE TABLE IF NOT EXISTS jsa_records (

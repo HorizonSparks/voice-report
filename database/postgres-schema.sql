@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS people (
 
   -- Multi-tenancy
   company_id TEXT,
+  sparks_role TEXT,
 
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -681,8 +682,11 @@ CREATE TABLE IF NOT EXISTS app_sessions (
   trade TEXT,
   company_id TEXT,
   sparks_role TEXT,
+  user_agent TEXT,
+  ip_address TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   last_seen_at TIMESTAMP DEFAULT NOW(),
+  last_active TIMESTAMP DEFAULT NOW(),
   expires_at TIMESTAMP
 );
 
@@ -699,6 +703,10 @@ CREATE TABLE IF NOT EXISTS webauthn_credentials (
   public_key TEXT NOT NULL,
   counter INTEGER DEFAULT 0,
   device_name TEXT,
+  transports TEXT,
+  device_type TEXT,
+  backed_up INTEGER DEFAULT 0,
+  last_used_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -711,8 +719,10 @@ CREATE INDEX idx_webauthn_credential ON webauthn_credentials(credential_id);
 CREATE TABLE IF NOT EXISTS companies (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  slug TEXT UNIQUE,
   status TEXT DEFAULT 'active',
   tier TEXT DEFAULT 'standard',
+  notes TEXT,
   created_by TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -722,10 +732,12 @@ CREATE TABLE IF NOT EXISTS companies (
 -- TABLE 32: company_trades — Licensed trades per company
 -- ============================================
 CREATE TABLE IF NOT EXISTS company_trades (
-  id SERIAL PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   company_id TEXT NOT NULL REFERENCES companies(id),
   trade TEXT NOT NULL,
   status TEXT DEFAULT 'active',
+  licensed_by TEXT,
+  licensed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   UNIQUE (company_id, trade)
 );
@@ -734,10 +746,12 @@ CREATE TABLE IF NOT EXISTS company_trades (
 -- TABLE 33: company_products — Licensed products per company
 -- ============================================
 CREATE TABLE IF NOT EXISTS company_products (
-  id SERIAL PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   company_id TEXT NOT NULL REFERENCES companies(id),
   product TEXT NOT NULL,
   status TEXT DEFAULT 'active',
+  licensed_by TEXT,
+  licensed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   UNIQUE (company_id, product)
 );
@@ -821,8 +835,8 @@ CREATE TABLE IF NOT EXISTS sparks_audit_log (
   person_id TEXT,
   person_name TEXT,
   action TEXT NOT NULL,
-  target_type TEXT,
-  target_id TEXT,
+  resource_type TEXT,
+  resource_id TEXT,
   details TEXT,                    -- JSON
   created_at TIMESTAMP DEFAULT NOW()
 );

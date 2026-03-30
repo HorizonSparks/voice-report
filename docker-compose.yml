@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: horizon_spark
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-8oS4oc2hyYhyq698CPSqXbA1}
+      POSTGRES_DB: horizon
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./database/postgres-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/docker-init.sql:/docker-entrypoint-initdb.d/02-billing.sql
+      - ./database/docker-init-companies.sh:/docker-entrypoint-initdb.d/03-companies.sh
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U horizon_spark -d horizon"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3070}:${PORT:-3070}"
+      - "${HTTPS_PORT:-3513}:${HTTPS_PORT:-3513}"
+    env_file:
+      - .env
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DATABASE: horizon
+      PG_USER: horizon_spark
+      PG_PASSWORD: ${PG_PASSWORD:-8oS4oc2hyYhyq698CPSqXbA1}
+    volumes:
+      - uploads_audio:/app/audio
+      - uploads_photos:/app/photos
+      - uploads_msg_audio:/app/message-audio
+      - uploads_msg_photos:/app/message-photos
+      - ./cert.pem:/app/cert.pem:ro
+      - ./key.pem:/app/key.pem:ro
+    networks:
+      - app-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  pg_data:
+  uploads_audio:
+  uploads_photos:
+  uploads_msg_audio:
+  uploads_msg_photos:

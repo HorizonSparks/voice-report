@@ -13,11 +13,7 @@ const pool = new Pool({
   database: process.env.PG_DATABASE || 'horizon',
   user: process.env.PG_USER || 'horizon_spark',
   password: process.env.PG_PASSWORD || '8oS4oc2hyYhyq698CPSqXbA1',
-});
-
-// Set search_path for every new connection
-pool.on('connect', (client) => {
-  client.query('SET search_path TO voicereport');
+  options: '-c search_path=voicereport',
 });
 
 // Export pool as `db` for raw queries in routes

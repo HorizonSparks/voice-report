@@ -44,9 +44,7 @@ function createPool(database) {
     ...PG_BASE,
     database,
     max: 5, // Conservative — 5 connections per company
-  });
-  pool.on('connect', (client) => {
-    client.query('SET search_path TO voicereport');
+    options: '-c search_path=voicereport',
   });
   pool.on('error', (err) => {
     console.error(`Pool error for ${database}:`, err.message);
