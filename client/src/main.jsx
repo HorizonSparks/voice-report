@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import theme from './theme.js';
 import App from './App.jsx';
 import '../styles.css';
 import './i18n/i18n.js';
@@ -42,9 +44,12 @@ class ErrorBoundary extends React.Component {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </ThemeProvider>
 );
 
 // Register service worker in production — with update detection

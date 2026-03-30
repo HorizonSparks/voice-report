@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import TextField from '@mui/material/TextField';
 import VoiceRefinePanel from '../components/VoiceRefinePanel.jsx';
 
-const statusColors = { pending: '#F99440', in_progress: '#48484A', completed: '#4CAF50', cancelled: '#48484A' };
+const statusColors = { pending: 'primary.main', in_progress: 'secondary.main', completed: 'success.main', cancelled: 'secondary.main' };
 const statusLabels = { pending: 'Pending', in_progress: 'In Progress', completed: 'Completed', cancelled: 'Cancelled' };
-const priorityColors = { critical: '#C45500', high: '#F99440' };
+const priorityColors = { critical: '#C45500', high: 'primary.main' };
 
 export default function TaskDetailView({ user, taskId, goBack, onNavigate, activeTrade, readOnly }) {
   const { t } = useTranslation();
@@ -123,19 +130,22 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
 
   if (loading) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: '#48484A', fontSize: '16px', fontWeight: 600 }}>
-        {t('common.loading')}
-      </div>
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <CircularProgress size={32} sx={{ color: 'warning.main' }} />
+        <Typography sx={{ color: 'text.primary', fontSize: '16px', fontWeight: 600, mt: 2 }}>
+          {t('common.loading')}
+        </Typography>
+      </Box>
     );
   }
 
   if (!task) {
     return (
-      <div style={{ padding: '24px' }}>
-        <div style={{ textAlign: 'center', color: '#48484A', fontSize: '16px', fontWeight: 600, marginTop: '40px' }}>
+      <Box sx={{ p: 3 }}>
+        <Typography sx={{ textAlign: 'center', color: 'text.primary', fontSize: '16px', fontWeight: 600, mt: 5 }}>
           {t('common.taskNotFound')}
-        </div>
-      </div>
+        </Typography>
+      </Box>
     );
   }
 
@@ -159,7 +169,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
   // Shift update recording overlay
   if (showShiftUpdate) {
     return (
-      <div style={{ padding: '16px', background: '#f5f5f0', minHeight: '100vh' }}>
+      <Box sx={{ p: 2, bgcolor: 'grey.100', minHeight: '100vh' }}>
         <VoiceRefinePanel
           contextType="shift_update"
           personId={personId}
@@ -189,12 +199,12 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
           }}
           onCancel={() => setShowShiftUpdate(false)}
         />
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div style={{ padding: '16px 16px 80px', background: '#f5f5f0', minHeight: '100vh' }}>
+    <Box sx={{ p: 2, pb: 10, bgcolor: 'grey.100', minHeight: '100vh' }}>
       {/* Hidden photo input */}
       <input
         ref={photoRef}
@@ -206,327 +216,400 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
         onChange={handlePhotoUpload}
       />
 
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0, flex: 1, color: '#48484A' }}>
+      {/* -- Header -- */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+        <Typography variant="h1" sx={{ fontSize: '20px', fontWeight: 700, m: 0, flex: 1, color: 'text.primary' }}>
           {task.title}
-        </h1>
-      </div>
-      {/* ── Status + Controls inline ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <span style={{
-          padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700,
-          color: 'white', background: statusColors[task.status] || '#48484A',
-        }}>
-          {statusLabels[task.status] || task.status}
-        </span>
+        </Typography>
+      </Box>
+
+      {/* -- Status + Controls inline -- */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5, flexWrap: 'wrap' }}>
+        <Chip
+          label={statusLabels[task.status] || task.status}
+          size="small"
+          sx={{
+            fontSize: '12px',
+            fontWeight: 700,
+            color: 'white',
+            bgcolor: statusColors[task.status] || 'secondary.main',
+          }}
+        />
         {task.status === 'pending' && (
-          <button onClick={() => updateStatus('in_progress')} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', background: '#48484A', color: 'var(--primary)' }}>
+          <Button
+            onClick={() => updateStatus('in_progress')}
+            size="small"
+            sx={{
+              px: 1.5, py: 0.5, borderRadius: '20px', fontSize: '12px', fontWeight: 700,
+              textTransform: 'none', bgcolor: 'secondary.main', color: 'warning.main',
+              '&:hover': { bgcolor: 'secondary.dark' },
+            }}
+          >
             Start
-          </button>
+          </Button>
         )}
         {task.status === 'in_progress' && (
           <>
-            <button onClick={() => updateStatus('pending')} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', background: '#E8922A', color: 'var(--charcoal)' }}>
+            <Button
+              onClick={() => updateStatus('pending')}
+              size="small"
+              sx={{
+                px: 1.5, py: 0.5, borderRadius: '20px', fontSize: '12px', fontWeight: 700,
+                textTransform: 'none', bgcolor: 'warning.main', color: 'text.primary',
+                '&:hover': { bgcolor: 'warning.dark' },
+              }}
+            >
               Pause
-            </button>
-            <button onClick={() => updateStatus('completed')} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', background: '#4CAF50', color: 'white' }}>
+            </Button>
+            <Button
+              onClick={() => updateStatus('completed')}
+              size="small"
+              sx={{
+                px: 1.5, py: 0.5, borderRadius: '20px', fontSize: '12px', fontWeight: 700,
+                textTransform: 'none', bgcolor: 'success.main', color: 'white',
+                '&:hover': { bgcolor: 'success.dark' },
+              }}
+            >
               Complete
-            </button>
+            </Button>
           </>
         )}
         {task.status === 'completed' && (
-          <button onClick={() => updateStatus('in_progress')} style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', background: '#48484A', color: 'white' }}>
+          <Button
+            onClick={() => updateStatus('in_progress')}
+            size="small"
+            sx={{
+              px: 1.5, py: 0.5, borderRadius: '20px', fontSize: '12px', fontWeight: 700,
+              textTransform: 'none', bgcolor: 'secondary.main', color: 'white',
+              '&:hover': { bgcolor: 'secondary.dark' },
+            }}
+          >
             Reopen
-          </button>
+          </Button>
         )}
-      </div>
+      </Box>
 
-      {/* ── Task Info Card ── */}
-      <div style={styles.card}>
-        <h2 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 6px', color: '#48484A' }}>
+      {/* -- Task Info Card -- */}
+      <Paper elevation={1} sx={{ borderRadius: '12px', p: 2, mb: 1.5, cursor: 'default' }}>
+        <Typography variant="h2" sx={{ fontSize: '17px', fontWeight: 700, m: 0, mb: 0.75, color: 'text.primary' }}>
           {task.title}
-        </h2>
+        </Typography>
         {task.description && (
-          <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--charcoal)', margin: '0 0 12px', lineHeight: 1.4 }}>
+          <Typography sx={{ fontSize: '15px', fontWeight: 600, color: 'text.primary', m: 0, mb: 1.5, lineHeight: 1.4 }}>
             {task.description}
-          </p>
+          </Typography>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {task.assigned_to_name && (
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Assigned to</span>
-              <span style={styles.infoValue}>{task.assigned_to_name}{task.assigned_to_role ? ` (${task.assigned_to_role})` : ''}</span>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary' }}>Assigned to</Typography>
+              <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>
+                {task.assigned_to_name}{task.assigned_to_role ? ` (${task.assigned_to_role})` : ''}
+              </Typography>
+            </Box>
           )}
           {task.created_by_name && (
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Created by</span>
-              <span style={styles.infoValue}>{task.created_by_name}</span>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary' }}>Created by</Typography>
+              <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>{task.created_by_name}</Typography>
+            </Box>
           )}
           {task.start_date && (
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Start date</span>
-              <span style={styles.infoValue}>{formatDate(task.start_date)}</span>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary' }}>Start date</Typography>
+              <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>{formatDate(task.start_date)}</Typography>
+            </Box>
           )}
           {task.target_end_date && (
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Target end</span>
-              <span style={styles.infoValue}>{formatDate(task.target_end_date)}</span>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary' }}>Target end</Typography>
+              <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>{formatDate(task.target_end_date)}</Typography>
+            </Box>
           )}
           {task.location && (
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Location</span>
-              <span style={styles.infoValue}>{task.location}</span>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary' }}>Location</Typography>
+              <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'text.primary' }}>{task.location}</Typography>
+            </Box>
           )}
           {task.priority && task.priority !== 'normal' && (
-            <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>Priority</span>
-              <span style={{
-                ...styles.infoValue,
-                color: 'white',
-                background: priorityColors[task.priority] || '#48484A',
-                padding: '2px 10px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: 700,
-                display: 'inline-block',
-              }}>
-                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-              </span>
-            </div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary' }}>Priority</Typography>
+              <Chip
+                label={task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                size="small"
+                sx={{
+                  color: 'white',
+                  bgcolor: priorityColors[task.priority] || 'secondary.main',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                }}
+              />
+            </Box>
           )}
-        </div>
-      </div>
+        </Box>
+      </Paper>
 
-
-      {/* ── Today's Entry ── */}
-      <div style={{
-        ...styles.card,
-        border: '2px solid #E8922A',
-        marginBottom: '20px',
-      }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px', color: '#48484A' }}>
+      {/* -- Today's Entry -- */}
+      <Paper
+        elevation={1}
+        sx={{
+          borderRadius: '12px',
+          p: 2,
+          mb: 2.5,
+          border: '2px solid',
+          borderColor: 'warning.main',
+        }}
+      >
+        <Typography variant="h3" sx={{ fontSize: '16px', fontWeight: 700, m: 0, mb: 2, color: 'text.primary' }}>
           Today — {todayFormatted}
-        </h3>
+        </Typography>
 
         {/* JSA Row */}
-        <div style={{ ...styles.entryRow, flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#48484A' }}>JSA</span>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 1, justifyContent: 'space-between', py: 1.5, borderTop: '1px solid rgba(72,72,74,0.15)' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: '14px', fontWeight: 700, color: 'text.primary' }}>JSA</Typography>
             {todayEntry?.jsa_id ? (
-              <button
+              <Button
                 onClick={() => onNavigate('jsa', { viewJsaId: todayEntry.jsa_id })}
-                style={{
-                  background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px',
-                  padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                sx={{
+                  bgcolor: 'success.main', color: 'white', borderRadius: '8px',
+                  px: 1.75, py: 1, fontSize: '13px', fontWeight: 700, textTransform: 'none',
+                  '&:hover': { bgcolor: 'success.dark' },
                 }}
               >
                 {todayEntry.jsa_number || 'JSA'} ✓
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 onClick={() => { setShowJsaOptions(!showJsaOptions); if (!showJsaOptions) loadMyTodayJSAs(); }}
-                style={{
-                  background: '#E8922A', color: 'var(--charcoal)', border: 'none', borderRadius: '8px',
-                  padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                sx={{
+                  bgcolor: 'warning.main', color: 'text.primary', borderRadius: '8px',
+                  px: 1.75, py: 1, fontSize: '13px', fontWeight: 700, textTransform: 'none',
+                  '&:hover': { bgcolor: 'warning.dark' },
                 }}
               >
                 JSA
-              </button>
+              </Button>
             )}
-          </div>
-          {/* JSA Options — Create or Link */}
+          </Box>
+
+          {/* JSA Options -- Create or Link */}
           {showJsaOptions && !todayEntry?.jsa_id && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#f5f3f0', borderRadius: '8px', padding: '12px' }}>
-              <button
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, bgcolor: 'grey.100', borderRadius: '8px', p: 1.5 }}>
+              <Button
                 onClick={() => { setShowJsaOptions(false); onNavigate('jsa', { taskId: task.id, taskTitle: task.title, taskDescription: task.description }); }}
-                style={{
-                  background: '#E8922A', color: 'var(--charcoal)', border: 'none', borderRadius: '8px',
-                  padding: '10px 14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', textAlign: 'center',
+                sx={{
+                  bgcolor: 'warning.main', color: 'text.primary', borderRadius: '8px',
+                  px: 1.75, py: 1.25, fontSize: '14px', fontWeight: 700, textTransform: 'none',
+                  textAlign: 'center',
+                  '&:hover': { bgcolor: 'warning.dark' },
                 }}
               >
                 {t('jsa.createNew') || 'Create New JSA'}
-              </button>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#48484A', textAlign: 'center' }}>— or —</div>
+              </Button>
+              <Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary', textAlign: 'center' }}>— or —</Typography>
               {loadingJSAs ? (
-                <div style={{ textAlign: 'center', color: 'var(--charcoal)', fontSize: '13px', padding: '8px' }}>Loading...</div>
+                <Box sx={{ textAlign: 'center', p: 1 }}>
+                  <CircularProgress size={20} sx={{ color: 'warning.main' }} />
+                </Box>
               ) : myTodayJSAs.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'var(--charcoal)', fontSize: '13px', padding: '8px' }}>
+                <Typography sx={{ textAlign: 'center', color: 'text.primary', fontSize: '13px', p: 1 }}>
                   {t('jsa.noExistingToday') || 'No existing JSAs for today'}
-                </div>
+                </Typography>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#48484A' }}>{t('jsa.linkExisting') || 'Link Existing JSA'}:</div>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary' }}>{t('jsa.linkExisting') || 'Link Existing JSA'}:</Typography>
                   {myTodayJSAs.map(jsa => (
-                    <button
+                    <Button
                       key={jsa.id}
                       onClick={() => linkJsaToTask(jsa.id)}
                       disabled={linkingJsa}
-                      style={{
-                        background: 'white', border: '2px solid #E8922A', borderRadius: '8px',
-                        padding: '10px 12px', cursor: 'pointer', textAlign: 'left',
+                      sx={{
+                        bgcolor: 'white', border: '2px solid', borderColor: 'warning.main', borderRadius: '8px',
+                        px: 1.5, py: 1.25, textAlign: 'left', textTransform: 'none',
                         opacity: linkingJsa ? 0.6 : 1,
+                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                        '&:hover': { bgcolor: 'grey.50' },
                       }}
                     >
-                      <div style={{ fontWeight: 700, fontSize: '13px', color: '#48484A' }}>{jsa.jsa_number}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--charcoal)', marginTop: '2px' }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '13px', color: 'text.primary' }}>{jsa.jsa_number}</Typography>
+                      <Typography sx={{ fontSize: '12px', color: 'text.primary', mt: 0.25 }}>
                         {(jsa.form_data?.task_description || '').slice(0, 80)}{(jsa.form_data?.task_description || '').length > 80 ? '...' : ''}
-                      </div>
-                    </button>
+                      </Typography>
+                    </Button>
                   ))}
-                </div>
+                </Box>
               )}
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
 
         {/* Daily Report Row */}
-        <div style={{ ...styles.entryRow, flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#48484A' }}>{t('common.dailyReport')}</span>
-            <div style={{ display: 'flex', gap: '6px' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 1, justifyContent: 'space-between', py: 1.5, borderTop: '1px solid rgba(72,72,74,0.15)' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: '14px', fontWeight: 700, color: 'text.primary' }}>{t('common.dailyReport')}</Typography>
+            <Box sx={{ display: 'flex', gap: 0.75 }}>
               {todayEntry?.shift_structured && (
-                <button
+                <Button
                   onClick={() => setShowAddNote(!showAddNote)}
-                  style={{
-                    background: 'white', color: '#48484A', border: '2px solid #48484A', borderRadius: '8px',
-                    padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    color: 'text.primary', borderColor: 'secondary.main', borderWidth: 2, borderRadius: '8px',
+                    px: 1.5, py: 0.75, fontSize: '12px', fontWeight: 700, textTransform: 'none',
                   }}
                 >
                   {t('common.addNote')}
-                </button>
+                </Button>
               )}
               {todayEntry?.shift_structured ? (
-                <button
+                <Button
                   onClick={() => setExpandedDay(expandedDay === 'today' ? null : 'today')}
-                  style={{
-                    background: '#48484A', color: 'var(--primary)', border: 'none', borderRadius: '8px',
-                    padding: '6px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  size="small"
+                  sx={{
+                    bgcolor: 'secondary.main', color: 'warning.main', borderRadius: '8px',
+                    px: 1.75, py: 0.75, fontSize: '13px', fontWeight: 700, textTransform: 'none',
+                    '&:hover': { bgcolor: 'secondary.dark' },
                   }}
                 >
                   {expandedDay === 'today' ? 'Collapse' : 'View'}
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={() => setShowShiftUpdate(true)}
-                  style={{
-                    background: '#E8922A', color: 'var(--charcoal)', border: 'none', borderRadius: '8px',
-                    padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  size="small"
+                  sx={{
+                    bgcolor: 'warning.main', color: 'text.primary', borderRadius: '8px',
+                    px: 1.75, py: 1, fontSize: '13px', fontWeight: 700, textTransform: 'none',
+                    '&:hover': { bgcolor: 'warning.dark' },
                   }}
                 >
                   {t('common.recordDailyReport')}
-                </button>
+                </Button>
               )}
-            </div>
-          </div>
+            </Box>
+          </Box>
           {todayEntry?.shift_structured && (
-            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--charcoal)', margin: 0, lineHeight: 1.4 }}>
+            <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'text.primary', m: 0, lineHeight: 1.4 }}>
               {expandedDay === 'today'
                 ? todayEntry.shift_structured
                 : todayEntry.shift_structured.slice(0, 150) + (todayEntry.shift_structured.length > 150 ? '...' : '')}
-            </p>
+            </Typography>
           )}
           {todayEntry?.hours_worked != null && (
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#48484A' }}>
+            <Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary' }}>
               Hours worked: {todayEntry.hours_worked}
-            </span>
+            </Typography>
           )}
           {/* Notes list */}
           {todayEntry?.notes?.length > 0 && (
-            <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <Box sx={{ mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               {todayEntry.notes.map((note, i) => (
-                <div key={i} style={{ fontSize: '13px', color: '#48484A', background: '#f5f3f0', borderRadius: '6px', padding: '8px 10px', lineHeight: 1.4 }}>
-                  <span style={{ fontWeight: 600, color: 'var(--charcoal)', fontSize: '11px' }}>
+                <Box key={i} sx={{ fontSize: '13px', color: 'text.primary', bgcolor: 'grey.100', borderRadius: '6px', p: '8px 10px', lineHeight: 1.4 }}>
+                  <Typography component="span" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '11px' }}>
                     {note.time ? new Date(note.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                  </span>
+                  </Typography>
                   {' '}{note.text}
-                </div>
+                </Box>
               ))}
-            </div>
+            </Box>
           )}
           {/* Add Note form */}
           {showAddNote && (
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <textarea
+            <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+              <TextField
                 value={noteText}
                 onChange={e => setNoteText(e.target.value)}
                 placeholder="Add a note..."
+                multiline
                 rows={2}
-                style={{
-                  flex: 1, padding: '10px', border: '2px solid #48484A', borderRadius: '8px',
-                  fontSize: '14px', resize: 'none', fontFamily: 'inherit', color: '#48484A',
+                fullWidth
+                slotProps={{
+                  htmlInput: {
+                    style: { fontSize: '14px', fontFamily: 'inherit', color: '#48484A' },
+                  },
+                }}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    '& fieldset': { borderWidth: 2, borderColor: 'secondary.main' },
+                  },
                 }}
               />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <button
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Button
                   onClick={saveNote}
                   disabled={savingNote || !noteText.trim()}
-                  style={{
-                    background: '#E8922A', color: 'var(--charcoal)', border: 'none', borderRadius: '8px',
-                    padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  size="small"
+                  sx={{
+                    bgcolor: 'warning.main', color: 'text.primary', borderRadius: '8px',
+                    px: 1.75, py: 1, fontSize: '13px', fontWeight: 700, textTransform: 'none',
                     opacity: savingNote || !noteText.trim() ? 0.5 : 1,
+                    '&:hover': { bgcolor: 'warning.dark' },
                   }}
                 >
                   {savingNote ? '...' : 'Save'}
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => { setShowAddNote(false); setNoteText(''); }}
-                  style={{
-                    background: 'white', color: 'var(--charcoal)', border: '1px solid #48484A', borderRadius: '8px',
-                    padding: '6px 10px', fontSize: '12px', cursor: 'pointer',
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    color: 'text.primary', borderColor: 'secondary.main', borderRadius: '8px',
+                    px: 1.25, py: 0.75, fontSize: '12px', textTransform: 'none',
                   }}
                 >
                   Cancel
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Box>
+            </Box>
           )}
-        </div>
+        </Box>
 
         {/* Photos Row */}
-        <div style={{ ...styles.entryRow, flexDirection: 'column', alignItems: 'stretch', gap: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#48484A' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 1.25, justifyContent: 'space-between', py: 1.5, borderTop: '1px solid rgba(72,72,74,0.15)' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: '14px', fontWeight: 700, color: 'text.primary' }}>
               Photos {todayEntry?.photos?.length ? `(${todayEntry.photos.length})` : ''}
-            </span>
-            <button
+            </Typography>
+            <Button
               onClick={() => photoRef.current?.click()}
               disabled={uploading}
-              style={{
-                background: '#E8922A', color: 'var(--charcoal)', border: 'none', borderRadius: '8px',
-                padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+              size="small"
+              sx={{
+                bgcolor: 'warning.main', color: 'text.primary', borderRadius: '8px',
+                px: 1.75, py: 1, fontSize: '13px', fontWeight: 700, textTransform: 'none',
                 opacity: uploading ? 0.6 : 1,
+                '&:hover': { bgcolor: 'warning.dark' },
               }}
             >
               {uploading ? 'Uploading...' : 'Add Photo'}
-            </button>
-          </div>
+            </Button>
+          </Box>
           {todayEntry?.photos?.length > 0 && (
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {todayEntry.photos.map((photo, i) => (
-                <img
+                <Box
                   key={i}
+                  component="img"
                   src={`/photos/${typeof photo === 'string' ? photo : photo.filename}`}
                   alt={`Photo ${i + 1}`}
-                  style={{
+                  sx={{
                     width: '64px', height: '64px', objectFit: 'cover',
                     borderRadius: '8px', border: '2px solid #e0e0e0',
                   }}
                 />
               ))}
-            </div>
+            </Box>
           )}
-        </div>
-      </div>
+        </Box>
+      </Paper>
 
-      {/* Previous Days removed — history lives on the person's profile page */}
-    </div>
+      {/* Previous Days removed -- history lives on the person's profile page */}
+    </Box>
   );
 }
 
@@ -535,33 +618,3 @@ function formatDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
-
-const styles = {
-  backBtn: {
-    background: 'none', border: 'none', color: '#E8922A', fontSize: '15px',
-    fontWeight: 700, cursor: 'pointer', padding: '8px 4px',
-  },
-  card: {
-    background: 'white', borderRadius: '12px', padding: '16px',
-    marginBottom: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    cursor: 'default',
-  },
-  infoRow: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  },
-  infoLabel: {
-    fontSize: '13px', fontWeight: 700, color: 'var(--charcoal)',
-  },
-  infoValue: {
-    fontSize: '14px', fontWeight: 600, color: '#48484A',
-  },
-  entryRow: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '12px 0', borderTop: '1px solid rgba(72,72,74,0.15)',
-  },
-  actionBtn: {
-    border: 'none', borderRadius: '10px', padding: '12px 24px',
-    fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-    minHeight: '48px', flex: 1,
-  },
-};

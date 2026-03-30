@@ -1,5 +1,6 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
 
 export default forwardRef(function ReportsView({ user, onOpenReport, reportsPersonId, setReportsPersonId, activeTrade, onNavigate }, ref) {
   const { t } = useTranslation();
@@ -66,20 +67,30 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
     const person = people.find(p => p.id === report.person_id);
     const sd = formatSmartDate(report.created_at);
     return (
-      <button key={report.id} className="report-card" style={{marginBottom: '6px', width: '100%', textAlign: 'left'}} onClick={() => onOpenReport(report.id)}>
-        <div className="report-card-header">
-          <span className="report-date" style={{fontWeight: 700}}>{person?.name || 'Unknown'}</span>
-          <span style={{fontSize: '12px', color: 'var(--charcoal)'}}>{sd.main} · {sd.sub}</span>
-        </div>
-        <div className="report-preview">
-          <span style={{color: 'var(--primary)', fontSize: '12px', marginRight: '6px'}}>{person?.role_title || ''}</span>
+      <Button
+        key={report.id}
+        className="report-card"
+        sx={{ mb: '6px', width: '100%', textAlign: 'left', textTransform: 'none', justifyContent: 'flex-start', display: 'block' }}
+        onClick={() => onOpenReport(report.id)}
+      >
+        <Box className="report-card-header">
+          <Typography component="span" className="report-date" sx={{ fontWeight: 700 }}>{person?.name || 'Unknown'}</Typography>
+          <Typography component="span" sx={{ fontSize: '12px', color: 'text.primary' }}>{sd.main} · {sd.sub}</Typography>
+        </Box>
+        <Box className="report-preview">
+          <Typography component="span" sx={{ color: 'primary.main', fontSize: '12px', mr: '6px' }}>{person?.role_title || ''}</Typography>
           {(report.preview || report.transcript_raw || '').substring(0, 60)}...
-        </div>
-      </button>
+        </Box>
+      </Button>
     );
   };
 
-  if (loading) return <div className="loading">{t('common.loading')}</div>;
+  if (loading) return (
+    <Box className="loading" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <CircularProgress />
+      <Typography sx={{ ml: 2 }}>{t('common.loading')}</Typography>
+    </Box>
+  );
 
   // Role groups for category view (lowest first like People)
   const roleGroupsByTrade = {
@@ -147,8 +158,10 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
     const groupReports = allReports.filter(r => groupPeople.some(p => p.id === r.person_id));
 
     return (
-      <div className="office-view">
-        <h2 className="office-title" style={{marginBottom: '20px'}}>{group?.label} <span style={{color: 'var(--primary)', fontSize: '20px'}}>({groupReports.length} reports)</span></h2>
+      <Box className="office-view">
+        <Typography variant="h2" className="office-title" sx={{ mb: '20px' }}>
+          {group?.label} <Typography component="span" sx={{ color: 'primary.main', fontSize: '20px' }}>({groupReports.length} reports)</Typography>
+        </Typography>
 
         {groupPeople.map(person => {
           const personReports = allReports.filter(r => r.person_id === person.id);
@@ -161,49 +174,50 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
           });
 
           return (
-            <div key={person.id} style={{marginBottom: '24px'}}>
-              <div style={{background: 'var(--charcoal)', color: 'var(--primary)', padding: '12px 18px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                <span style={{fontWeight: 700, fontSize: '16px'}}>{person.name}</span>
-                <span style={{fontSize: '13px', color: 'var(--gray-400)'}}>{personReports.length} reports</span>
-              </div>
-              <div style={{border: '2px solid var(--gray-200)', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '12px 14px'}}>
+            <Box key={person.id} sx={{ mb: '24px' }}>
+              <Box sx={{ background: 'var(--charcoal)', color: 'primary.main', p: '12px 18px', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography component="span" sx={{ fontWeight: 700, fontSize: '16px' }}>{person.name}</Typography>
+                <Typography component="span" sx={{ fontSize: '13px', color: 'grey.400' }}>{personReports.length} reports</Typography>
+              </Box>
+              <Box sx={{ border: '2px solid', borderColor: 'grey.200', borderTop: 'none', borderRadius: '0 0 10px 10px', p: '12px 14px' }}>
                 {personReports.length === 0 ? (
-                  <p style={{color: 'var(--gray-400)', fontSize: '13px', margin: 0}}>{t('reports.noReports')}</p>
+                  <Typography sx={{ color: 'grey.400', fontSize: '13px', m: 0 }}>{t('reports.noReports')}</Typography>
                 ) : groupOrder.map(key => {
                   const isThisWeek = key === 'this_week';
                   const folderKey = 'oc_' + person.id + '_' + key;
                   const isOpen = isThisWeek || expandedFolders[folderKey];
                   return (
-                    <div key={key} style={{marginBottom: '8px'}}>
-                      <div
+                    <Box key={key} sx={{ mb: '8px' }}>
+                      <Box
                         onClick={() => !isThisWeek && toggleFolder(folderKey)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px',
-                          background: isThisWeek ? 'transparent' : 'var(--gray-100)',
+                        sx={{
+                          display: 'flex', alignItems: 'center', gap: '8px', p: '8px 10px',
+                          background: isThisWeek ? 'transparent' : 'grey.100',
                           borderRadius: isThisWeek ? 0 : '8px',
                           cursor: isThisWeek ? 'default' : 'pointer',
-                          fontWeight: 600, fontSize: '14px', color: 'var(--charcoal)',
-                          borderBottom: isThisWeek ? '2px solid var(--primary)' : 'none',
+                          fontWeight: 600, fontSize: '14px', color: 'text.primary',
+                          borderBottom: isThisWeek ? '2px solid' : 'none',
+                          borderBottomColor: isThisWeek ? 'primary.main' : undefined,
                         }}
                       >
-                        {!isThisWeek && <span style={{fontSize: '13px'}}>📁</span>}
-                        <span style={{flex: 1}}>{getWeekLabel2(key)}</span>
-                        <span style={{fontSize: '12px', color: 'var(--primary)', fontWeight: 600}}>{groups[key].length}</span>
-                        {!isThisWeek && <span style={{fontSize: '11px'}}>{isOpen ? '▼' : '▶'}</span>}
-                      </div>
+                        {!isThisWeek && <Typography component="span" sx={{ fontSize: '13px' }}>📁</Typography>}
+                        <Typography component="span" sx={{ flex: 1 }}>{getWeekLabel2(key)}</Typography>
+                        <Typography component="span" sx={{ fontSize: '12px', color: 'primary.main', fontWeight: 600 }}>{groups[key].length}</Typography>
+                        {!isThisWeek && <Typography component="span" sx={{ fontSize: '11px' }}>{isOpen ? '▼' : '▶'}</Typography>}
+                      </Box>
                       {isOpen && (
-                        <div style={{padding: isThisWeek ? '4px 0' : '4px 8px'}}>
+                        <Box sx={{ p: isThisWeek ? '4px 0' : '4px 8px' }}>
                           {groups[key].map(renderReportCard)}
-                        </div>
+                        </Box>
                       )}
-                    </div>
+                    </Box>
                   );
                 })}
-              </div>
-            </div>
+              </Box>
+            </Box>
           );
         })}
-      </div>
+      </Box>
     );
   }
 
@@ -246,19 +260,20 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
   };
 
   return (
-    <div className="office-view">
-      <h2 className="office-title" style={{fontWeight: 800}}>{t('reports.title')}</h2>
+    <Box className="office-view">
+      <Typography variant="h2" className="office-title" sx={{ fontWeight: 800 }}>{t('reports.title')}</Typography>
 
       {/* Voice Report button */}
-      <div style={{textAlign: 'center', marginBottom: '20px'}}>
-        <button
+      <Box sx={{ textAlign: 'center', mb: '20px' }}>
+        <Button
           onClick={() => onNavigate && onNavigate('record')}
-          style={{
+          sx={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '10px 20px',
+            p: '10px 20px',
             background: 'white', border: '2px solid var(--charcoal)',
             borderRadius: '10px', cursor: 'pointer',
-            fontSize: '16px', fontWeight: 700, color: 'var(--primary)'
+            fontSize: '16px', fontWeight: 700, color: 'primary.main',
+            textTransform: 'none',
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--primary)">
@@ -266,18 +281,18 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
           </svg>
           {t('reports.voiceReport')}
-        </button>
-      </div>
+        </Button>
+      </Box>
 
       {/* Tab switcher */}
-      <div style={{display: 'flex', gap: '0', marginBottom: '20px', border: '2px solid var(--charcoal)', borderRadius: '10px', overflow: 'hidden', maxWidth: '400px', margin: '0 auto 20px'}}>
-        <button onClick={() => setTab('category')} style={{flex: 1, padding: '14px 8px', border: 'none', fontSize: '20px', fontWeight: 700, cursor: 'pointer', background: tab === 'category' ? 'var(--charcoal)' : 'white', color: 'var(--primary)', whiteSpace: 'nowrap'}}>{t('reports.category')}</button>
-        <button onClick={() => setTab('timeline')} style={{flex: 1, padding: '14px 8px', border: 'none', fontSize: '20px', fontWeight: 700, cursor: 'pointer', background: tab === 'timeline' ? 'var(--charcoal)' : 'white', color: 'var(--primary)', borderLeft: '2px solid var(--charcoal)', whiteSpace: 'nowrap'}}>{t('reports.timeline')}</button>
-      </div>
+      <Box sx={{ display: 'flex', gap: '0', mb: '20px', border: '2px solid var(--charcoal)', borderRadius: '10px', overflow: 'hidden', maxWidth: '400px', margin: '0 auto 20px' }}>
+        <Button onClick={() => setTab('category')} sx={{ flex: 1, p: '14px 8px', border: 'none', fontSize: '20px', fontWeight: 700, cursor: 'pointer', background: tab === 'category' ? 'var(--charcoal)' : 'white', color: 'primary.main', whiteSpace: 'nowrap', textTransform: 'none', borderRadius: 0 }}>{t('reports.category')}</Button>
+        <Button onClick={() => setTab('timeline')} sx={{ flex: 1, p: '14px 8px', border: 'none', fontSize: '20px', fontWeight: 700, cursor: 'pointer', background: tab === 'timeline' ? 'var(--charcoal)' : 'white', color: 'primary.main', borderLeft: '2px solid var(--charcoal)', whiteSpace: 'nowrap', textTransform: 'none', borderRadius: 0 }}>{t('reports.timeline')}</Button>
+      </Box>
 
       {/* CATEGORY VIEW — bubbles navigate to full-screen */}
       {tab === 'category' && (
-        <div className="people-grid">
+        <Box className="people-grid">
           {/* My Reports — for non-admin, shown first in the grid */}
           {!user.is_admin && (() => {
             const myReports = allReports.filter(r => r.person_id === user.person_id);
@@ -285,27 +300,27 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
             const sorted = [...myReports].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             const preview = sorted.slice(0, 4);
             return (
-              <div className="people-category-bubble">
-                <div className="people-category-header" onClick={() => setSelectedCategory('mine')} style={{cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px'}}>
-                  <span className="people-category-label" style={{flex: 1}}>{t('reports.myReports')}</span>
-                  <span className="people-category-count">{myReports.length}</span>
-                  <span style={{fontSize: '14px'}}>▶</span>
-                </div>
+              <Paper className="people-category-bubble" elevation={0}>
+                <Box className="people-category-header" onClick={() => setSelectedCategory('mine')} sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Typography component="span" className="people-category-label" sx={{ flex: 1 }}>{t('reports.myReports')}</Typography>
+                  <Typography component="span" className="people-category-count">{myReports.length}</Typography>
+                  <Typography component="span" sx={{ fontSize: '14px' }}>▶</Typography>
+                </Box>
                 {preview.length > 0 && (
-                  <div className="people-category-body" style={{maxHeight: '220px', overflowY: 'auto'}}>
+                  <Box className="people-category-body" sx={{ maxHeight: '220px', overflowY: 'auto' }}>
                     {preview.map(r => {
                       const sd = formatSmartDate(r.created_at);
                       return (
-                        <div key={r.id} className="report-card" style={{marginBottom: '4px', cursor: 'pointer', padding: '8px 10px', borderBottom: '1px solid #f0f0f0'}} onClick={() => onOpenReport && onOpenReport(r.id)}>
-                          <div style={{fontSize: '13px', color: 'var(--charcoal)'}}>{sd.main} · {sd.sub}</div>
-                          <div style={{fontSize: '13px', color: 'var(--charcoal)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{(r.transcript_raw || r.structured_report || '').substring(0, 60)}...</div>
-                        </div>
+                        <Box key={r.id} className="report-card" sx={{ mb: '4px', cursor: 'pointer', p: '8px 10px', borderBottom: '1px solid #f0f0f0' }} onClick={() => onOpenReport && onOpenReport(r.id)}>
+                          <Typography sx={{ fontSize: '13px', color: 'text.primary' }}>{sd.main} · {sd.sub}</Typography>
+                          <Typography sx={{ fontSize: '13px', color: 'text.primary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(r.transcript_raw || r.structured_report || '').substring(0, 60)}...</Typography>
+                        </Box>
                       );
                     })}
-                    {myReports.length > 4 && <div style={{fontSize: '13px', color: 'var(--primary)', textAlign: 'center', padding: '6px', cursor: 'pointer'}} onClick={() => setSelectedCategory('mine')}>+{myReports.length - 4} more</div>}
-                  </div>
+                    {myReports.length > 4 && <Typography sx={{ fontSize: '13px', color: 'primary.main', textAlign: 'center', p: '6px', cursor: 'pointer' }} onClick={() => setSelectedCategory('mine')}>+{myReports.length - 4} more</Typography>}
+                  </Box>
                 )}
-              </div>
+              </Paper>
             );
           })()}
           {[...roleGroups].sort((a, b) => {
@@ -321,40 +336,40 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
             const sorted = [...groupReports].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             const preview = sorted.slice(0, 4);
             return (
-              <div key={group.level} className="people-category-bubble">
-                <div className="people-category-header" onClick={() => setSelectedCategory(group.level)} style={{cursor: 'pointer'}}>
-                  <span className="people-category-label">{group.label}</span>
-                  <span className="people-category-count">{groupReports.length}</span>
-                  <span style={{fontSize: '14px', marginLeft: '4px'}}>▶</span>
-                </div>
+              <Paper key={group.level} className="people-category-bubble" elevation={0}>
+                <Box className="people-category-header" onClick={() => setSelectedCategory(group.level)} sx={{ cursor: 'pointer' }}>
+                  <Typography component="span" className="people-category-label">{group.label}</Typography>
+                  <Typography component="span" className="people-category-count">{groupReports.length}</Typography>
+                  <Typography component="span" sx={{ fontSize: '14px', ml: '4px' }}>▶</Typography>
+                </Box>
                 {preview.length > 0 && (
-                  <div className="people-category-body" style={{maxHeight: '220px', overflowY: 'auto'}}>
+                  <Box className="people-category-body" sx={{ maxHeight: '220px', overflowY: 'auto' }}>
                     {preview.map(r => {
                       const person = groupPeople.find(p => p.id === r.person_id);
                       const sd = formatSmartDate(r.created_at);
                       return (
-                        <div key={r.id} className="report-card" style={{marginBottom: '4px', cursor: 'pointer', padding: '8px 10px', borderBottom: '1px solid #f0f0f0'}} onClick={() => onOpenReport && onOpenReport(r.id)}>
-                          <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <span style={{fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)'}}>{person?.name || 'Unknown'}</span>
-                            <span style={{fontSize: '12px', color: 'var(--charcoal)'}}>{sd.main}</span>
-                          </div>
-                          <div style={{fontSize: '13px', color: 'var(--charcoal)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{(r.transcript_raw || r.structured_report || '').substring(0, 50)}...</div>
-                        </div>
+                        <Box key={r.id} className="report-card" sx={{ mb: '4px', cursor: 'pointer', p: '8px 10px', borderBottom: '1px solid #f0f0f0' }} onClick={() => onOpenReport && onOpenReport(r.id)}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography component="span" sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary' }}>{person?.name || 'Unknown'}</Typography>
+                            <Typography component="span" sx={{ fontSize: '12px', color: 'text.primary' }}>{sd.main}</Typography>
+                          </Box>
+                          <Typography sx={{ fontSize: '13px', color: 'text.primary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(r.transcript_raw || r.structured_report || '').substring(0, 50)}...</Typography>
+                        </Box>
                       );
                     })}
-                    {groupReports.length > 4 && <div style={{fontSize: '13px', color: 'var(--primary)', textAlign: 'center', padding: '6px', cursor: 'pointer'}} onClick={() => setSelectedCategory(group.level)}>+{groupReports.length - 4} more</div>}
-                  </div>
+                    {groupReports.length > 4 && <Typography sx={{ fontSize: '13px', color: 'primary.main', textAlign: 'center', p: '6px', cursor: 'pointer' }} onClick={() => setSelectedCategory(group.level)}>+{groupReports.length - 4} more</Typography>}
+                  </Box>
                 )}
-              </div>
+              </Paper>
             );
           })}
-          {allReports.length === 0 && <p className="office-empty">{t('reports.getStarted')}</p>}
-        </div>
+          {allReports.length === 0 && <Typography className="office-empty">{t('reports.getStarted')}</Typography>}
+        </Box>
       )}
 
       {/* TIMELINE VIEW */}
       {tab === 'timeline' && (
-        <div>
+        <Box>
           {(() => {
             // Group reports by week/month
             const groups = {};
@@ -365,40 +380,41 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
               groups[key].push(r);
             });
 
-            if (groupOrder.length === 0) return <p className="office-empty">{t('reports.noReports')}</p>;
+            if (groupOrder.length === 0) return <Typography className="office-empty">{t('reports.noReports')}</Typography>;
 
             return groupOrder.map(key => {
               const isThisWeek = key === 'this_week';
               const isOpen = isThisWeek || expandedFolders['tl_' + key];
               return (
-                <div key={key} style={{marginBottom: '16px'}}>
-                  <div
+                <Box key={key} sx={{ mb: '16px' }}>
+                  <Box
                     onClick={() => !isThisWeek && toggleFolder('tl_' + key)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px',
-                      background: isThisWeek ? 'transparent' : 'var(--gray-100)',
+                    sx={{
+                      display: 'flex', alignItems: 'center', gap: '10px', p: '12px 16px',
+                      background: isThisWeek ? 'transparent' : 'grey.100',
                       borderRadius: isThisWeek ? 0 : '10px',
                       cursor: isThisWeek ? 'default' : 'pointer',
-                      fontWeight: 700, fontSize: '16px', color: 'var(--charcoal)',
-                      borderBottom: isThisWeek ? '2px solid var(--primary)' : 'none',
+                      fontWeight: 700, fontSize: '16px', color: 'text.primary',
+                      borderBottom: isThisWeek ? '2px solid' : 'none',
+                      borderBottomColor: isThisWeek ? 'primary.main' : undefined,
                     }}
                   >
-                    {!isThisWeek && <span>📁</span>}
-                    <span style={{flex: 1}}>{getWeekLabel(key)}</span>
-                    <span style={{fontSize: '13px', color: 'var(--primary)', fontWeight: 600}}>{groups[key].length} report{groups[key].length !== 1 ? 's' : ''}</span>
-                    {!isThisWeek && <span style={{fontSize: '12px'}}>{isOpen ? '▼' : '▶'}</span>}
-                  </div>
+                    {!isThisWeek && <Typography component="span">📁</Typography>}
+                    <Typography component="span" sx={{ flex: 1 }}>{getWeekLabel(key)}</Typography>
+                    <Typography component="span" sx={{ fontSize: '13px', color: 'primary.main', fontWeight: 600 }}>{groups[key].length} report{groups[key].length !== 1 ? 's' : ''}</Typography>
+                    {!isThisWeek && <Typography component="span" sx={{ fontSize: '12px' }}>{isOpen ? '▼' : '▶'}</Typography>}
+                  </Box>
                   {isOpen && (
-                    <div style={{padding: isThisWeek ? '8px 0' : '8px 16px'}}>
+                    <Box sx={{ p: isThisWeek ? '8px 0' : '8px 16px' }}>
                       {groups[key].map(renderReportCard)}
-                    </div>
+                    </Box>
                   )}
-                </div>
+                </Box>
               );
             });
           })()}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 })

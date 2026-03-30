@@ -1,4 +1,8 @@
 import { useState, useRef } from 'react';
+import { Box, IconButton, Typography } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import MicIcon from '@mui/icons-material/Mic';
 
 export default function VoiceMessagePlayer({ src, isMine }) {
   const audioRef = useRef(null);
@@ -42,21 +46,25 @@ export default function VoiceMessagePlayer({ src, isMine }) {
   const formatDur = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   return (
-    <div style={{display: 'flex', alignItems: 'center', gap: '10px', minWidth: '200px', padding: '4px 0'}}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 200, py: 0.5 }}>
       <audio ref={audioRef} src={src} preload="metadata" onTimeUpdate={onTimeUpdate} onLoadedMetadata={onLoadedMetadata} onEnded={onEnded} />
-      <button onClick={toggle} style={{
-        width: '36px', height: '36px', borderRadius: '50%', border: 'none',
-        background: isMine ? 'rgba(0,0,0,0.15)' : 'var(--primary)',
-        color: isMine ? 'white' : 'var(--charcoal)', fontSize: '14px', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      }}>{playing ? '\u23F8' : '\u25B6'}</button>
-      <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '4px'}}>
-        <div onClick={seekTo} style={{height: '4px', background: 'rgba(0,0,0,0.15)', borderRadius: '2px', cursor: 'pointer', position: 'relative'}}>
-          <div style={{height: '100%', width: progress + '%', background: isMine ? 'var(--charcoal)' : 'var(--primary)', borderRadius: '2px', transition: 'width 0.1s'}} />
-        </div>
-        <span style={{fontSize: '11px', color: isMine ? 'rgba(0,0,0,0.5)' : 'var(--gray-500)'}}>{duration > 0 ? formatDur(duration) : '0:00'}</span>
-      </div>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill={isMine ? 'rgba(0,0,0,0.4)' : 'var(--gray-500)'} stroke="none"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke={isMine ? 'rgba(0,0,0,0.4)' : 'var(--gray-500)'} strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke={isMine ? 'rgba(0,0,0,0.4)' : 'var(--gray-500)'} strokeWidth="2" strokeLinecap="round"/></svg>
-    </div>
+      <IconButton onClick={toggle} size="small" sx={{
+        width: 36, height: 36,
+        bgcolor: isMine ? 'rgba(0,0,0,0.15)' : 'primary.main',
+        color: isMine ? 'white' : 'secondary.main',
+        '&:hover': { bgcolor: isMine ? 'rgba(0,0,0,0.25)' : 'primary.dark' },
+      }}>
+        {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+      </IconButton>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box onClick={seekTo} sx={{ height: 4, bgcolor: 'rgba(0,0,0,0.15)', borderRadius: 1, cursor: 'pointer', position: 'relative' }}>
+          <Box sx={{ height: '100%', width: progress + '%', bgcolor: isMine ? 'secondary.main' : 'primary.main', borderRadius: 1, transition: 'width 0.1s' }} />
+        </Box>
+        <Typography sx={{ fontSize: 11, color: isMine ? 'rgba(0,0,0,0.5)' : 'text.secondary' }}>
+          {duration > 0 ? formatDur(duration) : '0:00'}
+        </Typography>
+      </Box>
+      <MicIcon sx={{ fontSize: 18, color: isMine ? 'rgba(0,0,0,0.4)' : 'text.secondary' }} />
+    </Box>
   );
 }

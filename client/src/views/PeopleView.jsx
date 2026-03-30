@@ -1,5 +1,7 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import TeamAssignment from '../components/TeamAssignment.jsx';
 import PersonEditor from '../components/people/PersonEditor.jsx';
 import PersonDashboard from '../components/people/PersonDashboard.jsx';
@@ -248,7 +250,12 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
     } catch (err) { console.error('Cert delete failed:', err); }
   };
 
-  if (loading) return <div className="loading">{t('common.loading')}</div>;
+  if (loading) return (
+    <Box className="loading" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <CircularProgress size={24} sx={{ mr: 1 }} />
+      {t('common.loading')}
+    </Box>
+  );
 
   if (editing !== null) {
     return (

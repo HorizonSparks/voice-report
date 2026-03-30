@@ -1,4 +1,15 @@
 import { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Paper,
+  CircularProgress,
+  Tabs,
+  Tab,
+  ToggleButton,
+  ToggleButtonGroup,
+} from '@mui/material';
 
 /**
  * Analytics Dashboard — Full analytics view for Control Center
@@ -38,10 +49,19 @@ export default function AnalyticsView({ goBack }) {
   const fmt = (n) => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? Math.round(n / 1000) + 'K' : (n || 0);
   const fmtDollars = (cents) => '$' + (cents / 100).toFixed(2);
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--charcoal)' }}>Loading analytics...</div>;
-  if (!data) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--charcoal)' }}>No analytics data available</div>;
+  if (loading) return (
+    <Box sx={{ padding: '40px', textAlign: 'center', color: 'text.primary' }}>
+      <CircularProgress size={24} sx={{ mr: 1 }} />
+      Loading analytics...
+    </Box>
+  );
+  if (!data) return (
+    <Box sx={{ padding: '40px', textAlign: 'center', color: 'text.primary' }}>
+      No analytics data available
+    </Box>
+  );
 
-  const tabs = [
+  const tabItems = [
     { key: 'overview', label: 'Overview' },
     { key: 'ai', label: 'AI Costs' },
     { key: 'api', label: 'API Performance' },
@@ -50,104 +70,123 @@ export default function AnalyticsView({ goBack }) {
   ];
 
   return (
-    <div style={{ paddingBottom: '60px' }}>
+    <Box sx={{ paddingBottom: '60px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <button onClick={goBack} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '8px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+        <Button onClick={goBack} variant="text" sx={{ fontSize: '18px', padding: '8px', minWidth: 'auto' }}>
           ← Back
-        </button>
-        <h2 style={{ margin: 0, color: 'var(--charcoal)', fontSize: '20px', fontWeight: 800 }}>
+        </Button>
+        <Typography variant="h2" sx={{ margin: 0, color: 'text.primary', fontSize: '20px', fontWeight: 800 }}>
           Analytics
-        </h2>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Date Range Filter */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+      <ToggleButtonGroup
+        value={dateRange}
+        exclusive
+        onChange={(e, val) => { if (val !== null) setDateRange(val); }}
+        sx={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', '& .MuiToggleButtonGroup-grouped': { border: 'none' } }}
+      >
         {[
           { key: 'today', label: 'Today' },
           { key: '7d', label: 'Last 7 Days' },
           { key: '30d', label: 'Last 30 Days' },
           { key: 'all', label: 'All Time' },
         ].map(r => (
-          <button key={r.key} onClick={() => setDateRange(r.key)} style={{
-            padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-            background: dateRange === r.key ? 'var(--primary)' : 'white',
-            color: dateRange === r.key ? '#fff' : 'var(--charcoal)',
-            border: dateRange === r.key ? '2px solid var(--primary)' : '2px solid var(--charcoal)',
-          }}>{r.label}</button>
+          <ToggleButton key={r.key} value={r.key} sx={{
+            padding: '6px 14px', borderRadius: '20px !important', fontSize: '12px', fontWeight: 600,
+            '&.Mui-selected': {
+              background: 'primary.main',
+              bgcolor: 'primary.main',
+              color: '#fff',
+              border: '2px solid',
+              borderColor: 'primary.main',
+              '&:hover': { bgcolor: 'primary.dark' },
+            },
+            '&:not(.Mui-selected)': {
+              background: 'white',
+              color: 'text.primary',
+              border: '2px solid',
+              borderColor: 'text.primary',
+            },
+          }}>{r.label}</ToggleButton>
         ))}
-      </div>
+      </ToggleButtonGroup>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '2px solid rgba(72,72,74,0.1)', paddingBottom: '8px', overflowX: 'auto' }}>
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: '8px 16px', borderRadius: '8px 8px 0 0', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-            background: tab === t.key ? 'var(--charcoal)' : 'transparent',
-            color: tab === t.key ? '#fff' : 'var(--charcoal)',
-            border: 'none', whiteSpace: 'nowrap',
-          }}>{t.label}</button>
+      <Tabs
+        value={tab}
+        onChange={(e, val) => setTab(val)}
+        sx={{ marginBottom: '20px', borderBottom: '2px solid rgba(72,72,74,0.1)' }}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        {tabItems.map(t => (
+          <Tab key={t.key} value={t.key} label={t.label} sx={{
+            fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', textTransform: 'none',
+          }} />
         ))}
-      </div>
+      </Tabs>
 
       {/* OVERVIEW TAB */}
       {tab === 'overview' && (
         <>
           {/* Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
             {[
-              { label: 'API Calls', value: fmt(data.summary?.total_api_calls), color: 'var(--primary)' },
-              { label: 'Unique Users', value: data.summary?.unique_users || 0, color: 'var(--primary)' },
-              { label: 'AI Cost', value: fmtDollars(data.summary?.total_ai_cost_cents || 0), color: '#e74c3c' },
-              { label: 'Total Tokens', value: fmt((data.costs?.by_provider || []).reduce((s, p) => s + parseInt(p.total_input_tokens || 0) + parseInt(p.total_output_tokens || 0), 0)), color: 'var(--primary)' },
+              { label: 'API Calls', value: fmt(data.summary?.total_api_calls), color: 'primary.main' },
+              { label: 'Unique Users', value: data.summary?.unique_users || 0, color: 'primary.main' },
+              { label: 'AI Cost', value: fmtDollars(data.summary?.total_ai_cost_cents || 0), color: 'error.main' },
+              { label: 'Total Tokens', value: fmt((data.costs?.by_provider || []).reduce((s, p) => s + parseInt(p.total_input_tokens || 0) + parseInt(p.total_output_tokens || 0), 0)), color: 'primary.main' },
             ].map((card, i) => (
-              <div key={i} style={{
-                background: 'white', border: '2px solid var(--charcoal)', borderRadius: '12px',
+              <Paper key={i} sx={{
+                border: '2px solid', borderColor: 'text.primary', borderRadius: '12px',
                 padding: '16px', textAlign: 'center',
               }}>
-                <div style={{ fontSize: '28px', fontWeight: 800, color: card.color }}>{card.value}</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--charcoal)', marginTop: '4px' }}>{card.label}</div>
-              </div>
+                <Typography sx={{ fontSize: '28px', fontWeight: 800, color: card.color }}>{card.value}</Typography>
+                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: 'text.primary', marginTop: '4px' }}>{card.label}</Typography>
+              </Paper>
             ))}
-          </div>
+          </Box>
 
           {/* Cost by Day (mini chart) */}
           {data.costs?.by_day?.length > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Daily AI Cost</h3>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '100px', background: 'white', borderRadius: '12px', padding: '12px', border: '1px solid rgba(72,72,74,0.1)' }}>
+            <Box sx={{ marginBottom: '24px' }}>
+              <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Daily AI Cost</Typography>
+              <Paper sx={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '100px', borderRadius: '12px', padding: '12px', border: '1px solid rgba(72,72,74,0.1)' }}>
                 {data.costs.by_day.slice(0, 14).reverse().map((day, i) => {
                   const maxCents = Math.max(...data.costs.by_day.map(d => d.total_cents || 1));
                   const h = Math.max(4, (day.total_cents / maxCents) * 80);
                   return (
-                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                      <div style={{ width: '100%', maxWidth: '24px', height: h + 'px', background: 'var(--primary)', borderRadius: '4px 4px 0 0', minWidth: '6px' }} title={day.date + ': $' + (day.total_cents / 100).toFixed(2)} />
-                      <span style={{ fontSize: '7px', color: 'var(--charcoal)', opacity: 0.5 }}>{new Date(day.date).getDate()}</span>
-                    </div>
+                    <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                      <Box sx={{ width: '100%', maxWidth: '24px', height: h + 'px', bgcolor: 'primary.main', borderRadius: '4px 4px 0 0', minWidth: '6px' }} title={day.date + ': $' + (day.total_cents / 100).toFixed(2)} />
+                      <Typography sx={{ fontSize: '7px', color: 'text.primary', opacity: 0.5 }}>{new Date(day.date).getDate()}</Typography>
+                    </Box>
                   );
                 })}
-              </div>
-            </div>
+              </Paper>
+            </Box>
           )}
 
           {/* Cost by Person (top users) */}
           {data.costs?.by_person?.length > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Top AI Users</h3>
+            <Box sx={{ marginBottom: '24px' }}>
+              <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Top AI Users</Typography>
               {data.costs.by_person.slice(0, 8).map((p, i) => (
-                <div key={i} style={{
+                <Paper key={i} sx={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '10px 14px', background: 'white', borderRadius: '10px', marginBottom: '6px',
+                  padding: '10px 14px', borderRadius: '10px', marginBottom: '6px',
                   border: '1px solid rgba(72,72,74,0.1)',
                 }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)' }}>{p.person_name || 'Unknown'}</span>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary)' }}>{fmtDollars(p.total_cost_cents)}</span>
-                    <span style={{ fontSize: '10px', color: 'var(--charcoal)', opacity: 0.6, marginLeft: '8px' }}>{p.call_count} calls</span>
-                  </div>
-                </div>
+                  <Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary' }}>{p.person_name || 'Unknown'}</Typography>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography component="span" sx={{ fontSize: '13px', fontWeight: 700, color: 'primary.main' }}>{fmtDollars(p.total_cost_cents)}</Typography>
+                    <Typography component="span" sx={{ fontSize: '10px', color: 'text.primary', opacity: 0.6, marginLeft: '8px' }}>{p.call_count} calls</Typography>
+                  </Box>
+                </Paper>
               ))}
-            </div>
+            </Box>
           )}
         </>
       )}
@@ -155,44 +194,44 @@ export default function AnalyticsView({ goBack }) {
       {/* AI COSTS TAB */}
       {tab === 'ai' && (
         <>
-          <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Cost by Provider & Service</h3>
+          <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Cost by Provider & Service</Typography>
           {(data.costs?.by_provider || []).map((p, i) => (
-            <div key={i} style={{
-              padding: '14px', background: 'white', borderRadius: '12px', marginBottom: '8px',
+            <Paper key={i} sx={{
+              padding: '14px', borderRadius: '12px', marginBottom: '8px',
               border: '1px solid rgba(72,72,74,0.1)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--charcoal)' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <Typography sx={{ fontSize: '14px', fontWeight: 700, color: 'text.primary' }}>
                   {p.provider === 'anthropic' ? '🤖 Anthropic' : '🧠 OpenAI'} — {p.service}
-                </span>
-                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--primary)' }}>{fmtDollars(p.total_cost_cents)}</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', fontSize: '11px', color: 'var(--charcoal)' }}>
-                <div><strong>{fmt(p.total_calls)}</strong><br/>Calls</div>
-                <div><strong>{fmt(parseInt(p.total_input_tokens || 0))}</strong><br/>Input Tokens</div>
-                <div><strong>{fmt(parseInt(p.total_output_tokens || 0))}</strong><br/>Output Tokens</div>
-                <div><strong>{fmtDollars(p.avg_cost_cents || 0)}</strong><br/>Avg/Call</div>
-              </div>
-            </div>
+                </Typography>
+                <Typography sx={{ fontSize: '14px', fontWeight: 800, color: 'primary.main' }}>{fmtDollars(p.total_cost_cents)}</Typography>
+              </Box>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', fontSize: '11px', color: 'text.primary' }}>
+                <Box><strong>{fmt(p.total_calls)}</strong><br/>Calls</Box>
+                <Box><strong>{fmt(parseInt(p.total_input_tokens || 0))}</strong><br/>Input Tokens</Box>
+                <Box><strong>{fmt(parseInt(p.total_output_tokens || 0))}</strong><br/>Output Tokens</Box>
+                <Box><strong>{fmtDollars(p.avg_cost_cents || 0)}</strong><br/>Avg/Call</Box>
+              </Box>
+            </Paper>
           ))}
 
           {/* Daily breakdown */}
           {data.costs?.by_day?.length > 0 && (
             <>
-              <h3 style={{ margin: '20px 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Daily Breakdown</h3>
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid rgba(72,72,74,0.1)', overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '10px 14px', fontWeight: 700, fontSize: '11px', color: 'var(--charcoal)', borderBottom: '1px solid rgba(72,72,74,0.1)' }}>
-                  <span>Date</span><span>Anthropic</span><span>OpenAI</span><span>Total</span>
-                </div>
+              <Typography variant="h3" sx={{ margin: '20px 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Daily Breakdown</Typography>
+              <Paper sx={{ borderRadius: '12px', border: '1px solid rgba(72,72,74,0.1)', overflow: 'hidden' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '10px 14px', fontWeight: 700, fontSize: '11px', color: 'text.primary', borderBottom: '1px solid rgba(72,72,74,0.1)' }}>
+                  <Typography component="span">Date</Typography><Typography component="span">Anthropic</Typography><Typography component="span">OpenAI</Typography><Typography component="span">Total</Typography>
+                </Box>
                 {data.costs.by_day.slice(0, 14).map((d, i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '8px 14px', fontSize: '12px', color: 'var(--charcoal)', borderBottom: '1px solid rgba(72,72,74,0.05)' }}>
-                    <span>{new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    <span>{fmtDollars(d.anthropic_cents || 0)}</span>
-                    <span>{fmtDollars(d.openai_cents || 0)}</span>
-                    <span style={{ fontWeight: 700 }}>{fmtDollars(d.total_cents || 0)}</span>
-                  </div>
+                  <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '8px 14px', fontSize: '12px', color: 'text.primary', borderBottom: '1px solid rgba(72,72,74,0.05)' }}>
+                    <Typography component="span">{new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Typography>
+                    <Typography component="span">{fmtDollars(d.anthropic_cents || 0)}</Typography>
+                    <Typography component="span">{fmtDollars(d.openai_cents || 0)}</Typography>
+                    <Typography component="span" sx={{ fontWeight: 700 }}>{fmtDollars(d.total_cents || 0)}</Typography>
+                  </Box>
                 ))}
-              </div>
+              </Paper>
             </>
           )}
         </>
@@ -201,36 +240,36 @@ export default function AnalyticsView({ goBack }) {
       {/* API PERFORMANCE TAB */}
       {tab === 'api' && (
         <>
-          <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Endpoint Performance</h3>
-          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid rgba(72,72,74,0.1)', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px 14px', fontWeight: 700, fontSize: '11px', color: 'var(--charcoal)', borderBottom: '1px solid rgba(72,72,74,0.1)' }}>
-              <span>Endpoint</span><span>Calls</span><span>Avg ms</span><span>Errors</span>
-            </div>
+          <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Endpoint Performance</Typography>
+          <Paper sx={{ borderRadius: '12px', border: '1px solid rgba(72,72,74,0.1)', overflow: 'hidden' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px 14px', fontWeight: 700, fontSize: '11px', color: 'text.primary', borderBottom: '1px solid rgba(72,72,74,0.1)' }}>
+              <Typography component="span">Endpoint</Typography><Typography component="span">Calls</Typography><Typography component="span">Avg ms</Typography><Typography component="span">Errors</Typography>
+            </Box>
             {(data.api_performance?.by_endpoint || []).slice(0, 20).map((ep, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '8px 14px', fontSize: '11px', color: 'var(--charcoal)', borderBottom: '1px solid rgba(72,72,74,0.05)' }}>
-                <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.endpoint}</span>
-                <span>{fmt(ep.call_count)}</span>
-                <span>{ep.avg_duration_ms}ms</span>
-                <span style={{ color: parseFloat(ep.error_rate_pct) > 5 ? '#e74c3c' : 'var(--charcoal)' }}>{ep.error_rate_pct}%</span>
-              </div>
+              <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '8px 14px', fontSize: '11px', color: 'text.primary', borderBottom: '1px solid rgba(72,72,74,0.05)' }}>
+                <Typography component="span" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.endpoint}</Typography>
+                <Typography component="span">{fmt(ep.call_count)}</Typography>
+                <Typography component="span">{ep.avg_duration_ms}ms</Typography>
+                <Typography component="span" sx={{ color: parseFloat(ep.error_rate_pct) > 5 ? 'error.main' : 'text.primary' }}>{ep.error_rate_pct}%</Typography>
+              </Box>
             ))}
-          </div>
+          </Paper>
 
           {/* Errors */}
           {data.api_performance?.errors?.length > 0 && (
             <>
-              <h3 style={{ margin: '20px 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Recent Errors</h3>
+              <Typography variant="h3" sx={{ margin: '20px 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Recent Errors</Typography>
               {data.api_performance.errors.slice(0, 10).map((err, i) => (
-                <div key={i} style={{
-                  padding: '10px 14px', background: '#fef5f5', borderRadius: '10px', marginBottom: '6px',
+                <Paper key={i} sx={{
+                  padding: '10px 14px', bgcolor: '#fef5f5', borderRadius: '10px', marginBottom: '6px',
                   border: '1px solid rgba(231,76,60,0.2)', fontSize: '12px',
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--charcoal)' }}>{err.endpoint}</span>
-                    <span style={{ color: '#e74c3c', fontWeight: 700 }}>{err.status_code} × {err.count}</span>
-                  </div>
-                  {err.latest_error && <div style={{ marginTop: '4px', color: 'var(--charcoal)', opacity: 0.7 }}>{err.latest_error}</div>}
-                </div>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{err.endpoint}</Typography>
+                    <Typography component="span" sx={{ color: 'error.main', fontWeight: 700 }}>{err.status_code} × {err.count}</Typography>
+                  </Box>
+                  {err.latest_error && <Typography sx={{ marginTop: '4px', color: 'text.primary', opacity: 0.7 }}>{err.latest_error}</Typography>}
+                </Paper>
               ))}
             </>
           )}
@@ -241,37 +280,37 @@ export default function AnalyticsView({ goBack }) {
       {tab === 'users' && (
         <>
           {/* Session Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
             {[
               { label: 'Total Sessions', value: data.user_behavior?.session_stats?.total_sessions || 0 },
               { label: 'Avg Screens/Session', value: Math.round(data.user_behavior?.session_stats?.avg_screens || 0) },
               { label: 'Avg AI Calls/Session', value: Math.round(data.user_behavior?.session_stats?.avg_ai_calls || 0) },
             ].map((s, i) => (
-              <div key={i} style={{
-                background: 'white', border: '2px solid var(--charcoal)', borderRadius: '12px',
+              <Paper key={i} sx={{
+                border: '2px solid', borderColor: 'text.primary', borderRadius: '12px',
                 padding: '14px', textAlign: 'center',
               }}>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)' }}>{s.value}</div>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--charcoal)' }}>{s.label}</div>
-              </div>
+                <Typography sx={{ fontSize: '24px', fontWeight: 800, color: 'primary.main' }}>{s.value}</Typography>
+                <Typography sx={{ fontSize: '11px', fontWeight: 600, color: 'text.primary' }}>{s.label}</Typography>
+              </Paper>
             ))}
-          </div>
+          </Box>
 
           {/* Screen Views */}
-          <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Screen Views</h3>
+          <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Screen Views</Typography>
           {(data.user_behavior?.screen_views || []).slice(0, 15).map((sv, i) => (
-            <div key={i} style={{
+            <Paper key={i} sx={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '10px 14px', background: 'white', borderRadius: '10px', marginBottom: '6px',
+              padding: '10px 14px', borderRadius: '10px', marginBottom: '6px',
               border: '1px solid rgba(72,72,74,0.1)',
             }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)' }}>{sv.screen}</span>
-              <div style={{ textAlign: 'right', fontSize: '12px' }}>
-                <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{fmt(sv.view_count)}</span>
-                <span style={{ color: 'var(--charcoal)', opacity: 0.6, marginLeft: '8px' }}>{sv.unique_users} users</span>
-                {sv.avg_duration_ms > 0 && <span style={{ color: 'var(--charcoal)', opacity: 0.6, marginLeft: '8px' }}>{sv.avg_duration_ms}ms</span>}
-              </div>
-            </div>
+              <Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary' }}>{sv.screen}</Typography>
+              <Box sx={{ textAlign: 'right', fontSize: '12px' }}>
+                <Typography component="span" sx={{ fontWeight: 700, color: 'primary.main' }}>{fmt(sv.view_count)}</Typography>
+                <Typography component="span" sx={{ color: 'text.primary', opacity: 0.6, marginLeft: '8px' }}>{sv.unique_users} users</Typography>
+                {sv.avg_duration_ms > 0 && <Typography component="span" sx={{ color: 'text.primary', opacity: 0.6, marginLeft: '8px' }}>{sv.avg_duration_ms}ms</Typography>}
+              </Box>
+            </Paper>
           ))}
         </>
       )}
@@ -280,58 +319,58 @@ export default function AnalyticsView({ goBack }) {
       {tab === 'voice' && (
         <>
           {/* Funnel */}
-          <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Conversation Funnel</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '24px' }}>
+          <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Conversation Funnel</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', marginBottom: '24px' }}>
             {Object.entries(data.voice_conversations?.refine_funnel || {}).map(([stage, count], i) => (
-              <div key={i} style={{
-                background: 'white', border: '2px solid var(--charcoal)', borderRadius: '12px',
+              <Paper key={i} sx={{
+                border: '2px solid', borderColor: 'text.primary', borderRadius: '12px',
                 padding: '12px', textAlign: 'center',
               }}>
-                <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--primary)' }}>{count}</div>
-                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--charcoal)', textTransform: 'capitalize' }}>{stage.replace(/_/g, ' ')}</div>
-              </div>
+                <Typography sx={{ fontSize: '22px', fontWeight: 800, color: 'primary.main' }}>{count}</Typography>
+                <Typography sx={{ fontSize: '10px', fontWeight: 600, color: 'text.primary', textTransform: 'capitalize' }}>{stage.replace(/_/g, ' ')}</Typography>
+              </Paper>
             ))}
-          </div>
+          </Box>
 
           {/* Outcomes */}
           {Object.keys(data.voice_conversations?.outcomes || {}).length > 0 && (
             <>
-              <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>Outcomes</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '24px' }}>
+              <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>Outcomes</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '24px' }}>
                 {Object.entries(data.voice_conversations.outcomes).map(([outcome, count], i) => (
-                  <div key={i} style={{
-                    padding: '12px', background: 'white', borderRadius: '12px',
+                  <Paper key={i} sx={{
+                    padding: '12px', borderRadius: '12px',
                     border: '1px solid rgba(72,72,74,0.1)', display: 'flex', justifyContent: 'space-between',
                   }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)', textTransform: 'capitalize' }}>{outcome.replace(/_/g, ' ')}</span>
-                    <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>{count}</span>
-                  </div>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary', textTransform: 'capitalize' }}>{outcome.replace(/_/g, ' ')}</Typography>
+                    <Typography sx={{ fontSize: '15px', fontWeight: 800, color: 'primary.main' }}>{count}</Typography>
+                  </Paper>
                 ))}
-              </div>
+              </Box>
             </>
           )}
 
           {/* By Context */}
           {data.voice_conversations?.by_context_type?.length > 0 && (
             <>
-              <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)' }}>By Context Type</h3>
+              <Typography variant="h3" sx={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'text.primary' }}>By Context Type</Typography>
               {data.voice_conversations.by_context_type.map((ctx, i) => (
-                <div key={i} style={{
+                <Paper key={i} sx={{
                   display: 'flex', justifyContent: 'space-between', padding: '10px 14px',
-                  background: 'white', borderRadius: '10px', marginBottom: '6px',
+                  borderRadius: '10px', marginBottom: '6px',
                   border: '1px solid rgba(72,72,74,0.1)',
                 }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)' }}>{ctx.context_type || 'General'}</span>
-                  <div style={{ fontSize: '12px', color: 'var(--charcoal)' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{ctx.conversations}</span> convos
-                    <span style={{ marginLeft: '8px', opacity: 0.6 }}>~{Math.round(ctx.avg_rounds)} rounds</span>
-                  </div>
-                </div>
+                  <Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'text.primary' }}>{ctx.context_type || 'General'}</Typography>
+                  <Box sx={{ fontSize: '12px', color: 'text.primary' }}>
+                    <Typography component="span" sx={{ fontWeight: 700, color: 'primary.main' }}>{ctx.conversations}</Typography> convos
+                    <Typography component="span" sx={{ marginLeft: '8px', opacity: 0.6 }}>~{Math.round(ctx.avg_rounds)} rounds</Typography>
+                  </Box>
+                </Paper>
               ))}
             </>
           )}
         </>
       )}
-    </div>
+    </Box>
   );
 }

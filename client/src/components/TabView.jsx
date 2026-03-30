@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Box, Tabs, Tab, Typography } from '@mui/material';
 import { safeMarkdown } from '../utils/helpers.js';
 
 export default function TabView({ tabs }) {
@@ -6,23 +7,24 @@ export default function TabView({ tabs }) {
   const tab = tabs[active];
 
   return (
-    <div className="tab-view">
-      <div className="tab-buttons">
+    <Box className="tab-view">
+      <Tabs value={active} onChange={(_e, v) => setActive(v)} variant="scrollable" scrollButtons="auto"
+        sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
         {tabs.map((t, i) => (
-          <button key={i} className={`tab-btn ${i === active ? 'active' : ''}`} onClick={() => setActive(i)}>{t.label}</button>
+          <Tab key={i} label={t.label} sx={{ fontWeight: i === active ? 700 : 400, textTransform: 'none' }} />
         ))}
-      </div>
-      <div className="tab-content">
+      </Tabs>
+      <Box className="tab-content">
         {tab.isAudio ? (
-          <div className="audio-player">
-            {tab.audioFile ? <audio controls src={`/api/audio/${tab.audioFile}`} style={{ width: '100%' }} /> : <p>No audio</p>}
-          </div>
+          <Box className="audio-player">
+            {tab.audioFile ? <audio controls src={`/api/audio/${tab.audioFile}`} style={{ width: '100%' }} /> : <Typography>No audio</Typography>}
+          </Box>
         ) : tab.isPlain ? (
-          <div className="markdown-content plain">{tab.content || 'No content'}</div>
+          <Box className="markdown-content plain">{tab.content || 'No content'}</Box>
         ) : (
-          <div className="markdown-content" dangerouslySetInnerHTML={{ __html: tab.content ? safeMarkdown(tab.content) : '<p>No content available</p>' }} />
+          <Box className="markdown-content" dangerouslySetInnerHTML={{ __html: tab.content ? safeMarkdown(tab.content) : '<p>No content available</p>' }} />
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

@@ -1,4 +1,9 @@
 import { useState, useEffect } from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
 import StatusBadge from '../components/forms/StatusBadge.jsx';
 import CalibrationTable from '../components/forms/CalibrationTable.jsx';
 
@@ -12,7 +17,13 @@ export default function SubmissionView({ id, onBack }) {
       .catch(err => console.error('Failed to load submission:', err));
   }, [id]);
 
-  if (!sub) return <div className="loading">Loading...</div>;
+  if (!sub) {
+    return (
+      <Box className="loading" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const groups = {};
   if (sub.fields) {
@@ -36,70 +47,89 @@ export default function SubmissionView({ id, onBack }) {
   };
 
   return (
-    <div className="submission-view">
-      <button className="back-btn" onClick={onBack} style={{marginBottom: '12px'}}>&larr; Back</button>
+    <Box className="submission-view">
+      <Button className="back-btn" onClick={onBack} sx={{ mb: '12px' }}>&larr; Back</Button>
 
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-        <div>
-          <h2 style={{margin: 0}}>{sub.form_title || 'Form'}</h2>
-          <p style={{color: 'var(--charcoal)', margin: '4px 0'}}>{sub.form_code}</p>
-        </div>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '16px' }}>
+        <Box>
+          <Typography variant="h2" sx={{ m: 0 }}>{sub.form_title || 'Form'}</Typography>
+          <Typography sx={{ color: 'text.primary', my: '4px' }}>{sub.form_code}</Typography>
+        </Box>
         <StatusBadge status={sub.status} />
-      </div>
+      </Box>
 
-      <div style={{background: 'white', borderRadius: '12px', padding: '16px', marginBottom: '16px'}}>
-        <div><strong>Technician:</strong> {sub.technician_name}</div>
-        <div><strong>Submitted:</strong> {sub.submitted_at ? new Date(sub.submitted_at).toLocaleString() : 'Draft'}</div>
-        {sub.values?.tag_number && <div><strong>Tag:</strong> {sub.values.tag_number}</div>}
-      </div>
+      <Paper sx={{ borderRadius: '12px', p: '16px', mb: '16px' }}>
+        <Box>
+          <Typography component="span" sx={{ fontWeight: 700 }}>Technician:</Typography> {sub.technician_name}
+        </Box>
+        <Box>
+          <Typography component="span" sx={{ fontWeight: 700 }}>Submitted:</Typography> {sub.submitted_at ? new Date(sub.submitted_at).toLocaleString() : 'Draft'}
+        </Box>
+        {sub.values?.tag_number && (
+          <Box>
+            <Typography component="span" sx={{ fontWeight: 700 }}>Tag:</Typography> {sub.values.tag_number}
+          </Box>
+        )}
+      </Paper>
 
       {Object.entries(groups).map(([gKey, fields]) => (
-        <div key={gKey} style={{marginBottom: '16px'}}>
-          <h3 style={{fontSize: '16px', fontWeight: 700, color: 'var(--charcoal)', marginBottom: '8px'}}>
+        <Box key={gKey} sx={{ mb: '16px' }}>
+          <Typography variant="h3" sx={{ fontSize: '16px', fontWeight: 700, color: 'text.primary', mb: '8px' }}>
             {groupLabels[gKey] || gKey}
-          </h3>
+          </Typography>
           {fields.map(field => {
             const val = sub.values?.[field.field_name];
             if (val === undefined || val === null || val === '') return null;
             if (field.field_type === 'signature' && val?.startsWith('data:')) {
               return (
-                <div key={field.field_name} style={{marginBottom: '8px'}}>
-                  <span style={{fontSize: '13px', color: 'var(--charcoal)'}}>{field.field_label}:</span>
-                  <img src={val} alt="Signature" style={{maxWidth: '200px', display: 'block', marginTop: '4px'}} />
-                </div>
+                <Box key={field.field_name} sx={{ mb: '8px' }}>
+                  <Typography sx={{ fontSize: '13px', color: 'text.primary' }}>{field.field_label}:</Typography>
+                  <Box
+                    component="img"
+                    src={val}
+                    alt="Signature"
+                    sx={{ maxWidth: '200px', display: 'block', mt: '4px' }}
+                  />
+                </Box>
               );
             }
             return (
-              <div key={field.field_name} style={{display: 'flex', gap: '8px', marginBottom: '4px', fontSize: '14px'}}>
-                <span style={{color: 'var(--charcoal)', minWidth: '140px'}}>{field.field_label}:</span>
-                <span style={{fontWeight: 500}}>{String(val)}</span>
-              </div>
+              <Box key={field.field_name} sx={{ display: 'flex', gap: '8px', mb: '4px', fontSize: '14px' }}>
+                <Typography sx={{ color: 'text.primary', minWidth: '140px' }}>{field.field_label}:</Typography>
+                <Typography sx={{ fontWeight: 500 }}>{String(val)}</Typography>
+              </Box>
             );
           })}
-        </div>
+        </Box>
       ))}
 
       {sub.calibration_points && sub.calibration_points.length > 0 && (
-        <div style={{marginBottom: '16px'}}>
-          <h3 style={{fontSize: '16px', fontWeight: 700, marginBottom: '8px'}}>Calibration Data</h3>
+        <Box sx={{ mb: '16px' }}>
+          <Typography variant="h3" sx={{ fontSize: '16px', fontWeight: 700, mb: '8px' }}>Calibration Data</Typography>
           <CalibrationTable points={sub.calibration_points} onChange={() => {}} disabled={true} />
-        </div>
+        </Box>
       )}
 
       {sub.values?.photos && sub.values.photos.length > 0 && (
-        <div style={{marginBottom: '16px'}}>
-          <h3 style={{fontSize: '16px', fontWeight: 700, marginBottom: '8px'}}>Photos</h3>
-          <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+        <Box sx={{ mb: '16px' }}>
+          <Typography variant="h3" sx={{ fontSize: '16px', fontWeight: 700, mb: '8px' }}>Photos</Typography>
+          <Box sx={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {sub.values.photos.map((src, i) => (
-              <img key={i} src={src} alt={`Photo ${i+1}`} style={{width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px'}} />
+              <Box
+                component="img"
+                key={i}
+                src={src}
+                alt={`Photo ${i+1}`}
+                sx={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
+              />
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
 
-      <div style={{display: 'flex', gap: '8px', marginTop: '20px'}}>
-        <button className="btn btn-secondary" onClick={() => window.print()}>Print Form</button>
-      </div>
-    </div>
+      <Box sx={{ display: 'flex', gap: '8px', mt: '20px' }}>
+        <Button className="btn btn-secondary" onClick={() => window.print()}>Print Form</Button>
+      </Box>
+    </Box>
   );
 }

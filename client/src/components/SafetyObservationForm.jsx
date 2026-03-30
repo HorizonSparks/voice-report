@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Box, Typography, Button, TextField, Select, MenuItem } from '@mui/material';
 import VoiceInput from './VoiceInput.jsx';
 
 export default function SafetyObservationForm({ user, onBack, onSaved }) {
@@ -72,111 +73,111 @@ export default function SafetyObservationForm({ user, onBack, onSaved }) {
   };
 
   return (
-    <div className="form-fill-view">
-      <button className="office-back" onClick={onBack}>← Back</button>
-      <h2 className="section-heading">⛑️ Safety Observation Card</h2>
-      <p className="form-subtitle">{user.name} — {form.date}</p>
+    <Box className="form-fill-view">
+      <Button className="office-back" onClick={onBack}>← Back</Button>
+      <Typography variant="h2" className="section-heading">⛑️ Safety Observation Card</Typography>
+      <Typography className="form-subtitle">{user.name} — {form.date}</Typography>
 
       {/* Header */}
-      <div className="form-section">
-        <h3 className="form-section-title">Observation Info</h3>
-        <div className="form-row">
+      <Box className="form-section">
+        <Typography variant="h3" className="form-section-title">Observation Info</Typography>
+        <Box className="form-row">
           <label className="form-label">
             Date
-            <input type="date" className="form-input" value={form.date} onChange={e => updateField('date', e.target.value)} />
+            <TextField type="date" className="form-input" fullWidth size="small" value={form.date} onChange={e => updateField('date', e.target.value)} />
           </label>
           <label className="form-label">
             Time
-            <input type="time" className="form-input" value={form.time} onChange={e => updateField('time', e.target.value)} />
+            <TextField type="time" className="form-input" fullWidth size="small" value={form.time} onChange={e => updateField('time', e.target.value)} />
           </label>
-        </div>
+        </Box>
         <label className="form-label">
           Location / Area
-          <input type="text" className="form-input" placeholder="e.g., Unit 400, Level 2" value={form.location} onChange={e => updateField('location', e.target.value)} />
+          <TextField type="text" className="form-input" fullWidth size="small" placeholder="e.g., Unit 400, Level 2" value={form.location} onChange={e => updateField('location', e.target.value)} />
         </label>
-        <div className="form-row">
+        <Box className="form-row">
           <label className="form-label">
             Type
-            <select className="form-input" value={form.observation_type} onChange={e => updateField('observation_type', e.target.value)}>
-              <option>Planned</option>
-              <option>Unplanned</option>
-            </select>
+            <Select className="form-input" fullWidth size="small" value={form.observation_type} onChange={e => updateField('observation_type', e.target.value)}>
+              <MenuItem value="Planned">Planned</MenuItem>
+              <MenuItem value="Unplanned">Unplanned</MenuItem>
+            </Select>
           </label>
           <label className="form-label">
             Potential Severity
-            <select className="form-input" value={form.severity} onChange={e => updateField('severity', e.target.value)}>
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-            </select>
+            <Select className="form-input" fullWidth size="small" value={form.severity} onChange={e => updateField('severity', e.target.value)}>
+              <MenuItem value="Low">Low</MenuItem>
+              <MenuItem value="Medium">Medium</MenuItem>
+              <MenuItem value="High">High</MenuItem>
+            </Select>
           </label>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Category */}
-      <div className="form-section">
-        <h3 className="form-section-title">Category</h3>
-        <div className="category-grid">
+      <Box className="form-section">
+        <Typography variant="h3" className="form-section-title">Category</Typography>
+        <Box className="category-grid">
           {categories.map(cat => (
-            <button key={cat} className={`category-chip ${form.category === cat ? 'chip-active' : ''}`} onClick={() => updateField('category', cat)}>
+            <Button key={cat} className={`category-chip ${form.category === cat ? 'chip-active' : ''}`} onClick={() => updateField('category', cat)}>
               {cat}
-            </button>
+            </Button>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Observations */}
-      <div className="form-section">
-        <h3 className="form-section-title">Observations</h3>
-        <div className="form-label">
+      <Box className="form-section">
+        <Typography variant="h3" className="form-section-title">Observations</Typography>
+        <Box className="form-label">
           ✅ Safe Behaviors Observed
           <VoiceInput value={form.safe_behaviors} onChange={v => updateField('safe_behaviors', v)} placeholder="Describe positive/safe behaviors observed..." rows={3} />
-        </div>
-        <div className="form-label">
+        </Box>
+        <Box className="form-label">
           ⚠️ At-Risk Behaviors Observed
           <VoiceInput value={form.at_risk_behaviors} onChange={v => updateField('at_risk_behaviors', v)} placeholder="Describe at-risk or unsafe behaviors observed..." rows={3} />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Actions */}
-      <div className="form-section">
-        <h3 className="form-section-title">Corrective Actions</h3>
+      <Box className="form-section">
+        <Typography variant="h3" className="form-section-title">Corrective Actions</Typography>
         <label className="form-label">
           Immediate Corrective Action Taken
           <VoiceInput value={form.corrective_action} onChange={v => updateField('corrective_action', v)} placeholder="What was done to correct the issue..." rows={2} />
         </label>
-        <div className="form-row">
+        <Box className="form-row">
           <label className="form-label">
             Follow-Up Required?
-            <select className="form-input" value={form.follow_up_required} onChange={e => updateField('follow_up_required', e.target.value)}>
-              <option>No</option>
-              <option>Yes</option>
-            </select>
+            <Select className="form-input" fullWidth size="small" value={form.follow_up_required} onChange={e => updateField('follow_up_required', e.target.value)}>
+              <MenuItem value="No">No</MenuItem>
+              <MenuItem value="Yes">Yes</MenuItem>
+            </Select>
           </label>
           <label className="form-label">
             Supervisor Notified?
-            <select className="form-input" value={form.supervisor_notified} onChange={e => updateField('supervisor_notified', e.target.value)}>
-              <option>No</option>
-              <option>Yes</option>
-            </select>
+            <Select className="form-input" fullWidth size="small" value={form.supervisor_notified} onChange={e => updateField('supervisor_notified', e.target.value)}>
+              <MenuItem value="No">No</MenuItem>
+              <MenuItem value="Yes">Yes</MenuItem>
+            </Select>
           </label>
-        </div>
+        </Box>
         <label className="form-label">
           Craft / Trade of Person(s) Observed
-          <input type="text" className="form-input" placeholder="e.g., Electrician, Pipefitter" value={form.persons_observed_craft} onChange={e => updateField('persons_observed_craft', e.target.value)} />
+          <TextField type="text" className="form-input" fullWidth size="small" placeholder="e.g., Electrician, Pipefitter" value={form.persons_observed_craft} onChange={e => updateField('persons_observed_craft', e.target.value)} />
         </label>
-      </div>
+      </Box>
 
       {/* Notes */}
-      <div className="form-section">
-        <h3 className="form-section-title">Additional Notes</h3>
+      <Box className="form-section">
+        <Typography variant="h3" className="form-section-title">Additional Notes</Typography>
         <VoiceInput value={form.additional_notes} onChange={v => updateField('additional_notes', v)} placeholder="Any additional observations or context..." rows={3} />
-      </div>
+      </Box>
 
       {/* Submit */}
-      <button className="btn-primary btn-full" onClick={handleSave} disabled={saving}>
+      <Button className="btn-primary btn-full" variant="contained" onClick={handleSave} disabled={saving}>
         {saving ? 'Saving...' : 'Save Observation'}
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 }

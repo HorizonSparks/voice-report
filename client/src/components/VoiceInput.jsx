@@ -1,4 +1,7 @@
 import { useState, useRef } from 'react';
+import { Box, TextField, IconButton, Button, Typography, Paper, CircularProgress } from '@mui/material';
+import MicIcon from '@mui/icons-material/Mic';
+import StopIcon from '@mui/icons-material/Stop';
 
 export default function VoiceInput({ value, onChange, placeholder, rows }) {
   const [recording, setRecording] = useState(false);
@@ -83,49 +86,53 @@ export default function VoiceInput({ value, onChange, placeholder, rows }) {
   const keepOriginal = () => { onChange(originalText); setShowAiVersion(false); setAiText(''); };
 
   return (
-    <div className="voice-input-wrapper">
-      <textarea
-        className="form-input form-textarea"
+    <Box className="voice-input-wrapper" sx={{ position: 'relative' }}>
+      <TextField
+        fullWidth
+        multiline
         rows={rows || 3}
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
+        variant="outlined"
       />
-      <button
-        className={`voice-field-btn ${recording ? 'voice-field-recording' : ''} ${processing ? 'voice-field-processing' : ''}`}
+      <IconButton
         onClick={recording ? stopVoice : startVoice}
         disabled={processing}
-        type="button"
+        sx={{
+          position: 'absolute', right: 8, top: 8,
+          bgcolor: recording ? 'error.main' : 'primary.main',
+          color: 'white',
+          '&:hover': { bgcolor: recording ? 'error.dark' : 'primary.dark' },
+          width: 36, height: 36,
+        }}
       >
         {processing ? (
-          <div className="spinner-small"></div>
+          <CircularProgress size={18} color="inherit" />
         ) : recording ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          <StopIcon fontSize="small" />
         ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-          </svg>
+          <MicIcon fontSize="small" />
         )}
-      </button>
+      </IconButton>
       {showAiVersion && (
-        <div className="voice-ai-review">
-          <div className="voice-ai-columns">
-            <div className="voice-ai-cleaned">
-              <span className="voice-ai-label">AI Version</span>
-              <p>{aiText}</p>
-            </div>
-            <div className="voice-ai-original">
-              <span className="voice-ai-label">Your Words</span>
-              <p>{originalText}</p>
-            </div>
-          </div>
-          <div className="voice-ai-actions">
-            <button className="btn-primary" onClick={acceptAi} style={{padding:'12px', fontSize:'14px'}}>Use AI Version</button>
-            <button className="btn-secondary" onClick={keepOriginal} style={{padding:'12px', fontSize:'14px', background:'white'}}>Keep Original</button>
-          </div>
-        </div>
+        <Paper variant="outlined" sx={{ mt: 1, p: 2, borderRadius: 2, borderColor: 'primary.main' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+            <Box>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'primary.main', mb: 0.5 }}>AI Version</Typography>
+              <Typography sx={{ fontSize: 13 }}>{aiText}</Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>Your Words</Typography>
+              <Typography sx={{ fontSize: 13 }}>{originalText}</Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="contained" onClick={acceptAi} sx={{ py: 1.5, fontSize: 14 }}>Use AI Version</Button>
+            <Button variant="outlined" onClick={keepOriginal} sx={{ py: 1.5, fontSize: 14 }}>Keep Original</Button>
+          </Box>
+        </Paper>
       )}
-    </div>
+    </Box>
   );
 }

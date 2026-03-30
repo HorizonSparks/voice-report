@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Box, Typography, Button, TextField, Paper, CircularProgress } from '@mui/material';
 
 export default function ProjectsView({ user, activeTrade, onSelectProject, navigateTo, readOnly }) {
   const { t } = useTranslation();
@@ -53,61 +54,73 @@ export default function ProjectsView({ user, activeTrade, onSelectProject, navig
     } catch (err) { alert('Delete failed: ' + err.message); }
   };
 
-  if (loading) return <div style={{padding: '40px', textAlign: 'center', color: 'var(--charcoal)'}}>{t('common.loading')}</div>;
+  if (loading) return (
+    <Box sx={{ padding: '40px', textAlign: 'center', color: 'text.primary' }}>
+      <CircularProgress />
+      <Typography sx={{ mt: 2 }}>{t('common.loading')}</Typography>
+    </Box>
+  );
 
   return (
-    <div className="list-view">
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-        <h2 style={{color: 'var(--charcoal)', margin: 0, fontSize: '22px', fontWeight: 700}}>{t('projects.title')}</h2>
+    <Box className="list-view">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <Typography variant="h2" sx={{ color: 'text.primary', margin: 0, fontSize: '22px', fontWeight: 700 }}>{t('projects.title')}</Typography>
         {isAdmin && (
-          <button
+          <Button
             onClick={() => setShowCreate(!showCreate)}
             className="btn btn-orange"
-            style={{fontSize: '14px', padding: '8px 16px'}}
+            sx={{ fontSize: '14px', padding: '8px 16px' }}
           >
             {t('projects.newProject')}
-          </button>
+          </Button>
         )}
-      </div>
+      </Box>
 
       {showCreate && (
-        <div style={{background: 'white', border: '2px solid var(--primary)', borderRadius: '12px', padding: '20px', marginBottom: '20px'}}>
-          <input
+        <Paper sx={{ background: 'white', border: '2px solid', borderColor: 'primary.main', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+          <TextField
             value={newName}
             onChange={e => setNewName(e.target.value)}
             placeholder={t('projects.projectName')}
-            style={{width: '100%', padding: '12px', fontSize: '16px', border: '1px solid rgba(72,72,74,0.2)', borderRadius: '8px', marginBottom: '12px', boxSizing: 'border-box'}}
+            sx={{ width: '100%', marginBottom: '12px', '& .MuiInputBase-input': { padding: '12px', fontSize: '16px' }, '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
             autoFocus
           />
-          <textarea
+          <TextField
             value={newDesc}
             onChange={e => setNewDesc(e.target.value)}
             placeholder={t('projects.descriptionOptional')}
+            multiline
             rows={2}
-            style={{width: '100%', padding: '12px', fontSize: '14px', border: '1px solid rgba(72,72,74,0.2)', borderRadius: '8px', marginBottom: '12px', resize: 'none', boxSizing: 'border-box'}}
+            sx={{ width: '100%', marginBottom: '12px', '& .MuiInputBase-input': { padding: '12px', fontSize: '14px', resize: 'none' }, '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
           />
-          <div style={{display: 'flex', gap: '8px'}}>
-            <button onClick={createProject} className="btn btn-orange" style={{flex: 1}}>{t('projects.create')}</button>
-            <button onClick={() => setShowCreate(false)} style={{flex: 1, padding: '10px', border: '1px solid rgba(72,72,74,0.2)', borderRadius: '8px', background: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 600}}>{t('common.cancel')}</button>
-          </div>
-        </div>
+          <Box sx={{ display: 'flex', gap: '8px' }}>
+            <Button onClick={createProject} className="btn btn-orange" sx={{ flex: 1 }}>{t('projects.create')}</Button>
+            <Button
+              onClick={() => setShowCreate(false)}
+              sx={{ flex: 1, padding: '10px', border: '1px solid rgba(72,72,74,0.2)', borderRadius: '8px', background: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 600, textTransform: 'none' }}
+            >
+              {t('common.cancel')}
+            </Button>
+          </Box>
+        </Paper>
       )}
 
       {projects.length === 0 ? (
-        <div style={{textAlign: 'center', padding: '60px 20px', color: 'var(--charcoal)', opacity: 0.6}}>
-          <div style={{fontSize: '48px', marginBottom: '16px'}}>📁</div>
-          <p style={{fontSize: '16px', fontWeight: 600}}>{t('projects.noProjects')}</p>
-          <p style={{fontSize: '14px'}}>{t('projects.getStarted')}</p>
-        </div>
+        <Box sx={{ textAlign: 'center', padding: '60px 20px', color: 'text.primary', opacity: 0.6 }}>
+          <Box sx={{ fontSize: '48px', marginBottom: '16px' }}>📁</Box>
+          <Typography sx={{ fontSize: '16px', fontWeight: 600 }}>{t('projects.noProjects')}</Typography>
+          <Typography sx={{ fontSize: '14px' }}>{t('projects.getStarted')}</Typography>
+        </Box>
       ) : (
-        <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {projects.map(p => (
-            <div
+            <Paper
               key={p.id}
               onClick={() => onSelectProject(p)}
-              style={{
+              sx={{
                 background: 'white',
-                border: '2px solid var(--charcoal)',
+                border: '2px solid',
+                borderColor: 'text.primary',
                 borderRadius: '12px',
                 padding: '20px',
                 cursor: 'pointer',
@@ -115,29 +128,29 @@ export default function ProjectsView({ user, activeTrade, onSelectProject, navig
                 position: 'relative',
               }}
             >
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                <div style={{flex: 1}}>
-                  <h3 style={{margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: 'var(--charcoal)'}}>{p.name}</h3>
-                  {p.description && <p style={{margin: '0 0 8px 0', fontSize: '14px', color: 'var(--charcoal)', opacity: 0.7}}>{p.description}</p>}
-                  <div style={{display: 'flex', gap: '12px', fontSize: '12px', color: 'var(--charcoal)', opacity: 0.5}}>
-                    <span>{p.status || 'active'}</span>
-                    {p.trade && <span>{p.trade}</span>}
-                  </div>
-                </div>
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  <span style={{fontSize: '24px', color: 'var(--primary)'}}>→</span>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h3" sx={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: 'text.primary' }}>{p.name}</Typography>
+                  {p.description && <Typography sx={{ margin: '0 0 8px 0', fontSize: '14px', color: 'text.primary', opacity: 0.7 }}>{p.description}</Typography>}
+                  <Box sx={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'text.primary', opacity: 0.5 }}>
+                    <Typography component="span" sx={{ fontSize: '12px' }}>{p.status || 'active'}</Typography>
+                    {p.trade && <Typography component="span" sx={{ fontSize: '12px' }}>{p.trade}</Typography>}
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Typography component="span" sx={{ fontSize: '24px', color: 'primary.main' }}>→</Typography>
                   {isAdmin && (
-                    <button
+                    <Button
                       onClick={(e) => deleteProject(p.id, p.name, e)}
-                      style={{background: 'none', border: 'none', fontSize: '18px', color: '#c00', cursor: 'pointer', padding: '4px'}}
-                    >&times;</button>
+                      sx={{ background: 'none', border: 'none', fontSize: '18px', color: '#c00', cursor: 'pointer', padding: '4px', minWidth: 'auto' }}
+                    >&times;</Button>
                   )}
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Paper>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

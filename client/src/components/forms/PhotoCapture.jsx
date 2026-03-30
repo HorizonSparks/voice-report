@@ -1,4 +1,8 @@
 import { useRef, useState } from 'react';
+import { Box, Typography, Button, IconButton, Dialog } from '@mui/material';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import CloseIcon from '@mui/icons-material/Close';
 
 export default function PhotoCapture({ photos = [], onChange, disabled }) {
   const cameraRef = useRef(null);
@@ -44,100 +48,64 @@ export default function PhotoCapture({ photos = [], onChange, disabled }) {
   };
 
   return (
-    <div className="photo-capture">
+    <Box className="photo-capture">
       {/* Hidden file inputs */}
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleCapture}
-        style={{ display: 'none' }}
-      />
-      <input
-        ref={galleryRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleCapture}
-        style={{ display: 'none' }}
-      />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleCapture} style={{ display: 'none' }} />
+      <input ref={galleryRef} type="file" accept="image/*" multiple onChange={handleCapture} style={{ display: 'none' }} />
 
-      {/* The big box — like comments textarea but for photos */}
-      <div className="photo-box">
+      {/* Photo box */}
+      <Box sx={{
+        border: '2px dashed', borderColor: 'grey.300', borderRadius: 3,
+        p: 2, mb: 1.5, minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
         {photos.length === 0 ? (
-          /* Empty state — invite to add photos */
-          <div className="photo-box-empty">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="photo-box-icon">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
-            <div className="photo-box-text">Tap below to add photo evidence</div>
-          </div>
+          <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
+            <CameraAltIcon sx={{ fontSize: 40, opacity: 0.4, mb: 1 }} />
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Tap below to add photo evidence</Typography>
+          </Box>
         ) : (
-          /* Photos grid inside the box */
-          <div className="photo-grid">
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {photos.map((src, i) => (
-              <div key={i} className="photo-thumb-wrapper">
-                <img
-                  src={src}
-                  alt={`Photo ${i + 1}`}
-                  className="photo-thumb"
+              <Box key={i} sx={{ position: 'relative', width: 80, height: 80 }}>
+                <img src={src} alt={`Photo ${i + 1}`}
                   onClick={() => setViewingIdx(viewingIdx === i ? null : i)}
-                />
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, cursor: 'pointer' }} />
                 {!disabled && (
-                  <button
-                    type="button"
-                    className="photo-remove-btn"
-                    onClick={() => removePhoto(i)}
-                    title="Remove photo"
-                  >
-                    &times;
-                  </button>
+                  <IconButton size="small" onClick={() => removePhoto(i)}
+                    sx={{ position: 'absolute', top: -6, right: -6, bgcolor: 'error.main', color: 'white', width: 20, height: 20,
+                      '&:hover': { bgcolor: 'error.dark' } }}>
+                    <CloseIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
                 )}
-              </div>
+              </Box>
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      {/* Action buttons below the box */}
+      {/* Action buttons */}
       {!disabled && (
-        <div className="photo-btn-row">
-          <button
-            type="button"
-            className="photo-camera-btn"
-            onClick={() => cameraRef.current?.click()}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
-            <span>Camera</span>
-          </button>
-
-          <button
-            type="button"
-            className="photo-gallery-btn"
-            onClick={() => galleryRef.current?.click()}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
-            <span>Gallery</span>
-          </button>
-        </div>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" startIcon={<CameraAltIcon />} onClick={() => cameraRef.current?.click()}
+            sx={{ flex: 1, borderRadius: 2, fontWeight: 600, fontSize: 13 }}>
+            Camera
+          </Button>
+          <Button variant="outlined" startIcon={<PhotoLibraryIcon />} onClick={() => galleryRef.current?.click()}
+            sx={{ flex: 1, borderRadius: 2, fontWeight: 600, fontSize: 13 }}>
+            Gallery
+          </Button>
+        </Box>
       )}
 
       {/* Full-size viewer */}
-      {viewingIdx !== null && photos[viewingIdx] && (
-        <div className="photo-viewer" onClick={() => setViewingIdx(null)}>
-          <img src={photos[viewingIdx]} alt="Full size" className="photo-full" />
-          <div className="photo-viewer-hint">Tap to close</div>
-        </div>
-      )}
-    </div>
+      <Dialog open={viewingIdx !== null && !!photos[viewingIdx]} onClose={() => setViewingIdx(null)} maxWidth="md">
+        {viewingIdx !== null && photos[viewingIdx] && (
+          <Box onClick={() => setViewingIdx(null)} sx={{ p: 1, cursor: 'pointer' }}>
+            <img src={photos[viewingIdx]} alt="Full size" style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }} />
+            <Typography sx={{ textAlign: 'center', mt: 1, fontSize: 12, color: 'text.secondary' }}>Tap to close</Typography>
+          </Box>
+        )}
+      </Dialog>
+    </Box>
   );
 }

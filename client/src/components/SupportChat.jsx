@@ -1,11 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { Box, Typography, IconButton, TextField, Button, Paper, Fab } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
 
-/**
- * Floating Support Chat Widget
- * Bottom-right bubble that opens a chat panel overlay.
- * For supervisors+ on desktop/iPad — not for phone field workers.
- * Separate from crew messaging — this is client ↔ Horizon Sparks support.
- */
 export default function SupportChat({ user, simulatingCompany, externalOpen, onExternalOpenChange }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -16,22 +13,18 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
-  // Focus input when opened
   useEffect(() => {
     if (open && inputRef.current) {
       setTimeout(() => inputRef.current.focus(), 100);
     }
   }, [open]);
 
-  // Load support conversation on open
   useEffect(() => {
     if (open && messages.length === 0) {
-      // Welcome message
       setMessages([{
         id: 'welcome',
         role: 'support',
@@ -55,8 +48,6 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     setInput('');
     setSending(true);
 
-    // TODO: Send to support backend endpoint
-    // For now, auto-acknowledge
     setTimeout(() => {
       setMessages(prev => [...prev, {
         id: 'ack_' + Date.now(),
@@ -81,118 +72,102 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     <>
       {/* Floating Bubble */}
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          style={{
-            position: 'fixed', bottom: '24px', right: '24px', zIndex: 900,
-            width: '56px', height: '56px', borderRadius: '50%',
-            background: 'var(--charcoal)', border: '3px solid var(--primary)',
-            color: 'var(--primary)', fontSize: '24px',
-            cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          title="Support Chat"
-        >
+        <Fab onClick={() => setOpen(true)} title="Support Chat"
+          sx={{
+            position: 'fixed', bottom: 24, right: 24, zIndex: 900,
+            bgcolor: 'secondary.main', border: '3px solid', borderColor: 'primary.main',
+            color: 'primary.main', fontSize: 24,
+            '&:hover': { bgcolor: 'secondary.dark' },
+          }}>
           💬
-        </button>
+        </Fab>
       )}
 
       {/* Chat Panel */}
       {open && (
-        <div style={{
-          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
-          width: '360px', maxWidth: 'calc(100vw - 48px)',
-          height: '480px', maxHeight: 'calc(100vh - 120px)',
-          background: 'white', borderRadius: '16px',
-          border: '2px solid var(--charcoal)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
+        <Paper elevation={8} sx={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 1000,
+          width: 360, maxWidth: 'calc(100vw - 48px)',
+          height: 480, maxHeight: 'calc(100vh - 120px)',
+          borderRadius: 4, border: '2px solid', borderColor: 'secondary.main',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           {/* Header */}
-          <div style={{
-            padding: '14px 16px', background: 'var(--charcoal)',
+          <Box sx={{
+            px: 2, py: 1.75, bgcolor: 'secondary.main',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <div>
-              <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '14px' }}>
+            <Box>
+              <Typography sx={{ color: 'primary.main', fontWeight: 700, fontSize: 14 }}>
                 Horizon Sparks Support
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginTop: '2px' }}>
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, mt: 0.25 }}>
                 {companyName}
-              </div>
-            </div>
-            <button onClick={() => setOpen(false)} style={{
-              background: 'none', border: 'none', color: 'white',
-              fontSize: '20px', cursor: 'pointer', padding: '4px',
-            }}>✕</button>
-          </div>
+              </Typography>
+            </Box>
+            <IconButton onClick={() => setOpen(false)} sx={{ color: 'white' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
 
           {/* Messages */}
-          <div style={{
-            flex: 1, overflowY: 'auto', padding: '12px',
-            display: 'flex', flexDirection: 'column', gap: '8px',
-            background: '#f8f6f3',
+          <Box sx={{
+            flex: 1, overflowY: 'auto', p: 1.5,
+            display: 'flex', flexDirection: 'column', gap: 1,
+            bgcolor: 'grey.100',
           }}>
             {messages.map(msg => (
-              <div key={msg.id} style={{
+              <Box key={msg.id} sx={{
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '80%',
               }}>
-                <div style={{
-                  padding: '10px 14px', borderRadius: '14px',
-                  background: msg.role === 'user' ? 'var(--charcoal)' : 'white',
-                  color: msg.role === 'user' ? 'var(--primary)' : 'var(--charcoal)',
-                  fontSize: '13px', lineHeight: 1.4,
-                  border: msg.role === 'support' ? '1px solid #e0e0e0' : 'none',
-                  boxShadow: msg.role === 'support' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                <Paper elevation={msg.role === 'support' ? 1 : 0} sx={{
+                  px: 1.75, py: 1.25, borderRadius: 3.5,
+                  bgcolor: msg.role === 'user' ? 'secondary.main' : 'background.paper',
+                  color: msg.role === 'user' ? 'primary.main' : 'text.primary',
+                  fontSize: 13, lineHeight: 1.4,
+                  border: msg.role === 'support' ? '1px solid' : 'none',
+                  borderColor: 'divider',
                 }}>
                   {msg.text}
-                </div>
-                <div style={{
-                  fontSize: '10px', color: '#999', marginTop: '3px',
+                </Paper>
+                <Typography sx={{
+                  fontSize: 10, color: 'text.secondary', mt: 0.375,
                   textAlign: msg.role === 'user' ? 'right' : 'left',
-                  padding: '0 4px',
+                  px: 0.5,
                 }}>
                   {msg.time}
-                </div>
-              </div>
+                </Typography>
+              </Box>
             ))}
             <div ref={chatEndRef} />
-          </div>
+          </Box>
 
           {/* Input */}
-          <div style={{
-            padding: '10px 12px', borderTop: '1px solid #eee',
-            display: 'flex', gap: '8px', background: 'white',
+          <Box sx={{
+            px: 1.5, py: 1.25, borderTop: '1px solid', borderColor: 'divider',
+            display: 'flex', gap: 1, bgcolor: 'background.paper',
           }}>
-            <input
-              ref={inputRef}
-              type="text"
+            <TextField
+              inputRef={inputRef}
+              fullWidth
+              size="small"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type your message..."
-              style={{
-                flex: 1, padding: '10px 14px', borderRadius: '20px',
-                border: '2px solid #e0e0e0', fontSize: '13px',
-                outline: 'none', color: 'var(--charcoal)',
-              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 5 } }}
             />
-            <button
+            <Button
+              variant="contained"
               onClick={sendMessage}
               disabled={!input.trim() || sending}
-              style={{
-                padding: '10px 16px', borderRadius: '20px',
-                background: input.trim() ? 'var(--primary)' : '#e0e0e0',
-                color: 'white', border: 'none', fontWeight: 700,
-                fontSize: '13px', cursor: input.trim() ? 'pointer' : 'default',
-              }}
+              sx={{ borderRadius: 5, minWidth: 'auto', px: 2, fontWeight: 700, fontSize: 13 }}
             >
-              Send
-            </button>
-          </div>
-        </div>
+              <SendIcon fontSize="small" />
+            </Button>
+          </Box>
+        </Paper>
       )}
     </>
   );

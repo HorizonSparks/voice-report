@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
 import VoiceRefinePanel from '../components/VoiceRefinePanel.jsx';
 
 export default function PunchListView({ user, embedded, onNavigate, goBack, readOnly }) {
@@ -108,32 +117,37 @@ export default function PunchListView({ user, embedded, onNavigate, goBack, read
   const content = (
     <Fragment>
       {/* Header row: title (if standalone) */}
-      {!embedded && <h1 style={{fontWeight: 800, marginBottom: '16px'}}>{t('punchList.title')}</h1>}
+      {!embedded && <Typography variant="h1" sx={{ fontWeight: 800, mb: '16px' }}>{t('punchList.title')}</Typography>}
 
       {/* Status filters + Add button: same line on tablet+, stacked on phone */}
-      <div className="punch-filter-row">
-        <div style={{display: 'flex', gap: '6px', flexWrap: 'wrap'}}>
+      <Box className="punch-filter-row">
+        <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {['open', 'in_progress', 'ready_recheck', 'closed'].map(s => (
-            <button key={s} onClick={() => setFilter(s)} style={{
+            <Button key={s} onClick={() => setFilter(s)} sx={{
               padding: '6px 12px', borderRadius: '20px', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
               background: filter === s ? statusColors[s] : 'white',
               color: filter === s ? 'white' : statusColors[s],
               boxShadow: filter === s ? 'none' : `inset 0 0 0 2px ${statusColors[s]}`,
+              textTransform: 'none',
+              minWidth: 'auto',
+              '&:hover': {
+                background: filter === s ? statusColors[s] : 'white',
+              },
             }}>
               {statusLabels[s]} ({stats[s] || 0})
-            </button>
+            </Button>
           ))}
-        </div>
+        </Box>
         {!showAdd && (
-          <button className="btn btn-primary" style={{padding: '8px 16px', fontWeight: 700, fontSize: '14px', flexShrink: 0}} onClick={() => { setShowAdd(true); }}>
+          <Button className="btn btn-primary" sx={{ padding: '8px 16px', fontWeight: 700, fontSize: '14px', flexShrink: 0, textTransform: 'none' }} onClick={() => { setShowAdd(true); }}>
             {t('punchList.new')}
-          </button>
+          </Button>
         )}
-      </div>
+      </Box>
 
       {/* Add form */}
       {showAdd && (
-        <div style={{background: 'white', border: '2px solid var(--primary)', borderRadius: '12px', padding: '16px', marginBottom: '16px'}}>
+        <Box sx={{ background: 'white', border: '2px solid', borderColor: 'primary.main', borderRadius: '12px', padding: '16px', mb: '16px' }}>
           {/* Voice Refine Panel */}
           {showPunchVoiceRefine ? (
             <VoiceRefinePanel
@@ -148,165 +162,171 @@ export default function PunchListView({ user, embedded, onNavigate, goBack, read
               onCancel={() => setShowPunchVoiceRefine(false)}
             />
           ) : (
-            <div style={{display: 'flex', justifyContent: 'center', marginTop: '4px', marginBottom: '16px'}}>
-              <button onClick={() => setShowPunchVoiceRefine(true)} className="refine-mic-btn">
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '4px', mb: '16px' }}>
+              <Button onClick={() => setShowPunchVoiceRefine(true)} className="refine-mic-btn" sx={{ textTransform: 'none' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--primary)" stroke="none"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/></svg>
                 {t('punchList.describeIssue')}
-              </button>
-            </div>
+              </Button>
+            </Box>
           )}
-          <input type="text" placeholder={t('punchList.whatsIssue')} value={newItem.title} onChange={e => setNewItem(t => ({...t, title: e.target.value}))}
-            style={{width: '100%', padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', color: 'var(--charcoal)', marginBottom: '8px', boxSizing: 'border-box'}} />
-          <textarea placeholder={t('punchList.details')} value={newItem.description} onChange={e => setNewItem(t => ({...t, description: e.target.value}))}
-            rows={2} style={{width: '100%', padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', color: 'var(--charcoal)', marginBottom: '8px', resize: 'none', boxSizing: 'border-box'}} />
-          <input type="text" placeholder={t('punchList.location')} value={newItem.location} onChange={e => setNewItem(t => ({...t, location: e.target.value}))}
-            style={{width: '100%', padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', color: 'var(--charcoal)', marginBottom: '8px', boxSizing: 'border-box'}} />
+          <TextField placeholder={t('punchList.whatsIssue')} value={newItem.title} onChange={e => setNewItem(t => ({...t, title: e.target.value}))}
+            fullWidth
+            sx={{ mb: '8px', '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '15px', color: 'text.primary' }, '& .MuiOutlinedInput-notchedOutline': { borderWidth: '2px', borderColor: '#ccc' } }} />
+          <TextField placeholder={t('punchList.details')} value={newItem.description} onChange={e => setNewItem(t => ({...t, description: e.target.value}))}
+            multiline rows={2} fullWidth
+            sx={{ mb: '8px', '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '15px', color: 'text.primary' }, '& .MuiOutlinedInput-notchedOutline': { borderWidth: '2px', borderColor: '#ccc' }, '& textarea': { resize: 'none' } }} />
+          <TextField placeholder={t('punchList.location')} value={newItem.location} onChange={e => setNewItem(t => ({...t, location: e.target.value}))}
+            fullWidth
+            sx={{ mb: '8px', '& .MuiOutlinedInput-root': { borderRadius: '8px', fontSize: '15px', color: 'text.primary' }, '& .MuiOutlinedInput-notchedOutline': { borderWidth: '2px', borderColor: '#ccc' } }} />
           {/* Assign To + Priority */}
-          <div style={{display: 'flex', gap: '8px', marginBottom: '8px'}}>
-            <div style={{flex: 3, position: 'relative'}}>
-              <button type="button" onClick={() => setShowAssignDropdown(!showAssignDropdown)}
-                style={{width: '100%', padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', color: newItem.assigned_to.length ? 'var(--charcoal)' : '#999', boxSizing: 'border-box', minHeight: '48px', background: 'white', textAlign: 'left', cursor: 'pointer', fontWeight: newItem.assigned_to.length ? 700 : 400}}>
+          <Box sx={{ display: 'flex', gap: '8px', mb: '8px' }}>
+            <Box sx={{ flex: 3, position: 'relative' }}>
+              <Button type="button" onClick={() => setShowAssignDropdown(!showAssignDropdown)}
+                sx={{ width: '100%', padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', color: newItem.assigned_to.length ? 'text.primary' : '#999', boxSizing: 'border-box', minHeight: '48px', background: 'white', textAlign: 'left', cursor: 'pointer', fontWeight: newItem.assigned_to.length ? 700 : 400, textTransform: 'none', justifyContent: 'flex-start', '&:hover': { background: 'white' } }}>
                 {newItem.assigned_to.length ? team.filter(p => newItem.assigned_to.includes(p.id)).map(p => p.name).join(', ') : t('dailyPlan.assignTo')}
-              </button>
+              </Button>
               {showAssignDropdown && (
-                <div style={{position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '2px solid #ccc', borderRadius: '8px', marginTop: '4px', zIndex: 10, maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'}}>
+                <Box sx={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '2px solid #ccc', borderRadius: '8px', mt: '4px', zIndex: 10, maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                   {team.map(p => {
                     const isChecked = newItem.assigned_to.includes(p.id);
                     return (
-                      <label key={p.id} style={{display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', fontSize: '14px', fontWeight: 600, background: isChecked ? '#f9f5f0' : 'white'}}>
-                        <input type="checkbox" checked={isChecked} onChange={() => {
+                      <Box component="label" key={p.id} sx={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', fontSize: '14px', fontWeight: 600, background: isChecked ? '#f9f5f0' : 'white' }}>
+                        <Checkbox checked={isChecked} onChange={() => {
                           setNewItem(t => ({...t, assigned_to: isChecked ? t.assigned_to.filter(id => id !== p.id) : [...t.assigned_to, p.id]}));
-                        }} style={{width: '20px', height: '20px', accentColor: 'var(--primary)', flexShrink: 0}} />
-                        <span>{p.name}</span>
-                        <span style={{fontSize: '12px', color: 'var(--charcoal)', marginLeft: 'auto'}}>{p.role_title}</span>
-                      </label>
+                        }} sx={{ width: '20px', height: '20px', color: 'primary.main', '&.Mui-checked': { color: 'primary.main' }, flexShrink: 0, padding: 0 }} />
+                        <Typography component="span">{p.name}</Typography>
+                        <Typography component="span" sx={{ fontSize: '12px', color: 'text.primary', ml: 'auto' }}>{p.role_title}</Typography>
+                      </Box>
                     );
                   })}
-                  <button onClick={() => setShowAssignDropdown(false)} style={{width: '100%', padding: '10px', border: 'none', background: 'var(--charcoal)', color: 'var(--primary)', fontSize: '14px', fontWeight: 700, cursor: 'pointer', borderRadius: '0 0 6px 6px'}}>{t('common.done')}</button>
-                </div>
+                  <Button onClick={() => setShowAssignDropdown(false)} sx={{ width: '100%', padding: '10px', border: 'none', background: 'text.primary', bgcolor: 'text.primary', color: 'primary.main', fontSize: '14px', fontWeight: 700, cursor: 'pointer', borderRadius: '0 0 6px 6px', textTransform: 'none', '&:hover': { bgcolor: 'text.primary' } }}>{t('common.done')}</Button>
+                </Box>
               )}
-            </div>
-            <select value={newItem.priority} onChange={e => setNewItem(t => ({...t, priority: e.target.value}))}
-              style={{flex: 1, padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', color: 'var(--charcoal)', boxSizing: 'border-box', minHeight: '48px', maxWidth: '120px', WebkitAppearance: 'none', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M6 8L1 3h10z\' fill=\'%23999\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center'}}>
-              <option value="normal">{t('dailyPlan.normal')}</option>
-              <option value="low">{t('dailyPlan.low')}</option>
-              <option value="high">{t('dailyPlan.high')}</option>
-              <option value="critical">{t('dailyPlan.critical')}</option>
-            </select>
-          </div>
+            </Box>
+            <Select value={newItem.priority} onChange={e => setNewItem(t => ({...t, priority: e.target.value}))}
+              sx={{ flex: 1, maxWidth: '120px', '& .MuiOutlinedInput-notchedOutline': { borderWidth: '2px', borderColor: '#ccc', borderRadius: '8px' }, fontSize: '15px', color: 'text.primary', minHeight: '48px' }}>
+              <MenuItem value="normal">{t('dailyPlan.normal')}</MenuItem>
+              <MenuItem value="low">{t('dailyPlan.low')}</MenuItem>
+              <MenuItem value="high">{t('dailyPlan.high')}</MenuItem>
+              <MenuItem value="critical">{t('dailyPlan.critical')}</MenuItem>
+            </Select>
+          </Box>
           {/* Trade selector */}
-          <div style={{marginBottom: '12px'}}>
-            <select value={newItem.trade} onChange={e => setNewItem(t => ({...t, trade: e.target.value}))}
-              style={{flex: 3, padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', color: 'var(--charcoal)', boxSizing: 'border-box', minHeight: '48px', WebkitAppearance: 'none', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M6 8L1 3h10z\' fill=\'%23999\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center'}}>
-              <option value="Electrical">{t('trades.electrical')}</option>
-              <option value="Instrumentation">{t('trades.instrumentation')}</option>
-              <option value="Pipe Fitting">{t('trades.pipeFitting')}</option>
-              <option value="Industrial Erection">{t('trades.erection')}</option>
-              <option value="Safety">{t('trades.safety')}</option>
-            </select>
-          </div>
+          <Box sx={{ mb: '12px' }}>
+            <Select value={newItem.trade} onChange={e => setNewItem(t => ({...t, trade: e.target.value}))}
+              sx={{ flex: 3, '& .MuiOutlinedInput-notchedOutline': { borderWidth: '2px', borderColor: '#ccc', borderRadius: '8px' }, fontSize: '15px', color: 'text.primary', minHeight: '48px' }}>
+              <MenuItem value="Electrical">{t('trades.electrical')}</MenuItem>
+              <MenuItem value="Instrumentation">{t('trades.instrumentation')}</MenuItem>
+              <MenuItem value="Pipe Fitting">{t('trades.pipeFitting')}</MenuItem>
+              <MenuItem value="Industrial Erection">{t('trades.erection')}</MenuItem>
+              <MenuItem value="Safety">{t('trades.safety')}</MenuItem>
+            </Select>
+          </Box>
           {/* Attachment previews */}
           <input ref={punchPhotoRef} type="file" accept="image/*" capture="environment" style={{display: 'none'}} onChange={e => handlePunchAttachment(e, 'photo')} />
           <input ref={punchGalleryRef} type="file" accept="image/*" style={{display: 'none'}} onChange={e => handlePunchAttachment(e, 'photo')} />
           <input ref={punchFileRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.txt" multiple style={{display: 'none'}} onChange={e => handlePunchAttachment(e, 'file')} />
           {punchAttachments.length > 0 && (
-            <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px'}}>
+            <Box sx={{ display: 'flex', gap: '8px', flexWrap: 'wrap', mb: '12px' }}>
               {punchAttachments.map((att, i) => (
-                <div key={i} style={{position: 'relative', background: '#f0ece8', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                  {att.preview ? <img src={att.preview} style={{width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover'}} alt="" /> : <span>📎</span>}
-                  <span style={{maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{att.name}</span>
-                  <button onClick={() => setPunchAttachments(prev => prev.filter((_, idx) => idx !== i))} style={{background: 'none', border: 'none', color: 'var(--charcoal)', fontSize: '14px', cursor: 'pointer', padding: '0 2px'}}>✕</button>
-                </div>
+                <Box key={i} sx={{ position: 'relative', background: '#f0ece8', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {att.preview ? <Box component="img" src={att.preview} sx={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} alt="" /> : <Typography component="span">📎</Typography>}
+                  <Typography component="span" sx={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</Typography>
+                  <Button onClick={() => setPunchAttachments(prev => prev.filter((_, idx) => idx !== i))} sx={{ background: 'none', border: 'none', color: 'text.primary', fontSize: '14px', cursor: 'pointer', padding: '0 2px', minWidth: 'auto' }}>✕</Button>
+                </Box>
               ))}
-            </div>
+            </Box>
           )}
           {/* Action row: Photo, File, Form, Add, Cancel */}
-          <div style={{display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap'}}>
-            <div style={{position: 'relative', flex: 1, minWidth: '80px'}}>
-              <button onClick={() => setShowPunchPhotoChoice(!showPunchPhotoChoice)} style={{
+          <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Box sx={{ position: 'relative', flex: 1, minWidth: '80px' }}>
+              <Button onClick={() => setShowPunchPhotoChoice(!showPunchPhotoChoice)} sx={{
                 padding: '10px 12px', border: '1px solid #ddd', borderRadius: '8px', background: 'white',
                 fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', width: '100%',
+                textTransform: 'none', '&:hover': { background: 'white' },
               }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink: 0, minWidth: '18px'}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 {t('common.photo')}
-              </button>
+              </Button>
               {showPunchPhotoChoice && (
                 <Fragment>
-                  <div onClick={() => setShowPunchPhotoChoice(false)} style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9}} />
-                  <div style={{position: 'absolute', bottom: '100%', left: 0, marginBottom: '4px', background: 'white', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'hidden', minWidth: '140px'}}>
-                    <button onClick={() => { punchPhotoRef.current?.click(); setShowPunchPhotoChoice(false); }} style={{display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #eee'}}>
-                      <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>{t('common.camera')}</span>
-                    </button>
-                    <button onClick={() => { punchGalleryRef.current?.click(); setShowPunchPhotoChoice(false); }} style={{display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left'}}>
-                      <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>{t('common.gallery')}</span>
-                    </button>
-                  </div>
+                  <Box onClick={() => setShowPunchPhotoChoice(false)} sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9 }} />
+                  <Paper sx={{ position: 'absolute', bottom: '100%', left: 0, mb: '4px', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'hidden', minWidth: '140px' }}>
+                    <Button onClick={() => { punchPhotoRef.current?.click(); setShowPunchPhotoChoice(false); }} sx={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #eee', textTransform: 'none', '&:hover': { background: '#f5f5f5' } }}>
+                      <Typography component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>{t('common.camera')}</Typography>
+                    </Button>
+                    <Button onClick={() => { punchGalleryRef.current?.click(); setShowPunchPhotoChoice(false); }} sx={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', textTransform: 'none', '&:hover': { background: '#f5f5f5' } }}>
+                      <Typography component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>{t('common.gallery')}</Typography>
+                    </Button>
+                  </Paper>
                 </Fragment>
               )}
-            </div>
-            <button onClick={() => punchFileRef.current?.click()} style={{
+            </Box>
+            <Button onClick={() => punchFileRef.current?.click()} sx={{
               padding: '10px 12px', border: '1px solid #ddd', borderRadius: '8px', background: 'white',
               fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: '80px',
+              textTransform: 'none', '&:hover': { background: 'white' },
             }}>
               📎 {t('common.file')}
-            </button>
-            <button style={{
+            </Button>
+            <Button sx={{
               padding: '10px 12px', border: '1px solid #ddd', borderRadius: '8px', background: 'white',
               fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: '80px',
+              textTransform: 'none', '&:hover': { background: 'white' },
             }} onClick={() => { if (onNavigate) onNavigate('forms'); }}>
               📝 {t('dailyPlan.form')}
-            </button>
-          </div>
+            </Button>
+          </Box>
           {/* Cancel / Add row — separate line */}
-          <div style={{display: 'flex', gap: '8px', marginTop: '8px'}}>
-            <button className="btn btn-secondary" style={{flex: 1, padding: '14px', fontSize: '15px', fontWeight: 700, minWidth: '120px'}} onClick={() => { setShowAdd(false); setPunchAttachments([]); setShowPunchPhotoChoice(false); }}>{t('common.cancel')}</button>
-            <button className="btn btn-primary" style={{flex: 1, padding: '14px', fontWeight: 700, fontSize: '15px', minWidth: '120px'}} onClick={addItem}>{t('common.add')}</button>
-          </div>
-        </div>
+          <Box sx={{ display: 'flex', gap: '8px', mt: '8px' }}>
+            <Button className="btn btn-secondary" sx={{ flex: 1, padding: '14px', fontSize: '15px', fontWeight: 700, minWidth: '120px', textTransform: 'none' }} onClick={() => { setShowAdd(false); setPunchAttachments([]); setShowPunchPhotoChoice(false); }}>{t('common.cancel')}</Button>
+            <Button className="btn btn-primary" sx={{ flex: 1, padding: '14px', fontWeight: 700, fontSize: '15px', minWidth: '120px', textTransform: 'none' }} onClick={addItem}>{t('common.add')}</Button>
+          </Box>
+        </Box>
       )}
 
-      {loading && <p style={{color: 'var(--charcoal)'}}>{t('common.loading')}</p>}
+      {loading && <CircularProgress sx={{ display: 'block', mx: 'auto', my: 2 }} />}
 
       {!loading && items.length === 0 && (
-        <div style={{textAlign: 'center', padding: '40px 0', color: 'var(--charcoal)'}}>
-          <p style={{fontSize: '16px'}}>{statusLabels[filter]}</p>
-        </div>
+        <Box sx={{ textAlign: 'center', padding: '40px 0', color: 'text.primary' }}>
+          <Typography sx={{ fontSize: '16px' }}>{statusLabels[filter]}</Typography>
+        </Box>
       )}
 
       {/* Items list */}
       {items.map(item => (
-        <div key={item.id} style={{
-          background: 'white', borderRadius: '12px', padding: '14px 16px', marginBottom: '8px',
+        <Paper key={item.id} sx={{
+          borderRadius: '12px', padding: '14px 16px', mb: '8px',
           borderLeft: `4px solid ${statusColors[item.status]}`,
         }}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-            <div style={{flex: 1}}>
-              <div style={{fontSize: '15px', fontWeight: 700, color: 'var(--charcoal)', marginBottom: '4px'}}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontSize: '15px', fontWeight: 700, color: 'text.primary', mb: '4px' }}>
                 {priorityIcons[item.priority]} {item.title}
-              </div>
-              {item.description && <p style={{fontSize: '13px', color: 'var(--charcoal)', margin: '0 0 6px'}}>{item.description}</p>}
-              <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '12px'}}>
-                {item.location && <span style={{background: '#f0ece8', borderRadius: '4px', padding: '2px 8px'}}>📍 {item.location}</span>}
-                <span style={{background: '#f0ece8', borderRadius: '4px', padding: '2px 8px'}}>{item.trade}</span>
-                {item.created_by_name && <span style={{color: 'var(--charcoal)'}}>by {item.created_by_name}</span>}
-                {item.assigned_to_name && <span style={{fontWeight: 600}}>→ {item.assigned_to_name}</span>}
-              </div>
-            </div>
+              </Typography>
+              {item.description && <Typography sx={{ fontSize: '13px', color: 'text.primary', margin: '0 0 6px' }}>{item.description}</Typography>}
+              <Box sx={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '12px' }}>
+                {item.location && <Typography component="span" sx={{ background: '#f0ece8', borderRadius: '4px', padding: '2px 8px' }}>📍 {item.location}</Typography>}
+                <Typography component="span" sx={{ background: '#f0ece8', borderRadius: '4px', padding: '2px 8px' }}>{item.trade}</Typography>
+                {item.created_by_name && <Typography component="span" sx={{ color: 'text.primary' }}>by {item.created_by_name}</Typography>}
+                {item.assigned_to_name && <Typography component="span" sx={{ fontWeight: 600 }}>→ {item.assigned_to_name}</Typography>}
+              </Box>
+            </Box>
             {/* Status actions */}
-            <div style={{display: 'flex', gap: '4px', flexShrink: 0, marginLeft: '8px'}}>
-              {item.status === 'open' && <button onClick={() => updateStatus(item.id, 'in_progress')} style={{background: '#F99440', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer'}}>{t('common.start')}</button>}
-              {item.status === 'in_progress' && <button onClick={() => updateStatus(item.id, 'ready_recheck')} style={{background: '#48484A', color: 'var(--primary)', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer'}}>{t('common.done')}</button>}
-              {item.status === 'ready_recheck' && isSupervisor && <button onClick={() => updateStatus(item.id, 'closed')} style={{background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer'}}>{t('common.close')}</button>}
-              {item.status === 'ready_recheck' && isSupervisor && <button onClick={() => updateStatus(item.id, 'open')} style={{background: '#999', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer'}}>{t('common.reject')}</button>}
-            </div>
-          </div>
-        </div>
+            <Box sx={{ display: 'flex', gap: '4px', flexShrink: 0, ml: '8px' }}>
+              {item.status === 'open' && <Button onClick={() => updateStatus(item.id, 'in_progress')} sx={{ background: 'primary.main', bgcolor: '#F99440', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textTransform: 'none', minWidth: 'auto', '&:hover': { bgcolor: '#e0853a' } }}>{t('common.start')}</Button>}
+              {item.status === 'in_progress' && <Button onClick={() => updateStatus(item.id, 'ready_recheck')} sx={{ bgcolor: '#48484A', color: 'primary.main', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textTransform: 'none', minWidth: 'auto', '&:hover': { bgcolor: '#3a3a3c' } }}>{t('common.done')}</Button>}
+              {item.status === 'ready_recheck' && isSupervisor && <Button onClick={() => updateStatus(item.id, 'closed')} sx={{ bgcolor: 'success.main', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textTransform: 'none', minWidth: 'auto', '&:hover': { bgcolor: '#43a047' } }}>{t('common.close')}</Button>}
+              {item.status === 'ready_recheck' && isSupervisor && <Button onClick={() => updateStatus(item.id, 'open')} sx={{ bgcolor: '#999', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textTransform: 'none', minWidth: 'auto', '&:hover': { bgcolor: '#888' } }}>{t('common.reject')}</Button>}
+            </Box>
+          </Box>
+        </Paper>
       ))}
     </Fragment>
   );
 
   if (embedded) return content;
-  return <div className="list-view">
+  return <Box className="list-view">
     {content}
-  </div>;
+  </Box>;
 }

@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  TextField,
+  Paper,
+  CircularProgress,
+  Chip,
+} from '@mui/material';
 import { TRADES } from '../utils/helpers.js';
 
 // TRADES imported from helpers
@@ -42,73 +51,217 @@ export default function TemplatesView() {
     load();
   };
 
-  if (loading) return <div className="loading">Loading...</div>;
+  if (loading) {
+    return (
+      <Box className="loading" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   if (editing !== null) {
     return (
-      <div className="admin-form">
-        <button className="back-btn" onClick={() => { setEditing(null); setAddingToTrade(null); }}>← Back</button>
-        <h1>{editing === 'new' ? `New ${addingToTrade} Role` : `Edit: ${form.template_name}`}</h1>
-        <label className="admin-label">Role Name<input value={form.template_name || ''} onChange={e => setForm(f => ({ ...f, template_name: e.target.value }))} placeholder="e.g. Foreman, Helper" /></label>
-        <label className="admin-label">Trade<input value={form.trade || ''} readOnly className="readonly" style={{ background: '#f5f3f0', color: '#7c7568' }} /></label>
-        <label className="admin-label">Role Level<input type="number" min={1} value={form.role_level || 1} onChange={e => setForm(f => ({ ...f, role_level: parseInt(e.target.value) }))} /></label>
-        <label className="admin-label">Role Level Title<input value={form.role_level_title || ''} onChange={e => setForm(f => ({ ...f, role_level_title: e.target.value }))} /></label>
-        <label className="admin-label">Role Description<textarea rows={4} value={form.role_description || ''} onChange={e => setForm(f => ({ ...f, role_description: e.target.value }))} /></label>
-        <label className="admin-label">Report Focus<textarea rows={3} value={form.report_focus || ''} onChange={e => setForm(f => ({ ...f, report_focus: e.target.value }))} /></label>
-        <label className="admin-label">Output Sections (one per line)
-          <textarea rows={6} value={(form.output_sections || []).join('\n')} onChange={e => setForm(f => ({ ...f, output_sections: e.target.value.split('\n').filter(s => s.trim()) }))} />
-        </label>
-        <label className="admin-label">Vocabulary Terms (comma-separated)
-          <textarea rows={4} value={form.vocabulary?.terms?.join(', ') || ''} onChange={e => setForm(f => ({ ...f, vocabulary: { ...f.vocabulary, terms: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))} />
-        </label>
-        <label className="admin-label">Language Notes<textarea rows={3} value={form.language_notes || ''} onChange={e => setForm(f => ({ ...f, language_notes: e.target.value }))} /></label>
+      <Box className="admin-form">
+        <Button className="back-btn" onClick={() => { setEditing(null); setAddingToTrade(null); }}>
+          ← Back
+        </Button>
+        <Typography variant="h4" component="h1">
+          {editing === 'new' ? `New ${addingToTrade} Role` : `Edit: ${form.template_name}`}
+        </Typography>
 
-        <h2 className="admin-section-title">Safety Basics</h2>
-        <label className="admin-label">Safety Rules (one per line)
-          <textarea rows={6} value={(form.safety_rules || []).join('\n')} onChange={e => setForm(f => ({ ...f, safety_rules: e.target.value.split('\n').filter(s => s.trim()) }))} placeholder="PPE required at all times&#10;LOTO before any electrical work&#10;Fall protection above 6 feet..." />
-        </label>
-        <label className="admin-label">Safety Vocabulary (comma-separated)
-          <textarea rows={3} value={(form.safety_vocabulary || []).join(', ')} onChange={e => setForm(f => ({ ...f, safety_vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="PPE, LOTO, JSA, confined space, hot work..." />
-        </label>
-        <label className="admin-label">Tools & Equipment Safety (one per line)
-          <textarea rows={4} value={(form.tools_and_equipment || []).join('\n')} onChange={e => setForm(f => ({ ...f, tools_and_equipment: e.target.value.split('\n').filter(s => s.trim()) }))} placeholder="Inspect tools before use&#10;Scaffolds must be tagged&#10;Ground all portable equipment..." />
-        </label>
+        <TextField
+          className="admin-label"
+          label="Role Name"
+          fullWidth
+          value={form.template_name || ''}
+          onChange={e => setForm(f => ({ ...f, template_name: e.target.value }))}
+          placeholder="e.g. Foreman, Helper"
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Trade"
+          fullWidth
+          value={form.trade || ''}
+          slotProps={{ htmlInput: { readOnly: true } }}
+          sx={{ '& .MuiInputBase-input': { bgcolor: 'grey.100', color: 'text.secondary' } }}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Role Level"
+          fullWidth
+          type="number"
+          slotProps={{ htmlInput: { min: 1 } }}
+          value={form.role_level || 1}
+          onChange={e => setForm(f => ({ ...f, role_level: parseInt(e.target.value) }))}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Role Level Title"
+          fullWidth
+          value={form.role_level_title || ''}
+          onChange={e => setForm(f => ({ ...f, role_level_title: e.target.value }))}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Role Description"
+          fullWidth
+          multiline
+          rows={4}
+          value={form.role_description || ''}
+          onChange={e => setForm(f => ({ ...f, role_description: e.target.value }))}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Report Focus"
+          fullWidth
+          multiline
+          rows={3}
+          value={form.report_focus || ''}
+          onChange={e => setForm(f => ({ ...f, report_focus: e.target.value }))}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Output Sections (one per line)"
+          fullWidth
+          multiline
+          rows={6}
+          value={(form.output_sections || []).join('\n')}
+          onChange={e => setForm(f => ({ ...f, output_sections: e.target.value.split('\n').filter(s => s.trim()) }))}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Vocabulary Terms (comma-separated)"
+          fullWidth
+          multiline
+          rows={4}
+          value={form.vocabulary?.terms?.join(', ') || ''}
+          onChange={e => setForm(f => ({ ...f, vocabulary: { ...f.vocabulary, terms: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Language Notes"
+          fullWidth
+          multiline
+          rows={3}
+          value={form.language_notes || ''}
+          onChange={e => setForm(f => ({ ...f, language_notes: e.target.value }))}
+          margin="normal"
+        />
 
-        <div className="action-row"><button className="btn btn-primary btn-lg" onClick={save}>Save Template</button></div>
-      </div>
+        <Typography variant="h5" component="h2" className="admin-section-title" sx={{ mt: 3, mb: 1 }}>
+          Safety Basics
+        </Typography>
+        <TextField
+          className="admin-label"
+          label="Safety Rules (one per line)"
+          fullWidth
+          multiline
+          rows={6}
+          value={(form.safety_rules || []).join('\n')}
+          onChange={e => setForm(f => ({ ...f, safety_rules: e.target.value.split('\n').filter(s => s.trim()) }))}
+          placeholder={"PPE required at all times\nLOTO before any electrical work\nFall protection above 6 feet..."}
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Safety Vocabulary (comma-separated)"
+          fullWidth
+          multiline
+          rows={3}
+          value={(form.safety_vocabulary || []).join(', ')}
+          onChange={e => setForm(f => ({ ...f, safety_vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
+          placeholder="PPE, LOTO, JSA, confined space, hot work..."
+          margin="normal"
+        />
+        <TextField
+          className="admin-label"
+          label="Tools & Equipment Safety (one per line)"
+          fullWidth
+          multiline
+          rows={4}
+          value={(form.tools_and_equipment || []).join('\n')}
+          onChange={e => setForm(f => ({ ...f, tools_and_equipment: e.target.value.split('\n').filter(s => s.trim()) }))}
+          placeholder={"Inspect tools before use\nScaffolds must be tagged\nGround all portable equipment..."}
+          margin="normal"
+        />
+
+        <Box className="action-row" sx={{ mt: 2 }}>
+          <Button className="btn btn-primary btn-lg" variant="contained" size="large" onClick={save}>
+            Save Template
+          </Button>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="list-view">
-      <h1>Templates</h1>
+    <Box className="list-view">
+      <Typography variant="h4" component="h1">Templates</Typography>
       {TRADES.map(trade => {
         const tradeTemplates = allTemplates.filter(t => t.trade === trade);
         return (
-          <div key={trade} className="trade-group">
-            <div className="trade-header">
-              <h2 className="trade-title">{trade}</h2>
-              <button className="btn btn-sm trade-add-btn" onClick={() => startNew(trade)}>+ Add Role</button>
-            </div>
+          <Box key={trade} className="trade-group" sx={{ mb: 3 }}>
+            <Box className="trade-header" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h5" component="h2" className="trade-title">{trade}</Typography>
+              <Button className="btn btn-sm trade-add-btn" size="small" onClick={() => startNew(trade)}>
+                + Add Role
+              </Button>
+            </Box>
             {tradeTemplates.length === 0 ? (
-              <p className="trade-empty">No roles yet</p>
+              <Typography className="trade-empty" sx={{ color: 'text.secondary' }}>No roles yet</Typography>
             ) : (
-              <div className="report-list">
+              <Box className="report-list">
                 {tradeTemplates.map(t => (
-                  <button key={t.id} className="report-card" onClick={() => startEdit(t)}>
-                    <div className="report-card-header">
-                      <span className="report-date" style={{ fontWeight: 700 }}>{t.template_name}</span>
-                      <span className="report-duration">{t.role_level_title} (Level {t.role_level})</span>
-                    </div>
-                    <div className="report-preview">{t.output_sections ? t.output_sections.join(' · ') : ''}</div>
-                    <div className="template-stats">{t.vocabulary?.terms?.length || 0} vocabulary terms</div>
-                  </button>
+                  <Paper
+                    key={t.id}
+                    className="report-card"
+                    component="button"
+                    onClick={() => startEdit(t)}
+                    sx={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      p: 2,
+                      mb: 1,
+                      border: 'none',
+                      background: 'inherit',
+                    }}
+                    elevation={1}
+                  >
+                    <Box className="report-card-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography className="report-date" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                        {t.template_name}
+                      </Typography>
+                      <Typography className="report-duration" sx={{ color: 'text.secondary' }}>
+                        {t.role_level_title} (Level {t.role_level})
+                      </Typography>
+                    </Box>
+                    <Typography className="report-preview" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                      {t.output_sections ? t.output_sections.join(' · ') : ''}
+                    </Typography>
+                    <Box className="template-stats" sx={{ mt: 1 }}>
+                      <Chip
+                        label={`${t.vocabulary?.terms?.length || 0} vocabulary terms`}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Box>
+                  </Paper>
                 ))}
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 }

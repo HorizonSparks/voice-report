@@ -1,5 +1,9 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Box, Typography, Button, TextField, Select, MenuItem, Paper,
+  CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions,
+} from '@mui/material';
 import FormHeader from '../components/forms/FormHeader.jsx';
 import CalibrationTable from '../components/forms/CalibrationTable.jsx';
 import CableTable from '../components/forms/CableTable.jsx';
@@ -197,7 +201,12 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
     setSubmitting(false);
   };
 
-  if (!form) return <div className="loading">{t('common.loading')}</div>;
+  if (!form) return (
+    <Box className="loading" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+      <CircularProgress size={20} />
+      <Typography>{t('common.loading')}</Typography>
+    </Box>
+  );
 
   const groups = {};
   if (form.fields) {
@@ -242,62 +251,67 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
   const isEditing = editingHeader;
 
   return (
-    <div className="form-fill">
-      <button className="back-btn" onClick={onBack} style={{marginBottom: '12px'}}>&larr; Back</button>
+    <Box className="form-fill">
+      <Button className="back-btn" onClick={onBack} sx={{ mb: '12px' }}>&larr; Back</Button>
       <FormHeader formCode={form.form_code} formTitle={form.form_title} />
 
-      <div className="form-edit-bar">
+      <Box className="form-edit-bar">
         {!isEditing ? (
-          <button type="button" className="btn form-edit-btn edit-mode" onClick={() => setEditingHeader(true)}>{t('common.edit')}</button>
+          <Button type="button" className="btn form-edit-btn edit-mode" onClick={() => setEditingHeader(true)}>{t('common.edit')}</Button>
         ) : (
-          <button type="button" className="btn form-edit-btn lock-mode" onClick={() => setEditingHeader(false)}>{t('forms.lockForm')}</button>
+          <Button type="button" className="btn form-edit-btn lock-mode" onClick={() => setEditingHeader(false)}>{t('forms.lockForm')}</Button>
         )}
-        <span className="form-edit-status">
+        <Typography component="span" className="form-edit-status">
           {isEditing ? t('forms.editing') : t('forms.locked')}
-        </span>
-      </div>
+        </Typography>
+      </Box>
 
-      {showConfirm && (
-        <div className="confirm-overlay">
-          <div className="confirm-modal">
-            {emptyWarnings.length > 0 ? (
-              <>
-                <h3 className="confirm-title">{t('forms.headsUp')}</h3>
-                <p className="confirm-text">{t('forms.headsUp')}</p>
-                <ul style={{textAlign: 'left', margin: '10px 20px', color: '#e8922a', fontSize: '14px', lineHeight: '1.8'}}>
-                  {emptyWarnings.map((w, i) => <li key={i}>{w}</li>)}
-                </ul>
-                <p className="confirm-text" style={{fontSize: '13px', color: 'var(--charcoal)', marginTop: '8px'}}>You can still save — these are not required.</p>
-                <div className="confirm-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t('forms.goBack')}</button>
-                  <button type="button" className="btn btn-primary" onClick={handleConfirmedSubmit}>{t('forms.saveAnyway')}</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="confirm-title">Submit this form?</h3>
-                <p className="confirm-text">Once submitted, this form becomes a permanent record.</p>
-                <div className="confirm-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t('forms.goBack')}</button>
-                  <button type="button" className="btn btn-primary" onClick={handleConfirmedSubmit}>{t('common.submit')}</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <Dialog open={showConfirm} onClose={() => setShowConfirm(false)}>
+        {emptyWarnings.length > 0 ? (
+          <>
+            <DialogTitle className="confirm-title">{t('forms.headsUp')}</DialogTitle>
+            <DialogContent>
+              <Typography className="confirm-text">{t('forms.headsUp')}</Typography>
+              <Box
+                component="ul"
+                sx={{ textAlign: 'left', m: '10px 20px', color: 'warning.main', fontSize: '14px', lineHeight: 1.8 }}
+              >
+                {emptyWarnings.map((w, i) => <li key={i}>{w}</li>)}
+              </Box>
+              <Typography className="confirm-text" sx={{ fontSize: '13px', color: 'text.primary', mt: '8px' }}>
+                You can still save — these are not required.
+              </Typography>
+            </DialogContent>
+            <DialogActions className="confirm-actions">
+              <Button type="button" className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t('forms.goBack')}</Button>
+              <Button type="button" className="btn btn-primary" onClick={handleConfirmedSubmit}>{t('forms.saveAnyway')}</Button>
+            </DialogActions>
+          </>
+        ) : (
+          <>
+            <DialogTitle className="confirm-title">Submit this form?</DialogTitle>
+            <DialogContent>
+              <Typography className="confirm-text">Once submitted, this form becomes a permanent record.</Typography>
+            </DialogContent>
+            <DialogActions className="confirm-actions">
+              <Button type="button" className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t('forms.goBack')}</Button>
+              <Button type="button" className="btn btn-primary" onClick={handleConfirmedSubmit}>{t('common.submit')}</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
-      <form onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
+      <Box component="form" onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
         {groupOrder.map(gKey => {
           const fields = groups[gKey];
           if (!fields) return null;
 
           if (gKey === 'megger_matrix') {
             return (
-              <fieldset key={gKey} className={`form-group group-${gKey} ${!isEditing ? 'form-locked' : ''}`}>
-                <legend>{groupLabels[gKey] || gKey}</legend>
+              <Paper key={gKey} className={`form-group group-${gKey} ${!isEditing ? 'form-locked' : ''}`}>
+                <Typography component="legend">{groupLabels[gKey] || gKey}</Typography>
                 <MeggerTable rows={meggerRows} onChange={setMeggerRows} disabled={!isEditing} />
-              </fieldset>
+              </Paper>
             );
           }
 
@@ -313,53 +327,53 @@ export default function FormFill({ templateId, loopId, onBack, onSubmitted, user
               }
             }
             return (
-              <fieldset key={gKey} className={`form-group group-${gKey} ${!isEditing ? 'form-locked' : ''}`}>
-                <legend>{groupLabels[gKey] || gKey}</legend>
-                <div className="sig-fill-block" style={pairs.length > 2 ? {flexWrap: 'wrap'} : {}}>
+              <Paper key={gKey} className={`form-group group-${gKey} ${!isEditing ? 'form-locked' : ''}`}>
+                <Typography component="legend">{groupLabels[gKey] || gKey}</Typography>
+                <Box className="sig-fill-block" sx={pairs.length > 2 ? { flexWrap: 'wrap' } : {}}>
                   {pairs.map((pair, i) => (
                     <Fragment key={i}>
-                      {i > 0 && <div className="sig-fill-divider"></div>}
-                      <div className="sig-fill-column" style={pairs.length > 2 ? {minWidth: '30%'} : {}}>
-                        {pair.name && <div className="form-field" data-field={pair.name.field_name}>{renderField(pair.name, values, setValue, calPoints, setCalPoints, cableRows, setCableRows, isEditing)}</div>}
-                        {pair.sig && <div className="form-field" data-field={pair.sig.field_name}>{renderField(pair.sig, values, setValue, calPoints, setCalPoints, cableRows, setCableRows, isEditing)}</div>}
-                      </div>
+                      {i > 0 && <Box className="sig-fill-divider" />}
+                      <Box className="sig-fill-column" sx={pairs.length > 2 ? { minWidth: '30%' } : {}}>
+                        {pair.name && <Box className="form-field" data-field={pair.name.field_name}>{renderField(pair.name, values, setValue, calPoints, setCalPoints, cableRows, setCableRows, isEditing)}</Box>}
+                        {pair.sig && <Box className="form-field" data-field={pair.sig.field_name}>{renderField(pair.sig, values, setValue, calPoints, setCalPoints, cableRows, setCableRows, isEditing)}</Box>}
+                      </Box>
                     </Fragment>
                   ))}
-                </div>
-              </fieldset>
+                </Box>
+              </Paper>
             );
           }
 
           return (
-            <fieldset key={gKey} className={`form-group group-${gKey} ${!isEditing ? 'form-locked' : ''}`}>
-              <legend>{groupLabels[gKey] || gKey}</legend>
+            <Paper key={gKey} className={`form-group group-${gKey} ${!isEditing ? 'form-locked' : ''}`}>
+              <Typography component="legend">{groupLabels[gKey] || gKey}</Typography>
               {fields.map(field => (
-                <div key={field.id || field.field_name} className="form-field" data-field={field.field_name}>
+                <Box key={field.id || field.field_name} className="form-field" data-field={field.field_name}>
                   {renderField(field, values, setValue, calPoints, setCalPoints, cableRows, setCableRows, isEditing)}
-                </div>
+                </Box>
               ))}
               {gKey === 'comments' && (
-                <div className="form-field">
-                  <span className="field-label">Photo Evidence</span>
+                <Box className="form-field">
+                  <Typography component="span" className="field-label">Photo Evidence</Typography>
                   <PhotoCapture photos={photos} onChange={setPhotos} disabled={!isEditing} />
-                </div>
+                </Box>
               )}
-            </fieldset>
+            </Paper>
           );
         })}
 
         {isEditing && (
-          <div className="form-actions" style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
-            <button type="submit" className="btn btn-primary btn-lg" style={{flex: 1, minWidth: '140px'}} disabled={submitting}>
+          <Box className="form-actions" sx={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <Button type="submit" className="btn btn-primary btn-lg" sx={{ flex: 1, minWidth: '140px' }} disabled={submitting}>
               {submitting ? t('common.loading') : t('forms.submitForm')}
-            </button>
-            <button type="button" className="btn btn-secondary btn-lg" style={{flex: 1, minWidth: '120px'}} onClick={handlePrint}>
-              🖨️ {t('forms.print')}
-            </button>
-          </div>
+            </Button>
+            <Button type="button" className="btn btn-secondary btn-lg" sx={{ flex: 1, minWidth: '120px' }} onClick={handlePrint}>
+              {t('forms.print')}
+            </Button>
+          </Box>
         )}
-      </form>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -369,20 +383,81 @@ function renderField(field, values, setValue, calPoints, setCalPoints, cableRows
 
   switch (field.field_type) {
     case 'text':
-      return (<label><span className="field-label">{field.field_label}{field.is_required ? ' *' : ''}</span>
-        <input type="text" value={val} onChange={e => setValue(field.field_name, e.target.value)} readOnly={isLocked} className={isLocked ? 'readonly' : ''} /></label>);
+      return (
+        <Box component="label">
+          <Typography component="span" className="field-label">
+            {field.field_label}{field.is_required ? ' *' : ''}
+          </Typography>
+          <TextField
+            type="text"
+            value={val}
+            onChange={e => setValue(field.field_name, e.target.value)}
+            slotProps={{ input: { readOnly: isLocked } }}
+            className={isLocked ? 'readonly' : ''}
+            size="small"
+            fullWidth
+          />
+        </Box>
+      );
     case 'number':
-      return (<label><span className="field-label">{field.field_label}{field.unit ? ` (${field.unit})` : ''}{field.is_required ? ' *' : ''}</span>
-        <input type="number" step="any" value={val} onChange={e => setValue(field.field_name, e.target.value)} readOnly={isLocked} className={isLocked ? 'readonly' : ''} /></label>);
+      return (
+        <Box component="label">
+          <Typography component="span" className="field-label">
+            {field.field_label}{field.unit ? ` (${field.unit})` : ''}{field.is_required ? ' *' : ''}
+          </Typography>
+          <TextField
+            type="number"
+            slotProps={{ input: { readOnly: isLocked }, htmlInput: { step: 'any' } }}
+            value={val}
+            onChange={e => setValue(field.field_name, e.target.value)}
+            className={isLocked ? 'readonly' : ''}
+            size="small"
+            fullWidth
+          />
+        </Box>
+      );
     case 'textarea':
-      return (<label><span className="field-label">{field.field_label}</span>
-        <textarea rows={3} value={val} onChange={e => setValue(field.field_name, e.target.value)} readOnly={isLocked} className={isLocked ? 'readonly' : ''} /></label>);
-    case 'select':
-      const opts = field.select_options ? (typeof field.select_options === 'string' ? JSON.parse(field.select_options) : field.select_options) : [];
-      return (<label><span className="field-label">{field.field_label}{field.is_required ? ' *' : ''}</span>
-        <div className="select-wrapper"><select value={val} onChange={e => setValue(field.field_name, e.target.value)} disabled={isLocked} className={isLocked ? 'readonly' : ''}>
-          <option value="">-- Select --</option>{opts.map(o => <option key={o} value={o}>{o}</option>)}
-        </select></div></label>);
+      return (
+        <Box component="label">
+          <Typography component="span" className="field-label">{field.field_label}</Typography>
+          <TextField
+            multiline
+            rows={3}
+            value={val}
+            onChange={e => setValue(field.field_name, e.target.value)}
+            slotProps={{ input: { readOnly: isLocked } }}
+            className={isLocked ? 'readonly' : ''}
+            size="small"
+            fullWidth
+          />
+        </Box>
+      );
+    case 'select': {
+      const opts = field.select_options
+        ? (typeof field.select_options === 'string' ? JSON.parse(field.select_options) : field.select_options)
+        : [];
+      return (
+        <Box component="label">
+          <Typography component="span" className="field-label">
+            {field.field_label}{field.is_required ? ' *' : ''}
+          </Typography>
+          <Box className="select-wrapper">
+            <Select
+              value={val}
+              onChange={e => setValue(field.field_name, e.target.value)}
+              disabled={isLocked}
+              className={isLocked ? 'readonly' : ''}
+              size="small"
+              fullWidth
+              displayEmpty
+            >
+              <MenuItem value="">-- Select --</MenuItem>
+              {opts.map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+            </Select>
+          </Box>
+        </Box>
+      );
+    }
     case 'yesno':
       return <ChecklistGroup label={field.field_label} value={val} onChange={isLocked ? () => {} : v => setValue(field.field_name, v)} />;
     case 'calibration_table':
@@ -392,7 +467,17 @@ function renderField(field, values, setValue, calPoints, setCalPoints, cableRows
     case 'signature':
       return <SignaturePad label={field.field_label} value={val} onChange={dataUrl => setValue(field.field_name, dataUrl)} />;
     default:
-      return (<label><span className="field-label">{field.field_label}</span>
-        <input type="text" value={val} onChange={e => setValue(field.field_name, e.target.value)} /></label>);
+      return (
+        <Box component="label">
+          <Typography component="span" className="field-label">{field.field_label}</Typography>
+          <TextField
+            type="text"
+            value={val}
+            onChange={e => setValue(field.field_name, e.target.value)}
+            size="small"
+            fullWidth
+          />
+        </Box>
+      );
   }
 }

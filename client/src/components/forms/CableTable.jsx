@@ -1,3 +1,5 @@
+import { Table, TableHead, TableBody, TableRow, TableCell, TextField, Button, Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
+
 export default function CableTable({ rows, onChange, disabled }) {
   const update = (idx, field, value) => {
     if (disabled) return;
@@ -11,69 +13,54 @@ export default function CableTable({ rows, onChange, disabled }) {
     onChange([...rows, { tag_number: '', color_code: '', continuity: '', cable_landed: '' }]);
   };
 
-  const ynaBtns = (idx, field, value) => (
-    <div className="yna-group">
+  const YnaButtons = ({ idx, field, value }) => (
+    <ToggleButtonGroup value={value} exclusive size="small"
+      onChange={(_e, val) => { if (val !== null && !disabled) update(idx, field, val); }}>
       {['Y', 'N', 'N/A'].map(opt => (
-        <button
-          key={opt}
-          type="button"
-          className={`yna-btn ${value === opt ? 'active' : ''}`}
-          onClick={() => update(idx, field, opt)}
-          disabled={disabled}
-        >
+        <ToggleButton key={opt} value={opt} disabled={disabled} sx={{ px: 1.5, py: 0.5, fontSize: 12, fontWeight: 700 }}>
           {opt}
-        </button>
+        </ToggleButton>
       ))}
-    </div>
+    </ToggleButtonGroup>
   );
 
   return (
-    <div className="cable-table-wrapper">
-      <table className="cable-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Tag Number</th>
-            <th>Color Code / Number</th>
-            <th>Continuity Check</th>
-            <th>Correct Cable Pulled & Landed</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Box className="cable-table-wrapper" sx={{ overflowX: 'auto' }}>
+      <Table size="small" sx={{ '& td, & th': { borderColor: 'grey.200' } }}>
+        <TableHead>
+          <TableRow sx={{ bgcolor: 'grey.100' }}>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, width: 40 }}>#</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Tag Number</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Color Code / Number</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Continuity Check</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>Correct Cable Pulled & Landed</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {rows.map((row, i) => (
-            <tr key={i}>
-              <td className="row-num">{i + 1}</td>
-              <td>
-                <input
-                  type="text"
-                  value={row.tag_number}
-                  onChange={e => update(i, 'tag_number', e.target.value)}
-                  placeholder="Tag #"
-                  readOnly={disabled}
-                  className={disabled ? 'readonly' : ''}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  value={row.color_code}
-                  onChange={e => update(i, 'color_code', e.target.value)}
-                  placeholder="Color/No."
-                  readOnly={disabled}
-                  className={disabled ? 'readonly' : ''}
-                />
-              </td>
-              <td>{ynaBtns(i, 'continuity', row.continuity)}</td>
-              <td>{ynaBtns(i, 'cable_landed', row.cable_landed)}</td>
-            </tr>
+            <TableRow key={i}>
+              <TableCell sx={{ fontWeight: 600, fontSize: 13, color: 'text.secondary' }}>{i + 1}</TableCell>
+              <TableCell>
+                <TextField size="small" value={row.tag_number} onChange={e => update(i, 'tag_number', e.target.value)}
+                  placeholder="Tag #" slotProps={{ htmlInput: { readOnly: disabled } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }} />
+              </TableCell>
+              <TableCell>
+                <TextField size="small" value={row.color_code} onChange={e => update(i, 'color_code', e.target.value)}
+                  placeholder="Color/No." slotProps={{ htmlInput: { readOnly: disabled } }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }} />
+              </TableCell>
+              <TableCell><YnaButtons idx={i} field="continuity" value={row.continuity} /></TableCell>
+              <TableCell><YnaButtons idx={i} field="cable_landed" value={row.cable_landed} /></TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
       {!disabled && (
-        <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
+        <Button variant="outlined" size="small" onClick={addRow} sx={{ mt: 1.5, fontSize: 12, fontWeight: 600 }}>
           + Add Row
-        </button>
+        </Button>
       )}
-    </div>
+    </Box>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Box, Typography, Button, TextField, Paper, Alert } from '@mui/material';
 import ForemanDailyForm from '../components/ForemanDailyForm.jsx';
 import SafetyObservationForm from '../components/SafetyObservationForm.jsx';
 import FormFill from './FormFill.jsx';
@@ -101,17 +102,17 @@ export default function FormsHub({ user, goHome, activeTrade, readOnly }) {
   // Saved form success screen
   if (savedFormId) {
     return (
-      <div className="forms-hub">
-        <div className="form-saved-banner">
-          <span className="form-saved-icon">✅</span>
-          <h3>{t('common.formSavedSuccess')}</h3>
-          <p>Your form has been saved.</p>
-          <div className="form-saved-actions">
-            <button className="btn-primary" onClick={() => { setSavedFormId(null); setActiveForm(null); setSelectedTemplate(null); }}>← {t('nav.back')}</button>
-            
-          </div>
-        </div>
-      </div>
+      <Box className="forms-hub">
+        <Box className="form-saved-banner">
+          <Typography component="span" className="form-saved-icon">✅</Typography>
+          <Typography variant="h3">{t('common.formSavedSuccess')}</Typography>
+          <Typography>Your form has been saved.</Typography>
+          <Box className="form-saved-actions">
+            <Button className="btn-primary" onClick={() => { setSavedFormId(null); setActiveForm(null); setSelectedTemplate(null); }}>← {t('nav.back')}</Button>
+
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
@@ -130,156 +131,170 @@ export default function FormsHub({ user, goHome, activeTrade, readOnly }) {
   // Company Settings view
   if (showSettings) {
     return (
-      <div className="forms-hub">
-        <button className="back-btn" onClick={() => setShowSettings(false)}>← {t('nav.back')}</button>
-        <h2 style={{fontSize: '22px', fontWeight: 700, color: 'var(--charcoal)', marginBottom: '8px'}}>Company Settings</h2>
-        <p style={{color: 'var(--charcoal)', fontSize: '14px', marginBottom: '20px'}}>
+      <Box className="forms-hub">
+        <Button className="back-btn" onClick={() => setShowSettings(false)}>← {t('nav.back')}</Button>
+        <Typography variant="h2" sx={{ fontSize: '22px', fontWeight: 700, color: 'text.primary', marginBottom: '8px' }}>Company Settings</Typography>
+        <Typography sx={{ color: 'text.primary', fontSize: '14px', marginBottom: '20px' }}>
           Configure the logo and company name that appears on all forms and in the app header.
-        </p>
+        </Typography>
 
         {settingsMsg && (
-          <div style={{background: '#E8922A', color: 'var(--charcoal)', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, fontSize: '14px', marginBottom: '16px', textAlign: 'center'}}>
+          <Alert severity="info" sx={{ background: '#E8922A', color: 'text.primary', padding: '10px 16px', borderRadius: '8px', fontWeight: 600, fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
             {settingsMsg}
-          </div>
+          </Alert>
         )}
 
         {/* Logo Section */}
-        <div style={{background: 'white', border: '2px solid #e0e0e0', borderRadius: '12px', padding: '20px', marginBottom: '16px'}}>
-          <h3 style={{fontSize: '17px', fontWeight: 700, color: 'var(--charcoal)', margin: '0 0 8px'}}>Company Logo</h3>
-          <p style={{color: 'var(--charcoal)', fontSize: '13px', margin: '0 0 16px'}}>
+        <Paper sx={{ background: 'white', border: '2px solid', borderColor: 'grey.300', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
+          <Typography variant="h3" sx={{ fontSize: '17px', fontWeight: 700, color: 'text.primary', margin: '0 0 8px' }}>Company Logo</Typography>
+          <Typography sx={{ color: 'text.primary', fontSize: '13px', margin: '0 0 16px' }}>
             This logo appears on every form header and in the app. Upload PNG, JPG, or SVG (max 10 MB).
-          </p>
+          </Typography>
 
           {/* Logo Preview */}
-          <div style={{
-            border: '2px dashed #48484A', borderRadius: '10px', padding: '20px',
+          <Box sx={{
+            border: '2px dashed', borderColor: 'secondary.main', borderRadius: '10px', padding: '20px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             marginBottom: '16px', minHeight: '80px', background: '#fafafa',
           }}>
             {settings?.logo_data ? (
-              <img src={settings.logo_data} alt="Company logo" style={{maxHeight: '80px', maxWidth: '250px', objectFit: 'contain'}} />
+              <Box component="img" src={settings.logo_data} alt="Company logo" sx={{ maxHeight: '80px', maxWidth: '250px', objectFit: 'contain' }} />
             ) : (
-              <span style={{color: 'var(--charcoal)', fontSize: '15px', fontWeight: 600}}>{settings?.company_name || 'No logo uploaded'}</span>
+              <Typography sx={{ color: 'text.primary', fontSize: '15px', fontWeight: 600 }}>{settings?.company_name || 'No logo uploaded'}</Typography>
             )}
-          </div>
+          </Box>
 
           {/* Logo Actions */}
-          <div style={{display: 'flex', gap: '10px'}}>
-            <label style={{
-              flex: 1, padding: '12px', background: 'var(--primary)', color: 'var(--charcoal)',
+          <Box sx={{ display: 'flex', gap: '10px' }}>
+            <Button component="label" sx={{
+              flex: 1, padding: '12px', background: 'primary.main', color: 'text.primary',
               borderRadius: '8px', fontSize: '14px', fontWeight: 700, textAlign: 'center',
               cursor: 'pointer',
             }}>
               {settings?.logo_data ? 'Replace Logo' : 'Upload Logo'}
               <input ref={logoFileRef} type="file" accept="image/png,image/jpeg,image/svg+xml" onChange={handleLogoUpload} hidden />
-            </label>
+            </Button>
             {settings?.logo_data && (
-              <button onClick={handleRemoveLogo} disabled={saving} style={{
-                flex: 1, padding: '12px', background: 'white', color: 'var(--charcoal)',
-                border: '2px solid #48484A', borderRadius: '8px', fontSize: '14px',
+              <Button onClick={handleRemoveLogo} disabled={saving} sx={{
+                flex: 1, padding: '12px', background: 'white', color: 'text.primary',
+                border: '2px solid', borderColor: 'secondary.main', borderRadius: '8px', fontSize: '14px',
                 fontWeight: 700, cursor: 'pointer',
               }}>
                 Remove Logo
-              </button>
+              </Button>
             )}
-          </div>
-        </div>
+          </Box>
+        </Paper>
 
         {/* Company Name Section */}
-        <div style={{background: 'white', border: '2px solid #e0e0e0', borderRadius: '12px', padding: '20px', marginBottom: '16px'}}>
-          <h3 style={{fontSize: '17px', fontWeight: 700, color: 'var(--charcoal)', margin: '0 0 8px'}}>Company Name</h3>
-          <p style={{color: 'var(--charcoal)', fontSize: '13px', margin: '0 0 16px'}}>
+        <Paper sx={{ background: 'white', border: '2px solid', borderColor: 'grey.300', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
+          <Typography variant="h3" sx={{ fontSize: '17px', fontWeight: 700, color: 'text.primary', margin: '0 0 8px' }}>Company Name</Typography>
+          <Typography sx={{ color: 'text.primary', fontSize: '13px', margin: '0 0 16px' }}>
             Used as text fallback when no logo is uploaded, and in form headers.
-          </p>
-          <div style={{display: 'flex', gap: '10px'}}>
-            <input
-              type="text"
+          </Typography>
+          <Box sx={{ display: 'flex', gap: '10px' }}>
+            <TextField
               value={companyName}
               onChange={e => setCompanyName(e.target.value)}
               placeholder="Company name"
-              style={{
-                flex: 1, padding: '12px', border: '2px solid #48484A', borderRadius: '8px',
-                fontSize: '15px', fontWeight: 600, color: 'var(--charcoal)', fontFamily: 'inherit',
+              variant="outlined"
+              sx={{
+                flex: 1,
+                '& .MuiOutlinedInput-root': {
+                  padding: '0',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  fontFamily: 'inherit',
+                  '& fieldset': {
+                    border: '2px solid',
+                    borderColor: 'secondary.main',
+                  },
+                },
+                '& .MuiOutlinedInput-input': {
+                  padding: '12px',
+                },
               }}
             />
-            <button
+            <Button
               onClick={handleSaveName}
               disabled={saving || companyName === (settings?.company_name || '')}
-              style={{
-                padding: '12px 20px', background: 'var(--primary)', color: 'var(--charcoal)',
+              sx={{
+                padding: '12px 20px', background: 'primary.main', color: 'text.primary',
                 border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700,
                 cursor: 'pointer', opacity: saving || companyName === (settings?.company_name || '') ? 0.5 : 1,
               }}
             >
               Save
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Paper>
 
         {/* Form Header Preview */}
-        <div style={{background: 'white', border: '2px solid #e0e0e0', borderRadius: '12px', padding: '20px'}}>
-          <h3 style={{fontSize: '17px', fontWeight: 700, color: 'var(--charcoal)', margin: '0 0 12px'}}>Form Header Preview</h3>
-          <div className="form-header-banner">
-            <div className="form-header-logo">
+        <Paper sx={{ background: 'white', border: '2px solid', borderColor: 'grey.300', borderRadius: '12px', padding: '20px' }}>
+          <Typography variant="h3" sx={{ fontSize: '17px', fontWeight: 700, color: 'text.primary', margin: '0 0 12px' }}>Form Header Preview</Typography>
+          <Box className="form-header-banner">
+            <Box className="form-header-logo">
               {settings?.logo_data
-                ? <img src={settings.logo_data} alt="Logo" className="header-logo-img" />
-                : <span className="header-logo-text">{settings?.company_name || 'HORIZON SPARKS'}</span>}
-            </div>
-            <div className="form-header-info">
-              <div className="form-header-code">HS-IC-001</div>
-              <h2 className="form-header-title">Transmitter Calibration & Checkout</h2>
-              <div className="form-header-subtitle">Quality Control Field Test Report</div>
-            </div>
-          </div>
-        </div>
-      </div>
+                ? <Box component="img" src={settings.logo_data} alt="Logo" className="header-logo-img" />
+                : <Typography component="span" className="header-logo-text">{settings?.company_name || 'HORIZON SPARKS'}</Typography>}
+            </Box>
+            <Box className="form-header-info">
+              <Box className="form-header-code">HS-IC-001</Box>
+              <Typography variant="h2" className="form-header-title">Transmitter Calibration & Checkout</Typography>
+              <Box className="form-header-subtitle">Quality Control Field Test Report</Box>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
     );
   }
 
   return (
-    <div className="forms-hub">
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'var(--charcoal)', borderRadius: '12px', padding: '14px 20px'}}>
-        <h2 style={{margin: 0, color: 'var(--primary)', fontSize: '20px', fontWeight: 800}}>
+    <Box className="forms-hub">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', background: 'text.primary', borderRadius: '12px', padding: '14px 20px' }}>
+        <Typography variant="h2" sx={{ margin: 0, color: 'primary.main', fontSize: '20px', fontWeight: 800 }}>
           {activeTrade} {t('common.forms')}
-        </h2>
+        </Typography>
         {/* Settings gear button */}
         {(user.is_admin || (user.role_level || 0) >= 2) && (
-          <button onClick={() => setShowSettings(true)} style={{
+          <Button onClick={() => setShowSettings(true)} sx={{
             padding: '8px 16px', borderRadius: '8px', border: 'none',
             background: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 700,
-            color: 'var(--charcoal)', display: 'flex', alignItems: 'center', gap: '6px',
+            color: 'text.primary', display: 'flex', alignItems: 'center', gap: '6px',
           }}>
             + Add Logo
-          </button>
+          </Button>
         )}
-      </div>
+      </Box>
 
       {tradeTemplates.length > 0 ? (
-        <div style={{marginBottom: '24px'}}>
-          <div className="forms-list">
+        <Box sx={{ marginBottom: '24px' }}>
+          <Box className="forms-list">
             {tradeTemplates.map(t => (
-              <button key={t.id} className="form-card" onClick={() => setSelectedTemplate(t.id)}>
-                <div className="form-card-icon" style={{fontSize: '13px', fontWeight: 700, color: 'var(--charcoal)', fontFamily: "'SF Mono','Consolas',monospace", minWidth: '80px', textAlign: 'center'}}>
+              <Button key={t.id} className="form-card" onClick={() => setSelectedTemplate(t.id)}>
+                <Box className="form-card-icon" sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary', fontFamily: "'SF Mono','Consolas',monospace", minWidth: '80px', textAlign: 'center' }}>
                   {t.form_code}
-                </div>
-                <div className="form-card-info">
-                  <span className="form-card-title">{t.form_title}</span>
-                  <span className="form-card-desc">{t.category}</span>
-                </div>
-              </button>
+                </Box>
+                <Box className="form-card-info">
+                  <Typography component="span" className="form-card-title">{t.form_title}</Typography>
+                  <Typography component="span" className="form-card-desc">{t.category}</Typography>
+                </Box>
+              </Button>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       ) : (
-        <p style={{color: 'var(--charcoal)', fontSize: '14px', padding: '20px 0', textAlign: 'center'}}>
+        <Typography sx={{ color: 'text.primary', fontSize: '14px', padding: '20px 0', textAlign: 'center' }}>
           {t('common.noFormsAvailable')}
-        </p>
+        </Typography>
       )}
 
       {/* View completed forms */}
-      <button className="btn btn-secondary" style={{width: '100%', padding: '12px'}} onClick={() => setShowSubmissions(true)}>
+      <Button className="btn btn-secondary" sx={{ width: '100%', padding: '12px' }} onClick={() => setShowSubmissions(true)}>
         {t('common.completedForms')}
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 }

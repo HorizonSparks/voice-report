@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { Box, Typography, Button } from '@mui/material';
 
 export default function SignaturePad({ label, value, onChange }) {
   const canvasRef = useRef(null);
@@ -64,9 +65,9 @@ export default function SignaturePad({ label, value, onChange }) {
   };
 
   return (
-    <div className="signature-pad">
-      <span className="field-label">{label}</span>
-      <div className="sig-canvas-wrapper">
+    <Box className="signature-pad" sx={{ mb: 2 }}>
+      <Typography className="field-label" sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary', mb: 0.75 }}>{label}</Typography>
+      <Box sx={{ position: 'relative', border: '2px solid', borderColor: 'grey.300', borderRadius: 2, overflow: 'hidden', mb: 1 }}>
         <canvas
           ref={canvasRef}
           onMouseDown={start}
@@ -76,12 +77,20 @@ export default function SignaturePad({ label, value, onChange }) {
           onTouchStart={start}
           onTouchMove={move}
           onTouchEnd={end}
+          style={{ display: 'block', width: '100%', height: 120, cursor: 'crosshair' }}
         />
-        {!hasContent && <div className="sig-placeholder">Sign here</div>}
-      </div>
-      <button type="button" className="btn btn-secondary btn-sm" onClick={clear}>
+        {!hasContent && (
+          <Typography sx={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            color: 'text.secondary', fontSize: 14, pointerEvents: 'none',
+          }}>
+            Sign here
+          </Typography>
+        )}
+      </Box>
+      <Button variant="outlined" size="small" onClick={clear} color="secondary" sx={{ fontSize: 12, fontWeight: 600 }}>
         Clear Signature
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 }

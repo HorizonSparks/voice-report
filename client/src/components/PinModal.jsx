@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Typography, Alert } from '@mui/material';
 
 export default function PinModal({ visible, companyName, onSubmit, onCancel, error }) {
   const [pin, setPin] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (visible && inputRef.current) {
+    if (visible) {
       setPin('');
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [visible]);
-
-  if (!visible) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -19,53 +18,44 @@ export default function PinModal({ visible, companyName, onSubmit, onCancel, err
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
-    }} onClick={onCancel}>
-      <div style={{
-        background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '380px', width: '100%',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
-      }} onClick={e => e.stopPropagation()}>
-        <h3 style={{ margin: '0 0 8px', color: 'var(--charcoal)', fontSize: '18px', fontWeight: 800 }}>
+    <Dialog open={visible} onClose={onCancel}
+      slotProps={{ paper: { sx: { borderRadius: 4, maxWidth: 380, width: '100%' } } }}>
+      <form onSubmit={handleSubmit}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 18, color: 'text.primary', pb: 0 }}>
           Enable Edit Mode
-        </h3>
-        <p style={{ margin: '0 0 20px', color: 'var(--charcoal)', fontSize: '13px', lineHeight: 1.5, opacity: 0.7 }}>
-          You are about to enable editing for <strong>{companyName}</strong>. All changes will be logged under your operator account.
-        </p>
-        <form onSubmit={handleSubmit}>
-          <input
-            ref={inputRef}
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2.5, color: 'text.secondary', fontSize: 13, lineHeight: 1.5 }}>
+            You are about to enable editing for <strong>{companyName}</strong>. All changes will be logged under your operator account.
+          </Typography>
+          <TextField
+            inputRef={inputRef}
             type="password"
-            inputMode="numeric"
-            pattern="[0-9]*"
+            fullWidth
             value={pin}
             onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
             placeholder="Enter your PIN"
-            style={{
-              width: '100%', padding: '14px 16px', fontSize: '18px', fontWeight: 700,
-              borderRadius: '12px', border: error ? '2px solid #dc2626' : '2px solid var(--charcoal)',
-              textAlign: 'center', letterSpacing: '8px', boxSizing: 'border-box',
+            error={!!error}
+            slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' } }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fontSize: 18, fontWeight: 700, textAlign: 'center', letterSpacing: 8,
+                borderRadius: 3,
+              },
+              '& input': { textAlign: 'center' },
             }}
           />
-          {error && (
-            <p style={{ color: '#dc2626', fontSize: '12px', fontWeight: 600, margin: '8px 0 0', textAlign: 'center' }}>
-              {error}
-            </p>
-          )}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-            <button type="button" onClick={onCancel} style={{
-              flex: 1, padding: '12px', borderRadius: '12px', border: '2px solid var(--charcoal)',
-              background: 'white', color: 'var(--charcoal)', fontWeight: 700, fontSize: '14px', cursor: 'pointer',
-            }}>Cancel</button>
-            <button type="submit" disabled={pin.length < 4} style={{
-              flex: 1, padding: '12px', borderRadius: '12px', border: 'none',
-              background: pin.length >= 4 ? '#dc2626' : '#ccc',
-              color: 'white', fontWeight: 700, fontSize: '14px', cursor: pin.length >= 4 ? 'pointer' : 'default',
-            }}>Enable Editing</button>
-          </div>
-        </form>
-      </div>
-    </div>
+          {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1.25 }}>
+          <Button variant="outlined" color="secondary" onClick={onCancel} fullWidth sx={{ borderRadius: 3, py: 1.5, fontWeight: 700, fontSize: 14 }}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="contained" color="error" disabled={pin.length < 4} fullWidth sx={{ borderRadius: 3, py: 1.5, fontWeight: 700, fontSize: 14 }}>
+            Enable Editing
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 }

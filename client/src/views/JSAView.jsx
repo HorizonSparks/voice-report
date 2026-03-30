@@ -1,5 +1,9 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Box, Typography, Button, TextField, Paper, CircularProgress,
+  Select, MenuItem, Checkbox, Chip
+} from '@mui/material';
 
 export default function JSAView({ user, goHome, activeTrade, readOnly }) {
   const { t } = useTranslation();
@@ -194,10 +198,10 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
     groupedFields[g].push(f);
   });
 
-  // Shared input style
-  const inputStyle = { width: '100%', padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', boxSizing: 'border-box', minHeight: '48px' };
-  const selectStyle = { ...inputStyle, background: 'white', color: 'var(--charcoal)' };
-  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)', marginBottom: '4px' };
+  // Shared input sx
+  const inputSx = { width: '100%', '& .MuiInputBase-root': { fontSize: '15px', minHeight: '48px' } };
+  const selectSx = { width: '100%', fontSize: '15px', minHeight: '48px', background: 'white', color: 'text.primary' };
+  const labelSx = { display: 'block', fontSize: '13px', fontWeight: 600, color: 'text.primary', mb: '4px' };
 
   // (Individual acknowledgment removed — simplified to group signatures)
 
@@ -208,30 +212,30 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
     const acks = viewingJSA.acknowledgments || [];
     const completed = acks.filter(a => a.status === 'completed').length;
     return (
-      <div style={{padding: '20px', maxWidth: '800px', margin: '0 auto'}}>
-        <button className="back-btn" onClick={() => setViewingJSA(null)}>&larr; Back</button>
-        <h1 style={{fontSize: '24px', fontWeight: 800, color: 'var(--charcoal)', marginBottom: '4px'}}>{t('jsa.detail')}</h1>
-        <p style={{color: 'var(--charcoal)', fontSize: '14px', marginBottom: '16px'}}>
+      <Box sx={{ p: '20px', maxWidth: '800px', mx: 'auto' }}>
+        <Button className="back-btn" onClick={() => setViewingJSA(null)}>&larr; Back</Button>
+        <Typography variant="h1" sx={{ fontSize: '24px', fontWeight: 800, color: 'text.primary', mb: '4px' }}>{t('jsa.detail')}</Typography>
+        <Typography sx={{ color: 'text.primary', fontSize: '14px', mb: '16px' }}>
           {viewingJSA.person_name} — {new Date(viewingJSA.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-        </p>
+        </Typography>
 
         {/* Status */}
-        <div style={{display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center'}}>
-          <span style={{fontSize: '13px', fontWeight: 700, padding: '6px 14px', borderRadius: '20px',
-            background: statusColors[viewingJSA.status] + '20', color: statusColors[viewingJSA.status]}}>
-            {statusLabels[viewingJSA.status]}
-          </span>
-          {viewingJSA.foreman_name && <span style={{fontSize: '12px', color: 'var(--charcoal)'}}>Foreman: {viewingJSA.foreman_name} ✓</span>}
-          {viewingJSA.safety_name && <span style={{fontSize: '12px', color: 'var(--charcoal)'}}>Safety: {viewingJSA.safety_name} ✓</span>}
-        </div>
+        <Box sx={{ display: 'flex', gap: '8px', mb: '16px', alignItems: 'center' }}>
+          <Chip label={statusLabels[viewingJSA.status]} sx={{
+            fontSize: '13px', fontWeight: 700, px: '14px', borderRadius: '20px',
+            backgroundColor: statusColors[viewingJSA.status] + '20', color: statusColors[viewingJSA.status]
+          }} />
+          {viewingJSA.foreman_name && <Typography sx={{ fontSize: '12px', color: 'text.primary' }}>Foreman: {viewingJSA.foreman_name} ✓</Typography>}
+          {viewingJSA.safety_name && <Typography sx={{ fontSize: '12px', color: 'text.primary' }}>Safety: {viewingJSA.safety_name} ✓</Typography>}
+        </Box>
 
         {/* Task description */}
         <fieldset style={{border: '2px solid #e0e0e0', borderRadius: '12px', padding: '16px', marginBottom: '16px'}}>
           <legend style={{fontSize: '13px', fontWeight: 700, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '1px', padding: '0 8px'}}>{t('common.task')}</legend>
-          <p style={{fontSize: '15px', color: 'var(--charcoal)', margin: 0}}>{viewingJSA.form_data?.task_description || t('common.noDescription')}</p>
-          <p style={{fontSize: '13px', color: 'var(--charcoal)', marginTop: '8px'}}>
+          <Typography sx={{ fontSize: '15px', color: 'text.primary', m: 0 }}>{viewingJSA.form_data?.task_description || t('common.noDescription')}</Typography>
+          <Typography sx={{ fontSize: '13px', color: 'text.primary', mt: '8px' }}>
             Area: {viewingJSA.form_data?.work_area || 'TBD'} | Risk: {viewingJSA.form_data?.risk_level || 'TBD'}
-          </p>
+          </Typography>
         </fieldset>
 
         {/* Crew signatures progress */}
@@ -241,44 +245,44 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
               {t('jsa.crewSignatures')} ({completed} / {acks.length})
             </legend>
             {/* Progress bar */}
-            <div style={{height: '8px', background: '#e0e0e0', borderRadius: '4px', marginBottom: '12px', overflow: 'hidden'}}>
-              <div style={{height: '100%', width: `${acks.length > 0 ? (completed / acks.length * 100) : 0}%`, background: completed === acks.length ? '#4CAF50' : 'var(--primary)', borderRadius: '4px', transition: 'width 0.3s'}} />
-            </div>
+            <Box sx={{ height: '8px', background: '#e0e0e0', borderRadius: '4px', mb: '12px', overflow: 'hidden' }}>
+              <Box sx={{ height: '100%', width: `${acks.length > 0 ? (completed / acks.length * 100) : 0}%`, background: completed === acks.length ? 'success.main' : 'primary.main', borderRadius: '4px', transition: 'width 0.3s' }} />
+            </Box>
             {acks.map(ack => (
-              <div key={ack.id} style={{display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: '1px solid #f0f0f0'}}>
-                <span style={{fontSize: '20px'}}>{ack.status === 'signed' ? '✅' : '⏳'}</span>
-                <div style={{flex: 1}}>
-                  <div style={{fontWeight: 700, fontSize: '14px', color: 'var(--charcoal)'}}>{ack.person_name}</div>
+              <Box key={ack.id} sx={{ display: 'flex', alignItems: 'center', gap: '10px', py: '10px', borderBottom: '1px solid #f0f0f0' }}>
+                <Typography sx={{ fontSize: '20px' }}>{ack.status === 'signed' ? '✅' : '⏳'}</Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '14px', color: 'text.primary' }}>{ack.person_name}</Typography>
                   {ack.signed_on_device === 'foreman' && ack.status === 'signed' && (
-                    <div style={{fontSize: '11px', color: 'var(--charcoal)'}}>{t('jsa.signedOnForemanDevice')}</div>
+                    <Typography sx={{ fontSize: '11px', color: 'text.primary' }}>{t('jsa.signedOnForemanDevice')}</Typography>
                   )}
-                </div>
-                <span style={{fontSize: '12px', color: ack.status === 'signed' ? '#4CAF50' : '#999', fontWeight: 600}}>
+                </Box>
+                <Typography sx={{ fontSize: '12px', color: ack.status === 'signed' ? 'success.main' : '#999', fontWeight: 600 }}>
                   {ack.status === 'signed' ? `${t('jsa.signed')} ✓` : t('jsa.pending')}
-                </span>
-              </div>
+                </Typography>
+              </Box>
             ))}
             {/* Foreman: sign for someone without a phone */}
             {isForeman && (
-              <button onClick={() => {
+              <Button onClick={() => {
                 const name = prompt(t('jsa.enterNameToSign'));
                 if (name && name.trim()) signForSomeone(viewingJSA.id, name.trim());
               }}
-                style={{marginTop: '10px', width: '100%', padding: '10px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '14px', fontWeight: 600, background: 'white', color: 'var(--charcoal)', cursor: 'pointer'}}>
+                sx={{ mt: '10px', width: '100%', p: '10px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '14px', fontWeight: 600, background: 'white', color: 'text.primary', cursor: 'pointer', textTransform: 'none' }}>
                 {t('jsa.signForSomeone')}
-              </button>
+              </Button>
             )}
           </fieldset>
         )}
 
         {/* Actions */}
         {viewingJSA.status === 'draft' && viewingJSA.person_id === personId && (
-          <button onClick={() => submitForApproval(viewingJSA.id)}
-            style={{width: '100%', padding: '14px 10px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'var(--primary)', color: 'var(--charcoal)', cursor: 'pointer'}}>
+          <Button onClick={() => submitForApproval(viewingJSA.id)}
+            sx={{ width: '100%', p: '14px 10px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'primary.main', color: 'text.primary', cursor: 'pointer', textTransform: 'none' }}>
             {t('jsa.submitForApproval')}
-          </button>
+          </Button>
         )}
-      </div>
+      </Box>
     );
   }
 
@@ -287,13 +291,13 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
   // ============================================================
   if (creating) {
     return (
-      <div style={{padding: '20px', maxWidth: '800px', margin: '0 auto'}}>
-        <button className="back-btn" onClick={() => setCreating(false)}>&larr; Back</button>
-        <h1 style={{fontSize: '28px', fontWeight: 800, color: 'var(--charcoal)', marginBottom: '2px'}}>{t('jsa.newJSA')}</h1>
-        <p style={{fontSize: '13px', fontWeight: 600, color: 'var(--primary)', fontStyle: 'italic', marginBottom: '8px', marginTop: 0}}>{t('jsa.safetyFirst')}</p>
-        <p style={{color: 'var(--charcoal)', fontSize: '14px', marginBottom: '20px'}}>
+      <Box sx={{ p: '20px', maxWidth: '800px', mx: 'auto' }}>
+        <Button className="back-btn" onClick={() => setCreating(false)}>&larr; Back</Button>
+        <Typography variant="h1" sx={{ fontSize: '28px', fontWeight: 800, color: 'text.primary', mb: '2px' }}>{t('jsa.newJSA')}</Typography>
+        <Typography sx={{ fontSize: '13px', fontWeight: 600, color: 'primary.main', fontStyle: 'italic', mb: '8px', mt: 0 }}>{t('jsa.safetyFirst')}</Typography>
+        <Typography sx={{ color: 'text.primary', fontSize: '14px', mb: '20px' }}>
           {user.name} — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-        </p>
+        </Typography>
 
         {groupOrder.map(group => {
           const fields = groupedFields[group];
@@ -307,25 +311,25 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
                 <legend style={{fontSize: '13px', fontWeight: 700, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '1px', padding: '0 8px'}}>
                   {groupLabels[group]}
                 </legend>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end'}}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end' }}>
                   {fields.filter(f => f.field_name !== 'crew_members' && f.field_name !== 'crew_count').map(f => (
-                    <div key={f.field_name}>
-                      <label style={labelStyle}>{f.field_label}</label>
-                      <input type="text" value={formData[f.field_name] || (f.field_name === 'prepared_by' ? user.name : '')}
+                    <Box key={f.field_name}>
+                      <Typography sx={labelSx}>{f.field_label}</Typography>
+                      <TextField size="small" value={formData[f.field_name] || (f.field_name === 'prepared_by' ? user.name : '')}
                         onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))}
-                        style={inputStyle} />
-                    </div>
+                        sx={inputSx} />
+                    </Box>
                   ))}
-                </div>
+                </Box>
                 {/* Crew picker */}
-                <div style={{marginTop: '12px'}}>
-                  <label style={labelStyle}>{t('jsa.crewMembers')} ({selectedCrew.length})</label>
-                  <button type="button" onClick={() => setShowCrewPicker(!showCrewPicker)}
-                    style={{...selectStyle, textAlign: 'left', cursor: 'pointer', fontWeight: selectedCrew.length ? 700 : 400, color: selectedCrew.length ? 'var(--charcoal)' : '#999'}}>
+                <Box sx={{ mt: '12px' }}>
+                  <Typography sx={labelSx}>{t('jsa.crewMembers')} ({selectedCrew.length})</Typography>
+                  <Button type="button" onClick={() => setShowCrewPicker(!showCrewPicker)}
+                    sx={{ ...selectSx, textAlign: 'left', cursor: 'pointer', fontWeight: selectedCrew.length ? 700 : 400, color: selectedCrew.length ? 'text.primary' : '#999', border: '2px solid #ccc', borderRadius: '8px', p: '12px', textTransform: 'none', justifyContent: 'flex-start' }}>
                     {selectedCrew.length ? `${selectedCrew.length} ${t('jsa.selected')}` : t('jsa.tapToAdd')}
-                  </button>
+                  </Button>
                   {showCrewPicker && (
-                    <div style={{border: '2px solid #ccc', borderRadius: '8px', marginTop: '4px', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'}}>
+                    <Paper sx={{ border: '2px solid #ccc', borderRadius: '8px', mt: '4px', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                       {team.map(p => {
                         const isChecked = selectedCrew.some(c => c.id === p.id);
                         const isForeperson = p.id === user.supervisor_id;
@@ -336,41 +340,43 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
                             borderBottom: '1px solid #f0f0f0',
                             background: isChecked ? '#f9f5f0' : 'white',
                           }}>
-                            <input type="checkbox" checked={isChecked} onChange={() => {
+                            <Checkbox checked={isChecked} onChange={() => {
                               setSelectedCrew(prev => isChecked ? prev.filter(c => c.id !== p.id) : [...prev, { id: p.id, name: p.name, person_id: p.id, person_name: p.name, role_title: p.role_title }]);
-                            }} style={{width: '20px', height: '20px', accentColor: 'var(--primary)'}} />
-                            <span style={{fontWeight: 600, color: 'var(--charcoal)'}}>
+                            }} sx={{ width: '20px', height: '20px', color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />
+                            <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>
                               {isForeperson ? '⭐ ' : ''}{p.name}{isSelfEntry ? ' (You)' : ''}
-                            </span>
-                            <span style={{fontSize: '12px', color: 'var(--charcoal)', marginLeft: 'auto'}}>
+                            </Typography>
+                            <Typography sx={{ fontSize: '12px', color: 'text.primary', ml: 'auto' }}>
                               {p.role_title}
-                            </span>
+                            </Typography>
                           </label>
                         );
                       })}
-                      <button onClick={() => {
+                      <Button onClick={() => {
                         const name = prompt(t('jsa.enterNameToSign'));
                         if (name && name.trim()) {
                           const manualId = 'manual_' + Date.now();
                           setSelectedCrew(prev => [...prev, { id: manualId, name: name.trim(), person_id: manualId, person_name: name.trim(), role_title: 'Manual Entry' }]);
                         }
-                      }} style={{width: '100%', padding: '10px', border: 'none', borderBottom: '1px solid #e0e0e0', background: '#f9f7f5', color: 'var(--charcoal)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', paddingLeft: '12px'}}>{t('jsa.addManually')}</button>
-                      <button onClick={() => setShowCrewPicker(false)} style={{width: '100%', padding: '10px', border: 'none', background: 'var(--charcoal)', color: 'var(--primary)', fontSize: '14px', fontWeight: 700, cursor: 'pointer'}}>{t('jsa.done')}</button>
-                    </div>
+                      }} sx={{ width: '100%', p: '10px', border: 'none', borderBottom: '1px solid #e0e0e0', background: '#f9f7f5', color: 'text.primary', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', pl: '12px', textTransform: 'none', justifyContent: 'flex-start', borderRadius: 0 }}>{t('jsa.addManually')}</Button>
+                      <Button onClick={() => setShowCrewPicker(false)} sx={{ width: '100%', p: '10px', border: 'none', background: 'var(--charcoal)', color: 'primary.main', fontSize: '14px', fontWeight: 700, cursor: 'pointer', textTransform: 'none', borderRadius: 0 }}>{t('jsa.done')}</Button>
+                    </Paper>
                   )}
                   {/* Show selected crew */}
                   {selectedCrew.length > 0 && (
-                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px'}}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '8px' }}>
                       {selectedCrew.map(c => (
-                        <span key={c.id} style={{background: '#f0ece8', borderRadius: '20px', padding: '4px 12px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px'}}>
-                          {c.name}
-                          <button onClick={() => setSelectedCrew(prev => prev.filter(x => x.id !== c.id))}
-                            style={{background: 'none', border: 'none', color: 'var(--charcoal)', fontSize: '14px', cursor: 'pointer', padding: 0}}>✕</button>
-                        </span>
+                        <Chip key={c.id} label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {c.name}
+                            <Button onClick={() => setSelectedCrew(prev => prev.filter(x => x.id !== c.id))}
+                              sx={{ background: 'none', border: 'none', color: 'text.primary', fontSize: '14px', cursor: 'pointer', p: 0, minWidth: 'auto' }}>✕</Button>
+                          </Box>
+                        } sx={{ background: '#f0ece8', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }} />
                       ))}
-                    </div>
+                    </Box>
                   )}
-                </div>
+                </Box>
               </fieldset>
             );
           }
@@ -391,34 +397,34 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
                   {groupLabels[group]}
                 </legend>
                 {steps.map(step => (
-                  <div key={step.num} style={{background: '#f9f7f5', borderRadius: '10px', padding: '14px', marginBottom: '10px', border: '1px solid #e8e4e0'}}>
-                    <div style={{fontSize: '14px', fontWeight: 800, color: 'var(--charcoal)', marginBottom: '10px'}}>{t('jsa.step')} {step.num}</div>
-                    <div style={{marginBottom: '8px'}}>
-                      <label style={{...labelStyle, fontSize: '12px'}}>{t('jsa.jobStep')}</label>
-                      <input type="text" value={formData[step.task.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.task.field_name]: e.target.value}))}
-                        placeholder="What are you doing?" style={inputStyle} />
-                    </div>
-                    <div style={{display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', marginBottom: '8px'}}>
-                      <div>
-                        <label style={{...labelStyle, fontSize: '12px'}}>{t('jsa.potentialHazards')}</label>
-                        <textarea value={formData[step.hazards?.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.hazards.field_name]: e.target.value}))}
-                          rows={2} placeholder="What could go wrong?" style={inputStyle} />
-                      </div>
-                      <div style={{minWidth: '80px'}}>
-                        <label style={{...labelStyle, fontSize: '12px'}}>{t('jsa.risk')}</label>
-                        <select value={formData[step.risk?.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.risk.field_name]: e.target.value}))}
-                          style={selectStyle}>
-                          <option value="">--</option>
-                          {(JSON.parse(step.risk?.select_options || '[]')).map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label style={{...labelStyle, fontSize: '12px'}}>{t('jsa.controlMeasures')}</label>
-                      <textarea value={formData[step.controls?.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.controls.field_name]: e.target.value}))}
-                        rows={2} placeholder="How do you prevent it?" style={inputStyle} />
-                    </div>
-                  </div>
+                  <Paper key={step.num} sx={{ background: '#f9f7f5', borderRadius: '10px', p: '14px', mb: '10px', border: '1px solid #e8e4e0' }} elevation={0}>
+                    <Typography sx={{ fontSize: '14px', fontWeight: 800, color: 'text.primary', mb: '10px' }}>{t('jsa.step')} {step.num}</Typography>
+                    <Box sx={{ mb: '8px' }}>
+                      <Typography sx={{ ...labelSx, fontSize: '12px' }}>{t('jsa.jobStep')}</Typography>
+                      <TextField size="small" value={formData[step.task.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.task.field_name]: e.target.value}))}
+                        placeholder="What are you doing?" sx={inputSx} />
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', mb: '8px' }}>
+                      <Box>
+                        <Typography sx={{ ...labelSx, fontSize: '12px' }}>{t('jsa.potentialHazards')}</Typography>
+                        <TextField size="small" multiline value={formData[step.hazards?.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.hazards.field_name]: e.target.value}))}
+                          rows={2} placeholder="What could go wrong?" sx={inputSx} />
+                      </Box>
+                      <Box sx={{ minWidth: '80px' }}>
+                        <Typography sx={{ ...labelSx, fontSize: '12px' }}>{t('jsa.risk')}</Typography>
+                        <Select size="small" value={formData[step.risk?.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.risk.field_name]: e.target.value}))}
+                          sx={selectSx} displayEmpty>
+                          <MenuItem value="">--</MenuItem>
+                          {(JSON.parse(step.risk?.select_options || '[]')).map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+                        </Select>
+                      </Box>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ ...labelSx, fontSize: '12px' }}>{t('jsa.controlMeasures')}</Typography>
+                      <TextField size="small" multiline value={formData[step.controls?.field_name] || ''} onChange={e => setFormData(d => ({...d, [step.controls.field_name]: e.target.value}))}
+                        rows={2} placeholder="How do you prevent it?" sx={inputSx} />
+                    </Box>
+                  </Paper>
                 ))}
               </fieldset>
             );
@@ -433,54 +439,54 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
               <legend style={{fontSize: '13px', fontWeight: 700, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '1px', padding: '0 8px'}}>
                 {groupLabels[group] || group}
               </legend>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end'}}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'end' }}>
                 {fields.map(f => (
-                  <div key={f.field_name} style={{gridColumn: f.field_type === 'textarea' ? '1 / -1' : undefined}}>
-                    <label style={labelStyle}>{f.field_label}</label>
+                  <Box key={f.field_name} sx={{ gridColumn: f.field_type === 'textarea' ? '1 / -1' : undefined }}>
+                    <Typography sx={labelSx}>{f.field_label}</Typography>
                     {f.field_type === 'select' ? (
-                      <select value={formData[f.field_name] || f.default_value || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))} style={selectStyle}>
-                        <option value="">-- Select --</option>
-                        {(JSON.parse(f.select_options || '[]')).map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
+                      <Select size="small" value={formData[f.field_name] || f.default_value || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))} sx={selectSx} displayEmpty>
+                        <MenuItem value="">-- Select --</MenuItem>
+                        {(JSON.parse(f.select_options || '[]')).map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+                      </Select>
                     ) : f.field_type === 'yesno' ? (
-                      <select value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))} style={selectStyle}>
-                        <option value="">-- Select --</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                      </select>
+                      <Select size="small" value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))} sx={selectSx} displayEmpty>
+                        <MenuItem value="">-- Select --</MenuItem>
+                        <MenuItem value="Yes">Yes</MenuItem>
+                        <MenuItem value="No">No</MenuItem>
+                      </Select>
                     ) : f.field_type === 'textarea' ? (
-                      <textarea value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))}
-                        rows={3} style={inputStyle} />
+                      <TextField size="small" multiline value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))}
+                        rows={3} sx={inputSx} />
                     ) : f.field_name.includes('date') || f.field_label.toLowerCase().includes('date') ? (
-                      <input type="date" value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))}
-                        style={{...inputStyle, WebkitAppearance: 'none', color: formData[f.field_name] ? 'var(--charcoal)' : '#999'}} />
+                      <TextField size="small" type="date" value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))}
+                        sx={{ ...inputSx, '& .MuiInputBase-input': { WebkitAppearance: 'none', color: formData[f.field_name] ? 'text.primary' : '#999' } }} />
                     ) : (
-                      <input type={f.field_type === 'number' ? 'number' : 'text'} value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))}
-                        style={inputStyle} />
+                      <TextField size="small" type={f.field_type === 'number' ? 'number' : 'text'} value={formData[f.field_name] || ''} onChange={e => setFormData(d => ({...d, [f.field_name]: e.target.value}))}
+                        sx={inputSx} />
                     )}
-                  </div>
+                  </Box>
                 ))}
-              </div>
+              </Box>
             </fieldset>
           );
         })}
 
         {/* Action buttons */}
-        <div style={{display: 'flex', gap: '10px', marginTop: '20px', marginBottom: '40px', flexWrap: 'wrap'}}>
-          <button onClick={() => setCreating(false)}
-            style={{flex: 1, padding: '14px 10px', border: '2px solid #ccc', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'white', color: 'var(--charcoal)', cursor: 'pointer', minWidth: '90px'}}>
+        <Box sx={{ display: 'flex', gap: '10px', mt: '20px', mb: '40px', flexWrap: 'wrap' }}>
+          <Button onClick={() => setCreating(false)}
+            sx={{ flex: 1, p: '14px 10px', border: '2px solid #ccc', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'white', color: 'text.primary', cursor: 'pointer', minWidth: '90px', textTransform: 'none' }}>
             {t('common.cancel')}
-          </button>
-          <button onClick={() => createJSA(false)}
-            style={{flex: 1, padding: '14px 10px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'var(--charcoal)', color: 'var(--primary)', cursor: 'pointer', minWidth: '90px'}}>
+          </Button>
+          <Button onClick={() => createJSA(false)}
+            sx={{ flex: 1, p: '14px 10px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'var(--charcoal)', color: 'primary.main', cursor: 'pointer', minWidth: '90px', textTransform: 'none' }}>
             {t('forms.saveDraft')}
-          </button>
-          <button onClick={() => createJSA(true)}
-            style={{flex: 1, padding: '14px 10px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'var(--primary)', color: 'var(--charcoal)', cursor: 'pointer', minWidth: '90px'}}>
+          </Button>
+          <Button onClick={() => createJSA(true)}
+            sx={{ flex: 1, p: '14px 10px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, background: 'primary.main', color: 'text.primary', cursor: 'pointer', minWidth: '90px', textTransform: 'none' }}>
             {t('common.submit')}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Box>
+      </Box>
     );
   }
 
@@ -488,145 +494,143 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
   // JSA LIST & DASHBOARD
   // ============================================================
   return (
-    <div style={{padding: '20px', maxWidth: '800px', margin: '0 auto'}}>
+    <Box sx={{ p: '20px', maxWidth: '800px', mx: 'auto' }}>
       {/* Home button removed — App.jsx sub-header handles it */}
-      <h1 style={{fontSize: '28px', fontWeight: 800, color: 'var(--charcoal)', marginBottom: '4px'}}>{t('jsa.title')}</h1>
-      <p style={{fontSize: '14px', fontWeight: 600, color: 'var(--primary)', fontStyle: 'italic', marginBottom: '16px', marginTop: 0}}>{t('jsa.safetyFirst')}</p>
+      <Typography variant="h1" sx={{ fontSize: '28px', fontWeight: 800, color: 'text.primary', mb: '4px' }}>{t('jsa.title')}</Typography>
+      <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'primary.main', fontStyle: 'italic', mb: '16px', mt: 0 }}>{t('jsa.safetyFirst')}</Typography>
 
       {/* Today's active JSA banner */}
       {activeJSA && (
-        <div style={{background: '#e8f5e9', border: '2px solid #4CAF50', borderRadius: '12px', padding: '16px', marginBottom: '20px', cursor: 'pointer'}}
-          onClick={() => setViewingJSA(activeJSA)}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
-            <span style={{fontSize: '16px', fontWeight: 800, color: '#2e7d32'}}>✅ {t('jsa.todayActive')}</span>
-          </div>
-          <p style={{fontSize: '14px', color: 'var(--charcoal)', margin: '0 0 4px'}}>
+        <Paper sx={{ background: '#e8f5e9', border: '2px solid', borderColor: 'success.main', borderRadius: '12px', p: '16px', mb: '20px', cursor: 'pointer' }}
+          elevation={0} onClick={() => setViewingJSA(activeJSA)}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '8px' }}>
+            <Typography sx={{ fontSize: '16px', fontWeight: 800, color: '#2e7d32' }}>✅ {t('jsa.todayActive')}</Typography>
+          </Box>
+          <Typography sx={{ fontSize: '14px', color: 'text.primary', m: '0 0 4px' }}>
             {activeJSA.form_data?.task_description || 'Daily task'}
-          </p>
-          <p style={{fontSize: '12px', color: 'var(--charcoal)', margin: 0}}>
+          </Typography>
+          <Typography sx={{ fontSize: '12px', color: 'text.primary', m: 0 }}>
             Tap to view details and crew acknowledgments
-          </p>
-        </div>
+          </Typography>
+        </Paper>
       )}
 
       {/* Pending signatures — JSAs shared with me that I haven't signed */}
       {pendingAcks.length > 0 && (
-        <div style={{marginBottom: '20px'}}>
-          <h2 style={{fontSize: '18px', fontWeight: 700, color: 'var(--primary)', marginBottom: '10px'}}>
+        <Box sx={{ mb: '20px' }}>
+          <Typography variant="h2" sx={{ fontSize: '18px', fontWeight: 700, color: 'primary.main', mb: '10px' }}>
             ✍️ {t('jsa.signJSA')} ({pendingAcks.length})
-          </h2>
+          </Typography>
           {pendingAcks.map(ack => (
-            <div key={ack.id} style={{background: '#fff8f0', border: '2px solid var(--primary)', borderRadius: '12px', padding: '14px', marginBottom: '10px'}}>
-              <div style={{fontWeight: 700, fontSize: '15px', marginBottom: '4px'}}>JSA from {ack.creator_name}</div>
-              <p style={{fontSize: '13px', color: 'var(--charcoal)', margin: '0 0 10px'}}>
+            <Paper key={ack.id} sx={{ background: '#fff8f0', border: '2px solid', borderColor: 'primary.main', borderRadius: '12px', p: '14px', mb: '10px' }} elevation={0}>
+              <Typography sx={{ fontWeight: 700, fontSize: '15px', mb: '4px' }}>JSA from {ack.creator_name}</Typography>
+              <Typography sx={{ fontSize: '13px', color: 'text.primary', m: '0 0 10px' }}>
                 {t('jsa.reviewAndSign')}
-              </p>
-              <div style={{display: 'flex', gap: '8px'}}>
-                <button onClick={() => setViewingJSA({ ...ack, id: ack.jsa_id, form_data: ack.jsa_form_data ? JSON.parse(ack.jsa_form_data) : {} })}
-                  style={{flex: 1, padding: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', fontWeight: 700, background: 'white', color: 'var(--charcoal)', cursor: 'pointer'}}>
+              </Typography>
+              <Box sx={{ display: 'flex', gap: '8px' }}>
+                <Button onClick={() => setViewingJSA({ ...ack, id: ack.jsa_id, form_data: ack.jsa_form_data ? JSON.parse(ack.jsa_form_data) : {} })}
+                  sx={{ flex: 1, p: '12px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '15px', fontWeight: 700, background: 'white', color: 'text.primary', cursor: 'pointer', textTransform: 'none' }}>
                   {t('jsa.viewJSA')}
-                </button>
-                <button onClick={() => signJSA(ack.id, ack.jsa_id)}
-                  style={{flex: 1, padding: '12px', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, background: 'var(--primary)', color: 'var(--charcoal)', cursor: 'pointer'}}>
+                </Button>
+                <Button onClick={() => signJSA(ack.id, ack.jsa_id)}
+                  sx={{ flex: 1, p: '12px', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, background: 'primary.main', color: 'text.primary', cursor: 'pointer', textTransform: 'none' }}>
                   ✍️ {t('jsa.signNow')}
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Box>
+            </Paper>
           ))}
-        </div>
+        </Box>
       )}
 
       {/* Pending approvals for foremen/safety */}
       {pendingApprovals.length > 0 && (
-        <div style={{marginBottom: '20px'}}>
-          <h2 style={{fontSize: '18px', fontWeight: 700, color: 'var(--charcoal)', marginBottom: '10px'}}>
+        <Box sx={{ mb: '20px' }}>
+          <Typography variant="h2" sx={{ fontSize: '18px', fontWeight: 700, color: 'text.primary', mb: '10px' }}>
             {t('jsa.pendingApproval')} ({pendingApprovals.length})
-          </h2>
+          </Typography>
           {pendingApprovals.map(jsa => (
-            <div key={jsa.id} style={{background: 'white', border: '2px solid #e0e0e0', borderRadius: '12px', padding: '14px', marginBottom: '10px'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '6px'}}>
-                <span style={{fontWeight: 700, fontSize: '15px'}}>{jsa.person_name}</span>
-                <span style={{fontSize: '12px', color: 'var(--charcoal)'}}>{jsa.date}</span>
-              </div>
-              <p style={{fontSize: '14px', color: 'var(--charcoal)', margin: '0 0 4px'}}>{jsa.form_data?.task_description || 'Daily task'}</p>
-              <p style={{fontSize: '12px', color: 'var(--charcoal)', margin: '0 0 4px'}}>Trade: {jsa.trade} | Area: {jsa.form_data?.work_area || 'TBD'}</p>
+            <Paper key={jsa.id} sx={{ background: 'white', border: '2px solid #e0e0e0', borderRadius: '12px', p: '14px', mb: '10px' }} elevation={0}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '6px' }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '15px' }}>{jsa.person_name}</Typography>
+                <Typography sx={{ fontSize: '12px', color: 'text.primary' }}>{jsa.date}</Typography>
+              </Box>
+              <Typography sx={{ fontSize: '14px', color: 'text.primary', m: '0 0 4px' }}>{jsa.form_data?.task_description || 'Daily task'}</Typography>
+              <Typography sx={{ fontSize: '12px', color: 'text.primary', m: '0 0 4px' }}>Trade: {jsa.trade} | Area: {jsa.form_data?.work_area || 'TBD'}</Typography>
               {/* Show crew acknowledgment progress */}
               {jsa.acknowledgments && jsa.acknowledgments.length > 0 && (
-                <p style={{fontSize: '12px', color: 'var(--primary)', fontWeight: 600, margin: '0 0 10px'}}>
+                <Typography sx={{ fontSize: '12px', color: 'primary.main', fontWeight: 600, m: '0 0 10px' }}>
                   Crew: {jsa.acknowledgments.filter(a => a.status === 'completed').length}/{jsa.acknowledgments.length} acknowledged
-                </p>
+                </Typography>
               )}
-              <div style={{display: 'flex', gap: '8px'}}>
-                <button onClick={() => setViewingJSA(jsa)}
-                  style={{flex: 1, padding: '10px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '14px', fontWeight: 700, background: 'white', color: 'var(--charcoal)', cursor: 'pointer'}}>
+              <Box sx={{ display: 'flex', gap: '8px' }}>
+                <Button onClick={() => setViewingJSA(jsa)}
+                  sx={{ flex: 1, p: '10px', border: '2px solid #ccc', borderRadius: '8px', fontSize: '14px', fontWeight: 700, background: 'white', color: 'text.primary', cursor: 'pointer', textTransform: 'none' }}>
                   {t('jsa.viewDetails')}
-                </button>
-                <button onClick={() => approveJSA(jsa.id, isSafety ? 'safety' : 'foreman')}
-                  style={{flex: 1, padding: '10px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, background: '#4CAF50', color: 'white', cursor: 'pointer'}}>
+                </Button>
+                <Button onClick={() => approveJSA(jsa.id, isSafety ? 'safety' : 'foreman')}
+                  sx={{ flex: 1, p: '10px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, background: 'success.main', color: 'white', cursor: 'pointer', textTransform: 'none' }}>
                   {t('jsa.approve')}
-                </button>
-                <button onClick={() => rejectJSA(jsa.id, isSafety ? 'safety' : 'foreman')}
-                  style={{padding: '10px 14px', border: '2px solid #999', borderRadius: '8px', fontSize: '14px', fontWeight: 700, background: 'white', color: 'var(--charcoal)', cursor: 'pointer'}}>
+                </Button>
+                <Button onClick={() => rejectJSA(jsa.id, isSafety ? 'safety' : 'foreman')}
+                  sx={{ p: '10px 14px', border: '2px solid #999', borderRadius: '8px', fontSize: '14px', fontWeight: 700, background: 'white', color: 'text.primary', cursor: 'pointer', textTransform: 'none' }}>
                   ↩
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Box>
+            </Paper>
           ))}
-        </div>
+        </Box>
       )}
 
       {/* Create new JSA button */}
-      <button onClick={() => { setCreating(true); setFormData({ jsa_date: new Date().toISOString().split('T')[0], prepared_by: user.name, craft_trade: user.trade }); }}
-        style={{
-          width: '100%', padding: '18px', border: '2px solid var(--primary)', borderRadius: '12px',
-          fontSize: '18px', fontWeight: 800, background: 'var(--charcoal)', color: 'var(--primary)',
-          cursor: 'pointer', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+      <Button onClick={() => { setCreating(true); setFormData({ jsa_date: new Date().toISOString().split('T')[0], prepared_by: user.name, craft_trade: user.trade }); }}
+        sx={{
+          width: '100%', p: '18px', border: '2px solid', borderColor: 'primary.main', borderRadius: '12px',
+          fontSize: '18px', fontWeight: 800, background: 'var(--charcoal)', color: 'primary.main',
+          cursor: 'pointer', mb: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', textTransform: 'none'
         }}>
         📋 {t('jsa.createToday')}
-      </button>
+      </Button>
 
       {/* JSA History */}
-      <h2 style={{fontSize: '18px', fontWeight: 700, color: 'var(--charcoal)', marginBottom: '10px'}}>{t('jsa.recentJSAs')}</h2>
+      <Typography variant="h2" sx={{ fontSize: '18px', fontWeight: 700, color: 'text.primary', mb: '10px' }}>{t('jsa.recentJSAs')}</Typography>
       {loading ? (
-        <p style={{color: 'var(--charcoal)'}}>{t('common.loading')}</p>
+        <CircularProgress />
       ) : jsaList.length === 0 ? (
-        <p style={{color: 'var(--charcoal)', fontSize: '14px'}}>{t('jsa.noJSAs')}</p>
+        <Typography sx={{ color: 'text.primary', fontSize: '14px' }}>{t('jsa.noJSAs')}</Typography>
       ) : (
         jsaList.map(jsa => (
-          <div key={jsa.id} onClick={() => setViewingJSA(jsa)} style={{
+          <Paper key={jsa.id} onClick={() => setViewingJSA(jsa)} sx={{
             background: 'white', border: '2px solid #e0e0e0', borderRadius: '10px',
-            padding: '14px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
-          }}>
-            <div>
-              <div style={{fontWeight: 700, fontSize: '15px', color: 'var(--charcoal)'}}>
+            p: '14px', mb: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
+          }} elevation={0}>
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: '15px', color: 'text.primary' }}>
                 {new Date(jsa.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-              </div>
-              <div style={{fontSize: '13px', color: 'var(--charcoal)', marginTop: '2px'}}>
+              </Typography>
+              <Typography sx={{ fontSize: '13px', color: 'text.primary', mt: '2px' }}>
                 {jsa.form_data?.task_description || 'Daily task'}
-              </div>
+              </Typography>
               {jsa.acknowledgments && jsa.acknowledgments.length > 0 && (
-                <div style={{fontSize: '12px', color: 'var(--primary)', marginTop: '2px'}}>
+                <Typography sx={{ fontSize: '12px', color: 'primary.main', mt: '2px' }}>
                   {jsa.acknowledgments.filter(a => a.status === 'completed').length}/{jsa.acknowledgments.length} crew acknowledged
-                </div>
+                </Typography>
               )}
-            </div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <span style={{
-                fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px',
-                background: statusColors[jsa.status] + '20', color: statusColors[jsa.status]
-              }}>
-                {statusLabels[jsa.status]}
-              </span>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Chip label={statusLabels[jsa.status]} sx={{
+                fontSize: '11px', fontWeight: 700, borderRadius: '20px',
+                backgroundColor: statusColors[jsa.status] + '20', color: statusColors[jsa.status]
+              }} size="small" />
               {jsa.status === 'draft' && (
-                <button onClick={(e) => { e.stopPropagation(); submitForApproval(jsa.id); }}
-                  style={{padding: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, background: 'var(--primary)', color: 'var(--charcoal)', cursor: 'pointer'}}>
+                <Button onClick={(e) => { e.stopPropagation(); submitForApproval(jsa.id); }}
+                  sx={{ p: '6px 12px', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, background: 'primary.main', color: 'text.primary', cursor: 'pointer', textTransform: 'none', minWidth: 'auto' }}>
                   {t('common.submit')}
-                </button>
+                </Button>
               )}
-            </div>
-          </div>
+            </Box>
+          </Paper>
         ))
       )}
-    </div>
+    </Box>
   );
 }

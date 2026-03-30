@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Box, Typography, Button, Dialog, DialogContent, DialogActions, Alert, Paper } from '@mui/material';
 import TabView from '../components/TabView.jsx';
 import { safeMarkdown } from '../utils/helpers.js';
 
@@ -414,162 +415,222 @@ export default function RecordView({ user, onSaved, readOnly }) {
 
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
-  const DeleteConfirmModal = () => showDeleteConfirm ? (
-    <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
-      <div style={{background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '320px', width: '90%', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.2)'}}>
-        <p style={{fontSize: '17px', fontWeight: 600, color: 'var(--charcoal)', margin: '0 0 8px'}}>{t('common.deleteRecording')}</p>
-        <p style={{fontSize: '14px', color: 'var(--charcoal)', margin: '0 0 24px'}}>This will discard everything and start over.</p>
-        <div style={{display: 'flex', gap: '10px'}}>
-          <button onClick={() => setShowDeleteConfirm(false)} style={{flex: 1, padding: '12px', borderRadius: '10px', border: '2px solid var(--gray-300)', background: 'white', color: 'var(--charcoal)', fontSize: '15px', fontWeight: 600, cursor: 'pointer'}}>Cancel</button>
-          <button onClick={confirmDelete} style={{flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: '#E8922A', color: 'var(--charcoal)', fontSize: '15px', fontWeight: 700, cursor: 'pointer'}}>Delete</button>
-        </div>
-      </div>
-    </div>
-  ) : null;
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false);
+    cancelRecording();
+  };
+
+  const DeleteConfirmModal = () => (
+    <Dialog
+      open={showDeleteConfirm}
+      onClose={() => setShowDeleteConfirm(false)}
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          p: '28px',
+          maxWidth: '320px',
+          width: '90%',
+          textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+        },
+      }}
+    >
+      <DialogContent sx={{ p: 0 }}>
+        <Typography sx={{ fontSize: '17px', fontWeight: 600, color: 'text.primary', m: '0 0 8px' }}>{t('common.deleteRecording')}</Typography>
+        <Typography sx={{ fontSize: '14px', color: 'text.primary', m: '0 0 24px' }}>This will discard everything and start over.</Typography>
+      </DialogContent>
+      <DialogActions sx={{ display: 'flex', gap: '10px', p: 0 }}>
+        <Button
+          onClick={() => setShowDeleteConfirm(false)}
+          sx={{
+            flex: 1,
+            p: '12px',
+            borderRadius: '10px',
+            border: '2px solid',
+            borderColor: 'grey.300',
+            background: 'white',
+            color: 'text.primary',
+            fontSize: '15px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            textTransform: 'none',
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={confirmDelete}
+          sx={{
+            flex: 1,
+            p: '12px',
+            borderRadius: '10px',
+            border: 'none',
+            background: '#E8922A',
+            color: 'text.primary',
+            fontSize: '15px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            textTransform: 'none',
+            '&:hover': { background: '#d4831f' },
+          }}
+        >
+          Delete
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 
   // Idle — big mic button
   if (stage === 'idle') {
     return (
-      <div className="record-view">
-        {error && <div className="error-banner"><span>{error}</span><button onClick={() => setError('')}>&times;</button></div>}
-        {pendingMessages.length > 0 && (
-          <div className="messages-banner">
-            <span className="messages-icon">💬</span>
-            <span>You have {pendingMessages.length} message{pendingMessages.length > 1 ? 's' : ''} from your team</span>
-          </div>
+      <Box className="record-view">
+        {error && (
+          <Alert severity="error" className="error-banner" onClose={() => setError('')}>
+            {error}
+          </Alert>
         )}
-        <div className="record-center">
-          <button className="record-btn-main" onClick={startRecording}>
+        {pendingMessages.length > 0 && (
+          <Paper className="messages-banner" elevation={0}>
+            <Typography component="span" className="messages-icon">💬</Typography>
+            <Typography component="span">You have {pendingMessages.length} message{pendingMessages.length > 1 ? 's' : ''} from your team</Typography>
+          </Paper>
+        )}
+        <Box className="record-center">
+          <Button className="record-btn-main" onClick={startRecording}>
             <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/>
               <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
             </svg>
-          </button>
-          <p className="record-label">{t('common.tapToRecord')}</p>
-          <p className="record-sublabel">{t('common.startDailyVoiceReport')}</p>
-        </div>
-      </div>
+          </Button>
+          <Typography className="record-label">{t('common.tapToRecord')}</Typography>
+          <Typography className="record-sublabel">{t('common.startDailyVoiceReport')}</Typography>
+        </Box>
+      </Box>
     );
   }
 
   // Recording (first time, no turns yet) — big mic button
   if (stage === 'recording' && turns.length === 0) {
     return (
-      <div className="record-view">
-
-        <div className="record-center">
-          <button className="record-btn-main recording-main" onClick={stopRecording}>
+      <Box className="record-view">
+        <Box className="record-center">
+          <Button className="record-btn-main recording-main" onClick={stopRecording}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-          </button>
-          <p className="record-timer">{formatTime(elapsed)}</p>
-          <p className="record-label">{t('common.recordingTapToStop')}</p>
-          {liveText && <div className="live-transcript"><span className="live-final">{liveText}</span></div>}
-          <button className="btn btn-delete" style={{fontSize: '14px', padding: '10px 20px', marginTop: '20px'}} onClick={cancelRecording}>✕ Cancel</button>
-        </div>
-      </div>
+          </Button>
+          <Typography className="record-timer">{formatTime(elapsed)}</Typography>
+          <Typography className="record-label">{t('common.recordingTapToStop')}</Typography>
+          {liveText && <Box className="live-transcript"><Typography component="span" className="live-final">{liveText}</Typography></Box>}
+          <Button className="btn btn-delete" sx={{ fontSize: '14px', p: '10px 20px', mt: '20px' }} onClick={cancelRecording}>✕ Cancel</Button>
+        </Box>
+      </Box>
     );
   }
 
   // Processing (first time, no turns yet) — spinner
   if (stage === 'processing' && turns.length === 0) {
     return (
-      <div className="record-view">
-        <div className="record-center"><div className="spinner"></div><p className="record-label">{t('common.processing')}</p></div>
-      </div>
+      <Box className="record-view">
+        <Box className="record-center"><Box className="spinner" /><Typography className="record-label">{t('common.processing')}</Typography></Box>
+      </Box>
     );
   }
 
   // Conversation — stays on this page for recording, processing, and chatting
   if (stage === 'conversation' || stage === 'recording' || stage === 'processing') {
     return (
-      <div className="conversation-view">
+      <Box className="conversation-view">
+        <DeleteConfirmModal />
 
-        {error && <div className="error-banner"><span>{error}</span><button onClick={() => setError('')}>&times;</button></div>}
+        {error && (
+          <Alert severity="error" className="error-banner" onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
 
-        <div className="chat-container">
+        <Box className="chat-container">
           {turns.map((turn, i) => (
-            <div key={i} className={`chat-bubble ${turn.role}`}>
-              <div className="chat-role">{turn.role === 'user' ? user.name.split(' ')[0] : 'AI ASSISTANT'}</div>
-              <div className="chat-text">{turn.text}</div>
+            <Box key={i} className={`chat-bubble ${turn.role}`}>
+              <Box className="chat-role">{turn.role === 'user' ? user.name.split(' ')[0] : 'AI ASSISTANT'}</Box>
+              <Box className="chat-text">{turn.text}</Box>
               {turn.role === 'ai' && (
                 (aiSpeaking && speakingIndex === i) ? (
-                  <button className="read-btn reading-active" onClick={stopSpeaking}>
+                  <Button className="read-btn reading-active" onClick={stopSpeaking}>
                     ⏸ Pause
-                  </button>
+                  </Button>
                 ) : (
-                  <button className="read-btn" onClick={() => speakText(turn.text, i)} disabled={aiSpeaking && speakingIndex !== i}>
+                  <Button className="read-btn" onClick={() => speakText(turn.text, i)} disabled={aiSpeaking && speakingIndex !== i}>
                     🔊 Read
-                  </button>
+                  </Button>
                 )
               )}
-            </div>
+            </Box>
           ))}
           {/* Show live transcript while recording in conversation */}
           {stage === 'recording' && liveText && (
-            <div className="chat-bubble user recording-live">
-              <div className="chat-role">{t('common.recording')}</div>
-              <div className="chat-text">{liveText}</div>
-            </div>
+            <Box className="chat-bubble user recording-live">
+              <Box className="chat-role">{t('common.recording')}</Box>
+              <Box className="chat-text">{liveText}</Box>
+            </Box>
           )}
           {stage === 'processing' && (
-            <div className="chat-bubble processing-bubble">
-              <div className="spinner-small"></div>
-              <span>{t('common.processing')}</span>
-            </div>
+            <Box className="chat-bubble processing-bubble">
+              <Box className="spinner-small" />
+              <Typography component="span">{t('common.processing')}</Typography>
+            </Box>
           )}
-          <div ref={chatEndRef} />
-        </div>
+          <Box ref={chatEndRef} />
+        </Box>
 
         {reportPhotos.length > 0 && (
-          <div style={{display: 'flex', gap: '6px', padding: '8px 16px', flexWrap: 'wrap', background: 'var(--gray-50)', borderTop: '1px solid var(--gray-200)'}}>
+          <Box sx={{ display: 'flex', gap: '6px', p: '8px 16px', flexWrap: 'wrap', background: 'grey.50', borderTop: '1px solid', borderColor: 'grey.200' }}>
             {reportPhotos.map((p, i) => (
-              <div key={i} style={{position: 'relative'}}>
-                <img src={p.preview} style={{width: '44px', height: '44px', borderRadius: '6px', objectFit: 'cover', border: '2px solid var(--primary)'}} alt="" />
-                <button onClick={() => setReportPhotos(prev => prev.filter((_, j) => j !== i))} style={{position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', borderRadius: '50%', background: '#E8922A', color: 'var(--charcoal)', border: 'none', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>×</button>
-              </div>
+              <Box key={i} sx={{ position: 'relative' }}>
+                <Box component="img" src={p.preview} sx={{ width: '44px', height: '44px', borderRadius: '6px', objectFit: 'cover', border: '2px solid', borderColor: 'primary.main' }} alt="" />
+                <Button onClick={() => setReportPhotos(prev => prev.filter((_, j) => j !== i))} sx={{ position: 'absolute', top: '-6px', right: '-6px', width: '18px', height: '18px', minWidth: '18px', borderRadius: '50%', background: '#E8922A', color: 'text.primary', border: 'none', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 0, '&:hover': { background: '#d4831f' } }}>×</Button>
+              </Box>
             ))}
-          </div>
+          </Box>
         )}
-        <div className="conversation-actions">
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '10px'}}>
-            <button onClick={cancelRecording} style={{background: '#E8922A', color: 'var(--charcoal)', border: 'none', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'}}>Delete</button>
-            <button className="btn btn-primary finalize-btn" onClick={finalizeReport} disabled={stage !== 'conversation'} style={{flex: 1, padding: '14px', fontSize: '16px'}}>
+        <Box className="conversation-actions">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '10px' }}>
+            <Button onClick={() => setShowDeleteConfirm(true)} sx={{ background: '#E8922A', color: 'text.primary', border: 'none', borderRadius: '10px', p: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'none', '&:hover': { background: '#d4831f' } }}>Delete</Button>
+            <Button className="btn btn-primary finalize-btn" onClick={finalizeReport} disabled={stage !== 'conversation'} sx={{ flex: 1, p: '14px', fontSize: '16px', textTransform: 'none' }}>
               {t('common.finalizeReport')}
-            </button>
-          </div>
-          <div style={{display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', marginTop: '8px'}}>
-            <button className="record-btn-conv" onClick={takeReportPhoto} style={{background: 'var(--gray-100)', color: 'var(--charcoal)', border: '2px solid var(--gray-300)'}} title="Take Photo">
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', mt: '8px' }}>
+            <Button className="record-btn-conv" onClick={takeReportPhoto} sx={{ background: 'grey.100', color: 'text.primary', border: '2px solid', borderColor: 'grey.300' }} title="Take Photo">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-            </button>
+            </Button>
             {stage === 'recording' ? (
-              <button className="record-btn-conv recording-conv" onClick={stopRecording}>
+              <Button className="record-btn-conv recording-conv" onClick={stopRecording}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-                <span>{formatTime(elapsed)}</span>
-              </button>
+                <Typography component="span">{formatTime(elapsed)}</Typography>
+              </Button>
             ) : stage === 'processing' ? (
-              <div className="record-btn-conv processing-conv">
-                <div className="spinner-small"></div>
-              </div>
+              <Box className="record-btn-conv processing-conv">
+                <Box className="spinner-small" />
+              </Box>
             ) : (
-              <button className="record-btn-conv" onClick={() => { stopSpeaking(); startRecording(); }}>
+              <Button className="record-btn-conv" onClick={() => { stopSpeaking(); startRecording(); }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
                   <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
                 </svg>
-              </button>
+              </Button>
             )}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
   // Structuring — spinner
   if (stage === 'structuring') {
     return (
-      <div className="record-view">
-        <div className="record-center"><div className="spinner"></div><p className="record-label">{t('common.buildingReport')}</p></div>
-      </div>
+      <Box className="record-view">
+        <Box className="record-center"><Box className="spinner" /><Typography className="record-label">{t('common.buildingReport')}</Typography></Box>
+      </Box>
     );
   }
 
@@ -577,22 +638,22 @@ export default function RecordView({ user, onSaved, readOnly }) {
   if (stage === 'done') {
     const now = new Date();
     return (
-      <div className="result-section">
-        <div className="report-header-info">
-          <h3>{user.name}</h3>
-          <span className="report-meta">{user.role_title || 'Administrator'}</span>
-          <span className="report-meta">{now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-        </div>
+      <Box className="result-section">
+        <Box className="report-header-info">
+          <Typography variant="h3">{user.name}</Typography>
+          <Typography component="span" className="report-meta">{user.role_title || 'Administrator'}</Typography>
+          <Typography component="span" className="report-meta">{now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</Typography>
+        </Box>
         <TabView tabs={[
           { label: 'Report', content: structured },
           { label: 'Original', content: verbatim },
           { label: 'Conversation', content: turns.map(t => `**${t.role === 'user' ? user.name : 'AI'}:** ${t.text}`).join('\n\n'), isPlain: false },
         ]} />
-        <div className="action-row">
-          <button className="btn btn-primary btn-lg" onClick={saveReport}>Save Report</button>
-          <button className="btn btn-secondary" onClick={reset}>Discard</button>
-        </div>
-      </div>
+        <Box className="action-row">
+          <Button className="btn btn-primary btn-lg" onClick={saveReport}>Save Report</Button>
+          <Button className="btn btn-secondary" onClick={reset}>Discard</Button>
+        </Box>
+      </Box>
     );
   }
 

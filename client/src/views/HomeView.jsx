@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Box, Button, Typography, Paper, Avatar, Menu, MenuItem, ListItemText
+} from '@mui/material';
 
 export default function HomeView({ user, setView, logout, activeTrade, setActiveTrade, starredTrades, allTrades, onSafetyOpen, simulatingCompany, currentWorld, onEnterCompany, onSupportOpen }) {
   const { t } = useTranslation();
   const isSimulating = !!simulatingCompany;
   const isAdmin = isSimulating ? true : user.is_admin;
   const isSupervisor = isSimulating ? true : (user.role_level || 1) >= 2;
-  // Sparks operator buttons — visible in Voice Report mode, even when simulating a company
   const isOperator = !!user.sparks_role && currentWorld === 'voice-report';
 
-  // JSA status for the Safety First button dot
   const [jsaStatus, setJsaStatus] = useState('none');
   useEffect(() => {
     if (!user?.person_id) return;
@@ -31,36 +32,24 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
   }, [user?.person_id]);
 
   // Companies dropdown for operators
-  const companiesRef = useRef(null);
-  const [showCompanies, setShowCompanies] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const [companiesList, setCompaniesList] = useState([]);
 
-  // Close companies dropdown on outside click
-  useEffect(() => {
-    if (!showCompanies) return;
-    const handler = (e) => { if (companiesRef.current && !companiesRef.current.contains(e.target)) setShowCompanies(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showCompanies]);
-
-  // Load companies when dropdown opens
-  useEffect(() => {
-    if (showCompanies && companiesList.length === 0) {
+  const handleCompaniesOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+    if (companiesList.length === 0) {
       fetch('/api/sparks/companies').then(r => r.ok ? r.json() : []).then(setCompaniesList).catch(() => {});
     }
-  }, [showCompanies]);
+  };
 
-  // Filter to only starred trades
   const visibleTrades = (allTrades || []).filter(t => (starredTrades || []).includes(t.key));
 
   const handleTradeSelect = (tradeKey) => {
     setActiveTrade(tradeKey);
   };
 
-  // Build action tiles based on the selected trade
   const getActionTiles = () => {
     const tiles = [];
-    // Sparks Command Center tile — only for Sparks users, not in simulation mode
     if (user.sparks_role && !isSimulating) {
       tiles.push({ id: 'sparks', icon: '⚡', label: 'Command Center', view: 'sparks', fullWidth: true });
     }
@@ -86,184 +75,171 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
   const actionTiles = getActionTiles();
 
   return (
-    <div className="home-view">
+    <Box className="home-view">
       {/* Welcome + Operator buttons */}
-      <div className="home-welcome">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div className="home-welcome-row">
-            {user.photo && <img src={`/api/photos/${user.photo}`} className="home-avatar" alt="" />}
-            <div>
-              <h2 className="home-greeting">{t('home.welcome')}, {user.name}</h2>
-              <p className="home-role">{user.role_title || t('common.administrator')}</p>
-            </div>
-          </div>
+      <Box className="home-welcome">
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+          <Box className="home-welcome-row" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {user.photo && <Avatar src={`/api/photos/${user.photo}`} sx={{ width: 48, height: 48 }} />}
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                {t('home.welcome')}, {user.name}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {user.role_title || t('common.administrator')}
+              </Typography>
+            </Box>
+          </Box>
           {isOperator && (
-            <div ref={companiesRef} style={{ display: 'flex', gap: '8px', position: 'relative', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowCompanies(!showCompanies)} style={{
-                padding: '12px 20px', borderRadius: '12px', cursor: 'pointer',
-                background: 'white', color: 'var(--charcoal)', border: '2px solid var(--charcoal)',
-                fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap',
-              }}>Companies</button>
-              <button onClick={() => setView('analytics')} style={{
-                padding: '12px 20px', borderRadius: '12px', cursor: 'pointer',
-                background: 'white', color: 'var(--charcoal)', border: '2px solid var(--charcoal)',
-                fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap',
-              }}>Analytics</button>
-              {showCompanies && (
-                <div style={{
-                  position: 'absolute', top: '100%', right: 0, marginTop: '8px',
-                  background: 'white', borderRadius: '12px', border: '2px solid var(--charcoal)',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', zIndex: 100, minWidth: '250px',
-                  maxHeight: '300px', overflowY: 'auto',
-                }}>
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(45,45,45,0.1)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--charcoal)', opacity: 0.5 }}>
-                    Switch Company
-                  </div>
-                  {companiesList.map(c => (
-                    <button key={c.id} onClick={() => { setShowCompanies(false); onEnterCompany({ id: c.id, name: c.name, mode: 'customer' }); }} style={{
-                      display: 'block', width: '100%', padding: '12px 16px', border: 'none',
-                      background: 'none', cursor: 'pointer', textAlign: 'left',
-                      borderBottom: '1px solid rgba(45,45,45,0.08)', fontSize: '14px', fontWeight: 600,
-                      color: 'var(--charcoal)',
-                    }}>
-                      {c.name}
-                      <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>{c.people_count} people</div>
-                    </button>
-                  ))}
-                  {companiesList.length === 0 && (
-                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--charcoal)', fontSize: '12px' }}>Loading...</div>
-                  )}
-                </div>
-              )}
-            </div>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <Button variant="outlined" color="secondary" onClick={handleCompaniesOpen} sx={{ fontWeight: 700, fontSize: 14, borderRadius: 3, px: 2.5, py: 1.5 }}>
+                Companies
+              </Button>
+              <Button variant="outlined" color="secondary" onClick={() => setView('analytics')} sx={{ fontWeight: 700, fontSize: 14, borderRadius: 3, px: 2.5, py: 1.5 }}>
+                Analytics
+              </Button>
+              <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}
+                PaperProps={{ sx: { minWidth: 250, maxHeight: 300, borderRadius: 3, border: '2px solid', borderColor: 'secondary.main' } }}>
+                <Typography sx={{ px: 2, py: 1, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'text.secondary' }}>
+                  Switch Company
+                </Typography>
+                {companiesList.map(c => (
+                  <MenuItem key={c.id} onClick={() => { setAnchorEl(null); onEnterCompany({ id: c.id, name: c.name, mode: 'customer' }); }}>
+                    <ListItemText primary={c.name} secondary={`${c.people_count} people`} />
+                  </MenuItem>
+                ))}
+                {companiesList.length === 0 && (
+                  <Typography sx={{ p: 2, textAlign: 'center', color: 'text.secondary', fontSize: 12 }}>Loading...</Typography>
+                )}
+              </Menu>
+            </Box>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      {/* Trade Cards — admin/superintendent see selector, workers see their trade */}
-      <div style={{padding: '0 16px', marginBottom: '24px'}}>
+      {/* Trade Cards */}
+      <Box sx={{ px: 2, mb: 3 }}>
         {(isAdmin || isSupervisor) ? (
           <>
-            <p style={{fontSize: '12px', fontWeight: 700, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 12px', textAlign: 'center'}}>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5, textAlign: 'center' }}>
               {t('home.yourTrades')}
-            </p>
-            <div className="trade-cards-container">
+            </Typography>
+            <Box className="trade-cards-container" sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
               {visibleTrades.map(trade => {
                 const isActive = activeTrade === trade.key;
                 return (
-                  <button
+                  <Button
                     key={trade.key}
-                    className="trade-card-btn"
+                    variant={isActive ? 'contained' : 'outlined'}
+                    color={isActive ? 'secondary' : 'inherit'}
                     onClick={() => handleTradeSelect(trade.key)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '20px 24px',
-                      background: isActive
-                        ? 'linear-gradient(145deg, var(--charcoal), var(--charcoal-dark))'
-                        : 'linear-gradient(145deg, #ffffff, var(--gray-50))',
-                      color: isActive ? 'var(--primary)' : 'var(--charcoal)',
-                      border: isActive ? '3px solid var(--primary)' : '2px solid var(--gray-200)',
-                      borderRadius: '16px', cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      minHeight: '70px',
-                      boxShadow: 'none',
-                      transform: 'none',
+                    sx={{
+                      px: 3, py: 2.5,
+                      borderRadius: 4,
+                      border: isActive ? '3px solid' : '2px solid',
+                      borderColor: isActive ? 'primary.main' : 'grey.200',
+                      bgcolor: isActive ? 'secondary.main' : 'background.paper',
+                      color: isActive ? 'primary.main' : 'text.primary',
+                      minHeight: 70,
+                      fontSize: 22,
+                      fontWeight: 800,
+                      lineHeight: 1.2,
+                      letterSpacing: 0.5,
+                      '&:hover': {
+                        bgcolor: isActive ? 'secondary.dark' : 'grey.100',
+                        borderColor: isActive ? 'primary.main' : 'grey.300',
+                      },
                     }}
                   >
-                    <span style={{fontSize: '22px', fontWeight: 800, textAlign: 'center', lineHeight: 1.2, letterSpacing: '0.5px'}}>{trade.label}</span>
-                  </button>
+                    {trade.label}
+                  </Button>
                 );
               })}
-            </div>
+            </Box>
             {visibleTrades.length === 0 && (
-              <p style={{color: 'var(--charcoal)', fontSize: '14px', textAlign: 'center', padding: '20px'}}>
+              <Typography sx={{ color: 'text.primary', fontSize: 14, textAlign: 'center', py: 2.5 }}>
                 {t('home.noTradesSelected')}
-              </p>
+              </Typography>
             )}
           </>
         ) : (
-          /* Workers see their trade as a header — no switching */
-          <div style={{padding: '0 16px'}}>
-            <div style={{
+          <Box sx={{ px: 2 }}>
+            <Paper sx={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '20px 24px',
-              background: 'linear-gradient(145deg, var(--charcoal), var(--charcoal-dark))',
-              color: 'var(--primary)',
-              border: '3px solid var(--primary)',
-              borderRadius: '16px',
+              px: 3, py: 2.5, borderRadius: 4,
+              bgcolor: 'secondary.main', color: 'primary.main',
+              border: '3px solid', borderColor: 'primary.main',
             }}>
-              <span style={{fontSize: '22px', fontWeight: 800, textAlign: 'center', lineHeight: 1.2, letterSpacing: '0.5px'}}>{(allTrades || []).find(t => t.key === activeTrade)?.label || activeTrade}</span>
-            </div>
-          </div>
+              <Typography sx={{ fontSize: 22, fontWeight: 800, textAlign: 'center', lineHeight: 1.2, letterSpacing: 0.5 }}>
+                {(allTrades || []).find(t => t.key === activeTrade)?.label || activeTrade}
+              </Typography>
+            </Paper>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      {/* Action tiles — shown when a trade is selected */}
+      {/* Action tiles */}
       {activeTrade && (
         <>
-          <div style={{padding: '0 16px', marginBottom: '16px'}}>
-            <p style={{fontSize: '12px', fontWeight: 700, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '1px', margin: '0'}}>
+          <Box sx={{ px: 2, mb: 2 }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>
               {(allTrades || []).find(t => t.key === activeTrade)?.label || activeTrade}
-            </p>
-          </div>
-          <div className="home-tiles">
+            </Typography>
+          </Box>
+          <Box className="home-tiles" sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, px: 2 }}>
             {actionTiles.map(tile => (
-              <button
+              <Button
                 key={tile.id}
-                className={`home-tile ${tile.disabled ? 'tile-disabled' : ''}`}
-                onClick={() => !tile.disabled && setView(tile.view)}
+                variant="outlined"
                 disabled={tile.disabled}
-                style={tile.fullWidth ? {gridColumn: '1 / -1', justifyContent: 'center'} : undefined}
+                onClick={() => !tile.disabled && setView(tile.view)}
+                sx={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', gap: 0.5,
+                  py: 2, borderRadius: 3,
+                  border: '2px solid', borderColor: 'grey.200',
+                  bgcolor: tile.disabled ? 'grey.100' : 'background.paper',
+                  color: 'text.primary',
+                  opacity: tile.disabled ? 0.5 : 1,
+                  ...(tile.fullWidth && { gridColumn: '1 / -1' }),
+                  '&:hover': { bgcolor: 'grey.100', borderColor: 'primary.main' },
+                }}
               >
-                {tile.badge && <span className="tile-badge">{tile.badge}</span>}
-                <span className="tile-icon">{tile.icon}</span>
-                <span className="tile-label">{tile.label}</span>
-              </button>
+                <Typography sx={{ fontSize: 28 }}>{tile.icon}</Typography>
+                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{tile.label}</Typography>
+              </Button>
             ))}
-          </div>
+          </Box>
 
           {/* Safety button */}
-          <div style={{display: 'flex', justifyContent: 'center', marginTop: '24px', padding: '0 16px'}}>
-            <button
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, px: 2 }}>
+            <Button
+              variant="outlined"
               onClick={() => onSafetyOpen && onSafetyOpen()}
-              className="home-tile"
-              style={{
-                flex: '0 0 auto',
-                width: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                padding: '12px 20px',
-                cursor: 'pointer',
-                border: '2px solid var(--primary)',
-                outline: '2px solid var(--charcoal)',
-                outlineOffset: '0px',
-                borderRadius: '12px',
+              sx={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 0.5, px: 2.5, py: 1.5, borderRadius: 3,
+                border: '2px solid', borderColor: 'primary.main',
+                outline: '2px solid', outlineColor: 'secondary.main',
+                outlineOffset: 0,
                 position: 'relative',
               }}
             >
-              {/* JSA status dot — red=not done, orange=pending, green=approved */}
-              <span style={{
-                position: 'absolute',
-                top: '4px',
-                right: '4px',
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                backgroundColor: jsaStatus === 'approved' ? '#4CAF50' : jsaStatus === 'pending' ? 'var(--primary)' : '#d32f2f',
+              <Box sx={{
+                position: 'absolute', top: 4, right: 4,
+                width: 12, height: 12, borderRadius: '50%',
+                bgcolor: jsaStatus === 'approved' ? '#4CAF50' : jsaStatus === 'pending' ? 'primary.main' : '#d32f2f',
                 border: '2px solid white',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
               }} />
-              <span style={{fontSize: '24px'}}>⛑️</span>
-              <span style={{fontSize: '14px', fontWeight: 700, color: 'var(--charcoal)'}}>{t('home.safetyFirst')}</span>
-            </button>
-          </div>
+              <Typography sx={{ fontSize: 24 }}>⛑️</Typography>
+              <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>{t('home.safetyFirst')}</Typography>
+            </Button>
+          </Box>
         </>
       )}
 
-      <div className="home-bottom-line"></div>
-    </div>
+      <Box className="home-bottom-line" sx={{ mt: 4, borderBottom: '2px solid', borderColor: 'grey.200' }} />
+    </Box>
   );
 }

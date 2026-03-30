@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Box, Button, TextField, Typography, Alert, Dialog, DialogContent,
+  ToggleButton, ToggleButtonGroup, Paper, CircularProgress
+} from '@mui/material';
 
 export default function LoginView({ onLogin }) {
   const { t, i18n } = useTranslation();
@@ -8,7 +12,8 @@ export default function LoginView({ onLogin }) {
   const [showInstallInstructions, setShowInstallInstructions] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
-  const toggleLanguage = (lang) => {
+  const toggleLanguage = (_e, lang) => {
+    if (!lang) return;
     setLanguage(lang);
     i18n.changeLanguage(lang);
     localStorage.setItem('hs_language', lang);
@@ -19,16 +24,11 @@ export default function LoginView({ onLogin }) {
   const [faceIdAvailable, setFaceIdAvailable] = useState(false);
 
   useEffect(() => {
-    // Check if Face ID / Touch ID is available
     checkFaceId();
-
-    // Check if app is installable
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     if (!isStandalone) {
       setShowInstall(true);
     }
-
-    // Listen for Android/Chrome install prompt
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -104,120 +104,110 @@ export default function LoginView({ onLogin }) {
 
   const handleInstall = async () => {
     if (deferredPrompt) {
-      // Android/Chrome — trigger native install
       deferredPrompt.prompt();
       const result = await deferredPrompt.userChoice;
       if (result.outcome === 'accepted') setShowInstall(false);
       setDeferredPrompt(null);
     } else {
-      // iOS — show instructions
       setShowInstallInstructions(true);
     }
   };
 
   return (
-    <div className="login-view">
-      <div className="login-card">
-        {/* Install App button — top of card */}
+    <Box className="login-view" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', p: 2 }}>
+      <Paper elevation={3} sx={{ p: 4, maxWidth: 400, width: '100%', borderRadius: 3 }}>
+        {/* Install App button */}
         {showInstall && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-            <button onClick={handleInstall} style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '8px 18px', borderRadius: '20px',
-              background: "#faf8f5", color: "var(--charcoal)",
-              border: "2px solid var(--charcoal)",
-              fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-            }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Button variant="outlined" color="secondary" onClick={handleInstall} sx={{ borderRadius: 5, fontWeight: 700, fontSize: 13 }}>
               {t('install.button', 'Install App')}
-            </button>
-          </div>
+            </Button>
+          </Box>
         )}
 
         {/* Install instructions modal (iOS) */}
-        {showInstallInstructions && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)', zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px',
-          }} onClick={() => setShowInstallInstructions(false)}>
-            <div style={{
-              background: 'white', borderRadius: '16px', padding: '28px',
-              maxWidth: '340px', width: '100%', textAlign: 'center',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-            }} onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📲</div>
-              <h3 style={{ margin: '0 0 8px', color: 'var(--charcoal)', fontSize: '18px' }}>
-                {t('install.title', 'Install Voice Report')}
-              </h3>
-              <p style={{ color: 'var(--charcoal)', fontSize: '14px', lineHeight: '1.5', margin: '0 0 20px' }}>
-                {t('install.step1', '1. Tap the Share button')} <span style={{ fontSize: '18px' }}>⎙</span><br/>
-                {t('install.step2', '2. Scroll down and tap')} <strong>"{t('install.addToHome', 'Add to Home Screen')}"</strong><br/>
-                {t('install.step3', '3. Tap "Add" to confirm')}
-              </p>
-              <button onClick={() => setShowInstallInstructions(false)} style={{
-                padding: '10px 28px', background: 'var(--primary)', color: 'white',
-                border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 700,
-                cursor: 'pointer',
-              }}>
-                {t('install.gotIt', 'Got it!')}
-              </button>
-            </div>
-          </div>
-        )}
+        <Dialog open={showInstallInstructions} onClose={() => setShowInstallInstructions(false)} slotProps={{ paper: { sx: { borderRadius: 4, p: 2, maxWidth: 340, textAlign: 'center' } } }}>
+          <DialogContent>
+            <Typography sx={{ fontSize: 40, mb: 1.5 }}>📲</Typography>
+            <Typography variant="h6" sx={{ mb: 1, color: 'text.primary', fontWeight: 700 }}>
+              {t('install.title', 'Install Voice Report')}
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.5, mb: 2.5 }}>
+              {t('install.step1', '1. Tap the Share button')} <span style={{ fontSize: '18px' }}>⎙</span><br/>
+              {t('install.step2', '2. Scroll down and tap')} <strong>"{t('install.addToHome', 'Add to Home Screen')}"</strong><br/>
+              {t('install.step3', '3. Tap "Add" to confirm')}
+            </Typography>
+            <Button variant="contained" onClick={() => setShowInstallInstructions(false)} sx={{ px: 4 }}>
+              {t('install.gotIt', 'Got it!')}
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         {/* Language toggle */}
-        <div style={{display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px'}}>
-          <button onClick={() => toggleLanguage('en')}
-            style={{padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: language === 'en' ? 700 : 400,
-              border: language === 'en' ? '2px solid var(--primary)' : '2px solid var(--gray-200)',
-              background: language === 'en' ? 'var(--charcoal)' : 'white',
-              color: language === 'en' ? 'var(--primary)' : 'var(--gray-400)', cursor: 'pointer'}}>
-            English
-          </button>
-          <button onClick={() => toggleLanguage('es')}
-            style={{padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: language === 'es' ? 700 : 400,
-              border: language === 'es' ? '2px solid var(--primary)' : '2px solid var(--gray-200)',
-              background: language === 'es' ? 'var(--charcoal)' : 'white',
-              color: language === 'es' ? 'var(--primary)' : 'var(--gray-400)', cursor: 'pointer'}}>
-            Español
-          </button>
-        </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <ToggleButtonGroup value={language} exclusive onChange={toggleLanguage} size="small">
+            <ToggleButton value="en" sx={{ px: 2, borderRadius: '20px !important', fontWeight: language === 'en' ? 700 : 400, fontSize: 14 }}>
+              English
+            </ToggleButton>
+            <ToggleButton value="es" sx={{ px: 2, borderRadius: '20px !important', fontWeight: language === 'es' ? 700 : 400, fontSize: 14 }}>
+              Español
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
-        <div className="login-brand">HORIZON SPARKS</div>
-        <h2>{t('login.title')}</h2>
-        <p className="login-subtitle">{t('login.enterPin')}</p>
+        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 800, letterSpacing: 3, color: 'secondary.main', mb: 1 }}>
+          HORIZON SPARKS
+        </Typography>
+        <Typography variant="h6" sx={{ textAlign: 'center', mb: 0.5 }}>{t('login.title')}</Typography>
+        <Typography sx={{ textAlign: 'center', color: 'text.secondary', mb: 2, fontSize: 14 }}>{t('login.enterPin')}</Typography>
 
-        {error && <div className="error-banner"><span>{error}</span></div>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         {faceIdAvailable && (
-          <button className="face-id-btn" onClick={handleFaceId} disabled={loading}>
+          <Button
+            fullWidth
+            variant="outlined"
+            color="secondary"
+            onClick={handleFaceId}
+            disabled={loading}
+            sx={{ mb: 2, py: 1.5, borderRadius: 3, display: 'flex', gap: 1 }}
+          >
             <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/></svg>
             <span>{t('login.faceId')}</span>
-          </button>
+          </Button>
         )}
 
-        {faceIdAvailable && <div className="login-divider"><span>{t('login.orUsePin')}</span></div>}
+        {faceIdAvailable && (
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'grey.300' }} />
+            <Typography sx={{ px: 2, color: 'text.secondary', fontSize: 13 }}>{t('login.orUsePin')}</Typography>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'grey.300' }} />
+          </Box>
+        )}
 
-        <div className="pin-input-row">
-          <input
-            type="tel"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={8}
-            value={pin}
-            onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            placeholder={t('login.pin')}
-            className="pin-input"
-          />
-        </div>
+        <TextField
+          fullWidth
+          type="tel"
+          slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*', maxLength: 8 } }}
+          value={pin}
+          onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          placeholder={t('login.pin')}
+          variant="outlined"
+          sx={{ mb: 2 }}
+        />
 
-        <button className="btn btn-primary btn-lg login-btn" onClick={handleSubmit} disabled={loading || !pin.trim()}>
-          {loading ? '...' : t('login.submit')}
-        </button>
-      </div>
-    </div>
+        <Button
+          fullWidth
+          variant="contained"
+          size="large"
+          onClick={handleSubmit}
+          disabled={loading || !pin.trim()}
+          sx={{ py: 1.5, fontSize: 16 }}
+        >
+          {loading ? <CircularProgress size={24} color="inherit" /> : t('login.submit')}
+        </Button>
+      </Paper>
+    </Box>
   );
 }

@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  AppBar, Toolbar, IconButton, Typography, Drawer, Box, Button, Avatar, Divider,
+  List, ListItemButton, ListItemIcon, ListItemText, Checkbox, FormControlLabel,
+  Alert, Collapse, ToggleButton, ToggleButtonGroup
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AnalyticsTracker from './utils/AnalyticsTracker.js';
 import LoginView from './views/LoginView.jsx';
 import HomeView from './views/HomeView.jsx';
@@ -369,253 +377,238 @@ export default function App() {
   };
 
   return (
-    <div className="app">
-      {/* Header with hamburger menu */}
-      <header className="app-header">
-        <button
-          className="hamburger-btn"
-          onClick={() => setMenuOpen(!menuOpen)}
-          style={{
-            background: 'none', border: 'none', color: 'white', fontSize: '32px',
-            cursor: 'pointer', padding: '8px', lineHeight: 1, marginRight: '8px'
+    <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main' }}>
+      {/* Header */}
+      <AppBar position="sticky" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
+        <Toolbar sx={{ gap: 0.5, px: 2, pt: 1 }}>
+          <IconButton color="inherit" onClick={() => setMenuOpen(!menuOpen)} sx={{ mr: 1 }}>
+            {menuOpen ? <CloseIcon /> : <MenuIcon />}
+          </IconButton>
+          <Box onClick={goHome} sx={{ cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {companySettings?.logo_data ? (
+              <>
+                <img src={companySettings.logo_data} alt={companySettings.company_name} style={{height: '32px', objectFit: 'contain', maxWidth: '180px'}} />
+                <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                  {currentWorld === 'control-center' ? 'Control Center' : t('app.subtitle')}
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography sx={{ fontWeight: 800, letterSpacing: 2, color: 'white', fontSize: 16 }}>
+                  {companySettings?.company_name || t('app.title')}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                  {t('app.subtitle')}
+                </Typography>
+              </>
+            )}
+          </Box>
+          {view !== 'home' && (
+            <Typography sx={{ fontSize: 13, color: 'primary.main', fontWeight: 600, ml: 'auto', whiteSpace: 'nowrap', alignSelf: 'flex-end' }}>
+              {activeTrade}
+            </Typography>
+          )}
+        </Toolbar>
+      </AppBar>
+
+      {/* Slide-out Drawer menu */}
+      <Drawer anchor="left" open={menuOpen} onClose={() => setMenuOpen(false)}
+        slotProps={{ paper: { sx: { width: 300, bgcolor: 'background.paper' } } }}>
+        {/* User info */}
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {user.photo && <Avatar src={`/api/photos/${user.photo}`} sx={{ width: 48, height: 48 }} />}
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: 16, color: 'text.primary' }}>{user.name}</Typography>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{user.role_title || t('common.administrator')}</Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Control Center World — Product Doors */}
+        {currentWorld === 'control-center' && (
+          <Box sx={{ px: 2, pb: 1.5 }}>
+            <Typography sx={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'text.secondary', mb: 1 }}>Products</Typography>
+            <Button fullWidth variant="contained" color="secondary" onClick={() => enterWorld('voice-report')}
+              sx={{ mb: 1, justifyContent: 'flex-start', borderColor: 'primary.main', border: '2px solid', fontSize: 14 }}>
+              Voice Report
+            </Button>
+            <Button fullWidth disabled sx={{ mb: 1, justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
+              LoopFolders <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>
+            </Button>
+            <Button fullWidth disabled sx={{ justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
+              Sparks <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>
+            </Button>
+          </Box>
+        )}
+
+        {/* Voice Report World — Control Center return button */}
+        {currentWorld === 'voice-report' && user?.sparks_role && !simulatingCompany && (
+          <Box sx={{ px: 2, pb: 1.5 }}>
+            <Button fullWidth variant="contained" color="secondary" onClick={exitToControlCenter}
+              sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13 }}>
+              {'\u2190'} Control Center
+            </Button>
+          </Box>
+        )}
+
+        {/* Trade stars — only for admin and supervisors, NOT in Control Center */}
+        {currentWorld !== 'control-center' && (user.is_admin || (user.role_level || 0) >= 4) && (
+          <Box sx={{ px: 2, py: 2 }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
+              {t('nav.activeTrades')}
+            </Typography>
+            <List disablePadding>
+              {ALL_TRADES.map(trade => {
+                const isStarred = starredTrades.includes(trade.key);
+                const isConfigOpen = roleLevelConfigTrade === trade.key;
+                const tradeLevels = ROLE_LEVEL_LABELS[trade.key] || {};
+                const allLevels = Object.keys(tradeLevels).map(Number);
+                const activeLevels = activeRoleLevels[trade.key] || allLevels;
+                return (
+                  <Box key={trade.key}>
+                    <ListItemButton onClick={() => toggleStar(trade.key)} sx={{ px: 1, borderBottom: isConfigOpen ? 'none' : '1px solid', borderColor: 'divider' }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <Typography sx={{ fontSize: 20, color: isStarred ? 'primary.main' : 'grey.300' }}>
+                          {isStarred ? '★' : '☆'}
+                        </Typography>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={trade.label}
+                        secondary={trade.icon}
+                        slotProps={{
+                          primary: { sx: { fontWeight: isStarred ? 600 : 400, color: isStarred ? 'text.primary' : 'text.secondary', fontSize: 15 } },
+                          secondary: { component: 'span', sx: { fontSize: 18 } },
+                        }}
+                      />
+                      {user.is_admin && (
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); setRoleLevelConfigTrade(isConfigOpen ? null : trade.key); }}
+                          sx={{ color: isConfigOpen ? 'primary.main' : 'text.secondary' }}>
+                          <MenuIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </ListItemButton>
+                    <Collapse in={isConfigOpen}>
+                      <Box sx={{ pl: 5.5, pb: 1.5, bgcolor: 'grey.100', borderBottom: '1px solid', borderColor: 'divider' }}>
+                        <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1, fontWeight: 600 }}>Active Ranks</Typography>
+                        {allLevels.map(level => {
+                          const isActive = activeLevels.includes(level);
+                          return (
+                            <FormControlLabel key={level}
+                              control={<Checkbox checked={isActive} onChange={() => toggleRoleLevel(trade.key, level)} size="small" sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }} />}
+                              label={tradeLevels[level]}
+                              sx={{ display: 'flex', mb: 0, '& .MuiFormControlLabel-label': { fontSize: 14, color: isActive ? 'text.primary' : 'text.disabled' } }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    </Collapse>
+                  </Box>
+                );
+              })}
+            </List>
+          </Box>
+        )}
+
+        {/* Workers see their trade — no switching */}
+        {currentWorld !== 'control-center' && !user.is_admin && (user.role_level || 0) < 4 && (
+          <Box sx={{ px: 2, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+              {t('nav.yourTrade')}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1 }}>
+              <Typography sx={{ fontSize: 24 }}>{ALL_TRADES.find(t => t.key === user.trade)?.icon || '⚡'}</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'text.primary' }}>{user.trade}</Typography>
+            </Box>
+          </Box>
+        )}
+
+        {/* Menu links */}
+        <Divider />
+        <List sx={{ px: 1 }}>
+          {currentWorld !== 'control-center' && user.is_admin && (
+            <ListItemButton onClick={() => navigateTo('templates')}>
+              <ListItemText primary={'📝 ' + t('nav.templates')} />
+            </ListItemButton>
+          )}
+          <ListItemButton onClick={() => navigateTo('messages')}>
+            <ListItemText primary={'💬 ' + t('messages.title')} />
+          </ListItemButton>
+          <ListItemButton onClick={() => { setSupportChatOpen(true); setMenuOpen(false); }}>
+            <ListItemText primary="🛠️ Tech Support" />
+          </ListItemButton>
+        </List>
+
+        {/* Language toggle */}
+        <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <ToggleButtonGroup value={i18n.language} exclusive fullWidth size="small"
+            onChange={(_e, lang) => { if (lang) { i18n.changeLanguage(lang); localStorage.setItem('hs_language', lang); } }}>
+            <ToggleButton value="en" sx={{ fontWeight: i18n.language === 'en' ? 700 : 400, fontSize: 14 }}>English</ToggleButton>
+            <ToggleButton value="es" sx={{ fontWeight: i18n.language === 'es' ? 700 : 400, fontSize: 14 }}>Español</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        <List sx={{ px: 1 }}>
+          <ListItemButton onClick={() => { if (window.confirm(t('nav.confirmLogout'))) logout(); }}>
+            <ListItemText primary={'⏻ ' + t('nav.logout')} slotProps={{ primary: { sx: { color: 'text.primary' } } }} />
+          </ListItemButton>
+        </List>
+      </Drawer>
+
+      {/* Sub-header with back button */}
+      {view !== 'home' && (
+        <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Button startIcon={<ArrowBackIcon />} onClick={goBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
+            {t('nav.back')}
+          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {user.photo && <Avatar src={`/api/photos/${user.photo}`} sx={{ width: 28, height: 28 }} />}
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary' }}>{user.name}</Typography>
+          </Box>
+        </Box>
+      )}
+
+      {/* Simulation mode banner */}
+      {simulatingCompany && (
+        <Alert
+          severity={editModeEnabled ? 'error' : 'warning'}
+          variant="filled"
+          sx={{
+            borderRadius: 0, py: 0.5,
+            display: 'flex', alignItems: 'center',
+            '& .MuiAlert-message': { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 1 },
           }}
         >
-          {menuOpen ? '✕' : '☰'}
-        </button>
-        <div className="header-title-block" onClick={goHome} style={{cursor: 'pointer', flex: 1}}>
-          {companySettings?.logo_data ? (
-            <>
-              <img src={companySettings.logo_data} alt={companySettings.company_name} style={{height: '32px', objectFit: 'contain', maxWidth: '180px'}} />
-              <span className="header-product">{currentWorld === 'control-center' ? 'Control Center' : t('app.subtitle')}</span>
-            </>
-          ) : (
-            <>
-              <span className="header-brand">{companySettings?.company_name || t('app.title')}</span>
-              <span className="header-product">{t('app.subtitle')}</span>
-            </>
-          )}
-        </div>
-        {/* Active trade indicator */}
-        {view !== 'home' && (
-          <span style={{fontSize: '13px', color: 'var(--primary)', fontWeight: 600, marginLeft: 'auto', whiteSpace: 'nowrap', alignSelf: 'flex-end'}}>
-            {activeTrade}
-          </span>
-        )}
-      </header>
-
-      {/* Slide-out menu */}
-      {menuOpen && (
-        <>
-          <div className="menu-overlay" onClick={() => setMenuOpen(false)} />
-          <div className="slide-menu">
-            {/* User info */}
-            <div style={{padding: '20px 16px', borderBottom: '1px solid #eee'}}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                {user.photo && <img src={`/api/photos/${user.photo}`} style={{width: 48, height: 48, borderRadius: '50%', objectFit: 'cover'}} alt="" />}
-                <div>
-                  <div style={{fontWeight: 700, fontSize: '16px', color: 'var(--charcoal)'}}>{user.name}</div>
-                  <div style={{fontSize: '13px', color: '#888'}}>{user.role_title || t('common.administrator')}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Control Center World — Product Doors */}
-            {currentWorld === 'control-center' && (
-              <div style={{ padding: '0 16px 12px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--charcoal)', opacity: 0.5, marginBottom: '8px' }}>Products</div>
-                <button onClick={() => enterWorld('voice-report')} style={{
-                  width: '100%', padding: '14px', marginBottom: '8px', borderRadius: '10px',
-                  background: 'var(--charcoal)', color: 'var(--primary)', border: '2px solid var(--primary)',
-                  fontSize: '14px', fontWeight: 700, cursor: 'pointer', textAlign: 'left',
-                }}>Voice Report</button>
-                <button disabled style={{
-                  width: '100%', padding: '14px', marginBottom: '8px', borderRadius: '10px',
-                  background: 'var(--gray-100)', color: '#999', border: '2px solid var(--gray-200)',
-                  fontSize: '14px', fontWeight: 700, cursor: 'default', textAlign: 'left', opacity: 0.6,
-                }}>LoopFolders <span style={{ fontSize: '10px', opacity: 0.5 }}>coming soon</span></button>
-                <button disabled style={{
-                  width: '100%', padding: '14px', borderRadius: '10px',
-                  background: 'var(--gray-100)', color: '#999', border: '2px solid var(--gray-200)',
-                  fontSize: '14px', fontWeight: 700, cursor: 'default', textAlign: 'left', opacity: 0.6,
-                }}>Sparks <span style={{ fontSize: '10px', opacity: 0.5 }}>coming soon</span></button>
-              </div>
-            )}
-
-            {/* Voice Report World — Control Center return button */}
-            {currentWorld === 'voice-report' && user?.sparks_role && !simulatingCompany && (
-              <div style={{ padding: '0 16px 12px' }}>
-                <button onClick={exitToControlCenter} style={{
-                  width: '100%', padding: '12px', borderRadius: '10px',
-                  background: 'var(--charcoal)', color: 'var(--primary)', border: '2px solid var(--primary)',
-                  fontSize: '13px', fontWeight: 700, cursor: 'pointer', textAlign: 'center',
-                }}>{String.fromCharCode(8592)} Control Center</button>
-              </div>
-            )}
-
-            {/* Trade stars — only for admin and supervisors, NOT in Control Center */}
-            {currentWorld !== 'control-center' && (user.is_admin || (user.role_level || 0) >= 4) && (
-              <div style={{padding: '16px'}}>
-                <p style={{fontSize: '12px', fontWeight: 700, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 12px'}}>
-                  {t('nav.activeTrades')}
-                </p>
-                {ALL_TRADES.map(trade => {
-                  const isStarred = starredTrades.includes(trade.key);
-                  const isConfigOpen = roleLevelConfigTrade === trade.key;
-                  const tradeLevels = ROLE_LEVEL_LABELS[trade.key] || {};
-                  const allLevels = Object.keys(tradeLevels).map(Number);
-                  const activeLevels = activeRoleLevels[trade.key] || allLevels; // default: all
-                  return (
-                    <div key={trade.key}>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
-                        padding: '12px 8px', borderBottom: isConfigOpen ? 'none' : '1px solid #f0f0f0',
-                      }}>
-                        <button onClick={() => toggleStar(trade.key)} style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0}}>
-                          <span style={{fontSize: '20px', color: isStarred ? '#F99440' : '#ccc'}}>
-                            {isStarred ? '★' : '☆'}
-                          </span>
-                        </button>
-                        <span style={{fontSize: '18px'}}>{trade.icon}</span>
-                        <span style={{fontSize: '15px', fontWeight: isStarred ? 600 : 400, color: isStarred ? 'var(--charcoal)' : '#999', flex: 1, cursor: 'pointer'}}
-                              onClick={() => toggleStar(trade.key)}>
-                          {trade.label}
-                        </span>
-                        {user.is_admin && (
-                          <button
-                            onClick={() => setRoleLevelConfigTrade(isConfigOpen ? null : trade.key)}
-                            style={{background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '16px', color: isConfigOpen ? '#F99440' : '#999'}}
-                            title="Configure active ranks"
-                          >☰</button>
-                        )}
-                      </div>
-                      {isConfigOpen && (
-                        <div style={{padding: '4px 8px 12px 44px', borderBottom: '1px solid #f0f0f0', background: '#fafafa'}}>
-                          <p style={{fontSize: '11px', color: '#888', margin: '0 0 8px', fontWeight: 600}}>Active Ranks</p>
-                          {allLevels.map(level => {
-                            const isActive = activeLevels.includes(level);
-                            return (
-                              <label key={level} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer', fontSize: '14px', color: isActive ? 'var(--charcoal)' : '#bbb'}}>
-                                <input type="checkbox" checked={isActive} onChange={() => toggleRoleLevel(trade.key, level)}
-                                  style={{accentColor: '#F99440', width: '16px', height: '16px'}} />
-                                {tradeLevels[level]}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {/* Workers see their trade — no switching */}
-            {currentWorld !== 'control-center' && !user.is_admin && (user.role_level || 0) < 4 && (
-              <div style={{padding: '16px', borderBottom: '1px solid #eee'}}>
-                <p style={{fontSize: '12px', fontWeight: 700, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 8px'}}>
-                  {t('nav.yourTrade')}
-                </p>
-                <div style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0'}}>
-                  <span style={{fontSize: '24px'}}>{ALL_TRADES.find(t => t.key === user.trade)?.icon || '⚡'}</span>
-                  <span style={{fontSize: '16px', fontWeight: 700, color: 'var(--charcoal)'}}>{user.trade}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Menu links */}
-            <div style={{padding: '16px', borderTop: '1px solid #eee'}}>
-              {currentWorld !== 'control-center' && user.is_admin && (
-                <button onClick={() => navigateTo('templates')} className="menu-link">
-                  📝 {t('nav.templates')}
-                </button>
-              )}
-              <button onClick={() => navigateTo('messages')} className="menu-link">
-                💬 {t('messages.title')}
-              </button>
-              <button onClick={() => { setSupportChatOpen(true); setMenuOpen(false); }} className="menu-link">
-                🛠️ Tech Support
-              </button>
-              {/* Language toggle */}
-              <div style={{display: 'flex', gap: '8px', padding: '12px 0', borderTop: '1px solid #333', marginTop: '8px'}}>
-                <button onClick={() => { i18n.changeLanguage('en'); localStorage.setItem('hs_language', 'en'); }}
-                  style={{flex: 1, padding: '10px', borderRadius: '8px', fontSize: '14px', fontWeight: i18n.language === 'en' ? 700 : 400,
-                    border: i18n.language === 'en' ? '2px solid #E8922A' : '2px solid #555',
-                    background: i18n.language === 'en' ? '#E8922A' : 'transparent',
-                    color: i18n.language === 'en' ? 'var(--charcoal)' : '#999', cursor: 'pointer'}}>
-                  English
-                </button>
-                <button onClick={() => { i18n.changeLanguage('es'); localStorage.setItem('hs_language', 'es'); }}
-                  style={{flex: 1, padding: '10px', borderRadius: '8px', fontSize: '14px', fontWeight: i18n.language === 'es' ? 700 : 400,
-                    border: i18n.language === 'es' ? '2px solid #E8922A' : '2px solid #555',
-                    background: i18n.language === 'es' ? '#E8922A' : 'transparent',
-                    color: i18n.language === 'es' ? 'var(--charcoal)' : '#999', cursor: 'pointer'}}>
-                  Español
-                </button>
-              </div>
-              <button
-                onClick={() => { if (window.confirm(t('nav.confirmLogout'))) logout(); }}
-                className="menu-link" style={{color: 'var(--charcoal)'}}
-              >
-                ⏻ {t('nav.logout')}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {view !== 'home' && (
-        <div className="sub-header">
-          {view !== 'home' ? (
-            <button className="back-home-btn" onClick={goBack}><span style={{WebkitTextStroke: "1.5px var(--charcoal)"}}>←</span> {t('nav.back')}</button>
-          ) : <span />}
-          <div className="user-bar-inline">
-            {user.photo && <img src={`/api/photos/${user.photo}`} className="user-avatar-sm" alt="" />}
-            <span className="user-name-sm">{user.name}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Simulation mode banner — Sparks user viewing as a company */}
-      {simulatingCompany && (
-        <div style={{
-          background: editModeEnabled
-            ? 'linear-gradient(90deg, #dc2626, #b91c1c)'
-            : 'linear-gradient(90deg, var(--primary), #ff8c00)',
-          color: editModeEnabled ? 'white' : 'var(--charcoal)',
-          padding: '8px 16px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          fontWeight: 700, fontSize: '13px', flexWrap: 'wrap', gap: '8px',
-        }}>
-          <span>
+          <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
             {editModeEnabled
               ? '✏️ EDIT MODE — ' + simulatingCompany.name
               : '👁 Viewing: ' + simulatingCompany.name}
-          </span>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             {editModeEnabled ? (
-              <button onClick={handleDisableEditing} style={{
-                background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)',
-                borderRadius: '6px', padding: '4px 12px', fontWeight: 700, fontSize: '12px', cursor: 'pointer',
-              }}>Lock</button>
+              <Button size="small" variant="outlined" onClick={handleDisableEditing}
+                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 700 }}>
+                Lock
+              </Button>
             ) : (
-              <button onClick={() => { setPinError(''); setShowPinModal(true); }} style={{
-                background: 'var(--charcoal)', color: 'var(--primary)', border: 'none',
-                borderRadius: '6px', padding: '4px 12px', fontWeight: 700, fontSize: '12px', cursor: 'pointer',
-              }}>Enable Editing</button>
+              <Button size="small" variant="contained" color="secondary" onClick={() => { setPinError(''); setShowPinModal(true); }}
+                sx={{ fontSize: 12, fontWeight: 700 }}>
+                Enable Editing
+              </Button>
             )}
-            <button onClick={exitSimulation} style={{
-              background: editModeEnabled ? 'rgba(255,255,255,0.2)' : 'var(--charcoal)',
-              color: 'white', border: editModeEnabled ? '1px solid rgba(255,255,255,0.4)' : 'none',
-              borderRadius: '6px', padding: '4px 12px', fontWeight: 700, fontSize: '12px', cursor: 'pointer',
-            }}>✕ Exit</button>
-          </div>
-        </div>
+            <Button size="small" variant="outlined" onClick={exitSimulation}
+              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 700 }}>
+              ✕ Exit
+            </Button>
+          </Box>
+        </Alert>
       )}
 
-      <main>
+      <Box component="main" sx={{ flex: 1 }}>
         {readOnly && (
-          <div style={{ background: "#fff3cd", color: "#856404", padding: "8px 16px", fontSize: "12px", fontWeight: 700, textAlign: "center", borderBottom: "1px solid #ffc107" }}>
+          <Alert severity="warning" variant="standard" sx={{ borderRadius: 0, fontSize: 12, fontWeight: 700, justifyContent: 'center' }}>
             Read-only mode — viewing as {simulatingCompany?.name}. Enable editing to make changes.
-          </div>
+          </Alert>
         )}
         {view === 'home' && <HomeView user={user} setView={navigateTo} logout={logout} activeTrade={activeTrade} setActiveTrade={setActiveTrade} starredTrades={starredTrades} allTrades={ALL_TRADES} onSafetyOpen={() => setSafetyPanelOpen(true)} simulatingCompany={simulatingCompany} currentWorld={currentWorld} onEnterCompany={enterSimulation} onSupportOpen={() => setSupportChatOpen(true)} />}
         {view === 'record' && <RecordView readOnly={readOnly} user={user} onSaved={() => navigateTo('list')} />}
@@ -634,66 +627,61 @@ export default function App() {
         {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
-      </main>
+      </Box>
 
       {/* Safety Quick-Access Panel */}
-      {safetyPanelOpen && (
-        <>
-          <div className="menu-overlay" onClick={() => setSafetyPanelOpen(false)} style={{zIndex: 1000}} />
-          <div className="safety-panel">
-            <div className="safety-panel-header">
-              <h2 style={{margin: 0, fontSize: '22px', fontWeight: 800, color: 'var(--charcoal)'}}>⛑️ {t('safety.title')}</h2>
-              <button onClick={() => setSafetyPanelOpen(false)} style={{background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--charcoal)', padding: '4px'}}>✕</button>
-            </div>
-            <div className="safety-panel-items">
-              <button className="safety-panel-btn safety-btn-jsa" onClick={() => { setSafetyPanelOpen(false); navigateTo('jsa'); }}>
-                <span className="safety-btn-icon">📋</span>
-                <div>
-                  <span className="safety-btn-title">{t('safety.jsa')}</span>
-                  <span className="safety-btn-desc">{t('safety.jsaDesc')}</span>
-                </div>
-              </button>
-              <button className="safety-panel-btn" onClick={() => { alert('Coming soon'); }}>
-                <span className="safety-btn-icon">👁️</span>
-                <div>
-                  <span className="safety-btn-title">{t('safety.observation')}</span>
-                  <span className="safety-btn-desc">{t('safety.observationDesc')}</span>
-                </div>
-              </button>
-              <button className="safety-panel-btn" onClick={() => { alert('Coming soon'); }}>
-                <span className="safety-btn-icon">⚠️</span>
-                <div>
-                  <span className="safety-btn-title">{t('safety.reportHazard')}</span>
-                  <span className="safety-btn-desc">{t('safety.reportHazardDesc')}</span>
-                </div>
-              </button>
-              <button className="safety-panel-btn" onClick={() => { alert('Coming soon'); }}>
-                <span className="safety-btn-icon">🦺</span>
-                <div>
-                  <span className="safety-btn-title">{t('safety.requestPPE')}</span>
-                  <span className="safety-btn-desc">{t('safety.requestPPEDesc')}</span>
-                </div>
-              </button>
-              <button className="safety-panel-btn safety-btn-stop" onClick={() => { if (window.confirm(t('safety.stopWorkConfirm'))) { setSafetyPanelOpen(false); alert(t('safety.stopWorkSent')); } }}>
-                <span className="safety-btn-icon">🛑</span>
-                <div>
-                  <span className="safety-btn-title">{t('safety.stopWork')}</span>
-                  <span className="safety-btn-desc">{t('safety.stopWorkDesc')}</span>
-                </div>
-              </button>
-              <button className="safety-panel-btn" onClick={() => { alert('Coming soon'); }}>
-                <span className="safety-btn-icon">📞</span>
-                <div>
-                  <span className="safety-btn-title">{t('safety.emergency')}</span>
-                  <span className="safety-btn-desc">{t('safety.emergencyDesc')}</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      <Drawer anchor="bottom" open={safetyPanelOpen} onClose={() => setSafetyPanelOpen(false)}
+        slotProps={{ paper: { sx: { borderRadius: '20px 20px 0 0', maxHeight: '80vh' } } }}>
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary' }}>⛑️ {t('safety.title')}</Typography>
+            <IconButton onClick={() => setSafetyPanelOpen(false)}><CloseIcon /></IconButton>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Button fullWidth variant="outlined" onClick={() => { setSafetyPanelOpen(false); navigateTo('jsa'); }}
+              sx={{ justifyContent: 'flex-start', gap: 1.5, py: 1.5, textAlign: 'left', borderColor: 'primary.main', borderWidth: 2 }}>
+              <Typography sx={{ fontSize: 24 }}>📋</Typography>
+              <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'text.primary' }}>{t('safety.jsa')}</Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('safety.jsaDesc')}</Typography>
+              </Box>
+            </Button>
+            {[
+              { icon: '👁️', title: t('safety.observation'), desc: t('safety.observationDesc') },
+              { icon: '⚠️', title: t('safety.reportHazard'), desc: t('safety.reportHazardDesc') },
+              { icon: '🦺', title: t('safety.requestPPE'), desc: t('safety.requestPPEDesc') },
+            ].map((item, i) => (
+              <Button key={i} fullWidth variant="outlined" onClick={() => alert('Coming soon')}
+                sx={{ justifyContent: 'flex-start', gap: 1.5, py: 1.5, textAlign: 'left' }}>
+                <Typography sx={{ fontSize: 24 }}>{item.icon}</Typography>
+                <Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'text.primary' }}>{item.title}</Typography>
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{item.desc}</Typography>
+                </Box>
+              </Button>
+            ))}
+            <Button fullWidth variant="outlined" color="error"
+              onClick={() => { if (window.confirm(t('safety.stopWorkConfirm'))) { setSafetyPanelOpen(false); alert(t('safety.stopWorkSent')); } }}
+              sx={{ justifyContent: 'flex-start', gap: 1.5, py: 1.5, textAlign: 'left', borderWidth: 2 }}>
+              <Typography sx={{ fontSize: 24 }}>🛑</Typography>
+              <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'error.main' }}>{t('safety.stopWork')}</Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('safety.stopWorkDesc')}</Typography>
+              </Box>
+            </Button>
+            <Button fullWidth variant="outlined" onClick={() => alert('Coming soon')}
+              sx={{ justifyContent: 'flex-start', gap: 1.5, py: 1.5, textAlign: 'left' }}>
+              <Typography sx={{ fontSize: 24 }}>📞</Typography>
+              <Box>
+                <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'text.primary' }}>{t('safety.emergency')}</Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('safety.emergencyDesc')}</Typography>
+              </Box>
+            </Button>
+          </Box>
+        </Box>
+      </Drawer>
+
       <InstallBanner />
-      {/* Floating Support Chat — for operators and supervisors */}
       {user && currentWorld === 'voice-report' && user.sparks_role && (
         <><PinModal
           visible={showPinModal}
@@ -704,6 +692,6 @@ export default function App() {
         />
         <SupportChat user={user} simulatingCompany={simulatingCompany} externalOpen={supportChatOpen} onExternalOpenChange={setSupportChatOpen} /></>
       )}
-    </div>
+    </Box>
   );
 }

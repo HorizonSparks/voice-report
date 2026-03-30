@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import {
+  Box, Typography, Table, TableHead, TableBody, TableRow, TableCell,
+  TextField, Select, MenuItem, Button
+} from '@mui/material';
 
 const VOLTAGE_COLORS_480 = {
   'ΦA': { color: 'Brown', hex: '#8B4513' },
@@ -50,13 +54,6 @@ export default function MeggerTable({ rows, onChange, disabled }) {
     onChange(next);
   };
 
-  const sectionHeaderStyle = {
-    fontWeight: 700, background: '#f5f0eb', color: '#e8922a',
-    fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', padding: '6px 8px'
-  };
-
-  const inputStyle = { fontSize: '16px', padding: '8px 10px', width: '100%', minWidth: '80px', textAlign: 'center' };
-
   const meggerTests = [
     { section: 'Phase to Phase', items: [
       { key: 'ph_a_b', label: 'ΦA to ΦB', idx: 0 },
@@ -87,181 +84,125 @@ export default function MeggerTable({ rows, onChange, disabled }) {
   ];
 
   return (
-    <div className="cal-table-wrapper">
-      {/* Unit selector — prominent, matching voltage selector style */}
-      <div style={{
-        display: 'flex', gap: '12px', marginBottom: '14px', alignItems: 'center', flexWrap: 'wrap',
-        padding: '10px 14px', background: '#f9f7f5', borderRadius: '8px', border: '1px solid #e0dbd5'
-      }}>
-        <label style={{fontSize: '14px', fontWeight: 700, color: '#555'}}>📏 Reading Unit:</label>
-        <select
-          value={unit}
-          onChange={e => setUnit(e.target.value)}
-          disabled={disabled}
-          style={{
-            padding: '8px 14px', borderRadius: '6px', border: '2px solid #e8922a',
-            fontSize: '15px', fontWeight: 700, color: '#2d2d2d', background: '#fff',
-            cursor: disabled ? 'not-allowed' : 'pointer'
-          }}
-        >
-          <option value="MΩ">Megaohms (MΩ)</option>
-          <option value="GΩ">Gigaohms (GΩ)</option>
-        </select>
-        <span style={{fontSize: '12px', color: 'var(--charcoal)', fontStyle: 'italic'}}>
+    <Box className="cal-table-wrapper" sx={{ overflowX: 'auto' }}>
+      {/* Unit selector */}
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 1.75, alignItems: 'center', flexWrap: 'wrap', p: 1.5, bgcolor: 'grey.100', borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
+        <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.secondary' }}>📏 Reading Unit:</Typography>
+        <Select value={unit} onChange={e => setUnit(e.target.value)} disabled={disabled} size="small"
+          sx={{ fontWeight: 700, fontSize: 15, borderColor: 'primary.main', minWidth: 180 }}>
+          <MenuItem value="MΩ">Megaohms (MΩ)</MenuItem>
+          <MenuItem value="GΩ">Gigaohms (GΩ)</MenuItem>
+        </Select>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary', fontStyle: 'italic' }}>
           {unit === 'MΩ' ? 'Typical: 100-5,000+ MΩ for new cable' : 'Typical: 0.1-5+ GΩ for new cable'}
-        </span>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Megger readings table */}
-      <table className="cal-table megger-table">
-        <thead>
-          <tr>
-            <th style={{minWidth: '130px'}}>Test</th>
-            <th style={{minWidth: '120px'}}>Reading ({unit})</th>
-            <th style={{minWidth: '90px'}}>Pass/Fail</th>
-          </tr>
-        </thead>
-        <tbody>
-          {meggerTests.map(section => (
-            <>
-              <tr key={`hdr-${section.section}`} className="megger-section-header">
-                <td colSpan={3} style={sectionHeaderStyle}>{section.section}</td>
-              </tr>
-              {section.items.map(item => (
-                <tr key={item.key}>
-                  <td className="row-label" style={{fontWeight: 600, fontSize: '14px'}}>{item.label}</td>
-                  <td>
-                    <input
-                      type="number"
-                      step={unit === 'GΩ' ? '0.1' : '1'}
-                      min="0"
-                      value={rows[item.idx]?.megger || ''}
-                      onChange={e => update(item.idx, 'megger', e.target.value)}
-                      placeholder="—"
-                      readOnly={disabled}
-                      className={disabled ? 'readonly' : ''}
-                      style={inputStyle}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={rows[item.idx]?.result || ''}
-                      onChange={e => update(item.idx, 'result', e.target.value)}
-                      disabled={disabled}
-                      style={{padding: '8px', fontSize: '14px', width: '100%'}}
-                    >
-                      <option value="">—</option>
-                      <option value="Pass">Pass</option>
-                      <option value="Fail">Fail</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </>
-          ))}
-        </tbody>
-      </table>
+      <Table size="small" className="cal-table megger-table" sx={{ '& td, & th': { borderColor: 'grey.200' } }}>
+        <TableHead>
+          <TableRow sx={{ bgcolor: 'grey.100' }}>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, minWidth: 130 }}>Test</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, minWidth: 120 }}>Reading ({unit})</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, minWidth: 90 }}>Pass/Fail</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {meggerTests.map(section => [
+            <TableRow key={`hdr-${section.section}`}>
+              <TableCell colSpan={3} sx={{ fontWeight: 700, bgcolor: '#f5f0eb', color: 'primary.main', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, py: 0.75 }}>
+                {section.section}
+              </TableCell>
+            </TableRow>,
+            ...section.items.map(item => (
+              <TableRow key={item.key}>
+                <TableCell sx={{ fontWeight: 600, fontSize: 14 }}>{item.label}</TableCell>
+                <TableCell>
+                  <TextField type="number" size="small"
+                    slotProps={{ htmlInput: { step: unit === 'GΩ' ? '0.1' : '1', min: '0', readOnly: disabled, style: { textAlign: 'center', fontSize: 14 } } }}
+                    value={rows[item.idx]?.megger || ''} onChange={e => update(item.idx, 'megger', e.target.value)}
+                    placeholder="—" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }} />
+                </TableCell>
+                <TableCell>
+                  <Select value={rows[item.idx]?.result || ''} onChange={e => update(item.idx, 'result', e.target.value)}
+                    disabled={disabled} size="small" displayEmpty sx={{ fontSize: 14, minWidth: 80 }}>
+                    <MenuItem value="">—</MenuItem>
+                    <MenuItem value="Pass">Pass</MenuItem>
+                    <MenuItem value="Fail">Fail</MenuItem>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            )),
+          ])}
+        </TableBody>
+      </Table>
 
       {/* Continuity and Conductor Color table */}
-      <div style={{display: 'flex', gap: '12px', marginTop: '16px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap'}}>
-        <label style={{fontSize: '13px', fontWeight: 600, color: 'var(--charcoal)'}}>Voltage System:</label>
-        <select
-          value={voltageSystem}
-          onChange={e => setVoltageSystem(e.target.value)}
-          disabled={disabled}
-          style={{padding: '6px 12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px'}}
-        >
-          <option value="480V">480Y/277V (Brown/Orange/Yellow)</option>
-          <option value="208V">208Y/120V (Black/Red/Blue)</option>
-        </select>
-        <button
-          type="button"
-          onClick={applyStandardColors}
-          disabled={disabled}
-          style={{
-            padding: '6px 14px', borderRadius: '6px', border: '1px solid #e8922a',
-            background: 'transparent', color: '#e8922a', fontSize: '13px', fontWeight: 600,
-            cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1
-          }}
-        >
+      <Box sx={{ display: 'flex', gap: 1.5, mt: 2, mb: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary' }}>Voltage System:</Typography>
+        <Select value={voltageSystem} onChange={e => setVoltageSystem(e.target.value)} disabled={disabled} size="small" sx={{ fontSize: 14, minWidth: 240 }}>
+          <MenuItem value="480V">480Y/277V (Brown/Orange/Yellow)</MenuItem>
+          <MenuItem value="208V">208Y/120V (Black/Red/Blue)</MenuItem>
+        </Select>
+        <Button variant="outlined" size="small" onClick={applyStandardColors} disabled={disabled}
+          sx={{ fontSize: 13, fontWeight: 600, borderColor: 'primary.main', color: 'primary.main' }}>
           Apply Standard Colors
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <table className="cal-table megger-table">
-        <thead>
-          <tr>
-            <th style={{minWidth: '130px'}}>Conductor</th>
-            <th style={{minWidth: '90px'}}>Continuity</th>
-            <th style={{minWidth: '140px'}}>Color</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table size="small" className="cal-table megger-table" sx={{ '& td, & th': { borderColor: 'grey.200' } }}>
+        <TableHead>
+          <TableRow sx={{ bgcolor: 'grey.100' }}>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, minWidth: 130 }}>Conductor</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, minWidth: 90 }}>Continuity</TableCell>
+            <TableCell sx={{ fontWeight: 700, fontSize: 12, minWidth: 140 }}>Color</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {conductors.map(item => {
             const stdColor = colorMap[item.label];
             const currentColor = rows[item.idx]?.color || '';
             const isOther = currentColor && !COLOR_OPTIONS.slice(0, -1).includes(currentColor);
 
             return (
-              <tr key={item.key}>
-                <td className="row-label" style={{fontWeight: 600, fontSize: '14px'}}>
+              <TableRow key={item.key}>
+                <TableCell sx={{ fontWeight: 600, fontSize: 14 }}>
                   {stdColor && (
-                    <span style={{
-                      display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%',
-                      background: stdColor.hex, border: '1px solid #ccc', marginRight: '8px', verticalAlign: 'middle'
+                    <Box component="span" sx={{
+                      display: 'inline-block', width: 14, height: 14, borderRadius: '50%',
+                      bgcolor: stdColor.hex, border: '1px solid #ccc', mr: 1, verticalAlign: 'middle',
                     }} />
                   )}
                   {item.label}
-                </td>
-                <td>
-                  <select
-                    value={rows[item.idx]?.continuity || ''}
-                    onChange={e => update(item.idx, 'continuity', e.target.value)}
-                    disabled={disabled}
-                    style={{padding: '8px', fontSize: '14px', width: '100%'}}
-                  >
-                    <option value="">—</option>
-                    <option value="Pass">Pass</option>
-                    <option value="Fail">Fail</option>
-                  </select>
-                </td>
-                <td>
-                  <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
-                    <select
-                      value={isOther ? 'Other' : currentColor}
-                      onChange={e => {
-                        if (e.target.value === 'Other') {
-                          update(item.idx, 'color', '');
-                        } else {
-                          update(item.idx, 'color', e.target.value);
-                        }
-                      }}
-                      disabled={disabled}
-                      style={{padding: '8px', fontSize: '14px', flex: 1}}
-                    >
-                      <option value="">— Select —</option>
-                      {COLOR_OPTIONS.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                </TableCell>
+                <TableCell>
+                  <Select value={rows[item.idx]?.continuity || ''} onChange={e => update(item.idx, 'continuity', e.target.value)}
+                    disabled={disabled} size="small" displayEmpty sx={{ fontSize: 14, minWidth: 80 }}>
+                    <MenuItem value="">—</MenuItem>
+                    <MenuItem value="Pass">Pass</MenuItem>
+                    <MenuItem value="Fail">Fail</MenuItem>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+                    <Select value={isOther ? 'Other' : currentColor}
+                      onChange={e => { update(item.idx, 'color', e.target.value === 'Other' ? '' : e.target.value); }}
+                      disabled={disabled} size="small" displayEmpty sx={{ fontSize: 14, flex: 1 }}>
+                      <MenuItem value="">— Select —</MenuItem>
+                      {COLOR_OPTIONS.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                    </Select>
                     {(isOther || currentColor === '') && rows[item.idx]?.color !== '' && (
-                      <input
-                        type="text"
-                        value={currentColor}
-                        onChange={e => update(item.idx, 'color', e.target.value)}
-                        placeholder="Type color..."
-                        readOnly={disabled}
-                        className={disabled ? 'readonly' : ''}
-                        style={{...inputStyle, textAlign: 'left', flex: 1}}
-                      />
+                      <TextField size="small" value={currentColor} onChange={e => update(item.idx, 'color', e.target.value)}
+                        placeholder="Type color..." slotProps={{ htmlInput: { readOnly: disabled } }}
+                        sx={{ flex: 1, '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }} />
                     )}
-                  </div>
-                </td>
-              </tr>
+                  </Box>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Box>
   );
 }

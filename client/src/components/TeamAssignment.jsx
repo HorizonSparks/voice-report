@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Box, Typography, Button, Paper, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
 
 export default function TeamAssignment({ person, allPeople, onUpdate }) {
   const [showPicker, setShowPicker] = useState(false);
@@ -41,77 +44,60 @@ export default function TeamAssignment({ person, allPeople, onUpdate }) {
   const levelBelow = personLevel === 2 ? 'Journeymen' : personLevel === 3 ? 'Foremen' : personLevel === 4 ? 'General Foremen' : 'Direct Reports';
 
   return (
-    <div className="person-bubble">
-      <div className="person-bubble-header">Team ({levelBelow})</div>
-      <div className="person-bubble-body">
+    <Paper className="person-bubble" variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+      <Box className="person-bubble-header" sx={{ px: 2, py: 1.5, bgcolor: 'grey.100', borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Typography sx={{ fontWeight: 700, fontSize: 14 }}>Team ({levelBelow})</Typography>
+      </Box>
+      <Box className="person-bubble-body" sx={{ p: 2 }}>
         {directReports.length === 0 ? (
-          <p style={{fontSize: '13px', color: 'var(--charcoal)', marginBottom: '12px'}}>No {levelBelow.toLowerCase()} assigned yet.</p>
+          <Typography sx={{ fontSize: 13, color: 'text.primary', mb: 1.5 }}>No {levelBelow.toLowerCase()} assigned yet.</Typography>
         ) : (
-          <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px'}}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1.5 }}>
             {directReports.map(dr => (
-              <div key={dr.id} style={{
+              <Paper key={dr.id} variant="outlined" sx={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 12px', background: 'var(--gray-50)', borderRadius: '8px',
-                border: '1px solid var(--gray-200)'
+                px: 1.5, py: 1.25, borderRadius: 2,
               }}>
-                <div>
-                  <span style={{fontWeight: 600, fontSize: '14px'}}>{dr.name}</span>
-                  <span style={{fontSize: '12px', color: 'var(--charcoal)', marginLeft: '8px'}}>{dr.role_title}</span>
-                </div>
-                <button
-                  onClick={() => unassignPerson(dr.id)}
-                  style={{
-                    background: 'none', border: 'none', color: '#E8922A',
-                    fontSize: '18px', cursor: 'pointer', padding: '4px 8px'
-                  }}
-                >&times;</button>
-              </div>
+                <Box>
+                  <Typography component="span" sx={{ fontWeight: 600, fontSize: 14 }}>{dr.name}</Typography>
+                  <Typography component="span" sx={{ fontSize: 12, color: 'text.primary', ml: 1 }}>{dr.role_title}</Typography>
+                </Box>
+                <IconButton size="small" onClick={() => unassignPerson(dr.id)} sx={{ color: 'warning.main' }}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Paper>
             ))}
-          </div>
+          </Box>
         )}
 
         {showPicker ? (
-          <div style={{border: '1px solid var(--primary)', borderRadius: '8px', padding: '12px', background: 'white'}}>
-            <p style={{fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: 'var(--gray-700)'}}>
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderColor: 'primary.main' }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, mb: 1, color: 'text.primary' }}>
               Select {levelBelow.toLowerCase()} to assign:
-            </p>
+            </Typography>
             {assignable.length === 0 ? (
-              <p style={{fontSize: '13px', color: 'var(--charcoal)'}}>No unassigned {levelBelow.toLowerCase()} available.</p>
+              <Typography sx={{ fontSize: 13, color: 'text.primary' }}>No unassigned {levelBelow.toLowerCase()} available.</Typography>
             ) : (
-              <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {assignable.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => assignPerson(p.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '8px 12px', background: 'var(--gray-50)', border: '1px solid var(--gray-200)',
-                      borderRadius: '6px', cursor: 'pointer', textAlign: 'left', fontSize: '14px'
-                    }}
-                  >
-                    <span style={{color: 'var(--primary)', fontWeight: 700}}>+</span>
-                    <span>{p.name}</span>
-                    <span style={{fontSize: '12px', color: 'var(--charcoal)'}}>{p.role_title}</span>
-                  </button>
+                  <Button key={p.id} variant="outlined" onClick={() => assignPerson(p.id)} startIcon={<AddIcon />}
+                    sx={{ justifyContent: 'flex-start', textAlign: 'left', fontSize: 14, borderRadius: 1.5, py: 1, color: 'text.primary', borderColor: 'grey.200' }}>
+                    {p.name} <Typography component="span" sx={{ fontSize: 12, color: 'text.primary', ml: 1 }}>{p.role_title}</Typography>
+                  </Button>
                 ))}
-              </div>
+              </Box>
             )}
-            <button
-              onClick={() => setShowPicker(false)}
-              style={{marginTop: '8px', fontSize: '13px', color: 'var(--charcoal)', background: 'none', border: 'none', cursor: 'pointer'}}
-            >Cancel</button>
-          </div>
+            <Button size="small" onClick={() => setShowPicker(false)} sx={{ mt: 1, fontSize: 13, color: 'text.primary' }}>
+              Cancel
+            </Button>
+          </Paper>
         ) : (
-          <button
-            onClick={() => setShowPicker(true)}
-            style={{
-              fontSize: '13px', color: 'var(--primary)', fontWeight: 600,
-              background: 'none', border: '1px solid var(--primary)',
-              borderRadius: '6px', padding: '8px 16px', cursor: 'pointer'
-            }}
-          >+ Assign Team Member</button>
+          <Button variant="outlined" onClick={() => setShowPicker(true)} startIcon={<AddIcon />}
+            sx={{ fontSize: 13, fontWeight: 600, borderRadius: 1.5, px: 2, py: 1, borderColor: 'primary.main', color: 'primary.main' }}>
+            Assign Team Member
+          </Button>
         )}
-      </div>
-    </div>
+      </Box>
+    </Paper>
   );
 }

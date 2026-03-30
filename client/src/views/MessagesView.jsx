@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Box, Typography, Button, TextField, Paper, CircularProgress, IconButton } from '@mui/material';
 import VoiceMessagePlayer from '../components/VoiceMessagePlayer.jsx';
 
 export default function MessagesView({ user, readOnly }) {
@@ -248,25 +249,25 @@ export default function MessagesView({ user, readOnly }) {
     const chatRole = chatContact?.role_title || '';
 
     return (
-      <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#ECE5DD', zIndex: 100}}>
-        {/* Chat header — WhatsApp style */}
-        <div style={{display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--charcoal)', flexShrink: 0}}>
-          <button onClick={() => { setActiveChat(null); setKeyboardOffset(0); loadConversations(); }} style={{background: 'none', border: 'none', color: 'var(--primary)', fontSize: '22px', cursor: 'pointer', padding: '4px 8px'}}>←</button>
-          <div style={{width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--charcoal)', fontWeight: 700, fontSize: '16px', flexShrink: 0}}>
+      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#ECE5DD', zIndex: 100 }}>
+        {/* Chat header -- WhatsApp style */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--charcoal)', flexShrink: 0 }}>
+          <Button onClick={() => { setActiveChat(null); setKeyboardOffset(0); loadConversations(); }} sx={{ background: 'none', border: 'none', color: 'primary.main', fontSize: '22px', cursor: 'pointer', padding: '4px 8px', minWidth: 'auto', textTransform: 'none' }}>←</Button>
+          <Box sx={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.primary', fontWeight: 700, fontSize: '16px', flexShrink: 0 }}>
             {activeChatName.split(' ').map(n => n[0]).join('').substring(0,2)}
-          </div>
-          <div style={{flex: 1}}>
-            <div style={{fontWeight: 700, fontSize: '16px', color: 'var(--primary)'}}>{activeChatName}</div>
-            {chatRole && <div style={{fontSize: '12px', color: 'rgba(255,255,255,0.7)'}}>{chatRole}</div>}
-          </div>
-        </div>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'primary.main' }}>{activeChatName}</Typography>
+            {chatRole && <Typography sx={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>{chatRole}</Typography>}
+          </Box>
+        </Box>
 
-        {/* Messages area — WhatsApp wallpaper style */}
-        <div style={{flex: 1, overflowY: 'auto', padding: '12px 16px', paddingBottom: '80px'}}>
+        {/* Messages area -- WhatsApp wallpaper style */}
+        <Box sx={{ flex: 1, overflowY: 'auto', padding: '12px 16px', paddingBottom: '80px' }}>
           {chatMessages.length === 0 && (
-            <div style={{textAlign: 'center', marginTop: '40px'}}>
-              <div style={{background: 'rgba(255,255,255,0.9)', display: 'inline-block', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', color: 'var(--charcoal)'}}>{t('messages.noMessages')}</div>
-            </div>
+            <Box sx={{ textAlign: 'center', marginTop: '40px' }}>
+              <Typography component="span" sx={{ background: 'rgba(255,255,255,0.9)', display: 'inline-block', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', color: 'text.primary' }}>{t('messages.noMessages')}</Typography>
+            </Box>
           )}
           {chatMessages.map((m, i) => {
             const isMine = m.from_id === personId;
@@ -275,8 +276,8 @@ export default function MessagesView({ user, readOnly }) {
             return (
               <Fragment key={m.id}>
                 {showDate && (
-                  <div style={{textAlign: 'center', margin: '12px 0'}}>
-                    <span style={{background: 'rgba(255,255,255,0.9)', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: 'var(--charcoal)', fontWeight: 600}}>
+                  <Box sx={{ textAlign: 'center', margin: '12px 0' }}>
+                    <Typography component="span" sx={{ background: 'rgba(255,255,255,0.9)', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: 'text.primary', fontWeight: 600 }}>
                       {(() => {
                         const d = new Date(m.created_at);
                         const now = new Date();
@@ -287,74 +288,77 @@ export default function MessagesView({ user, readOnly }) {
                         if (msgDay.getTime() === yesterday.getTime()) return 'Yesterday';
                         return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
                       })()}
-                    </span>
-                  </div>
+                    </Typography>
+                  </Box>
                 )}
-                <div style={{
+                <Box sx={{
                   display: 'flex',
                   justifyContent: isMine ? 'flex-end' : 'flex-start',
                   marginBottom: '4px',
                 }}>
-                  <div style={{
-                    maxWidth: '80%',
-                    padding: '8px 12px',
-                    borderRadius: isMine ? '8px 8px 2px 8px' : '8px 8px 8px 2px',
-                    background: isMine ? '#F99440' : 'white',
-                    color: 'var(--charcoal)',
-                    boxShadow: '0 1px 1px rgba(0,0,0,0.1)',
-                    position: 'relative',
-                  }}
-                  onContextMenu={(e) => { if (isMine) { e.preventDefault(); deleteMessage(m.id); } }}
-                  onTouchStart={(e) => {
-                    if (!isMine) return;
-                    const timer = setTimeout(() => deleteMessage(m.id), 800);
-                    e.target._longPress = timer;
-                  }}
-                  onTouchEnd={(e) => { if (e.target._longPress) clearTimeout(e.target._longPress); }}
-                  onTouchMove={(e) => { if (e.target._longPress) clearTimeout(e.target._longPress); }}
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      maxWidth: '80%',
+                      padding: '8px 12px',
+                      borderRadius: isMine ? '8px 8px 2px 8px' : '8px 8px 8px 2px',
+                      background: isMine ? '#F99440' : 'white',
+                      color: 'text.primary',
+                      boxShadow: '0 1px 1px rgba(0,0,0,0.1)',
+                      position: 'relative',
+                    }}
+                    onContextMenu={(e) => { if (isMine) { e.preventDefault(); deleteMessage(m.id); } }}
+                    onTouchStart={(e) => {
+                      if (!isMine) return;
+                      const timer = setTimeout(() => deleteMessage(m.id), 800);
+                      e.target._longPress = timer;
+                    }}
+                    onTouchEnd={(e) => { if (e.target._longPress) clearTimeout(e.target._longPress); }}
+                    onTouchMove={(e) => { if (e.target._longPress) clearTimeout(e.target._longPress); }}
                   >
                     {m.type === 'safety_alert' && (
-                      <div style={{fontSize: '11px', fontWeight: 700, color: '#C45500', marginBottom: '4px'}}>⚠ SAFETY ALERT</div>
+                      <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#C45500', marginBottom: '4px' }}>⚠ SAFETY ALERT</Typography>
                     )}
                     {m.metadata && m.metadata.group && (
-                      <div style={{fontSize: '11px', fontWeight: 700, color: 'var(--primary)', marginBottom: '4px'}}>📢 Group</div>
+                      <Typography sx={{ fontSize: '11px', fontWeight: 700, color: 'primary.main', marginBottom: '4px' }}>📢 Group</Typography>
                     )}
                     {m.photo && (
-                      <img src={`/api/message-photos/${m.photo}`} alt="" style={{maxWidth: '100%', borderRadius: '6px', marginBottom: '4px', cursor: 'pointer'}} onClick={() => setLightboxPhoto(`/api/message-photos/${m.photo}`)} />
+                      <Box component="img" src={`/api/message-photos/${m.photo}`} alt="" sx={{ maxWidth: '100%', borderRadius: '6px', marginBottom: '4px', cursor: 'pointer' }} onClick={() => setLightboxPhoto(`/api/message-photos/${m.photo}`)} />
                     )}
                     {m.type === 'file' && m.metadata && (
-                      <a href={`/api/message-files/${m.metadata.filename}`} download={m.metadata.original_name || m.content} style={{display:'flex', alignItems:'center', gap:'8px', padding:'8px 12px', background: isMine ? 'rgba(255,255,255,0.2)' : 'var(--gray-50)', borderRadius:'8px', textDecoration:'none', color:'var(--charcoal)', marginBottom:'4px'}}>
+                      <Box component="a" href={`/api/message-files/${m.metadata.filename}`} download={m.metadata.original_name || m.content} sx={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: isMine ? 'rgba(255,255,255,0.2)' : 'grey.50', borderRadius: '8px', textDecoration: 'none', color: 'text.primary', marginBottom: '4px' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        <div style={{flex:1, minWidth:0}}>
-                          <div style={{fontSize:'13px', fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{m.metadata.original_name || m.content}</div>
-                          <div style={{fontSize:'11px', opacity:0.7}}>{m.metadata.size ? (m.metadata.size / 1024).toFixed(0) + ' KB' : 'File'}</div>
-                        </div>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.metadata.original_name || m.content}</Typography>
+                          <Typography sx={{ fontSize: '11px', opacity: 0.7 }}>{m.metadata.size ? (m.metadata.size / 1024).toFixed(0) + ' KB' : 'File'}</Typography>
+                        </Box>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                      </a>
+                      </Box>
                     )}
                     {m.type === 'voice' && m.audio_file ? (
                       <VoiceMessagePlayer src={`/api/message-audio/${m.audio_file}`} isMine={isMine} />
                     ) : (
-                      <div style={{fontSize: '15px', lineHeight: '1.4', whiteSpace: 'pre-wrap', fontWeight: 600}}>{typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}</div>
+                      <Typography sx={{ fontSize: '15px', lineHeight: '1.4', whiteSpace: 'pre-wrap', fontWeight: 600 }}>{typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}</Typography>
                     )}
-                    <div style={{fontSize: '11px', marginTop: '2px', color: 'var(--charcoal)', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px'}}>
+                    <Box sx={{ fontSize: '11px', marginTop: '2px', color: 'text.primary', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
                       {formatTime(m.created_at)}
-                      {isMine && <span style={{fontSize: '14px', color: 'var(--charcoal)'}}>✓✓</span>}
-                    </div>
-                  </div>
-                </div>
+                      {isMine && <Typography component="span" sx={{ fontSize: '14px', color: 'text.primary' }}>✓✓</Typography>}
+                    </Box>
+                  </Paper>
+                </Box>
               </Fragment>
             );
           })}
-          <div ref={chatEndRef} />
-        </div>
+          <Box ref={chatEndRef} />
+        </Box>
 
-        {/* Hidden photo input */}
+        {/* Hidden photo/file inputs */}
         <input ref={chatPhotoRef} type="file" accept="image/*" capture="environment" style={{display: 'none'}} onChange={e => { if (e.target.files[0]) sendPhoto(e.target.files[0]); e.target.value = ''; }} />
         <input ref={chatGalleryRef} type="file" accept="image/*" style={{display: 'none'}} onChange={e => { if (e.target.files[0]) sendPhoto(e.target.files[0]); e.target.value = ''; }} />
+        <input ref={chatFileRef} type="file" style={{display: 'none'}} onChange={e => { if (e.target.files[0]) sendFile(e.target.files[0]); e.target.value = ''; }} />
 
-        {/* Message input — WhatsApp style */}
-        <div ref={inputBarRef} style={{
+        {/* Message input -- WhatsApp style */}
+        <Box ref={inputBarRef} sx={{
           position: 'fixed', left: 0, right: 0,
           bottom: keyboardOffset + 'px',
           padding: '6px 8px', display: 'flex', gap: '6px', alignItems: 'flex-end',
@@ -364,173 +368,191 @@ export default function MessagesView({ user, readOnly }) {
           {isRecordingVoice ? (
             /* Voice recording mode */
             <Fragment>
-              <button onClick={cancelVoiceRecording} style={{
+              <IconButton onClick={cancelVoiceRecording} sx={{
                 width: '40px', height: '40px', borderRadius: '50%', border: 'none',
                 background: '#999', color: 'white', fontSize: '16px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>✕</button>
-              <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'white', borderRadius: '24px', padding: '10px 16px'}}>
-                <span style={{width: '10px', height: '10px', borderRadius: '50%', background: '#E8922A', animation: 'pulse 1s infinite'}} />
-                <span style={{fontSize: '15px', fontWeight: 600, color: 'var(--charcoal)'}}>
+                '&:hover': { background: '#888' },
+              }}>✕</IconButton>
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'white', borderRadius: '24px', padding: '10px 16px' }}>
+                <Box component="span" sx={{ width: '10px', height: '10px', borderRadius: '50%', background: '#E8922A', animation: 'pulse 1s infinite' }} />
+                <Typography component="span" sx={{ fontSize: '15px', fontWeight: 600, color: 'text.primary' }}>
                   {Math.floor(voiceRecordingTime / 60)}:{String(voiceRecordingTime % 60).padStart(2, '0')}
-                </span>
-                <span style={{fontSize: '13px', color: 'var(--charcoal)', flex: 1}}>Recording...</span>
-              </div>
-              <button onClick={stopVoiceRecording} style={{
+                </Typography>
+                <Typography component="span" sx={{ fontSize: '13px', color: 'text.primary', flex: 1 }}>Recording...</Typography>
+              </Box>
+              <IconButton onClick={stopVoiceRecording} sx={{
                 width: '44px', height: '44px', borderRadius: '50%', border: 'none',
-                background: 'var(--primary)', color: 'var(--charcoal)', fontSize: '20px', cursor: 'pointer',
+                background: 'var(--primary)', color: 'text.primary', fontSize: '20px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>➤</button>
+                '&:hover': { background: 'var(--primary)', opacity: 0.9 },
+              }}>➤</IconButton>
             </Fragment>
           ) : (
             /* Normal input mode */
             <Fragment>
-              <div style={{position: 'relative', flexShrink: 0}}>
-                <button
+              <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                <IconButton
                   onClick={() => setShowChatPhotoChoice(!showChatPhotoChoice)}
                   disabled={sendingPhoto}
-                  style={{
+                  sx={{
                     width: '40px', height: '40px', borderRadius: '50%', border: 'none',
-                    background: 'var(--gray-500)', color: 'white', fontSize: '18px', cursor: 'pointer',
+                    background: 'grey.500', color: 'white', fontSize: '18px', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    '&:hover': { background: 'grey.600' },
                   }}
-                ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+                ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></IconButton>
                 {showChatPhotoChoice && (
                   <Fragment>
-                    <div onClick={() => setShowChatPhotoChoice(false)} style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9}} />
-                    <div style={{position: 'absolute', bottom: '100%', left: 0, marginBottom: '4px', background: 'white', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'hidden', minWidth: '140px'}}>
-                      <button onClick={() => { chatPhotoRef.current?.click(); setShowChatPhotoChoice(false); }} style={{display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #eee'}}>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Camera</span>
-                      </button>
-                      <button onClick={() => { chatGalleryRef.current?.click(); setShowChatPhotoChoice(false); }} style={{display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left'}}>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Gallery</span>
-                      </button>
-                      <button onClick={() => { chatFileRef.current?.click(); setShowChatPhotoChoice(false); }} style={{display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderTop: '1px solid #eee'}}>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>File</span>
-                      </button>
-                    </div>
+                    <Box onClick={() => setShowChatPhotoChoice(false)} sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9 }} />
+                    <Paper sx={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: '4px', background: 'white', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'hidden', minWidth: '140px' }}>
+                      <Button onClick={() => { chatPhotoRef.current?.click(); setShowChatPhotoChoice(false); }} sx={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #eee', textTransform: 'none', color: 'text.primary', borderRadius: 0, justifyContent: 'flex-start' }}>
+                        <Typography component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Camera</Typography>
+                      </Button>
+                      <Button onClick={() => { chatGalleryRef.current?.click(); setShowChatPhotoChoice(false); }} sx={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', textTransform: 'none', color: 'text.primary', borderRadius: 0, justifyContent: 'flex-start' }}>
+                        <Typography component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Gallery</Typography>
+                      </Button>
+                      <Button onClick={() => { chatFileRef.current?.click(); setShowChatPhotoChoice(false); }} sx={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', background: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderTop: '1px solid #eee', textTransform: 'none', color: 'text.primary', borderRadius: 0, justifyContent: 'flex-start' }}>
+                        <Typography component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--charcoal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>File</Typography>
+                      </Button>
+                    </Paper>
                   </Fragment>
                 )}
-              </div>
-              <div style={{flex: 1, display: 'flex', alignItems: 'flex-end', background: 'white', borderRadius: '24px', padding: '2px 4px'}}>
-                <textarea
+              </Box>
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'flex-end', background: 'white', borderRadius: '24px', padding: '2px 4px' }}>
+                <TextField
+                  multiline
                   value={newMessage}
                   onChange={e => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   onFocus={() => setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 300)}
                   placeholder={t('messages.typeMessage')}
                   rows={1}
-                  style={{
-                    flex: 1, padding: '10px 14px', border: 'none', borderRadius: '24px',
-                    fontSize: '16px', resize: 'none', fontFamily: 'inherit', outline: 'none',
-                    maxHeight: '100px', background: 'transparent',
+                  variant="standard"
+                  slotProps={{ input: { disableUnderline: true } }}
+                  sx={{
+                    flex: 1,
+                    '& .MuiInputBase-root': {
+                      padding: '10px 14px',
+                      fontSize: '16px',
+                      fontFamily: 'inherit',
+                    },
+                    '& .MuiInputBase-input': {
+                      resize: 'none',
+                      maxHeight: '100px',
+                      overflow: 'auto',
+                    },
                   }}
                 />
-              </div>
+              </Box>
               {newMessage.trim() ? (
-                <button onClick={sendMessage} style={{
+                <IconButton onClick={sendMessage} sx={{
                   width: '44px', height: '44px', borderRadius: '50%', border: 'none',
-                  background: 'var(--primary)', color: 'var(--charcoal)', fontSize: '20px', cursor: 'pointer',
+                  background: 'var(--primary)', color: 'text.primary', fontSize: '20px', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>➤</button>
+                  '&:hover': { background: 'var(--primary)', opacity: 0.9 },
+                }}>➤</IconButton>
               ) : (
-                <button onClick={startVoiceRecording} style={{
+                <IconButton onClick={startVoiceRecording} sx={{
                   width: '44px', height: '44px', borderRadius: '50%', border: 'none',
-                  background: 'var(--primary)', color: 'var(--charcoal)', fontSize: '20px', cursor: 'pointer',
+                  background: 'var(--primary)', color: 'text.primary', fontSize: '20px', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}><svg width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></button>
+                  '&:hover': { background: 'var(--primary)', opacity: 0.9 },
+                }}><svg width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></IconButton>
               )}
             </Fragment>
           )}
-        </div>
+        </Box>
         {lightboxPhoto && (
-          <div onClick={() => setLightboxPhoto(null)} style={{
+          <Box onClick={() => setLightboxPhoto(null)} sx={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.9)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
           }}>
-            <button onClick={() => setLightboxPhoto(null)} style={{
+            <IconButton onClick={() => setLightboxPhoto(null)} sx={{
               position: 'absolute', top: '16px', right: '16px',
               background: 'none', border: 'none', color: 'white', fontSize: '32px', cursor: 'pointer', zIndex: 10000,
-            }}>✕</button>
-            <img src={lightboxPhoto} alt="" style={{maxWidth: '95%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '4px'}} onClick={e => e.stopPropagation()} />
-          </div>
+            }}>✕</IconButton>
+            <Box component="img" src={lightboxPhoto} alt="" sx={{ maxWidth: '95%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '4px' }} onClick={e => e.stopPropagation()} />
+          </Box>
         )}
-      </div>
+      </Box>
     );
   }
 
-  // ---- CONTACTS LIST (new conversation) — WhatsApp style ----
+  // ---- CONTACTS LIST (new conversation) -- WhatsApp style ----
   if (showContacts) {
     // Separate supervisor from peers
     const supervisorContacts = contacts.filter(c => c.role_level > (user.role_level || 1));
     const peerContacts = contacts.filter(c => c.role_level <= (user.role_level || 1));
 
     return (
-      <div className="list-view">
-        <button className="back-btn" onClick={() => setShowContacts(false)}>← Back</button>
-        <h1 className="view-title">{t('messages.title')}</h1>
+      <Box className="list-view">
+        <Button className="back-btn" onClick={() => setShowContacts(false)} sx={{ textTransform: 'none' }}>← Back</Button>
+        <Typography variant="h1" className="view-title">{t('messages.title')}</Typography>
 
-        {contacts.length === 0 && <p style={{color: 'var(--charcoal)'}}>Loading contacts...</p>}
+        {contacts.length === 0 && <Typography sx={{ color: 'text.primary' }}>Loading contacts...</Typography>}
 
         {/* Supervisor section */}
         {supervisorContacts.length > 0 && (
-          <div style={{marginBottom: '16px'}}>
-            <div style={{fontSize: '13px', fontWeight: 700, color: 'var(--primary)', padding: '8px 0', textTransform: 'uppercase', letterSpacing: '1px'}}>Supervisor</div>
+          <Box sx={{ marginBottom: '16px' }}>
+            <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'primary.main', padding: '8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>Supervisor</Typography>
             {supervisorContacts.map(c => {
               const initials = c.name.split(' ').map(n => n[0]).join('').substring(0,2);
               return (
-                <button key={c.id} style={{
+                <Button key={c.id} sx={{
                   display: 'flex', alignItems: 'center', gap: '12px', width: '100%', textAlign: 'left',
                   padding: '12px 14px', background: 'white', border: 'none',
                   borderBottom: '1px solid #f0ece8', cursor: 'pointer',
-                  borderLeft: '4px solid var(--primary)',
+                  borderLeft: '4px solid var(--primary)', textTransform: 'none', borderRadius: 0,
+                  justifyContent: 'flex-start',
                 }}
                   onClick={() => openChat(c.id, c.name)}>
-                  <div style={{width: '48px', height: '48px', borderRadius: '50%', background: 'var(--charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 700, fontSize: '16px', flexShrink: 0}}>
+                  <Box sx={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main', fontWeight: 700, fontSize: '16px', flexShrink: 0 }}>
                     {initials}
-                  </div>
-                  <div>
-                    <div style={{fontWeight: 700, fontSize: '16px', color: 'var(--charcoal)'}}>{c.name}</div>
-                    <div style={{fontSize: '13px', color: 'var(--primary)', fontWeight: 600}}>{c.role_title}</div>
-                  </div>
-                </button>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'text.primary' }}>{c.name}</Typography>
+                    <Typography sx={{ fontSize: '13px', color: 'primary.main', fontWeight: 600 }}>{c.role_title}</Typography>
+                  </Box>
+                </Button>
               );
             })}
-          </div>
+          </Box>
         )}
 
         {/* Crew / Peers section */}
         {peerContacts.length > 0 && (
-          <div>
-            <div style={{fontSize: '13px', fontWeight: 700, color: 'var(--charcoal)', padding: '8px 0', textTransform: 'uppercase', letterSpacing: '1px'}}>Crew</div>
+          <Box>
+            <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'text.primary', padding: '8px 0', textTransform: 'uppercase', letterSpacing: '1px' }}>Crew</Typography>
             {peerContacts.map(c => {
               const initials = c.name.split(' ').map(n => n[0]).join('').substring(0,2);
               return (
-                <button key={c.id} style={{
+                <Button key={c.id} sx={{
                   display: 'flex', alignItems: 'center', gap: '12px', width: '100%', textAlign: 'left',
                   padding: '10px 14px', background: 'white', border: 'none',
-                  borderBottom: '1px solid #f0ece8', cursor: 'pointer',
+                  borderBottom: '1px solid #f0ece8', cursor: 'pointer', textTransform: 'none', borderRadius: 0,
+                  justifyContent: 'flex-start',
                 }}
                   onClick={() => openChat(c.id, c.name)}>
-                  <div style={{width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--charcoal)', fontWeight: 700, fontSize: '14px', flexShrink: 0}}>
+                  <Box sx={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.primary', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>
                     {initials}
-                  </div>
-                  <div>
-                    <div style={{fontWeight: 600, fontSize: '15px', color: 'var(--charcoal)'}}>{c.name}</div>
-                    <div style={{fontSize: '13px', color: 'var(--charcoal)'}}>{c.role_title}</div>
-                  </div>
-                </button>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontWeight: 600, fontSize: '15px', color: 'text.primary' }}>{c.name}</Typography>
+                    <Typography sx={{ fontSize: '13px', color: 'text.primary' }}>{c.role_title}</Typography>
+                  </Box>
+                </Button>
               );
             })}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
     );
   }
 
-  // ---- CONVERSATION LIST (main view) — WhatsApp style ----
+  // ---- CONVERSATION LIST (main view) -- WhatsApp style ----
   // Ensure supervisor is always in the list even without messages
   const supervisorContact = contacts.find(c => c.role_level > (user.role_level || 1));
   const allConversations = [...conversations];
@@ -574,15 +596,15 @@ export default function MessagesView({ user, readOnly }) {
   };
 
   return (
-    <div className="list-view">
+    <Box className="list-view">
       {/* Header bar */}
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-        <h1 className="view-title" style={{margin: 0}}>{t('messages.title')}</h1>
-        <div style={{display: 'flex', gap: '8px'}}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <Typography variant="h1" className="view-title" sx={{ margin: 0 }}>{t('messages.title')}</Typography>
+        <Box sx={{ display: 'flex', gap: '8px' }}>
           {(user.role_level || 1) >= 2 && (
-            <button
+            <Button
               className="btn btn-secondary"
-              style={{padding: '10px 16px', fontSize: '13px', borderRadius: '20px', fontWeight: 800}}
+              sx={{ padding: '10px 16px', fontSize: '13px', borderRadius: '20px', fontWeight: 800, textTransform: 'none' }}
               onClick={() => {
                 const msg = prompt('Message to all your team:');
                 if (!msg || !msg.trim()) return;
@@ -595,80 +617,81 @@ export default function MessagesView({ user, readOnly }) {
                   else alert(res.error || 'Failed');
                 }).catch(() => alert('Failed to send'));
               }}
-            >📢 All</button>
+            >📢 All</Button>
           )}
-          <button
+          <Button
             className="btn btn-primary"
-            style={{padding: '10px 20px', fontSize: '14px', borderRadius: '20px'}}
+            sx={{ padding: '10px 20px', fontSize: '14px', borderRadius: '20px', textTransform: 'none' }}
             onClick={() => { loadContacts(); setShowContacts(true); }}
-          >+ New</button>
-        </div>
-      </div>
+          >+ New</Button>
+        </Box>
+      </Box>
 
-      {loading && <p style={{color: 'var(--charcoal)'}}>{t('common.loading')}</p>}
+      {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
 
       {!loading && sortedConversations.length === 0 && (
-        <div style={{textAlign: 'center', padding: '40px 0', color: 'var(--charcoal)'}}>
-          <p style={{fontSize: '16px', marginBottom: '8px'}}>{t('messages.noMessages')}</p>
-          <p style={{fontSize: '14px'}}>Tap "+ New" to start a conversation</p>
-        </div>
+        <Box sx={{ textAlign: 'center', padding: '40px 0', color: 'text.primary' }}>
+          <Typography sx={{ fontSize: '16px', marginBottom: '8px' }}>{t('messages.noMessages')}</Typography>
+          <Typography sx={{ fontSize: '14px' }}>Tap "+ New" to start a conversation</Typography>
+        </Box>
       )}
 
       {sortedConversations.map(c => {
         const isSupervisor = c.role_level > (user.role_level || 1);
         const initials = c.contact_name.split(' ').map(n => n[0]).join('').substring(0,2);
         return (
-          <button key={c.contact_id} style={{
+          <Button key={c.contact_id} sx={{
             display: 'flex', alignItems: 'center', gap: '12px', width: '100%', textAlign: 'left',
             padding: '12px 14px', marginBottom: '2px', background: 'white', border: 'none',
             borderBottom: '1px solid #f0ece8', cursor: 'pointer',
             borderLeft: isSupervisor ? '4px solid var(--primary)' : '4px solid transparent',
+            textTransform: 'none', borderRadius: 0, justifyContent: 'flex-start',
           }}
             onClick={() => openChat(c.contact_id, c.contact_name)}>
             {/* Avatar */}
-            <div style={{
+            <Box sx={{
               width: isSupervisor ? '52px' : '48px', height: isSupervisor ? '52px' : '48px',
               borderRadius: '50%', flexShrink: 0,
               background: isSupervisor ? 'var(--charcoal)' : 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: isSupervisor ? 'var(--primary)' : 'var(--charcoal)', fontWeight: 700, fontSize: isSupervisor ? '18px' : '16px',
+              color: isSupervisor ? 'primary.main' : 'text.primary', fontWeight: 700, fontSize: isSupervisor ? '18px' : '16px',
             }}>
               {initials}
-            </div>
+            </Box>
             {/* Content */}
-            <div style={{flex: 1, minWidth: 0}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline'}}>
-                <span style={{fontWeight: c.unread_count > 0 ? 800 : 600, fontSize: isSupervisor ? '17px' : '16px', color: 'var(--charcoal)'}}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Typography component="span" sx={{ fontWeight: c.unread_count > 0 ? 800 : 600, fontSize: isSupervisor ? '17px' : '16px', color: 'text.primary' }}>
                   {c.contact_name}{c.is_lead_man ? ' ⭐' : ''}
-                </span>
+                </Typography>
                 {(user.role_level || 1) >= 2 && !isSupervisor && c.role_level < (user.role_level || 1) && (
-                  <button
+                  <IconButton
                     onClick={(e) => { e.stopPropagation(); toggleLeadMan(c.contact_id, c.is_lead_man); }}
-                    style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: '2px 6px', marginLeft: '4px', opacity: c.is_lead_man ? 1 : 0.3}}
+                    sx={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: '2px 6px', marginLeft: '4px', opacity: c.is_lead_man ? 1 : 0.3 }}
                     title={c.is_lead_man ? 'Remove Lead Man' : 'Set as Lead Man'}
-                  >{c.is_lead_man ? '⭐' : '☆'}</button>
+                  >{c.is_lead_man ? '⭐' : '☆'}</IconButton>
                 )}
-                <span style={{fontSize: '12px', color: c.unread_count > 0 ? 'var(--primary)' : 'var(--gray-500)', flexShrink: 0, marginLeft: '8px'}}>{formatTime(c.last_message_at)}</span>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px'}}>
-                <div style={{minWidth: 0, flex: 1}}>
-                  <div style={{fontSize: '13px', color: isSupervisor ? 'var(--primary)' : 'var(--gray-500)', fontWeight: isSupervisor ? 600 : 400, marginBottom: '1px'}}>{c.role_title}</div>
-                  <div style={{fontSize: '14px', color: c.unread_count > 0 ? 'var(--charcoal)' : 'var(--gray-500)', fontWeight: c.unread_count > 0 ? 500 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                <Typography component="span" sx={{ fontSize: '12px', color: c.unread_count > 0 ? 'primary.main' : 'grey.500', flexShrink: 0, marginLeft: '8px' }}>{formatTime(c.last_message_at)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontSize: '13px', color: isSupervisor ? 'primary.main' : 'grey.500', fontWeight: isSupervisor ? 600 : 400, marginBottom: '1px' }}>{c.role_title}</Typography>
+                  <Typography sx={{ fontSize: '14px', color: c.unread_count > 0 ? 'text.primary' : 'grey.500', fontWeight: c.unread_count > 0 ? 500 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {c.last_message_is_mine ? 'You: ' : ''}{c.last_message_preview || 'No messages yet'}
-                  </div>
-                </div>
+                  </Typography>
+                </Box>
                 {c.unread_count > 0 && (
-                  <span style={{
+                  <Typography component="span" sx={{
                     background: '#25D366', color: 'white', borderRadius: '50%',
                     width: '22px', height: '22px', fontSize: '12px', fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '8px',
-                  }}>{c.unread_count}</span>
+                  }}>{c.unread_count}</Typography>
                 )}
-              </div>
-            </div>
-          </button>
+              </Box>
+            </Box>
+          </Button>
         );
       })}
-    </div>
+    </Box>
   );
 }
