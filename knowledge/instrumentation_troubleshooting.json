@@ -1,0 +1,640 @@
+{
+  "trade": "Instrumentation",
+  "category": "troubleshooting",
+  "description": "Signal diagnostics, HART/Fieldbus issues, transmitter failures, control valve problems, analyzer faults, temperature/level/flow measurement troubleshooting, wiring issues, and DCS/PLC-side problems for field instrument technicians",
+
+  "signal_troubleshooting_4_20mA": {
+    "zero_mA_open_circuit": {
+      "symptom": "DCS shows BAD or no reading, mA meter reads 0.0 mA",
+      "causes": [
+        "Broken wire anywhere in the loop (field to JB, JB to marshalling, marshalling to I/O card)",
+        "Blown fuse in loop power supply or at marshalling cabinet",
+        "Disconnected terminal (wire fell out, terminal block screw backed off from vibration)",
+        "Bad transmitter power supply (no 24VDC at transmitter terminals)",
+        "Terminal block cracked or corroded (invisible failure — ohm check shows open)",
+        "Wrong I/O card channel or card pulled for maintenance"
+      ],
+      "troubleshooting_steps": [
+        "1. At transmitter: measure DC voltage across power terminals — should see 12-24VDC depending on loop resistance. If 0V, problem is upstream (power supply or wiring).",
+        "2. Check fuse at marshalling cabinet — 80% of open circuits are blown fuses",
+        "3. Trace the loop with a multimeter on continuity: transmitter -> JB -> marshalling -> I/O card",
+        "4. Check for wire pulled out of terminal (tug test each wire gently)",
+        "5. If transmitter has power but no output: transmitter is dead — swap with spare"
+      ],
+      "gotcha": "On some systems, the DCS alarm says 'sensor failure' when the real problem is a blown fuse 200 feet away in the marshalling cabinet. Don't start replacing sensors without checking the loop first."
+    },
+    "below_3_6mA_downscale_burnout": {
+      "symptom": "DCS shows below-range or downscale burnout alarm, mA reads less than 3.6 mA",
+      "causes": [
+        "Sensor failure — open thermocouple, broken RTD element, failed sensor in transmitter",
+        "Open TC junction in connection head (loose terminal, corroded crimp)",
+        "Extension wire broken inside insulation (looks intact but ohms out open)",
+        "Transmitter configured for downscale burnout on sensor failure (this is working as designed)",
+        "Wrong TC type connected (Type J wire to Type K transmitter — reads completely wrong)"
+      ],
+      "troubleshooting_steps": [
+        "1. At transmitter: check if transmitter diagnostics show sensor failure (HART communicator or local display if equipped)",
+        "2. Disconnect sensor wires at transmitter and measure: TC should show millivolts, RTD should show ohms (100 ohms at 0C for Pt100)",
+        "3. If sensor reads good at transmitter terminals: problem is in transmitter configuration or transmitter itself",
+        "4. If sensor reads open at transmitter: trace back to connection head, check each junction",
+        "5. For RTDs: check all leads — 3-wire RTD with one broken compensating lead reads low"
+      ],
+      "gotcha": "Downscale burnout is the DESIGNED behavior for many safety applications — before troubleshooting, confirm the sensor actually has a problem. A tech once replaced 6 transmitters before realizing the process was actually below range."
+    },
+    "above_21mA_upscale_burnout": {
+      "symptom": "DCS shows above-range or upscale burnout alarm, mA reads greater than 21 mA",
+      "causes": [
+        "Sensor failure with transmitter configured for upscale burnout",
+        "Shorted sensor input (moisture in TC head, wire insulation failure)",
+        "Process actually above transmitter range (check if range is set correctly for current conditions)",
+        "Transmitter electronics failure (output stage saturated)"
+      ],
+      "troubleshooting_steps": [
+        "1. Verify process is within transmitter range — is the vessel actually overpressure or is the range wrong?",
+        "2. Check transmitter diagnostics via HART for specific error code",
+        "3. Disconnect sensor and apply known input from calibrator — if transmitter reads correctly, sensor is the problem",
+        "4. Check for moisture in connection head or JB (shorted thermocouple wires read ambient temperature and transmitter may drive upscale)"
+      ]
+    },
+    "erratic_signal": {
+      "symptom": "DCS reading jumps around, noisy trend, intermittent spikes or dropouts",
+      "causes": [
+        "Loose connection (terminal screw not tight, wire nicked and making intermittent contact)",
+        "Ground loop (shield grounded at both ends — stray current adds noise to signal)",
+        "EMI/RFI from nearby VFDs, motors, power cables, radio transmitters, welding",
+        "Moisture in junction box or connection head (corrosion creates variable resistance)",
+        "Damaged cable insulation (intermittent short to ground or other pair)",
+        "Bad terminal block (hairline crack creates variable contact)"
+      ],
+      "troubleshooting_steps": [
+        "1. Look at the DCS trend — pattern tells you the cause:",
+        "   - 60 Hz ripple (smooth oscillation): EMI from power cables",
+        "   - Random spikes: loose connection or intermittent short",
+        "   - Slow drift with occasional jumps: moisture or corrosion",
+        "   - Signal follows motor start/stop: EMI from VFD or motor",
+        "2. Check all terminal connections — retorque, look for green corrosion, check for moisture",
+        "3. Verify shield grounded at ONE end only (marshalling cabinet end) — disconnect shield at field end if grounded there",
+        "4. Check cable routing — 12-inch minimum separation from power, 90-degree crossings only",
+        "5. Temporarily jumper around each section of the loop to isolate which segment has the problem",
+        "6. If near a VFD: check for proper cable shielding and consider adding a filter or moving the cable"
+      ],
+      "gotcha": "The most common 'erratic signal' is a loose wire that the tech retorques and says 'it's fixed' — but it comes back in a week when vibration loosens it again. Use ferrules on stranded wire in screw terminals."
+    },
+    "signal_pegged_4_or_20": {
+      "symptom": "Reading stuck at exactly 4.00 mA (0%) or 20.00 mA (100%), does not change with process",
+      "causes_pegged_at_4": [
+        "Transmitter in manual mode or local override (output forced to 4 mA)",
+        "Process actually at zero (empty vessel, no pressure, no flow)",
+        "Transmitter output manually set to 4 mA for testing and never returned to auto",
+        "Plugged impulse line (no process signal reaching transmitter — reads zero DP)",
+        "Equalizing valve left open on DP transmitter (equalizes H and L — reads zero DP)"
+      ],
+      "causes_pegged_at_20": [
+        "Transmitter in manual mode output forced to 20 mA",
+        "Process actually at 100% or above range",
+        "Plugged low-side impulse line on DP transmitter (sees full static pressure as DP)",
+        "Transmitter range set too narrow for actual process (0-10 PSI range on a 50 PSI process)"
+      ],
+      "troubleshooting_steps": [
+        "1. Check if transmitter is in AUTO or MANUAL mode (HART communicator or local display)",
+        "2. Check if DCS output is forced or overridden (DCS operator check)",
+        "3. For DP transmitters: check manifold valve positions — block valves open, EQ valve closed",
+        "4. Check actual process conditions — is the reading actually correct?",
+        "5. For plugged impulse lines: bleed the high side and low side, watch if reading changes"
+      ]
+    }
+  },
+
+  "hart_communication_issues": {
+    "need_250_ohm_resistor": {
+      "why": "HART communicates by superimposing a 1200/2200 Hz FSK signal on the 4-20 mA DC loop. The 250-ohm resistor provides enough impedance for the HART modem to detect the signal.",
+      "where": "In series in the loop — most systems have this at the DCS I/O card (input impedance of the AI card). If not, add an external 250-ohm precision resistor.",
+      "problem_without_it": "HART modem cannot communicate — you get 'no device found' or 'communication error'",
+      "check": "Measure total loop resistance. Must be 230-600 ohms for reliable HART. Below 230 = add resistor."
+    },
+    "minimum_loop_current": {
+      "requirement": "Loop current must be above 3.5 mA for HART communication — below this, there isn't enough power for the transmitter to operate and communicate",
+      "problem_scenario": "Transmitter in alarm/burnout driving 3.6 mA or less — HART can't connect, and you can't read diagnostics",
+      "workaround": "Use a HART communicator with its own power supply, or temporarily increase loop power"
+    },
+    "modem_connection_point": {
+      "correct": "Connect HART modem leads across the transmitter terminals (+ to + and - to -) or across the 250-ohm resistor",
+      "wrong": "Do NOT connect across the power supply terminals — the power supply has very low impedance and absorbs the HART signal",
+      "in_junction_box": "Connect at the transmitter-side terminals in the nearest JB for best signal quality",
+      "at_marshalling": "Can connect at marshalling cabinet terminals — but long cable runs attenuate the signal, may not work reliably"
+    },
+    "minimum_loop_impedance": {
+      "range": "230-600 ohms total loop impedance for reliable HART communication",
+      "too_low": "Below 230 ohms: add external resistor to bring into range",
+      "too_high": "Above 1100 ohms: HART signal too attenuated, transmitter may not have enough voltage to operate"
+    },
+    "common_hart_error_codes": {
+      "no_device_found": "Loop impedance too low, modem connected wrong, transmitter not HART-capable, or transmitter dead",
+      "communication_error": "Noisy environment (EMI), long cable run, poor connections, multiple devices on multidrop without proper addressing",
+      "device_busy": "Transmitter is performing internal operation (self-test, writing to EEPROM) — wait and retry",
+      "command_not_supported": "HART revision mismatch — communicator DD (device description) doesn't match transmitter revision. Update DD library.",
+      "write_protected": "Transmitter write protection enabled (hardware jumper or software lock) — check for write protect switch on transmitter"
+    },
+    "multidrop_issues": {
+      "description": "Multiple HART devices on one pair — all outputs forced to 4 mA, communication only via HART polling",
+      "max_devices": "Up to 15 devices on one loop (HART 7), but practically limited to 4-6 for reliable communication",
+      "common_problem": "Each device must have a unique polling address (1-15). Address 0 = standard 4-20mA operation. If two devices have the same address, neither communicates.",
+      "rarely_used_because": "Slow update rate (seconds per device) and loss of 4-20 mA analog signal — mostly used for HART IP applications now"
+    }
+  },
+
+  "foundation_fieldbus": {
+    "segment_design": {
+      "max_devices_per_segment": "Up to 32 addressable, but practically 8-16 devices per H1 segment depending on power budget and scheduled communications",
+      "cable_length_limits": {
+        "trunk_maximum": "1900 meters (6200 feet) with Type A cable",
+        "spur_maximum": "120 meters (400 feet) each",
+        "total_spur_length": "Sum of all spurs on segment must not exceed limits per number of devices",
+        "cable_type_A": "Single twisted pair, shielded, 18 AWG — the ONLY cable type recommended for new installations"
+      },
+      "power_calculations": [
+        "Each H1 device draws 15-25 mA at 9-32VDC (typical 20 mA)",
+        "Segment power supply provides 24-32VDC with current limiting (350 mA typical)",
+        "Total current budget: power supply capacity minus cable voltage drop losses",
+        "Calculate voltage at LAST device on segment — must be above 9VDC minimum for device to operate"
+      ]
+    },
+    "h1_vs_hse": {
+      "H1": "31.25 kbit/s — field-level bus connecting instruments. Power and communication on same pair. This is what the instrument tech deals with.",
+      "HSE": "100 Mbit/s — High Speed Ethernet backbone connecting H1 segments to the control system via linking devices. Network engineer territory."
+    },
+    "junction_box_configuration": [
+      "Fieldbus junction boxes contain device couplers (short-circuit protection per spur)",
+      "Each spur connects one device — device coupler isolates faults on that spur from the trunk",
+      "Terminate the trunk at both ends with proper terminator (100 ohm resistor + 1 uF capacitor in each terminator)",
+      "Exactly TWO terminators per segment — no more, no less. Missing or extra terminators cause communication failures.",
+      "Spare spurs capped but device coupler powered for future use"
+    ],
+    "topology": {
+      "trunk_spur": "Most common: main trunk cable runs through junction boxes, individual spurs drop to each device. Preferred for maintenance — one device fault doesn't kill the segment.",
+      "daisy_chain": "Devices connected in series on the trunk. Simpler cabling but one fault can affect all downstream devices. Avoid in new installations.",
+      "tree": "Multiple branches from a single junction point. Acceptable if properly terminated.",
+      "star": "NOT recommended — creates impedance mismatches and signal reflections"
+    },
+    "diagnostic_tools": [
+      "Fieldbus diagnostic handheld (Fluke, Pepperl+Fuchs, or similar) — checks voltage, noise, signal quality, device list",
+      "Physical layer diagnostic: check DC voltage (must be 9-32V at device), noise level (must be below threshold), signal amplitude",
+      "Live device list: see which devices are communicating, check for devices falling off the bus (intermittent connection)",
+      "Segment wiring test: check for shield continuity, short circuits, open circuits, and cable length measurement using TDR"
+    ],
+    "common_fieldbus_problems": [
+      "Missing or extra terminator — causes signal reflections and intermittent communication",
+      "Trunk cable too long — voltage drops below 9V at far end, devices brown out",
+      "Shield grounded at both ends — creates ground loop that adds noise to the bus",
+      "Wrong cable type (using standard instrument cable instead of Type A fieldbus cable) — impedance mismatch causes signal degradation",
+      "Device firmware mismatch — older device blocks segment communication until firmware updated or device removed"
+    ]
+  },
+
+  "transmitter_diagnostics": {
+    "overpressure_damage": {
+      "symptom": "Reading pegged high or reading shifted permanently after pressure spike",
+      "cause": "Process pressure exceeded transmitter maximum working pressure — diaphragm deformed or ruptured",
+      "check": [
+        "Look at process connection for visible diaphragm damage (if accessible)",
+        "Apply known pressure from calibrator — if transmitter won't zero or won't span correctly, diaphragm is damaged",
+        "HART diagnostics may show 'sensor failure' or 'electronics failure' or out-of-range pressure readings"
+      ],
+      "fix": "Replace transmitter — overpressure damage is not repairable in the field",
+      "prevention": "Install overpressure protection (snubber, needle valve, or blowout plug) on transmitters in pulsating or spike-prone services"
+    },
+    "plugged_impulse_lines": {
+      "symptom": "Slow or no response to process changes, reading drifts to zero DP, readings frozen",
+      "cause": "Process material (scale, wax, slurry, ice, hydrate) has plugged the impulse line or root valve",
+      "check": [
+        "Bleed the impulse line at the transmitter — does fluid flow freely?",
+        "Close block valves, open bleed, apply air/N2 from transmitter end — can you blow back to process?",
+        "If both sides plugged on DP transmitter: reads zero. If only one side plugged: reads pegged high or low."
+      ],
+      "fix": [
+        "Rod out with proper size wire (from transmitter end toward process, never from process end into transmitter)",
+        "Blow through with N2 at regulated pressure (not full bottle pressure — that damages the transmitter)",
+        "For chronic plugging: install seal pots, diaphragm seals, or purge systems",
+        "Heat trace impulse lines in cold climates where freezing causes plugging"
+      ],
+      "gotcha": "Never rod out impulse lines from the process side toward the transmitter — you push debris into the transmitter diaphragm and destroy it. Always work from transmitter toward process."
+    },
+    "reference_leg_problems": {
+      "wet_leg": {
+        "symptom": "Level reading drifts slowly, reads higher or lower than actual level over days/weeks",
+        "cause": "Fill fluid in reference leg evaporating, leaking, or absorbing process vapor — changes reference leg density",
+        "fix": "Refill reference leg to correct level with specified fill fluid (glycol, silicone oil, or process condensate per design). Check for leaks at every fitting in the reference leg."
+      },
+      "dry_leg": {
+        "symptom": "Level reads higher than actual, especially in cold weather or after rain",
+        "cause": "Condensation collecting in the dry reference leg — adds weight that looks like process level",
+        "fix": "Drain the reference leg completely. Install drain valve at low point. In cold/humid environments, consider converting to wet leg or capillary system."
+      }
+    },
+    "diaphragm_coating": {
+      "symptom": "Slow response, reading offset, transmitter doesn't return to zero when process is drained",
+      "cause": "Process material coated or deposited on the sensing diaphragm (common in slurry, polymer, and waxy services)",
+      "check": "Remove transmitter from service, inspect diaphragm face. Any visible coating = problem.",
+      "fix": "Clean diaphragm carefully per manufacturer instructions (usually soft cloth and solvent — NEVER scrape or use abrasives). If coating is hardened, transmitter may need factory service or replacement.",
+      "prevention": "Use diaphragm seal with flush-mount or extended diaphragm for dirty/coating services"
+    }
+  },
+
+  "control_valve_issues": {
+    "stiction": {
+      "symptom": "Valve oscillates or hunts around setpoint, limit cycles in control loop, valve position jumps in steps instead of smooth movement",
+      "cause": "Static friction in packing or guide surfaces — valve sticks, controller output builds up, valve breaks free and overshoots, sticks again in new position",
+      "diagnosis": [
+        "Plot controller output vs valve position — stiction shows as a 'staircase' pattern on the position signal",
+        "Valve positioner diagnostics (if smart positioner): look for friction signature in valve scan/travel test",
+        "Step test: command small step changes (1-2%) — valve with stiction won't move until step exceeds static friction breakaway"
+      ],
+      "fix": [
+        "Adjust or replace packing — this is the most common cause. Check packing torque, replace if hardened or worn.",
+        "If guides are scored or corroded: pull valve for shop repair",
+        "As a temporary control fix: increase deadband in positioner (reduces hunting but also reduces accuracy)",
+        "Consider switching to low-friction packing (PTFE, graphite with live-loading)"
+      ]
+    },
+    "hysteresis": {
+      "symptom": "Valve position is different at the same controller output depending on direction of travel (going up vs coming down)",
+      "cause": "Mechanical backlash in linkage, loose connections between positioner feedback and valve stem, or elastic deformation in actuator spring/diaphragm",
+      "diagnosis": "Full stroke test up and down — plot command vs position. Gap between up-stroke and down-stroke curves = hysteresis. Should be less than 1-2% of travel.",
+      "fix": [
+        "Tighten positioner feedback linkage — any play in the connection translates directly to hysteresis",
+        "Check actuator spring for fatigue or permanent set",
+        "Verify positioner calibration and feedback range match actual valve travel",
+        "For severe cases: valve internals may be worn (guide/plug clearances excessive)"
+      ]
+    },
+    "seat_leakage": {
+      "symptom": "Valve commanded closed but flow continues, downstream temperature/pressure doesn't reach expected shutoff value",
+      "cause": "Damaged seat or plug (erosion, cavitation damage, debris trapped in seat), insufficient actuator force to fully seat, worn soft seat insert",
+      "diagnosis": [
+        "Command valve to 0% — measure leakage rate if possible (upstream pressure, downstream flow measurement)",
+        "Listen for flow noise with a stethoscope or ultrasonic leak detector at the valve body when fully closed",
+        "Check actuator bench set — is spring providing enough seating force?"
+      ],
+      "fix": [
+        "Increase actuator spring pre-load if seat force is insufficient (adjust spring range)",
+        "Replace trim (plug and seat) if eroded or damaged — this requires pulling the valve from the line",
+        "For soft-seated valves: replace the seat insert (PTFE, PEEK, etc.)",
+        "Check for debris: cycle valve fully open and closed several times to flush debris, then retest"
+      ],
+      "leakage_classes": {
+        "Class_II": "0.5% of full capacity — general purpose, not tight shutoff",
+        "Class_IV": "0.01% of full capacity — standard for most process control valves",
+        "Class_V": "5 x 10^-4 ml/min per inch of seat diameter per PSI differential — near tight shutoff",
+        "Class_VI": "Bubble tight — zero visible leakage. Required for safety shutoff valves. Metal-to-metal requires lapping."
+      }
+    },
+    "actuator_problems": {
+      "air_leaks": {
+        "symptom": "Valve drifts from position, positioner constantly adjusting, air consumption increased, hissing sound",
+        "check": "Apply snoop/soap to all pneumatic connections: tubing fittings, diaphragm casing, cylinder packing, positioner connections",
+        "fix": "Replace leaking fitting, tighten packing, replace diaphragm or O-rings as needed"
+      },
+      "diaphragm_tear": {
+        "symptom": "Valve fails to correct position (spring return), slow response, air exhausting continuously from diaphragm vent hole",
+        "check": "Look for air exhausting from the underside of the diaphragm case (there is usually a vent hole). Any air coming out = torn diaphragm.",
+        "fix": "Replace diaphragm — this is a field-repairable job but requires proper diaphragm kit and following the actuator manual for reassembly torque and clamping"
+      },
+      "spring_failure": {
+        "symptom": "Valve doesn't reach full open or full close, fail position test fails, valve sluggish",
+        "cause": "Spring fatigue, permanent set (spring compressed for years), or wrong spring installed after maintenance",
+        "check": "Measure bench set (air pressure required for full stroke) — compare to nameplate. If way off, spring is the problem.",
+        "fix": "Replace spring with correct range per actuator sizing. Verify bench set after replacement."
+      }
+    },
+    "positioner_faults": {
+      "feedback_linkage_loose": {
+        "symptom": "Position feedback oscillates, positioner output hunts, DCS shows different position than physical valve",
+        "check": "Physically inspect linkage from valve stem to positioner feedback arm — any play, looseness, or misalignment",
+        "fix": "Tighten linkage, replace worn pins/bearings, realign feedback arm to match full travel"
+      },
+      "calibration_drift": {
+        "symptom": "Valve doesn't reach 0% or 100% at command endpoints, zero offset, span error",
+        "fix": "Recalibrate positioner: set zero at valve closed, set span at valve full open. Follow positioner-specific procedure (varies significantly by manufacturer)."
+      },
+      "ip_converter_failure": {
+        "symptom": "No air output from positioner despite correct input signal, or air output doesn't change with signal",
+        "cause": "I/P (current-to-pneumatic) converter in positioner failed — common on older positioners and in dirty/wet air environments",
+        "check": "Verify 4-20 mA input is reaching I/P converter. Measure output air pressure — should change proportionally.",
+        "fix": "Clean I/P nozzle/flapper (if accessible), replace I/P module, or replace entire positioner. Ensure instrument air is clean and dry to prevent recurrence."
+      }
+    }
+  },
+
+  "analyzer_problems": {
+    "sample_system_blockage": {
+      "symptom": "No flow through sample system, analyzer reading frozen or drifting to zero",
+      "cause": "Plugged sample probe, clogged filter, blocked sample line, failed sample pump",
+      "troubleshooting": [
+        "Check sample flow indicator/rotameter — is there flow?",
+        "Check sample filter differential pressure — high DP = clogged filter, replace element",
+        "Check sample pump operation (if installed) — motor running? Diaphragm intact?",
+        "Flush sample line from probe end with clean solvent or gas per procedure",
+        "Check sample conditioning system (cooler, knockout pot, pressure regulators) for blockage or failure"
+      ]
+    },
+    "probe_fouling": {
+      "symptom": "Slow response time, reading drift, reading doesn't match grab sample",
+      "cause": "Process material deposited on sensor probe (pH electrode coating, oxygen sensor fouling, conductivity cell buildup)",
+      "fix": [
+        "Clean probe per manufacturer procedure (specific cleaning solution for each probe type)",
+        "pH probes: soak in appropriate cleaning solution (acid for scale, bleach for biological), check reference fill",
+        "O2 probes: replace membrane and electrolyte",
+        "If cleaning doesn't restore response: replace the sensor element"
+      ]
+    },
+    "calibration_gas_expired": {
+      "symptom": "Analyzer fails auto-calibration, calibration error alarm, readings drift between calibrations",
+      "cause": "Calibration gas concentration has degraded past its certified shelf life (reactive gases degrade faster than inerts)",
+      "fix": "Replace with fresh certified calibration gas. Check expiration dates on ALL gas bottles — a common audit finding.",
+      "note": "Reactive gases (H2S, SO2, NO) can degrade significantly in 6-12 months. Non-reactive (CH4, CO2, N2) stable for 2-3 years. Always use within certified period."
+    },
+    "response_time_degraded": {
+      "symptom": "Analyzer takes much longer than normal to respond to process changes, validated against grab sample timing",
+      "causes": [
+        "Sample transport time increased (long sample line, low sample flow, partially blocked line)",
+        "Sensor fouled or aged (slower diffusion through fouled membrane or aged electrode)",
+        "Sample conditioning delay (cooler working slowly, filter restricting flow)",
+        "Analyzer in calibration cycle or diagnostic mode (temporarily unresponsive to process)"
+      ],
+      "fix": "Address root cause: increase sample flow rate, clean/replace sensor, service sample conditioning, verify analyzer mode"
+    },
+    "reagent_depleted": {
+      "symptom": "Analyzer alarm for reagent low, colorimetric analyzer reads zero or erratic, titration analyzer fails",
+      "fix": "Refill reagent per manufacturer procedure. Use correct reagent grade and concentration. Check tubing for cracks or leaks in reagent delivery system."
+    }
+  },
+
+  "temperature_measurement_troubleshooting": {
+    "tc_burnout_detection": {
+      "symptom": "Temperature reading goes to upscale or downscale burnout, alarm in DCS",
+      "check": [
+        "At transmitter or connection head: disconnect TC wires, measure millivolts with a multimeter",
+        "Open circuit (infinite resistance between TC leads) = burned out or broken TC",
+        "If millivolts are present and reasonable: problem is in the transmitter or wiring downstream of the TC head",
+        "Heat the thermowell slightly (heat gun on exterior) — mV should increase. No change = TC is dead."
+      ],
+      "common_causes": [
+        "Thermocouple element degraded from high temperature or chemical attack",
+        "Wire broken inside thermowell (vibration fatigue at the transition from sheath to wire)",
+        "Loose terminal in connection head (not burnout, just disconnected — tighten and retest)"
+      ]
+    },
+    "rtd_drift": {
+      "symptom": "RTD reading slowly diverges from actual temperature over weeks/months, doesn't match nearby TC or other measurement",
+      "cause": "RTD element contamination, insulation resistance breakdown, or lead wire degradation",
+      "diagnosis": [
+        "Compare RTD reading to a reference TC installed at the same point — should agree within 1-2 degrees under stable conditions",
+        "Measure RTD resistance at connection head: Pt100 should read 100 ohms at 0C, 138.5 ohms at 100C",
+        "Check insulation resistance between RTD leads and sheath — should be above 100 megohms",
+        "If resistance is correct but reading is wrong: check for 2-wire vs 3-wire vs 4-wire configuration and lead resistance"
+      ],
+      "fix": "Replace RTD element if drift is confirmed and consistent. For slow drift, recalibrate and monitor — if it drifts again quickly, replace."
+    },
+    "broken_thermowell": {
+      "symptom": "Process leakage at thermowell, temperature reading changes to ambient, visible damage",
+      "check": [
+        "SAFETY FIRST — process leakage at a thermowell is a potential hazard (hot fluid, toxic, flammable). Follow plant isolation/emergency procedures.",
+        "Look for process fluid weeping from the thermowell top/connection head",
+        "If thermowell fractured, the sensor is exposed to process and readings may be erratic or correct but you have a containment breach",
+        "Vibration-induced fatigue at the weld or at the step change in diameter is the typical failure mode"
+      ],
+      "fix": "Isolate the process connection. Replace the thermowell. Perform a wake frequency calculation if vibration was the cause — thermowell may need a shorter length or heavier wall."
+    },
+    "open_circuit_in_head": {
+      "symptom": "Reading goes to burnout, same as TC burnout but the TC element itself is fine",
+      "check": [
+        "Open the connection head and visually inspect: look for loose wires, corroded terminals, moisture damage",
+        "Tug test each wire — if a crimp joint breaks, that's your problem",
+        "Check for moisture/condensation — connection head heaters or proper sealing prevents this",
+        "Verify correct wire type in head (not someone's field splice with wrong extension wire)"
+      ],
+      "fix": "Re-terminate the connection. Replace crimp connectors. Dry out the connection head. Install head heater if condensation is chronic."
+    }
+  },
+
+  "level_measurement_troubleshooting": {
+    "false_readings_from_process_conditions": {
+      "foam": {
+        "symptom": "Level reads higher than actual, fluctuates with process agitation",
+        "cause": "Foam on liquid surface reflects radar signal or affects DP measurement",
+        "fix": "Switch to guided wave radar (GWR) which measures through foam, use nuclear (gamma) level for severe foam, or install anti-foam injection"
+      },
+      "agitation": {
+        "symptom": "Level reading oscillates with agitator rotation, noisy signal",
+        "cause": "Surface turbulence creates variable reflections (radar) or DP oscillation",
+        "fix": "Install stilling well/still pipe, increase signal damping, use GWR in stilling well, position radar antenna away from agitator"
+      },
+      "heavy_vapor": {
+        "symptom": "Radar level reads higher than actual, signal strength reduced",
+        "cause": "Dense vapor layer above liquid changes the propagation speed of the radar signal",
+        "fix": "Use GWR (guided signal not affected by vapor), apply vapor compensation factor if available in transmitter configuration, switch to DP level"
+      }
+    },
+    "radar_antenna_fouling": {
+      "symptom": "Signal lost, false echoes, reading jumps to zero or maximum",
+      "check": "Inspect antenna for process buildup — remove instrument from nozzle if safe, or use purge air to clear",
+      "fix": [
+        "Clean antenna with appropriate solvent",
+        "Install PTFE-lined antenna face (process slides off instead of sticking)",
+        "Install purge air connection to keep antenna clear",
+        "For severe fouling: switch to GWR with coated probe or to non-contact nuclear"
+      ],
+      "gotcha": "Some condensation on the antenna is normal in steam or hot liquid service. The transmitter has algorithms to ignore near-echoes. But heavy coating overwhelms this."
+    },
+    "dp_level_reference_leg_imbalance": {
+      "symptom": "Level reading slowly drifts from actual level, doesn't return to zero when vessel is empty",
+      "causes": [
+        "Wet leg fluid level has changed (evaporation, leak, wrong fill level after maintenance)",
+        "Dry leg has accumulated condensate",
+        "Specific gravity of process fluid changed (different product, temperature change)",
+        "Reference leg leaking at a fitting (slow leak = slow drift)"
+      ],
+      "troubleshooting": [
+        "Verify wet leg is filled to correct level — check fill procedure and verify at sight glass if equipped",
+        "Check all reference leg fittings for leaks with snoop/soap",
+        "Verify current process specific gravity matches the calibration value — recalibrate if SG has changed",
+        "For dry leg: drain any accumulated condensate from the low point",
+        "Verify transmitter zero with vessel empty (or at known level) — re-zero if offset"
+      ]
+    },
+    "displacer_level_issues": {
+      "symptom": "Level reads wrong, oscillates, or doesn't respond to level changes",
+      "causes": [
+        "Displacer stuck in cage (process buildup, mechanical damage)",
+        "Torque tube damaged or fatigued (reading offset or no response)",
+        "Process specific gravity changed from calibration value",
+        "Displacer weight wrong for service (after maintenance, wrong displacer installed)"
+      ],
+      "troubleshooting": [
+        "Verify displacer moves freely — drain the chamber and manually move the displacer, check for binding",
+        "Check torque tube for visible damage, corrosion, or deformation",
+        "Verify current specific gravity matches data sheet — SG decrease = reads lower than actual, SG increase = reads higher",
+        "With chamber empty: transmitter should read 0%. With chamber full: should read 100%. If not, recalibrate with current SG."
+      ]
+    }
+  },
+
+  "flow_measurement_troubleshooting": {
+    "orifice_plate_fouling": {
+      "symptom": "Flow reading drifts low over time, DP decreases even though flow hasn't changed",
+      "cause": "Buildup on the upstream face of the orifice plate increases the effective bore diameter, reducing DP for the same flow",
+      "check": "Compare DP transmitter reading to expected DP at known flow rate. If DP is low, suspect fouling.",
+      "fix": "Pull the orifice plate and inspect/clean. For chronic fouling, consider switching to a flow meter less susceptible to buildup (venturi, V-cone, or averaging pitot tube).",
+      "note": "Fouling on the DOWNSTREAM face is less critical but can affect accuracy. Both sides should be cleaned."
+    },
+    "reynolds_number_effects": {
+      "symptom": "Flow reading inaccurate at low flow rates, reads high compared to actual at very low flow",
+      "cause": "Orifice plate discharge coefficient changes at low Reynolds numbers (laminar/transitional flow regime) — the orifice equation assumes turbulent flow",
+      "check": "Calculate Reynolds number at the low flow condition. If Re < 10,000 at the orifice, accuracy is degraded.",
+      "fix": "For services that operate at low flow frequently: use a smaller bore orifice (gives higher DP at low flow) or switch to a flow meter with better low-flow accuracy (Coriolis, turbine, or vortex)."
+    },
+    "pulsation_effects": {
+      "symptom": "Erratic DP readings, DP transmitter readings oscillate with a regular frequency matching pump or compressor speed",
+      "cause": "Pulsating flow from reciprocating pumps, compressors, or reciprocating engines",
+      "fix": [
+        "Install pulsation dampener (snubber) on the impulse lines between the orifice taps and the transmitter",
+        "Increase impulse line length (acts as a natural dampener)",
+        "Install a capacity tank near the meter to reduce pulsation",
+        "Increase DP transmitter damping setting (but this slows response — OK for totalizing, bad for control)",
+        "Best solution: move the meter to a location farther from the pulsation source"
+      ]
+    },
+    "cavitation_downstream_of_meter": {
+      "symptom": "Flow reading unstable, reading higher than actual, noise from downstream valve or piping",
+      "cause": "Control valve downstream of flow meter creates backpressure fluctuations that affect meter accuracy",
+      "fix": "Install flow meter upstream of the disturbance with adequate straight run, or relocate the meter. For orifice plates: minimum 8D downstream to control valve."
+    },
+    "mag_meter_empty_pipe": {
+      "symptom": "Reading jumps erratically or shows phantom flow when pipe is empty or partially full",
+      "cause": "Electromagnetic flow meter requires full pipe to read correctly — partially full pipe gives wrong cross-sectional area",
+      "check": "Verify pipe is always full at meter location. Check empty pipe detection feature (most modern mag meters have this — verify it's enabled).",
+      "fix": "Relocate meter to a point in the system that is always full (downstream of a back-pressure valve, vertical run flowing upward, or bottom of a U-bend)."
+    },
+    "coriolis_tube_coating": {
+      "symptom": "Mass flow reading drifts over time, density reading shifts, meter diagnostics show tube frequency change",
+      "cause": "Process material coating the inside of the measuring tubes changes the effective mass and resonant frequency",
+      "check": "Run meter zero verification at no-flow condition. If zero has shifted significantly, coating is likely.",
+      "fix": "Clean tubes with appropriate cleaning solution per manufacturer procedure (CIP — clean in place). If density reading has shifted, the coating is heavy enough to require mechanical cleaning or tube replacement."
+    }
+  },
+
+  "wiring_issues": {
+    "ground_loops": {
+      "symptom": "60 Hz hum/noise on signal, signal oscillates or has offset, noise gets worse when equipment starts nearby",
+      "cause": "Instrument cable shield grounded at BOTH ends — current flows through the shield between the two ground points, inducing noise on the signal wires",
+      "rule": "Ground shield at ONE end only — at the marshalling cabinet (system end). Float the shield at the field end.",
+      "fix": [
+        "Locate and disconnect the field-end shield ground. Tape/insulate the disconnected shield end.",
+        "Verify no accidental shield grounding from cable gland contact, conduit contact, or tray contact",
+        "After fixing: check signal with a multimeter for noise. Should be steady DC with less than 10 mV of AC noise."
+      ],
+      "exception": "Some project specs require shield grounded at both ends for lightning protection on long outdoor runs — use an approved shield ground kit with capacitor/resistor to ground at the field end, which drains lightning while blocking 60 Hz."
+    },
+    "emi_rfi_interference": {
+      "symptom": "Signal noise increases near motors, VFDs, power cables, radio transmitters, or welding operations",
+      "prevention_rules": [
+        "Maintain 12-inch minimum separation from power cables (24 inches from VFD cables)",
+        "Cross power cables at 90 degrees only — NEVER run parallel in same tray",
+        "Use shielded cable for all instrument signals",
+        "Instrument cable in dedicated tray or conduit separate from power",
+        "For severe EMI: use twisted pair cable (twisting cancels induced noise)"
+      ],
+      "fix": [
+        "Reroute cable away from EMI source if possible",
+        "Add ferrite chokes (clip-on ferrite) to the cable near the noise source",
+        "Verify shield integrity and single-point grounding",
+        "For VFD interference: ensure VFD output cable is shielded with shield grounded at both ends at the VFD (THIS is the exception — VFD output shields are grounded at both ends)"
+      ]
+    },
+    "moisture_ingress": {
+      "symptom": "Intermittent signal problems especially after rain, corrosion on terminals, green/white deposits on connections, insulation resistance drops",
+      "check": [
+        "Open junction boxes and inspect for water/condensation inside",
+        "Check cable glands — all tight? Correct size for cable?",
+        "Check conduit drains at low points — are they installed and functional?",
+        "Measure insulation resistance (megger) between conductors and between conductors and shield — should be above 20 megohms"
+      ],
+      "fix": [
+        "Dry out the junction box (heat gun carefully, or leave open in dry weather with heater installed)",
+        "Replace corroded terminals and wire ends — cut back wire to clean copper and re-terminate",
+        "Apply anti-oxidant compound (Burndy Penetrox or equivalent) to connections in outdoor/humid environments",
+        "Tighten all cable glands to proper torque, replace any damaged seals",
+        "Install junction box heaters in humid environments (small thermostatically controlled heaters prevent condensation)"
+      ]
+    },
+    "corroded_connections": {
+      "symptom": "Increased loop resistance, signal offset, intermittent readings, visible corrosion at terminals",
+      "check": "Inspect all terminal blocks, especially in outdoor and coastal environments. Look for green (copper), white (aluminum), or red (steel) corrosion.",
+      "fix": [
+        "Cut back wire to clean copper (minimum 1/4 inch beyond any discoloration)",
+        "Clean terminal block contacts with appropriate cleaner (electrical contact cleaner, NOT WD-40)",
+        "Apply anti-oxidant compound to all connections before retorquing",
+        "Replace entire terminal block if corrosion has pitted the contact surfaces",
+        "For aluminum wire in marshalling cabinets: ALWAYS use anti-oxidant, aluminum oxide creates high resistance and intermittent connections"
+      ]
+    }
+  },
+
+  "dcs_plc_side_troubleshooting": {
+    "wrong_scaling": {
+      "symptom": "DCS displays wrong engineering units or wrong value for a known input. Transmitter reads correct mA but DCS shows wrong pressure/temperature/level.",
+      "cause": "DCS point configured with wrong URV (upper range value) or LRV (lower range value) — does not match transmitter calibrated range",
+      "example": "Transmitter calibrated 0-100 PSI (4 mA = 0, 20 mA = 100). DCS configured 0-200 PSI. At 50 PSI actual, transmitter sends 12 mA, DCS reads 100 PSI. Everything 'works' but every reading is double the actual value.",
+      "fix": [
+        "Compare transmitter range (from data sheet or HART) to DCS channel configuration (from DCS engineer)",
+        "They MUST match exactly: same LRV, same URV, same engineering units",
+        "After fixing: inject 4 mA and 20 mA from calibrator, verify DCS reads LRV and URV exactly",
+        "Check square root extraction for DP flow — should be enabled at transmitter OR DCS, NOT both (double square root = readings too low at low flow, too high at high flow)"
+      ]
+    },
+    "alarm_suppression_left_on": {
+      "symptom": "Alarm condition exists but no alarm annunciates in DCS — alarm was suppressed during testing/commissioning and never re-enabled",
+      "check": "In DCS alarm summary, look for suppressed/inhibited/shelved alarms. Check alarm management system for any global suppression still active.",
+      "fix": "Remove alarm suppression. Review ALL alarms in the system for suppression status — this is a common audit finding and safety issue.",
+      "note": "Alarm suppression during loop checks is normal. But a procedure must exist to remove ALL suppressions before turnover. A master alarm suppression audit should be done before start-up."
+    },
+    "bad_io_channel": {
+      "symptom": "One channel on an I/O card gives wrong reading or no reading, other channels on the same card are fine",
+      "check": [
+        "Swap the field wiring to a known-good spare channel on the same card — if the reading is now correct, the original channel is bad",
+        "Check for channel-level diagnostics in the DCS (most modern systems report individual channel faults)",
+        "Verify no crossed wiring at the terminal block (wrong pair landed on the channel)"
+      ],
+      "fix": [
+        "Move wiring to spare channel and update DCS configuration to reflect the new channel number",
+        "Replace the I/O card if no spare channels are available",
+        "Document the channel change in as-built wiring drawings"
+      ]
+    },
+    "module_addressing_error": {
+      "symptom": "New or replaced I/O module not recognized by DCS, or wrong module appears at a node address",
+      "cause": "DIP switches or software addressing on the I/O module don't match the DCS configuration database",
+      "fix": [
+        "Verify module address matches the DCS configuration — check DIP switches on the module against the system documentation",
+        "For HART I/O or Fieldbus: verify the device address in the DCS database matches the physical device address",
+        "After replacing a module: confirm the replacement has the same firmware version and configuration — some systems require explicit module registration"
+      ]
+    },
+    "configuration_mismatch": {
+      "symptom": "Field instrument and DCS disagree on range, units, alarm points, or fail-safe behavior",
+      "cause": "DCS engineer configured the point based on one revision of the data sheet, field tech calibrated per a different revision, or changes were made in the field without updating the DCS configuration",
+      "prevention": [
+        "Single source of truth: instrument index/data sheet is the master — both field and DCS must calibrate/configure to the SAME document and SAME revision",
+        "After any field change: notify DCS engineer to update configuration",
+        "After any DCS change: notify field to verify transmitter range still matches",
+        "Pre-startup check: systematically verify every point's field calibration matches the DCS configuration — this is tedious but catches mismatches that cause start-up delays"
+      ],
+      "common_mismatches": [
+        "Transmitter range changed in field but DCS not updated (or vice versa)",
+        "Alarm setpoints changed in DCS but not reflected in control narrative",
+        "Burnout direction set differently in transmitter vs DCS (both drive upscale but DCS expects downscale = wrong alarm response)",
+        "Engineering units mismatch (transmitter in PSIG, DCS in kPa — no one notices until readings make no sense)"
+      ]
+    }
+  }
+}

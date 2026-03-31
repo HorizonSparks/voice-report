@@ -1,0 +1,555 @@
+{
+  "trade": "Instrumentation",
+  "category": "quality_inspection",
+  "description": "Installation QC checklists, tubing walkdown, calibration QA/QC, loop check documentation, ITCC/turnover packages, punch list categories, inspection hold points, and SIS validation for instrumentation field work",
+
+  "installation_qc_checklists": {
+    "transmitter": {
+      "mounting": [
+        "Bracket secure to pipe stand or structural steel — no wobble, all bolts torqued",
+        "Mounting height accessible for calibration (3ft to 5ft preferred — tech shouldn't need scaffold for routine cal)",
+        "Bracket material matches spec (galvanized, stainless, painted CS per project requirement)",
+        "Vibration isolation pad installed if on reciprocating equipment (compressors, pumps)"
+      ],
+      "orientation": [
+        "Terminal housing rotated so conduit entry faces DOWN or sideways — never UP (rain/condensation drains into electronics)",
+        "Display readable from grade or platform without contortion",
+        "For DP transmitters: high-side and low-side connected to correct impulse legs — VERIFY with P&ID, not assumption",
+        "Electronics housing can be rotated independent of process connection on most models — use this"
+      ],
+      "impulse_line_slope": {
+        "liquid_service": "Slope DOWN from process tap to transmitter, minimum 1 inch per foot. Transmitter BELOW tap. NO high points — air pockets cause erratic readings.",
+        "gas_service": "Slope UP from process tap to transmitter, minimum 1 inch per foot. Transmitter ABOVE tap. NO low points — liquid traps cause offset and sluggish response.",
+        "steam_service": "Condensate pots at process connection, filled with water. Both legs SAME length, same routing (same heat exposure). Unequal legs = permanent offset.",
+        "common_mistake": "Running impulse lines level 'because it looks neat' — this GUARANTEES trapped air or liquid. The slope is not optional."
+      },
+      "manifold_valve_position": [
+        "3-valve or 5-valve manifold installed between process and transmitter",
+        "Block valves OPEN, equalizing valve CLOSED for normal operation",
+        "Verify valve handle positions match expected — a closed block valve reads 0 DP and the DCS shows a false reading",
+        "5-valve manifold: verify vent valves are capped and closed after initial fill"
+      ],
+      "process_connection": [
+        "Correct flange rating matches process design pressure (150#, 300#, 600#, etc.)",
+        "Gasket material per spec — spiral wound for flanged, soft iron for RTJ",
+        "Flange bolts torqued to spec — star pattern, not sequential",
+        "Thread sealant on NPT connections — Teflon tape (3 wraps clockwise when facing threads) or pipe dope per spec",
+        "For direct-mount transmitters: diaphragm seal clean, no damage to diaphragm face, fill fluid level correct"
+      ],
+      "tag_verification": [
+        "Stainless steel nameplate wired to instrument with SS wire (not zip ties — they degrade in UV)",
+        "Tag number matches instrument index, P&ID, and loop diagram — check ALL three, mismatches happen",
+        "Tag clearly visible and readable from access side",
+        "Stamped or engraved — not handwritten marker (fades in weeks outside)"
+      ],
+      "sunshade": [
+        "Required on ALL outdoor electronic transmitters unless project spec says otherwise",
+        "Positioned to shade the electronics housing from direct sun — not just sitting on top of the bracket",
+        "Check that sunshade doesn't block conduit entry or terminal access",
+        "Most common punch item in hot climates — gets forgotten because it's 'just a sunshade'"
+      ]
+    },
+    "control_valve": {
+      "flow_direction": [
+        "Arrow on valve body matches P&ID flow direction — THIS IS THE MOST COMMON CONTROL VALVE INSTALLATION ERROR",
+        "For globe valves: flow-under-plug vs flow-over-plug per data sheet (affects shutoff and stability)",
+        "If no arrow on body, check valve data sheet for flow direction requirements",
+        "Butterfly valves: verify disc rotation direction gives correct fail position"
+      ],
+      "tag_match": [
+        "Body tag, actuator tag, and positioner tag all reference same tag number",
+        "Verify valve size matches line size or spec (reduced trim valves may look too small — check data sheet)",
+        "Confirm valve CV rating matches the spec — wrong valve from warehouse is a real problem on large projects"
+      ],
+      "actuator_air_supply": [
+        "Air supply pressure matches actuator requirement (typically 60-80 PSI instrument air)",
+        "Air supply tubing connected and tight — check for leaks with snoop/soap solution",
+        "Filter/regulator installed on air supply, set to correct pressure, drain leg on filter",
+        "Volume booster installed if specified (large actuators need fast stroking)",
+        "Air supply isolation valve installed and OPEN — label it clearly"
+      ],
+      "fail_position_verified": [
+        "Remove air supply — valve must go to specified fail position (FC, FO, or FL)",
+        "Fail-Closed (FC): valve goes fully shut on air loss — spring return, verify tight shutoff if required",
+        "Fail-Open (FO): valve goes fully open on air loss — spring return",
+        "Fail-Last (FL): valve stays at last position on air loss — lock-up valve or volume tank installed and tested",
+        "DOCUMENT the test: date, who verified, actual position achieved, time to full stroke",
+        "Common gotcha: handwheel left engaged overrides the fail position — always verify handwheel is backed off after manual operation"
+      ],
+      "handwheel_operation": [
+        "Verify handwheel turns freely and actually moves the valve stem",
+        "Confirm CW = close, CCW = open (or as labeled) — document this if non-standard",
+        "Verify handwheel is NOT engaged (declutched) during normal automatic operation",
+        "Check that handwheel override doesn't interfere with actuator stroke"
+      ],
+      "packing_bolts": [
+        "Packing bolts evenly torqued — no visible stem leakage (process or air)",
+        "Live-loaded packing: Belleville springs compressed to proper stack height",
+        "Packing follower is level — uneven tightening causes stem binding",
+        "Environmental packing (double packing with lantern ring and leak-off) installed if required for fugitive emissions"
+      ],
+      "shipping_stops_removed": [
+        "ALL shipping stops, travel blocks, and shipping bolts REMOVED before commissioning",
+        "This is a checklist item because if forgotten the valve will not stroke and the crew wastes hours troubleshooting 'bad positioner' or 'bad actuator' before finding a $2 bolt",
+        "Check actuator yoke, diaphragm casing, and any bolted travel stops",
+        "Some rotary valves have packing protectors or disc lock plates — remove these too"
+      ]
+    },
+    "thermocouple_rtd": {
+      "thermowell_first": [
+        "Thermowell MUST be installed and hydrotest-proven BEFORE the sensor goes in",
+        "Verify thermowell material matches spec (316SS, Inconel, Hastelloy per process conditions)",
+        "Thermowell insertion length correct per data sheet — too short reads ambient, too long creates vibration/breakage risk",
+        "Thermowell bore size matches sensor diameter (1/4-inch or 3/8-inch typical)",
+        "Lagging extension on thermowell if line is insulated — sensor head must be OUTSIDE insulation"
+      ],
+      "correct_depth": [
+        "Sensor bottomed out in thermowell with spring-loaded connection (ensures thermal contact)",
+        "For thermowells in large vessels: verify U-dimension (insertion length) reaches into process flow, not dead zone near wall",
+        "Pipe thermowells: tip should reach 1/3 to 1/2 pipe diameter into flow for representative reading",
+        "Check for thermowell too long for the pipe — tip hits far wall in small pipes, creates mechanical stress"
+      ],
+      "extension_wire_match": [
+        "Thermocouple extension wire type MUST match TC type (K to K, J to J, T to T — NO mixing)",
+        "Color code verification: Type K = Yellow jacket, Type J = Black jacket, Type T = Blue jacket (ANSI)",
+        "RED is ALWAYS negative in US ANSI standard — this is backwards from most other wiring conventions and causes polarity errors",
+        "NEVER use copper wire to extend a thermocouple — you get the reading at the junction where copper meets TC wire, not at the sensor",
+        "For RTDs: 3-wire or 4-wire configuration per spec, all lead wires same gauge and length for resistance matching"
+      ],
+      "head_orientation": [
+        "Connection head tilted so conduit entry is at side or bottom — NOT pointing up (water ingress)",
+        "Terminal block accessible when head cover is removed",
+        "If head is in insulated area, verify cable exits insulation without sharp bends"
+      ],
+      "connection_polarity": [
+        "Thermocouple: positive to positive, negative to negative at every junction (head, JB, marshalling) — one reversal makes the reading go the wrong direction",
+        "Verify with a millivolt check: heat sensor slightly, confirm mV goes positive at correct terminal",
+        "RTD: identify and label all leads (3-wire: two same-color = compensating leads, one different = signal)",
+        "Crimped or welded TC junctions only — no twist-and-tape in the field, it creates a secondary junction"
+      ]
+    },
+    "flow_element_orifice": {
+      "bevel_downstream": [
+        "Bevel (sharp edge) faces UPSTREAM into flow. Bored-out side (counterbore) faces DOWNSTREAM.",
+        "Paddle/tab text is readable from upstream side — text faces the flow",
+        "THIS IS THE SINGLE MOST COMMON ORIFICE PLATE ERROR — verify by looking at the bevel with a flashlight through the flange gap before tightening",
+        "If installed backwards: DP reading will be wrong (typically reads higher than actual), flow calculation is invalid"
+      ],
+      "correct_bore": [
+        "Measure bore diameter with calipers — verify against data sheet specification",
+        "Check plate tag stamping matches the data sheet: bore, pipe size, material, tag number",
+        "Beta ratio (bore/pipe ID) should match calculations — wrong bore means wrong flow reading",
+        "Inspect bore edge for nicks, burrs, or corrosion — damaged edge creates inaccurate readings"
+      ],
+      "gasket_not_protruding": [
+        "Gasket ID must be LARGER than orifice bore — any protrusion into the flow stream is a rejection",
+        "Use specified gasket material and thickness per spec (RTJ, spiral wound, or soft cut)",
+        "After torquing flanges, visually confirm gasket is not visible in the bore opening",
+        "Spiral wound gaskets with inner ring prevent this — specify inner ring for critical measurements"
+      ],
+      "straight_run_requirements": [
+        "Minimum upstream: 10D for single elbow, 20D for two elbows in different planes, 30D for reducer — per AGA/ASME standards or project spec",
+        "Minimum downstream: 5D typical, 8D if control valve is downstream",
+        "Flow conditioner installed if straight run cannot be met — verify conditioner is correct size and properly oriented",
+        "Measure from orifice flange center to nearest upstream disturbance — DON'T guess, actually measure",
+        "Thermowell or test connection within straight run counts as a disturbance — check spec for allowances"
+      ],
+      "drain_vent_connections": [
+        "Liquid service: vent connections on top of impulse lines (to bleed trapped gas)",
+        "Gas service: drain connections on bottom of impulse lines (to drain trapped liquid)",
+        "Steam service: condensate pots at taps, properly filled",
+        "Verify taps are on correct side of orifice (upstream = high, downstream = low) per P&ID",
+        "Root valves at process taps installed and operational"
+      ]
+    },
+    "level_instrument": {
+      "mounting_bracket_plumb": [
+        "Bracket plumb and level within 1 degree — a tilted DP transmitter or displacer reads wrong",
+        "For external float chambers: chamber must be plumb, mounting flanges aligned with nozzles",
+        "All mounting bolts installed — not 3 out of 4 'because it's tight enough'",
+        "Anti-vibration measures on reciprocating equipment or near high-vibration areas"
+      ],
+      "nozzle_alignment": [
+        "Upper and lower nozzle elevations match P&ID and vessel drawing",
+        "Nozzle projection into vessel correct — not protruding past vessel wall liner if present",
+        "For external chambers: nozzle connection valves open, drain valve closed",
+        "Verify level range matches the distance between nozzle centers (or data sheet URV/LRV)"
+      ],
+      "radar_antenna_clearance": [
+        "Antenna cone angle clear of vessel walls, agitators, baffles, heating coils, ladders",
+        "Minimum distance from wall: typically 1/6 of tank diameter or 12 inches, whichever is greater",
+        "Non-metallic standoff pipe for guided wave radar extends below minimum process level",
+        "Still pipe installed if specified — verify inside diameter is correct for radar frequency",
+        "No nozzle extension that creates false echo — antenna tip should be at or below nozzle flange face"
+      ],
+      "calibration_range_matches_vessel": [
+        "Transmitter 0% = vessel empty level (at lower nozzle for DP, bottom of measurement range for radar)",
+        "Transmitter 100% = vessel full level (at upper nozzle for DP, top of measurement range for radar)",
+        "For DP level: factor in specific gravity of process fluid — SG change means level reading change",
+        "Verify units: inches of water column, PSI, mmH2O — must match DCS configuration",
+        "Suppression/elevation applied correctly if transmitter is above or below lower tap"
+      ]
+    }
+  },
+
+  "tubing_walkdown_checklist": {
+    "slope_requirements": {
+      "liquid_service": "Slope DOWN from process to transmitter — minimum 1 inch per foot. Transmitter below tap. Every high point is a potential air trap.",
+      "gas_service": "Slope UP from process to transmitter — minimum 1 inch per foot. Transmitter above tap. Every low point collects condensate.",
+      "steam_condensate_legs": "Both legs same length, same routing, same heat exposure. Fill before putting in service.",
+      "common_error": "Running tubing level to make it look neat on the rack. Looks professional, reads wrong."
+    },
+    "support_spacing": {
+      "half_inch_316SS_horizontal": "5 feet maximum between supports",
+      "half_inch_316SS_vertical": "10 feet maximum between supports",
+      "quarter_inch_tubing": "3 feet horizontal, 6 feet vertical",
+      "three_quarter_inch_tubing": "6 feet horizontal, 12 feet vertical",
+      "general_rule": "Support within 6 inches of every change of direction, fitting, and valve",
+      "support_material": "Match tubing material or use approved cushioned clamps (no bare carbon steel clamps on stainless tubing — galvanic corrosion)",
+      "common_problem": "Tubing sagging between supports on hot days (thermal expansion) — install with slight droop allowance"
+    },
+    "no_kinks": [
+      "Any visible kink, flatten, or buckle is a REJECT — tubing must be replaced, not straightened",
+      "A kink restricts flow and creates a weak point that fails under pressure or vibration",
+      "Kinked tubing also creates a trap for liquids or gases depending on orientation",
+      "Inspect entire run, especially around bends and where tubing exits conduit or passes through penetrations"
+    ],
+    "bending_radius": {
+      "minimum": "5 times the outside diameter (5x OD) for stainless steel tubing",
+      "half_inch_minimum": "2.5 inches minimum bend radius for 1/2-inch OD tubing",
+      "quarter_inch_minimum": "1.25 inches minimum bend radius for 1/4-inch OD tubing",
+      "method": "Use a proper tube bender — NEVER bend by hand or over a pipe. Hand bends kink or create flat spots.",
+      "spring_back": "Overbend slightly — tubing springs back 2-5 degrees after bending",
+      "inspection": "After bending, roll tubing on flat surface — any flat spot or ovality is rejectable"
+    },
+    "labeling": [
+      "Both ends of every tube labeled with instrument tag number and service description",
+      "Labels are stainless steel tags with SS wire, or permanent UV-resistant markers on approved label tape",
+      "Label at each end plus at every penetration (wall, floor, tray) — if you can't trace it, it's not done",
+      "Color coding per project spec: blue for instrument air, yellow for sample, etc."
+    ],
+    "capped_when_not_connected": [
+      "All open tube ends capped with plastic or metal caps when not actively being worked on",
+      "This prevents debris, insects, and moisture from entering the tubing",
+      "Caps removed only at time of final connection — not the day before, not the week before",
+      "Cap removal and final connection should be documented on the tubing walkdown checklist"
+    ],
+    "pressure_testing": {
+      "test_medium": "Typically nitrogen (N2) or instrument air — NEVER use oxygen or compressed air from shop compressor (oil contamination)",
+      "test_pressure": "1.5x design pressure, or per project spec (typically 150 PSI for instrument air systems)",
+      "hold_time": "Minimum 10 minutes at test pressure with no drop — or per spec (some require 1 hour or 4 hours)",
+      "leak_check": "Apply snoop or soap solution to every fitting, valve, and connection during test",
+      "documentation": "Record test pressure, hold time, medium, pass/fail, date, tech signature, witness signature",
+      "common_failure": "Ferrule not properly seated — remake fitting with new ferrules, not just retighten"
+    },
+    "blow_through": {
+      "purpose": "Verify tubing is clean and unobstructed before connecting to instrument",
+      "method": "Apply air or N2 at one end, verify flow exits the other end — feel it with your hand or use a tissue",
+      "when": "After pressure test, before final instrument connection",
+      "why_it_matters": "Debris from installation (metal shavings from cutting, dirt, tape residue) plugs transmitter diaphragms and valve orifices",
+      "common_find": "Teflon tape threads that entered the tube during fitting makeup — this is why you don't over-apply tape"
+    }
+  },
+
+  "calibration_qa_qc": {
+    "as_found_readings": {
+      "definition": "The readings recorded BEFORE any adjustment is made — this is the instrument's actual condition in the field",
+      "why_critical": "As-found data proves whether the instrument was reading correctly during operation, or if process data from the previous period was unreliable",
+      "record_at": ["0% (4.00 mA)", "25% (8.00 mA)", "50% (12.00 mA)", "75% (16.00 mA)", "100% (20.00 mA)"],
+      "also_record": "Any alarm or trip points, hysteresis (up vs down readings), response time if specified",
+      "do_not_adjust_first": "NEVER touch zero or span before recording as-found. If the tech adjusts first, as-found data is lost and the calibration certificate is invalid."
+    },
+    "as_left_readings": {
+      "definition": "The readings recorded AFTER adjustment/calibration is complete",
+      "must_be_within_tolerance": "As-left readings must be within specified tolerance band or the calibration fails",
+      "record_same_points": "Same test points as as-found for direct comparison",
+      "up_and_down": "Record both increasing (upscale) and decreasing (downscale) readings to check for hysteresis"
+    },
+    "tolerance_bands": {
+      "transmitters_general": "+/- 0.1% of calibrated span (high-accuracy transmitters may be +/- 0.04%)",
+      "pressure_gauges": "+/- 1% of full scale (ASME B40.100 Grade 2A) or +/- 0.5% (Grade 3A)",
+      "temperature_transmitters": "+/- 0.1% of span or +/- 0.5 degrees (whichever is greater per spec)",
+      "control_valve_positioner": "+/- 1% of stroke (dead band typically 0.5-2%)",
+      "safety_instrumented_systems": "Tighter than BPCS — typically +/- 0.5% of span for SIS transmitters, per SIL verification report",
+      "flow_meters": "Depends on type: orifice +/- 1-2% of rate, mag meter +/- 0.5%, Coriolis +/- 0.1%",
+      "important_note": "Always check PROJECT spec for tolerance — the numbers above are industry typical but your project may be tighter or looser"
+    },
+    "calibration_certificate_requirements": [
+      "Instrument tag number and serial number",
+      "Manufacturer, model, and range",
+      "Date of calibration and due date for next calibration",
+      "As-found readings at each test point",
+      "As-left readings at each test point",
+      "Tolerance specification and pass/fail determination",
+      "Test equipment used: manufacturer, model, serial number, cal due date",
+      "Technician name and signature",
+      "QC inspector signature (if required by ITP)",
+      "Environmental conditions during calibration (temperature if accuracy is temperature-dependent)"
+    ],
+    "nist_traceability": {
+      "requirement": "All test equipment must be traceable to NIST (National Institute of Standards and Technology) through an unbroken chain of calibrations",
+      "chain": "NIST primary standard -> accredited lab reference standard -> working standard -> field calibrator",
+      "calibrator_sticker": "Every field calibrator must have a current calibration sticker with due date visible — expired calibrator invalidates ALL calibrations performed with it",
+      "audit_trail": "Maintain calibration certificates for all test equipment — auditors WILL ask for these",
+      "common_problem": "Borrowing a calibrator from another crew without checking its cal date — if it's expired, every cal you did that day gets redone"
+    }
+  },
+
+  "loop_check_documentation": {
+    "who_was_present": {
+      "required": [
+        "Field instrument technician (performs field-side activities)",
+        "DCS/PLC operator or technician (verifies control system side)",
+        "Both must sign the loop check sheet — one signature is not a complete loop check"
+      ],
+      "optional_but_common": [
+        "QC inspector (if loop check is a witness or hold point per ITP)",
+        "Client representative (on some projects, owner witnesses safety loops)",
+        "Commissioning engineer (during commissioning phase)"
+      ]
+    },
+    "what_was_verified": {
+      "signal_path": [
+        "Signal flows correctly from field device through junction boxes, marshalling cabinets, to DCS/PLC I/O card",
+        "Correct channel, correct tag, correct engineering units displayed",
+        "Signal direction: transmitter to DCS (input) or DCS to valve (output)"
+      ],
+      "alarms": [
+        "Each configured alarm tested at its setpoint",
+        "Alarm appears on correct DCS operator screen with correct priority (high, high-high, low, low-low)",
+        "Alarm text is correct and meaningful to operator",
+        "Alarm acknowledged and cleared properly"
+      ],
+      "interlocks": [
+        "Each interlock tested at its trip point",
+        "Correct action taken (pump stop, valve close, compressor shutdown, etc.)",
+        "Interlock resets correctly after trip condition clears",
+        "Interlock bypass/override tested (if applicable — must be controlled and documented)"
+      ],
+      "fail_safe": [
+        "Remove power or signal — verify instrument and final element go to safe state",
+        "For valves: confirm fail position (FC/FO/FL) matches P&ID and control narrative",
+        "For transmitters: verify burnout direction (upscale/downscale) matches DCS configuration"
+      ]
+    },
+    "pass_fail_criteria": {
+      "pass": "All test points verified correct, all alarms trigger at setpoints, all interlocks function, fail-safe confirmed, documentation complete and signed",
+      "conditional_pass": "Minor discrepancies that don't affect safety or operation — document as punch items to be resolved before handover",
+      "fail": "Any safety function does not work, signal path incorrect, alarms missing or at wrong setpoint, fail-safe position wrong — MUST be corrected and retested"
+    },
+    "punch_items_generated": [
+      "Any deficiency found during loop check becomes a punch item with: tag number, description, category (A/B/C), responsible party, due date",
+      "Category A: prevents operation — must be resolved before first oil/gas/product",
+      "Category B: does not prevent operation but must be resolved before final turnover",
+      "Category C: cosmetic or minor — resolved during warranty period",
+      "ALL punch items tracked in a database or register with status updates"
+    ]
+  },
+
+  "itcc_requirements": {
+    "definition": "Instrument Test, Calibration, and Completion — the documentation package that proves each instrument is installed, calibrated, tested, and ready for service",
+    "contents_per_instrument": {
+      "instrument_index_number": "Tag number, service description, P&ID number, area/unit number, loop number — must match across ALL documents",
+      "pid_reference": "P&ID revision number where instrument appears — must be latest issued-for-construction revision",
+      "calibration_certificate": "Attached and signed — as-found, as-left, within tolerance, test equipment traceable",
+      "loop_check_signed": "Both field tech and DCS operator signatures, all test results recorded, pass/fail noted",
+      "as_built_redlines": "Any field changes marked on the loop diagram, interconnect drawing, or installation detail — WHERE the instrument actually is vs WHERE the drawing said it would be",
+      "preservation_status": "Instrument preserved per manufacturer requirements — desiccant bags, caps on connections, power disconnected, preservation log current"
+    },
+    "common_itcc_rejections": [
+      "Missing calibration certificate — tech calibrated but didn't fill out the paperwork",
+      "Wrong revision of reference document — P&ID was revised but ITCC still references old revision",
+      "Loop check missing second signature — DCS operator wasn't available, tech signed both lines (not acceptable)",
+      "As-built redlines not done — 'it was installed per drawing' is rarely true and must be verified",
+      "Test equipment calibration expired — invalidates the calibration certificate"
+    ]
+  },
+
+  "turnover_package_contents": {
+    "per_instrument": [
+      "Instrument data sheet (with any field-marked corrections)",
+      "Calibration certificate (as-found and as-left)",
+      "Loop diagram (as-built redlined if changes were made)",
+      "Interconnect wiring drawing (as-built)",
+      "Vendor technical manual (operation and maintenance)",
+      "Spare parts list (with part numbers and recommended stock quantities)",
+      "Material certificates for wetted parts (MTR/mill test reports for process-contact materials)",
+      "Installation photographs (if required by spec)"
+    ],
+    "per_loop": [
+      "Loop check sheet (signed by field tech and DCS operator)",
+      "Alarm and trip point verification record",
+      "Interlock test record (if applicable)",
+      "Control valve stroke test record",
+      "SIS proof test record (if safety loop)"
+    ],
+    "per_system": [
+      "Instrument index (master list of all instruments in the system)",
+      "P&IDs (as-built, latest revision)",
+      "Cause and effect diagrams (as-built)",
+      "Logic diagrams (as-built)",
+      "Control narrative/sequence descriptions",
+      "DCS/PLC configuration backup",
+      "Fiber optic test records (if applicable)",
+      "Cable schedule and cable pull records"
+    ],
+    "common_missing_items": [
+      "Vendor manuals — often shipped with equipment and lost during construction",
+      "Material certificates — need to be requested from procurement at time of purchase, not at turnover",
+      "Spare parts — ordered late or not at all, delays turnover",
+      "As-built drawings — redlining not done during construction, now nobody remembers what changed"
+    ]
+  },
+
+  "common_punch_list_items": {
+    "tagging": [
+      "Missing instrument tag (fell off, never installed, wrong material degraded)",
+      "Tag doesn't match drawing (typo, old revision, wrong loop number)",
+      "Tag not readable (marker faded, stamping too light, covered by insulation)",
+      "Tag wired with carbon steel wire on stainless instrument (galvanic corrosion)"
+    ],
+    "sunshades": [
+      "Sunshade missing on outdoor transmitter",
+      "Sunshade installed but not positioned to actually shade the electronics",
+      "Sunshade material incorrect (should be stainless, got galvanized)"
+    ],
+    "tubing_supports": [
+      "Missing support — tubing span exceeds 5 feet",
+      "Support within 6 inches of direction change missing",
+      "Carbon steel clamp on stainless tubing (galvanic corrosion)",
+      "Tubing sagging between supports",
+      "Support loose or fallen off"
+    ],
+    "junction_box_covers": [
+      "Cover missing or not secured (rain, dust, insects enter and destroy terminations)",
+      "Cover gasket missing or damaged (IP rating compromised)",
+      "Cover bolts missing — 1 out of 4 bolts is not acceptable",
+      "Breather/drain plug missing (pressure builds up inside from temperature cycling)"
+    ],
+    "conduit_seals": [
+      "Conduit seal (Chico/compound seal) missing at hazardous area boundary",
+      "Seal not poured or not fully filled",
+      "Conduit drain at low point missing (water collects and wicks into instruments/JBs)",
+      "Conduit seal dam not installed (compound runs out during pouring)"
+    ],
+    "cable_labels": [
+      "Cable not labeled at both ends",
+      "Label doesn't match cable schedule",
+      "Label material degrading (paper labels in outdoor environment)",
+      "Label at junction box but not at marshalling cabinet (or vice versa)"
+    ],
+    "calibration_stickers": [
+      "Sticker missing or fallen off",
+      "Sticker date expired (calibration interval exceeded)",
+      "Sticker information incomplete (missing tech name, cal date, or due date)",
+      "Sticker not matching calibration certificate on file"
+    ],
+    "general_installation": [
+      "Instrument air not connected or not turned on",
+      "Drain/vent valve missing or not capped",
+      "Process connection valve left closed (technician forgot to open root valve)",
+      "Instrument not preserved (desiccant missing, caps off, exposed to weather)",
+      "Cable gland not tight (water ingress path)",
+      "Unused cable entries not plugged (breaks hazardous area certification)",
+      "Earth/ground wire not connected or loose"
+    ]
+  },
+
+  "inspection_hold_points": {
+    "H_hold": {
+      "definition": "HOLD point — work STOPS and CANNOT proceed until inspector physically inspects and signs release",
+      "consequence_of_proceeding": "Work done past an unreleased Hold point must be torn out and redone — this is non-negotiable",
+      "typical_instrument_H_points": [
+        "Hydrostatic test of impulse tubing systems",
+        "SIS loop function test (safety instrumented systems)",
+        "Final SIS validation before SIL sign-off",
+        "Hazardous area inspection (Ex/ATEX certification verification)",
+        "Control valve seat leakage test (if specified as H)"
+      ],
+      "process": "Submit inspection request 24-48 hours in advance. Inspector reviews documentation BEFORE going to field. Work stops at hold point until release."
+    },
+    "W_witness": {
+      "definition": "WITNESS point — inspector is invited to attend. If inspector does not attend after proper notification, work MAY proceed.",
+      "notification_requirement": "Written notification (email or inspection request form) at least 24 hours in advance — keep the notification as proof",
+      "typical_instrument_W_points": [
+        "Loop check testing",
+        "Calibration of critical instruments",
+        "Impulse line leak test",
+        "Control valve stroke test",
+        "Cable continuity/megger testing"
+      ],
+      "documentation": "Record whether inspector was present or absent. If absent, note notification was given."
+    },
+    "R_review": {
+      "definition": "REVIEW point — inspector reviews documentation only, does not need to be present for the work",
+      "typical_instrument_R_points": [
+        "Calibration certificates review",
+        "Material certificates review",
+        "Vendor data book review",
+        "As-built drawing review",
+        "Cable test report review"
+      ],
+      "turnaround": "Submit documents to inspector — typical review period 3-5 business days. Plan ahead."
+    },
+    "itp_reference": "All hold, witness, and review points are defined in the Inspection and Test Plan (ITP) — THIS document governs what gets inspected and when. Get a copy at project start and track every point."
+  },
+
+  "sis_validation": {
+    "proof_test_procedures": {
+      "purpose": "Verify that safety instrumented function (SIF) works end-to-end: from sensor detecting dangerous condition through logic solver to final element taking safe action",
+      "scope": "Tests the ENTIRE safety function — not just individual instruments",
+      "full_proof_test": [
+        "Simulate the process condition at the sensor (apply test pressure, temperature, level)",
+        "Verify sensor detects the condition and transmits correct signal",
+        "Verify logic solver receives signal and executes programmed action within required time",
+        "Verify final element (valve, relay, motor contactor) takes the correct safe-state action",
+        "Verify alarms annunciate correctly in control room",
+        "Time the entire response from sensor input to final element action — must meet required SIF response time"
+      ],
+      "frequency": "Determined by SIL level and PFD calculations — typically annually for SIL 2, may be more frequent for SIL 3",
+      "documentation": "Proof test report: date, personnel, test method, results, any discrepancies, corrective actions, next test due date"
+    },
+    "partial_stroke_test": {
+      "abbreviation": "PST",
+      "purpose": "Test SIS valve movement without fully shutting down the process — proves the valve can move and is not stuck",
+      "method": "Command valve to move 10-20% from normal operating position, verify it moves, then return to normal position",
+      "frequency": "Monthly or quarterly between full proof tests — extends the proof test interval by taking credit for PST diagnostic coverage",
+      "what_it_proves": "Valve is not stuck, actuator works, positioner responds, solenoid valve operates",
+      "what_it_does_NOT_prove": "Full valve shutoff, correct fail position under total air/power loss, correct trip point at sensor",
+      "smart_positioner_PST": "Many modern positioners have built-in PST function — can be triggered from DCS without field visit",
+      "documentation": "Record date, valve position commanded, actual position achieved, pass/fail, any friction or stiction observed"
+    },
+    "sil_verification": {
+      "SIL_1": "PFDavg 0.01 to 0.1 (90-99% availability) — single instrument loop, standard hardware",
+      "SIL_2": "PFDavg 0.001 to 0.01 (99-99.9%) — redundant sensors (1oo2), SIL-rated equipment, proof test interval critical",
+      "SIL_3": "PFDavg 0.0001 to 0.001 (99.9-99.99%) — high redundancy (2oo3), diverse technology, very tight proof test intervals, hardware fault tolerance 1 minimum",
+      "documentation": [
+        "SIL verification report showing PFD calculation meets target SIL",
+        "Safety requirements specification (SRS) for each SIF",
+        "Proof test procedure approved by SIS engineer",
+        "Device SIL certificates from manufacturers (FMEDA reports)",
+        "Common cause failure analysis",
+        "Systematic capability assessment"
+      ]
+    },
+    "trip_point_verification": [
+      "Verify each sensor trip point matches the cause and effect diagram",
+      "Apply known input at trip point — verify logic solver detects trip condition",
+      "Verify correct output action occurs (right valve closes, right pump stops)",
+      "Verify voting logic works correctly (1oo2, 2oo3) — test each sensor individually AND in combination",
+      "Reset logic tested: system must require manual reset after trip (auto-reset on safety systems is typically prohibited)"
+    ],
+    "response_time_testing": {
+      "definition": "Total time from process variable reaching trip point to final element achieving safe state",
+      "budget": "Sensor response + transmission delay + logic solver scan time + solenoid response + valve stroke time",
+      "typical_components": {
+        "transmitter_response": "100-400 ms (damping setting affects this — reduce damping for SIS transmitters)",
+        "logic_solver_scan": "50-100 ms per scan (some systems guarantee fixed scan time for SIS)",
+        "solenoid_valve": "50-150 ms to shift",
+        "valve_stroke_time": "2-10 seconds depending on size and actuator (THIS is usually the largest component)"
+      },
+      "total_must_be_less_than": "The process safety time (time from detection to hazardous condition) specified in the SRS",
+      "common_problem": "Transmitter damping set too high (slow response) — SIS transmitters should have damping at minimum or per SIS engineer specification"
+    }
+  }
+}

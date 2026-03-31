@@ -1,92 +1,304 @@
 {
   "trade": "Instrumentation",
   "category": "procedures",
-  "description": "Craft procedures, instrument specs, ISA standards, and troubleshooting for instrumentation",
+  "description": "Comprehensive craft procedures, instrument specs, ISA standards, installation methods, and troubleshooting for instrumentation technicians",
   "isa_tag_structure": {
     "format": "First letter = measured variable, remaining = function, then loop number",
-    "examples": {"PT": "Pressure Transmitter", "FIC": "Flow Indicating Controller", "LT": "Level Transmitter", "TI": "Temperature Indicator", "PSH": "Pressure Switch High", "LSHH": "Level Switch High-High (safety)", "FE": "Flow Element", "TV": "Temperature Valve"},
-    "first_letters": {"A": "Analysis", "F": "Flow", "L": "Level", "P": "Pressure", "T": "Temperature", "V": "Vibration"},
-    "succeeding_letters": {"A": "Alarm", "C": "Controller", "E": "Element/Sensor", "H": "High", "I": "Indicator", "L": "Low", "S": "Switch", "T": "Transmitter", "V": "Valve"}
+    "examples": {"PT": "Pressure Transmitter", "FIC": "Flow Indicating Controller", "LT": "Level Transmitter", "TI": "Temperature Indicator", "PSH": "Pressure Switch High", "LSHH": "Level Switch High-High (safety)", "FE": "Flow Element", "TV": "Temperature Valve", "AIT": "Analyzer Indicating Transmitter", "PDT": "Pressure Differential Transmitter", "ZSC": "Position Switch Closed", "ZSO": "Position Switch Open", "XV": "On/Off Valve (solenoid/shutdown)", "HV": "Hand Valve", "FCV": "Flow Control Valve"},
+    "first_letters": {"A": "Analysis", "B": "Burner/Combustion", "C": "Conductivity", "D": "Density/Specific Gravity", "E": "Voltage", "F": "Flow", "G": "Gaging/Position", "H": "Hand (manual)", "I": "Current", "J": "Power/Scan", "K": "Time/Schedule", "L": "Level", "M": "Moisture/Humidity", "N": "User Choice", "O": "User Choice", "P": "Pressure", "Q": "Quantity/Totalize", "R": "Radiation", "S": "Speed/Frequency", "T": "Temperature", "U": "Multivariable", "V": "Vibration", "W": "Weight/Force", "X": "Unclassified", "Y": "Event/State", "Z": "Position/Dimension"},
+    "succeeding_letters": {"A": "Alarm", "C": "Controller", "D": "Differential", "E": "Element/Primary Sensor", "G": "Glass/Gauge/Viewing", "H": "High", "I": "Indicator", "K": "Control Station", "L": "Low/Light", "M": "Middle/Intermediate", "N": "User Choice", "O": "Orifice/Restriction", "P": "Point/Test Connection", "Q": "Totalize/Integrate", "R": "Record", "S": "Switch/Safety", "T": "Transmitter", "U": "Multifunction", "V": "Valve/Damper/Louver", "W": "Well/Probe", "X": "Unclassified", "Y": "Relay/Compute/Convert", "Z": "Driver/Actuator/Final Element"},
+    "loop_numbering": "Loop numbers are typically assigned per P&ID area. Example: FIC-1001 = Flow Indicating Controller, loop 1001. Numbers 1-999 common for small projects, 1000+ for large facilities. Safety loops often use 8000 or 9000 series.",
+    "suffix_conventions": {"A/B": "Redundant/duplicate instruments", "X": "Spare", "N": "Nitrogen service"}
   },
   "signal_reference": {
     "4_20mA": {"0%": "4.00 mA", "25%": "8.00 mA", "50%": "12.00 mA", "75%": "16.00 mA", "100%": "20.00 mA"},
     "formula": "mA = 4 + (16 x percent/100)",
-    "burnout_upscale": "Greater than 21.0 mA — sensor failure",
-    "burnout_downscale": "Less than 3.6 mA — sensor failure"
+    "reverse_formula": "percent = (mA - 4) / 16 x 100",
+    "burnout_upscale": "Greater than 21.0 mA — sensor failure, transmitter drives high to alert DCS",
+    "burnout_downscale": "Less than 3.6 mA — sensor failure, transmitter drives low to alert DCS",
+    "namur_levels": {"normal_range": "3.8 to 20.5 mA", "upscale_alarm": ">21.0 mA", "downscale_alarm": "<3.6 mA", "open_circuit": "0 mA"},
+    "3_15_psi": {"legacy": true, "0%": "3 PSI", "100%": "15 PSI", "note": "Old pneumatic standard — still found on some older plants and positioners"},
+    "fieldbus_signals": {"HART": "Digital signal superimposed on 4-20mA (not instead of)", "Foundation_Fieldbus_H1": "31.25 kbit/s, replaces 4-20mA entirely, bus-powered", "Profibus_PA": "31.25 kbit/s, similar to FF H1"}
+  },
+  "transmitter_installation": {
+    "dp_transmitter": {
+      "mounting": "Mount on 2-inch pipe stand or bracket. Transmitter must be accessible for calibration.",
+      "orientation": "H side = high pressure (process), L side = low pressure (reference). Verify with P&ID.",
+      "impulse_lines": {
+        "liquid": "Both taps at same elevation if possible. Slope lines DOWN to transmitter. Transmitter BELOW taps.",
+        "gas": "Slope lines UP to transmitter. Transmitter ABOVE taps. Drain legs at low points.",
+        "steam": "Condensate pots at BOTH taps. Fill legs with distilled water to same level. Both legs identical length and exposure.",
+        "corrosive": "Use diaphragm seals (remote seals) instead of impulse lines. Fill with compatible fill fluid."
+      },
+      "manifold": "Install 3-valve or 5-valve manifold between process and transmitter. ALWAYS equalize before opening to process.",
+      "steps": ["Mount transmitter on bracket/stand at correct elevation", "Install manifold — verify H/L orientation", "Connect impulse tubing — verify slope direction", "Pressure test tubing (1.5x operating or per spec)", "Open equalizing valve on manifold", "Slowly open HP block valve", "Slowly open LP block valve", "Close equalizing valve", "Verify 4 mA at zero differential", "Calibrate per data sheet range"],
+      "common_mistakes": ["H and L sides reversed — reading backwards", "Impulse lines not sloped — air/liquid traps cause errors", "Manifold not equalized before opening to process — overpressure damage", "Fill fluid not compatible with process — diaphragm damage"]
+    },
+    "pressure_transmitter": {
+      "mounting": "Process connection on bottom of transmitter. Mount vertically if possible.",
+      "steps": ["Install root valve at process tap", "Install instrument isolation valve or needle valve", "Mount transmitter on bracket — process connection DOWN for liquids", "Connect tubing from isolation valve to transmitter", "Pressure test", "Open root valve, then isolation valve slowly", "Verify reading matches local gauge", "Calibrate if needed"],
+      "gauge_pressure_note": "Vent port must be OPEN to atmosphere (not plugged) for gauge pressure transmitters",
+      "absolute_pressure_note": "Vent port is SEALED — transmitter references internal vacuum"
+    },
+    "temperature_transmitter": {
+      "thermowell_first": "ALWAYS install thermowell before the element. Process must be depressurized for thermowell installation.",
+      "immersion_depth": "Minimum 10 times sheath diameter. For 1/2-inch well, minimum 5 inches past pipe wall.",
+      "steps": ["Install thermowell per weld procedure (if welded) or thread into connection", "Verify immersion depth meets specification", "Apply thermal compound to thermowell bore", "Insert TC or RTD element — do NOT force", "Wire element to transmitter head — verify polarity for TC", "Connect transmitter output wiring", "Calibrate transmitter — simulate input at head"],
+      "tc_rules": ["Red wire is ALWAYS negative (ANSI)", "Use matching extension wire — J for J, K for K, T for T", "NEVER splice different TC types together", "NEVER run TC wire in same conduit as power cables", "Verify polarity at every junction point"],
+      "rtd_rules": ["3-wire is standard — match lead lengths for accuracy", "4-wire for highest accuracy applications", "Do NOT use 2-wire for anything requiring ±0.5°C accuracy", "Shield must be grounded at ONE end only"]
+    },
+    "level_transmitter_dp": {
+      "wet_leg": "Reference leg filled with liquid (glycol, silicone, or process fluid). Leg must be kept full. Any loss causes reading error.",
+      "dry_leg": "Reference leg open to atmosphere. Simpler but condensation in reference leg causes error.",
+      "electronic_remote_seal": "Capillary system filled with silicone or fluorinated fluid. No impulse lines. Temperature affects fill fluid — compensate.",
+      "calculation": "Span (inches WC) = Height (inches) × Specific Gravity × 0.0361 (for PSI) or Height × SG directly for inches WC",
+      "suppression_elevation": "Suppression: transmitter ABOVE lower tap — zero is suppressed (positive offset). Elevation: transmitter BELOW lower tap — zero is elevated (negative offset)."
+    },
+    "flow_element_orifice": {
+      "orientation": "Bevel faces DOWNSTREAM. Paddle/handle text faces UPSTREAM. This is the #1 installation error in instrumentation.",
+      "straight_runs": "Minimum varies by upstream fitting and beta ratio. General rule: 20D upstream / 5D downstream for single 90° elbow. Check AGA/API tables for specific configurations.",
+      "tap_location": "Flange taps: 1 inch from face. Corner taps: at flange face. Vena contracta: at point of minimum pressure. D and D/2 taps: 1D upstream, D/2 downstream.",
+      "drain_vent": "Install drain on low side (liquid service) and vent on high side (gas service) of impulse lines",
+      "gasket_warning": "Gasket must NOT protrude into flow bore — causes measurement error. Use correct ID gaskets."
+    },
+    "control_valve_installation": {
+      "pre_install_checks": ["Verify tag number matches P&ID and line spec", "Verify body material matches line spec", "Check flow direction arrow — install per P&ID", "Verify actuator size matches data sheet", "Remove ALL shipping stops and blocks from actuator", "Verify nameplate data: Cv, trim, packing, actuator type"],
+      "steps": ["Set valve on pipe supports — do NOT let pipe support the valve weight", "Align flanges — do NOT force gasket alignment with bolts", "Install gaskets — verify material and rating match line spec", "Torque bolts in star pattern per flange spec", "Connect actuator air supply — verify pressure matches nameplate", "Stroke valve full range BEFORE connecting to process", "Verify fail position matches data sheet (fail-open, fail-closed, fail-last)", "Connect positioner feedback linkage", "Calibrate positioner: 4 mA = valve position per data sheet, 20 mA = other end"],
+      "fail_position_test": "Remove air supply. Valve must go to specified fail position. If fail-close: valve must close tight. If fail-open: valve must open fully.",
+      "common_mistakes": ["Flow direction reversed", "Shipping stops not removed — valve won't stroke", "Wrong fail position — could be catastrophic in emergency", "Packing bolts overtightened — stiction", "Air supply pressure wrong — valve won't reach full stroke"]
+    }
   },
   "thermocouple_types": {
-    "type_J": {"materials": "Iron/Constantan", "range": "-210 to +760C", "color": "White(+)/Red(-)", "jacket": "Black", "use": "General purpose, reducing atmospheres"},
-    "type_K": {"materials": "Chromel/Alumel", "range": "-270 to +1260C", "color": "Yellow(+)/Red(-)", "jacket": "Brown", "use": "Most common general purpose"},
-    "type_T": {"materials": "Copper/Constantan", "range": "-270 to +370C", "color": "Blue(+)/Red(-)", "jacket": "Blue", "use": "Low temp, cryogenics"},
-    "rule": "Red is ALWAYS negative in US ANSI standard. ALWAYS use matching extension wire type."
+    "type_J": {"materials": "Iron/Constantan", "range": "-210 to +760°C", "color": "White(+)/Red(-)", "jacket": "Black", "use": "General purpose, reducing atmospheres. Iron oxidizes above 540°C."},
+    "type_K": {"materials": "Chromel/Alumel", "range": "-270 to +1260°C", "color": "Yellow(+)/Red(-)", "jacket": "Brown", "use": "MOST COMMON general purpose. Good for oxidizing atmospheres."},
+    "type_T": {"materials": "Copper/Constantan", "range": "-270 to +370°C", "color": "Blue(+)/Red(-)", "jacket": "Blue", "use": "Low temp, cryogenics, moisture resistant."},
+    "type_E": {"materials": "Chromel/Constantan", "range": "-270 to +870°C", "color": "Purple(+)/Red(-)", "jacket": "Purple", "use": "Highest millivolt output — best for low-temp precision."},
+    "type_N": {"materials": "Nicrosil/Nisil", "range": "-270 to +1300°C", "color": "Orange(+)/Red(-)", "jacket": "Orange", "use": "Improved version of Type K — better stability, less drift."},
+    "type_R": {"materials": "Platinum-13%Rhodium/Platinum", "range": "0 to +1480°C", "color": "Black(+)/Red(-)", "jacket": "Green", "use": "High temp, precision. Expensive. Glass, ceramics, steel industries."},
+    "type_S": {"materials": "Platinum-10%Rhodium/Platinum", "range": "0 to +1480°C", "color": "Black(+)/Red(-)", "jacket": "Green", "use": "Similar to R. Used as reference standard."},
+    "rules": [
+      "Red is ALWAYS negative in US ANSI standard",
+      "ALWAYS use matching extension wire type — J wire for J TC, K wire for K TC",
+      "NEVER splice different TC types together — creates additional junction",
+      "NEVER run TC extension wire in conduit with power cables — EMI noise",
+      "Extension wire is cheaper but has narrower temp range than TC wire",
+      "At every junction, verify polarity — reversed polarity gives wrong reading"
+    ]
   },
   "rtd_wiring": {
-    "2_wire": "Least accurate — lead resistance adds error",
-    "3_wire": "Most common industrial — compensates for lead resistance",
-    "4_wire": "Most accurate — eliminates all lead resistance"
+    "2_wire": "Least accurate — lead wire resistance adds directly to reading. Only acceptable for short runs (<10 ft) or where ±2°C accuracy is OK.",
+    "3_wire": "Most common industrial configuration. Third wire compensates for lead resistance. Match all 3 wire lengths and gauge.",
+    "4_wire": "Most accurate — eliminates ALL lead resistance effects. Required for laboratory and custody transfer. Uses Kelvin measurement.",
+    "pt100": "100.00 ohms at 0°C. Alpha = 0.00385 ohms/ohm/°C (IEC 751). Most common worldwide.",
+    "pt1000": "1000.00 ohms at 0°C. Higher base resistance reduces lead wire error effect. Good for 2-wire applications.",
+    "resistance_table_pt100": {"minus50C": "80.31 Ω", "0C": "100.00 Ω", "50C": "119.40 Ω", "100C": "138.51 Ω", "200C": "175.86 Ω", "300C": "212.05 Ω", "400C": "247.09 Ω"}
   },
   "compression_fittings": {
-    "initial_makeup": "1-1/4 turns past finger tight for 1/2-inch and smaller",
-    "remake": "1/4 turn past previous position",
-    "rules": ["Never use Teflon tape on compression fittings", "Match fitting material to tubing", "Inspect ferrules before assembly"]
+    "initial_makeup": "1-1/4 turns past finger tight for 1/2-inch and smaller Swagelok-type. 1-1/8 turns for 3/4-inch and larger.",
+    "remake": "Tighten to previous position PLUS 1/4 turn. Mark the nut position before disassembly.",
+    "rules": [
+      "NEVER use Teflon tape on compression fittings — tape gets into ferrule seat and causes leaks",
+      "Match fitting material to tubing — 316SS fittings on 316SS tubing",
+      "Inspect ferrules before assembly — no nicks, scratches, or deformation",
+      "Tubing must be cut square — use a tubing cutter, not a hacksaw",
+      "Deburr inside AND outside after cutting",
+      "Insert tubing to back of fitting body before tightening",
+      "Do NOT mix brands — Swagelok ferrules in Parker bodies (or vice versa) will leak",
+      "Maximum number of remakes: typically 3-4 times before ferrule is compressed too thin"
+    ],
+    "leak_testing": "Apply Snoop or soap solution at ambient temp. Bubble = leak. Tighten 1/8 turn increments. If still leaks after 1/2 turn additional, disassemble and inspect.",
+    "bending": "Minimum bend radius = 5 times tube OD for 316SS. Use tube bender — do NOT bend by hand or with pliers."
   },
   "impulse_line_routing": {
-    "liquid_service": "Slope DOWN from process tap to transmitter. Transmitter BELOW tap. No traps or high points.",
-    "gas_service": "Slope UP from process tap to transmitter. Transmitter ABOVE tap. No low points where liquid accumulates.",
-    "steam_service": "Install condensate pots at process connection. Fill legs with water. Both legs same length and temperature."
+    "liquid_service": "Slope DOWN from process tap to transmitter (1 inch per foot minimum). Transmitter BELOW tap. No traps or high points — air will accumulate and cause errors.",
+    "gas_service": "Slope UP from process tap to transmitter (1 inch per foot minimum). Transmitter ABOVE tap. No low points where liquid accumulates — condensate causes errors.",
+    "steam_service": "Install condensate pots at process connection. Fill both legs with distilled water to identical level. Both legs must be same length and same temperature exposure.",
+    "corrosive_service": "Use diaphragm seals (remote seals) instead of impulse lines. Select fill fluid compatible with process AND ambient temperature range.",
+    "support_spacing": {"316ss_half_inch_horizontal": "5 ft maximum", "316ss_half_inch_vertical": "8 ft maximum", "316ss_quarter_inch": "4 ft horizontal, 6 ft vertical"},
+    "general_rules": [
+      "Route tubing along structural steel — never across walkways or access areas",
+      "Use tubing clamps — not wire ties or hose clamps",
+      "Label both ends of every tubing run — tag number and destination",
+      "Cap all open tubing ends at end of every shift — dirt ingress causes plugging",
+      "Pressure test ALL tubing before connecting to instruments (typically 1.5x design pressure)",
+      "Blow through with clean dry air or N2 after pressure test — remove debris and moisture"
+    ]
   },
   "cable_separation": {
-    "from_power_cables": "12-inch minimum in tray, separate conduit systems",
-    "crossing": "Cross at 90 degrees",
-    "shield_grounding": "Ground at ONE end only (marshalling cabinet) to prevent ground loops",
-    "sis_safety": "DEDICATED cable tray and conduit — never mixed with BPCS"
+    "from_power_cables": "12-inch minimum separation in cable tray. 24-inch preferred near VFDs and large motors.",
+    "crossing": "Cross at 90 degrees only — minimizes electromagnetic coupling",
+    "shield_grounding": "Ground shield at ONE end only — typically at the marshalling cabinet. Grounding at both ends creates ground loops.",
+    "sis_safety": "DEDICATED cable tray and conduit for Safety Instrumented System (SIS) wiring — NEVER mixed with BPCS (Basic Process Control System)",
+    "is_wiring": "Intrinsically Safe circuits: blue cable jacket or blue conduit marking. Separate from non-IS. IS barriers in marshalling cabinet.",
+    "tc_extension": "Thermocouple extension wire: dedicated conduit or tray. Never in same conduit as 4-20mA signals — EMI crosstalk."
+  },
+  "smart_transmitter_configuration": {
+    "hart_protocol": {
+      "description": "Highway Addressable Remote Transducer. Digital communication superimposed on 4-20mA loop.",
+      "requirements": ["250-ohm minimum loop resistance for HART communication", "HART modem connects at transmitter terminals or across 250-ohm resistor", "Loop must have >3.5 mA for communication", "Do NOT connect HART modem across power supply — connect across the load resistor"],
+      "common_parameters": ["Tag", "Upper Range Value (URV)", "Lower Range Value (LRV)", "Damping (seconds)", "Transfer function (linear, square root)", "Engineering units", "Sensor trim (match to known reference)", "Output trim (match 4 and 20 mA to calibrator)"],
+      "tools": ["Emerson 475 Field Communicator", "Beamex MC6 (calibrator + HART)", "Emerson AMS Device Manager (software)", "PACTware with FDT/DTM"]
+    },
+    "foundation_fieldbus": {
+      "description": "All-digital protocol replacing 4-20mA. Bus-powered devices on H1 segment.",
+      "segment_rules": ["Maximum 32 devices per segment (practical limit 8-16)", "Maximum cable length: 1900m (6200 ft) without repeater", "Spur length: 120m maximum (1m minimum)", "Minimum 9V DC at furthest device", "Trunk and spur topology — NOT daisy-chain"],
+      "power": "Powered by segment power supply. Calculate voltage drop per device."
+    }
+  },
+  "manifold_valve_procedures": {
+    "3_valve_manifold": {
+      "purpose": "Isolate DP transmitter from process for calibration or removal",
+      "valves": {"hp_block": "High-pressure block valve (process side)", "lp_block": "Low-pressure block valve (reference side)", "equalizing": "Equalizing valve (connects HP to LP)"},
+      "to_isolate": ["Close HP block valve", "Close LP block valve", "Open equalizing valve — transmitter now sees zero DP", "Bleed pressure through bleed valve if equipped"],
+      "to_put_in_service": ["Close equalizing valve", "Slowly open HP block valve", "Slowly open LP block valve", "Verify transmitter reading is reasonable"],
+      "critical_rule": "NEVER open equalizing valve while both block valves are open on a high-pressure system — full process pressure on both sides of transmitter"
+    },
+    "5_valve_manifold": {
+      "purpose": "Same as 3-valve plus two bleed/drain valves for venting trapped pressure",
+      "additional_valves": {"hp_bleed": "High-pressure bleed valve", "lp_bleed": "Low-pressure bleed valve"},
+      "advantage": "Can safely vent trapped pressure before removing transmitter. Required on high-pressure services."
+    }
+  },
+  "grounding_and_bonding": {
+    "instrument_grounding": "Single-point ground for each instrument loop — typically at marshalling cabinet or DCS I/O card.",
+    "shield_grounding": "Ground at marshalling end only. Float (do NOT ground) at field end. Tape back ungrounded end to prevent accidental contact.",
+    "intrinsically_safe": "IS ground bus separate from power ground. IS barriers connected to dedicated IS ground bar. Ground resistance <1 ohm.",
+    "thermocouple": "Grounded junction TC: fast response but ground loop risk if transmitter also grounded. Ungrounded junction: slower response but isolated from ground loops. Exposed junction: fastest response, only for clean non-conductive environments.",
+    "mag_meter": "Grounding rings or grounding electrodes required. Ground to process piping. Without proper grounding, reading is erratic or zero.",
+    "static_grounding": "Bond all instrument tubing and conduit to grounding system in classified areas. Prevents static charge buildup."
   },
   "calibration_procedure": {
-    "steps": ["Verify de-energized or LOTO", "Connect calibrator to test terminals", "Apply known input at 0%, 25%, 50%, 75%, 100%", "Record mA output (should be 4, 8, 12, 16, 20)", "Tolerance typically +/- 0.1% of span", "Adjust zero/span if out of tolerance", "Record as-found and as-left values", "Apply calibration sticker"]
+    "standard_5_point": {
+      "steps": ["Verify instrument is de-energized or LOTO if live process", "Connect calibrator to test terminals (or apply known input)", "Apply known input at 0%, 25%, 50%, 75%, 100%", "Record output at each point (should be 4, 8, 12, 16, 20 mA)", "Check for linearity — error at each point within tolerance", "Tolerance typically ±0.1% of span for transmitters", "If out of tolerance: adjust zero first, then span", "Repeat 5-point check after adjustment", "Record as-found AND as-left values on calibration sheet", "Apply calibration sticker with date, initials, next due date"],
+      "as_found_rule": "ALWAYS record as-found values before making any adjustment. This is your baseline — if instrument was reading correctly, as-found matches as-left. If drifted, as-found shows how far."
+    },
+    "smart_transmitter_calibration": {
+      "sensor_trim": "Adjusts the sensor reading to match a known reference (e.g., deadweight tester, temperature bath). This corrects sensor-level errors.",
+      "output_trim": "Adjusts the 4 mA and 20 mA output to match a precision calibrator. This corrects D/A converter errors.",
+      "range_change": "Can change URV/LRV via HART without physical recalibration. But sensor trim and output trim still need periodic verification.",
+      "note": "Smart transmitters self-diagnose. Check diagnostic codes before calibrating — may indicate sensor failure, not drift."
+    },
+    "control_valve_calibration": {
+      "bench_set": "Actuator spring range — the air pressure range that strokes the valve. Example: 3-15 PSI or 6-30 PSI.",
+      "positioner_calibration": ["Apply 4 mA — valve should be at starting position (0% or 100% depending on action)", "Apply 12 mA — valve should be at 50%", "Apply 20 mA — valve should be at ending position", "Adjust positioner zero and span", "Verify dead band is within spec (typically <1%)", "Stroke valve 3 full cycles to check for hysteresis"],
+      "seat_leakage_test": "Class IV (metal seat): 0.01% of rated capacity. Class V: 5 x 10^-4 ml/min per inch of seat diameter. Class VI (soft seat): bubble-tight."
+    }
   },
   "loop_testing": {
-    "prerequisites": ["All wiring complete with continuity check", "Instrument installed and calibrated", "DCS/PLC point configured", "Control narrative available"],
-    "steps": ["Apply simulated input at field device", "Verify signal at marshalling junction box", "Verify correct reading in DCS/PLC (tag, units, range)", "Verify alarms at correct setpoints", "Command output from DCS, verify valve responds", "Verify valve position feedback in DCS", "Verify fail-safe action (remove air/power)", "For safety loops: verify shutdown activates correctly", "Document all results, sign and date"],
-    "common_issues": ["Reversed polarity (0 mA or pegged)", "Wrong DCS channel", "Scaling error in DCS", "Alarm setpoints not configured", "Valve responds opposite direction"]
+    "prerequisites": ["All wiring complete with point-to-point continuity check", "Instrument installed, calibrated, and tagged", "DCS/PLC point configured with correct tag, range, units, alarms", "Control narrative or logic diagram available", "Operations/control room NOTIFIED before any loop test", "Safety interlocks properly bypassed with authorization"],
+    "steps": [
+      "Verify power to instrument — check 24VDC at field terminals",
+      "Apply simulated 4 mA input at field device — verify 0% at DCS",
+      "Apply 12 mA — verify 50% at DCS (check engineering units match)",
+      "Apply 20 mA — verify 100% at DCS",
+      "Verify LOW alarm activates at correct setpoint",
+      "Verify HIGH alarm activates at correct setpoint",
+      "Verify LOLO and HIHI alarms if configured",
+      "For output loops: command 0% from DCS — verify valve at fail position",
+      "Command 50% from DCS — verify valve at 50% travel",
+      "Command 100% from DCS — verify valve at full stroke",
+      "Verify valve position feedback reads correctly in DCS",
+      "Remove air supply — verify fail-safe position",
+      "For safety loops: verify shutdown activates correctly at trip point",
+      "Verify all interlocks function per cause-and-effect matrix",
+      "Document all results on loop check sheet — sign and date",
+      "Remove bypass on safety interlocks — verify system back to normal"
+    ],
+    "two_person_requirement": "Loop testing ALWAYS requires two people: one at the field device, one at the DCS/control room. Use radios for communication.",
+    "common_issues": [
+      "Reversed polarity — shows 0 mA or pegged reading",
+      "Wrong DCS channel — signal shows on different tag",
+      "Scaling error in DCS — URV/LRV don't match transmitter range",
+      "Alarm setpoints not configured — alarms don't activate",
+      "Valve responds opposite direction — action (direct/reverse) wrong in positioner or DCS",
+      "Safety interlock doesn't trip — logic error, wrong input point, or bypass still in",
+      "Position feedback doesn't match — limit switch adjustment needed"
+    ]
   },
   "orifice_plate_installation": {
-    "orientation": "Bevel faces DOWNSTREAM. Paddle/handle text faces UPSTREAM.",
-    "straight_runs": "Minimum 10D upstream / 5D downstream (varies by beta ratio)",
-    "common_errors": ["Plate installed backwards — most common error", "Wrong bore size", "Gasket protruding into flow", "Insufficient straight run"]
+    "orientation": "Bevel faces DOWNSTREAM. Paddle/handle text faces UPSTREAM. This is the #1 installation error in instrumentation.",
+    "straight_runs": "Minimum varies by upstream fitting and beta ratio. General rule: 20D upstream / 5D downstream after single 90° elbow. 40D after two elbows in different planes. Flow conditioner can reduce requirements.",
+    "tap_types": {"flange_taps": "Most common — 1 inch from each face of orifice flange", "corner_taps": "At flange face — used in Europe", "D_and_D2": "1D upstream, D/2 downstream — most theoretically accurate"},
+    "beta_ratio": "d/D where d = orifice bore, D = pipe ID. Typical range 0.3 to 0.7. Below 0.2: too much pressure drop. Above 0.75: poor accuracy.",
+    "common_errors": ["Plate installed backwards — MOST COMMON ERROR, flow reads low/inaccurate", "Wrong bore size — wrong orifice plate for this line", "Gasket protruding into flow bore — creates turbulence, measurement error", "Insufficient straight run — measurement accuracy severely degraded", "Drain/vent taps not installed — cannot clear impulse lines", "Missing orifice plate data tag — cannot verify bore at turnaround"]
+  },
+  "pre_commissioning_procedures": {
+    "instrument_air_system": {
+      "quality": "Clean, dry, oil-free. Dew point -40°F or 20°F below ambient (whichever is lower). Particle size <3 micron. Oil content <1 ppm.",
+      "pressure": "Typical 80-100 PSI header. Individual instruments: 20 PSI via filter/regulator. Valve actuators: 60-80 PSI via filter/regulator.",
+      "test": "Blow down all headers and branch lines. Check dew point at furthest point. Verify pressure at each instrument take-off."
+    },
+    "cable_testing": {
+      "megger": "Insulation resistance test — minimum 100 MΩ at 500 VDC for instrument cables. Test each conductor to shield, and conductor to conductor.",
+      "continuity": "Point-to-point continuity check on every wire pair. Verify at marshalling panel and DCS I/O.",
+      "hipot": "Not typically required for instrument cables unless specified. If required, 1500 VDC for 1 minute."
+    },
+    "tubing_pressure_test": {
+      "test_pressure": "1.5 times design pressure or per project specification",
+      "medium": "Clean dry air or nitrogen. NEVER use water for instrument tubing — moisture causes corrosion and freezing.",
+      "hold_time": "Typically 10 minutes with no visible drop on gauge",
+      "documentation": "Record test pressure, hold time, ambient temperature, pass/fail"
+    }
+  },
+  "heat_tracing_for_instruments": {
+    "when_required": "Process fluid in impulse lines or sensing elements that can freeze, solidify, or become too viscous at ambient temperature.",
+    "electric": "Self-regulating heat trace cable (Raychem, Thermon, Nelson). Maintains temperature automatically — increases output as temperature drops.",
+    "steam": "Small-bore steam tracer tubing bundled with instrument tubing. Requires steam trap at low point.",
+    "rules": [
+      "Do NOT apply heat trace directly to transmitter electronics — overheat damage",
+      "Wrap impulse tubing, not the transmitter body",
+      "Use insulation over heat trace — heat trace without insulation wastes energy",
+      "Install thermostat or temperature controller to prevent overheating",
+      "Label all heat-traced lines — maintenance needs to know before working on them"
+    ]
   },
   "troubleshooting": {
     "signal_noise": {
-      "ground_loop": {"cause": "Shield grounded at both ends", "fix": "Ground at ONE end only"},
-      "emi": {"cause": "Cable too close to power/VFDs/motors", "fix": "12-24 inch separation, cross at 90 degrees"},
-      "loose_connections": {"cause": "Loose terminals, corroded connections", "fix": "Retighten, clean, replace damaged cables"}
+      "ground_loop": {"cause": "Shield grounded at both ends", "fix": "Ground at ONE end only — marshalling cabinet end"},
+      "emi": {"cause": "Cable too close to power/VFDs/motors", "fix": "12-24 inch separation, cross at 90 degrees. Use shielded cable."},
+      "loose_connections": {"cause": "Loose terminals, corroded connections", "fix": "Retighten all terminals. Clean corroded connections with contact cleaner. Replace damaged cables."},
+      "moisture": {"cause": "Water in junction box or cable", "fix": "Dry out JB, replace cable glands, seal conduit entries. Check drain holes."}
     },
     "impulse_line_problems": {
-      "plugging": {"symptom": "Slow/no response, reading stuck", "fix": "Rod out, blow back with N2, or switch to remote seal"},
-      "condensation": {"symptom": "Reading drifts high, erratic in cold weather", "fix": "Install drain legs, re-slope, add heat tracing"},
-      "air_locks": {"symptom": "Reading offset, sluggish response", "fix": "Vent at high points, re-slope tubing"},
-      "frozen": {"symptom": "Reading stuck in cold weather", "fix": "Thaw carefully (heat gun, NOT flame), verify heat trace"}
+      "plugging": {"symptom": "Slow/no response, reading stuck or doesn't track process", "fix": "Rod out tubing, blow back with N2, or switch to remote seal. Install self-draining orientation."},
+      "condensation": {"symptom": "Reading drifts, erratic in cold weather", "fix": "Install drain legs at low points, re-slope tubing, add heat tracing. For gas service — ensure tubing slopes UP."},
+      "air_locks": {"symptom": "Reading offset, sluggish response", "fix": "Vent at high points with needle valve or pet cock. Re-slope tubing to eliminate high points."},
+      "frozen": {"symptom": "Reading stuck in cold weather, no response to process change", "fix": "Thaw carefully with heat gun — NOT open flame. Verify heat trace is energized. Install additional insulation."},
+      "leaking": {"symptom": "Reading drifts, Snoop test shows bubbles", "fix": "Tighten compression fittings (1/8 turn at a time). Replace ferrules if over-tightened. Check for vibration damage."}
     },
     "common_mistakes": {
-      "orifice_backwards": "Flow reads inaccurate/low → reinstall with bevel downstream",
-      "tc_wire_reversed": "Temperature offset or nonlinear → replace with correct matching extension wire",
-      "mag_meter_vertical_electrodes": "Erratic/zero reading → rotate so electrodes are horizontal",
-      "wrong_range_in_dcs": "Proportional error → verify DCS range matches transmitter calibrated range"
+      "orifice_backwards": "Flow reads inaccurate/low → reinstall with bevel downstream, paddle text upstream",
+      "tc_wire_reversed": "Temperature reads offset or nonlinear → check polarity at every junction, replace with correct matching extension wire",
+      "mag_meter_vertical_electrodes": "Erratic or zero reading → rotate meter body so electrodes are horizontal (3 and 9 o'clock position)",
+      "wrong_range_in_dcs": "Proportional error at every point → verify DCS URV/LRV matches transmitter calibrated range exactly",
+      "is_barrier_wrong_type": "Loop doesn't power up or reads low → verify barrier voltage and current rating matches transmitter requirements",
+      "manifold_equalize_open": "Transmitter reads zero when process is running → check equalizing valve is CLOSED"
     }
   },
   "quality_common_punch_items": [
     "Missing or incorrect tag plates",
-    "Instrument not level",
-    "Missing sunshade",
-    "Tubing supports missing or exceeding max spacing",
-    "Tubing not properly sloped",
+    "Instrument not level or plumb",
+    "Missing sunshade on outdoor transmitters",
+    "Tubing supports missing or exceeding maximum spacing",
+    "Tubing not properly sloped for service type",
     "Junction box covers not installed or bolts missing",
     "Conduit seal fittings missing in classified areas",
     "Shields grounded at wrong end or both ends",
-    "Wrong wire type for thermocouple circuits",
-    "Missing cable labels",
+    "Wrong wire type for thermocouple extension circuits",
+    "Missing cable labels at both ends",
     "Calibration not performed or out of tolerance",
-    "Loop check not complete",
-    "Control valve stroking issues",
-    "Fail-safe action not verified"
+    "Loop check not complete or not signed",
+    "Control valve stroking issues — shipping stops not removed",
+    "Fail-safe action not verified",
+    "Missing drain or vent valves on impulse lines",
+    "Tubing not pressure tested",
+    "Instrument air filter/regulator not installed",
+    "Root valve not installed at process tap",
+    "Cable tray covers missing in classified areas",
+    "IS barriers not installed or wrong type",
+    "Grounding connections missing or not tested",
+    "As-built redlines not provided",
+    "Vendor manuals not in turnover package",
+    "Calibration certificates missing from documentation"
   ]
 }

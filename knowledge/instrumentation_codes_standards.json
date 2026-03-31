@@ -1,0 +1,555 @@
+{
+  "trade": "Instrumentation",
+  "category": "codes_standards",
+  "description": "ISA, NEC, API, ASME, and IEEE code requirements that instrumentation technicians must know for industrial construction — refineries, petrochemical, power plants. Covers hazardous area classification, safety instrumented systems, control valve sizing, P&ID symbology, and field wiring standards.",
+  "ISA_5_1_P_and_ID_symbols": {
+    "scope": "Defines instrument identification and symbology on Piping and Instrumentation Diagrams (P&IDs). This is THE language of instrumentation — if you cannot read ISA-5.1 symbology, you cannot read a P&ID.",
+    "tag_numbering": {
+      "structure": "First letter = measured variable, succeeding letters = function. Example: FIC-101 = Flow (F) Indicating (I) Controller (C), loop 101.",
+      "first_letter_measured_variable": {
+        "A": "Analysis (composition, pH, conductivity, oxygen, combustibles)",
+        "B": "Burner/combustion",
+        "C": "User choice (often conductivity)",
+        "D": "User choice (often density/specific gravity)",
+        "E": "Voltage",
+        "F": "Flow rate",
+        "G": "User choice (often gaging/position)",
+        "H": "Hand (manual, operator-initiated)",
+        "I": "Current (electrical)",
+        "J": "Power",
+        "K": "Time/schedule",
+        "L": "Level",
+        "M": "User choice (often moisture/humidity)",
+        "N": "User choice",
+        "O": "User choice",
+        "P": "Pressure/vacuum",
+        "Q": "Quantity (totalized flow, batch count)",
+        "R": "Radiation",
+        "S": "Speed/frequency",
+        "T": "Temperature",
+        "U": "Multivariable",
+        "V": "Vibration/mechanical analysis",
+        "W": "Weight/force",
+        "X": "Unclassified (anything not fitting standard letters)",
+        "Y": "Event/state/presence (on/off, open/close)",
+        "Z": "Position/dimension"
+      },
+      "succeeding_letters_function": {
+        "A": "Alarm",
+        "C": "Controller",
+        "D": "Differential (modifier — PD = pressure differential)",
+        "E": "Primary element (orifice plate, thermowell, RTD)",
+        "G": "Glass/gauge/viewing device",
+        "H": "High (modifier)",
+        "I": "Indicating",
+        "K": "Control station (operator interface point)",
+        "L": "Low (modifier) or Light (standalone)",
+        "Q": "Totalize/integrate",
+        "R": "Recording",
+        "S": "Switch",
+        "T": "Transmitter",
+        "V": "Valve/damper/louver (final control element)",
+        "Y": "Relay/compute/convert (solenoid, I/P transducer, signal converter)",
+        "Z": "Driver/actuator/unclassified final element"
+      },
+      "common_tag_examples": {
+        "FT_101": "Flow Transmitter — loop 101. Measures flow, sends 4-20mA signal.",
+        "FIC_101": "Flow Indicating Controller — typically the DCS/PLC control block.",
+        "FV_101": "Flow control Valve — the final control element in the flow loop.",
+        "FE_101": "Flow Element — the primary element (orifice plate, venturi, flow tube).",
+        "FIT_101": "Flow Indicating Transmitter — transmitter with local indication.",
+        "PSH_201": "Pressure Switch High — trips on high pressure.",
+        "PSHH_201": "Pressure Switch High-High — safety shutdown, typically SIS.",
+        "LT_301": "Level Transmitter.",
+        "LSLL_301": "Level Switch Low-Low — safety shutdown on very low level.",
+        "TT_401": "Temperature Transmitter.",
+        "TE_401": "Temperature Element — the RTD or thermocouple.",
+        "TW_401": "Thermowell — the protective sheath for the temperature element.",
+        "TV_401": "Temperature control Valve.",
+        "PDT_501": "Pressure Differential Transmitter — DP across a filter, exchanger, etc.",
+        "AT_601": "Analyzer Transmitter — pH, O2, combustibles, etc.",
+        "ZSO_701": "Position Switch Open — limit switch confirming valve open.",
+        "ZSC_701": "Position Switch Closed — limit switch confirming valve closed.",
+        "XV_701": "On-off valve — emergency shutdown valve, block valve.",
+        "UY_801": "Multivariable relay/converter — signal conditioning."
+      }
+    },
+    "loop_numbering": {
+      "convention": "Loop numbers are assigned per project numbering philosophy. Typically: area number + sequential number.",
+      "examples": "FIC-2101 means Flow loop 2101, typically unit area 21, instrument 01. Some projects use dash separator, some use no separator.",
+      "suffixes": "A, B, C suffixes for redundant instruments. Example: TT-101A, TT-101B, TT-101C for triple-redundant temperature measurement in SIS.",
+      "practical_note": "Always check the project-specific instrument index. Do NOT assume numbering convention — every project is different. Some use 4-digit, some 5-digit, some have unit prefix."
+    },
+    "symbol_types": {
+      "circle": "Field-mounted instrument (standard circle on P&ID)",
+      "circle_with_horizontal_line": "Panel/board/rack-mounted instrument (line through middle of circle)",
+      "square_in_circle": "DCS or PLC function (shared display/control)",
+      "diamond": "PLC/computer function",
+      "hexagon": "SIS (Safety Instrumented System) function — critical to identify on P&IDs",
+      "dashed_lines": "Software/data link (not physical wiring)",
+      "solid_lines": "Physical wiring or tubing connection",
+      "double_lines_to_valve": "Signal to final control element"
+    },
+    "common_violations": [
+      "Incorrect first letter — using P for a DP measurement instead of PD",
+      "Missing suffix letters for redundant SIS instruments",
+      "Not distinguishing SIS instruments from basic process control (hexagon vs circle)",
+      "Using non-standard user-choice letters without documenting in the legend",
+      "Loop numbers not matching the instrument index — causes nightmare during checkout"
+    ],
+    "practical_notes": "When walking down a P&ID in the field, verify every instrument tag matches what is physically installed. Mismatched tags between P&ID and field installation are the #1 cause of commissioning delays. Always carry a marked-up P&ID during installation."
+  },
+  "ISA_20_specification_forms": {
+    "scope": "Standardizes instrument specification forms (data sheets) used to define instrument requirements for procurement and installation. Covers transmitters, control valves, switches, analyzers, thermowells, and more.",
+    "key_requirements": {
+      "data_sheet_content": {
+        "process_data": "Operating pressure, temperature, flow, fluid composition, specific gravity, viscosity — all needed for proper instrument selection",
+        "instrument_data": "Type, manufacturer, model, range, calibration, output signal, materials of construction",
+        "installation_data": "Mounting orientation, process connection type and size, electrical classification, cable/conduit requirements",
+        "environmental_data": "Ambient temperature range, weather exposure (indoor/outdoor), corrosive atmosphere, vibration"
+      },
+      "common_forms": {
+        "ISA_20_1": "General instrument specification",
+        "ISA_20_2": "Control valve specification (most detailed — CV sizing, body/trim materials, packing, actuator)",
+        "ISA_20_3": "Pressure relief valve specification",
+        "ISA_20_4": "Flow element (orifice plate) specification"
+      }
+    },
+    "common_violations": [
+      "Incomplete process data — missing specific gravity or viscosity causes wrong transmitter range selection",
+      "Not specifying wetted materials — default selection corrodes in process service",
+      "Missing ambient temperature range — electronics fail in extreme cold/heat if not specified",
+      "Not specifying area classification — installing general purpose equipment in classified area",
+      "Missing vibration severity — transmitters fail prematurely on reciprocating compressor piping"
+    ],
+    "practical_notes": "Always cross-check the spec sheet against the actual process conditions at startup. Process data on spec sheets is from design — actual operating conditions often differ. If the process data changed during detailed engineering, the spec sheet may not have been updated. Verify ranges before calibration."
+  },
+  "ISA_75_control_valve_sizing": {
+    "scope": "Covers control valve sizing methodology, Cv calculation, flow characteristics, and valve selection. This is what separates a good instrument tech from a parts-changer — understanding valve sizing means understanding process control.",
+    "key_requirements": {
+      "Cv_definition": "Cv = number of US gallons per minute of water at 60F that passes through a fully open valve with a 1 psi pressure drop. Cv is THE sizing parameter.",
+      "Cv_calculation_liquid": {
+        "formula": "Cv = Q * sqrt(SG / deltaP) where Q = flow in GPM, SG = specific gravity, deltaP = pressure drop across valve in psi",
+        "critical_factors": "Must account for flashing (liquid to vapor in valve), cavitation (vapor bubbles collapsing — destroys trim), choked flow (flow rate maxes out regardless of increasing deltaP)",
+        "cavitation": "Occurs when P2 is above vapor pressure but Pvc (vena contracta pressure) drops below vapor pressure. Causes noise, vibration, and trim/body erosion. Use anti-cavitation trim (Fisher Cavitrol, Masoneilan Lo-dB) or move valve to higher-pressure location.",
+        "flashing": "Occurs when downstream pressure is below vapor pressure — liquid permanently flashes to vapor. Use hardened trim (Stellite, tungsten carbide). Cannot be eliminated by valve design, only managed."
+      },
+      "Cv_calculation_gas": {
+        "formula": "More complex — involves expansion factor (Y), specific heat ratio (k), and upstream absolute pressure. Use manufacturer sizing software for accuracy.",
+        "choked_flow": "Gas flow chokes when pressure drop exceeds approximately 50% of upstream absolute pressure (depends on specific heat ratio). Beyond this, more DP does not increase flow.",
+        "noise": "Gas flow generates aerodynamic noise. Predict noise level per IEC 60534-8-3. If predicted noise exceeds 85 dBA at 1 meter, use noise-attenuating trim or downstream diffuser."
+      },
+      "flow_characteristics": {
+        "linear": {
+          "definition": "Equal increments of valve travel produce equal increments of flow at constant deltaP",
+          "use": "Level control loops, bypass control, applications where deltaP across valve stays relatively constant",
+          "installed_vs_inherent": "The installed characteristic is what matters — it differs from inherent because system deltaP changes with flow"
+        },
+        "equal_percentage": {
+          "definition": "Equal increments of valve travel produce equal percentage changes in flow. A 10% travel change produces (approximately) a 10% change in the current flow rate.",
+          "use": "MOST COMMON for process control — pressure, temperature, and flow loops. Compensates for changing system deltaP.",
+          "why_most_common": "In real systems, deltaP across the valve decreases as flow increases (more DP in pipe/fittings). Equal percentage inherent characteristic, combined with this decreasing DP, produces a more linear installed characteristic — better for control."
+        },
+        "quick_opening": {
+          "definition": "Large flow change with small initial travel, then diminishing as valve opens further",
+          "use": "On-off service, relief/bypass, safety applications where you need maximum flow quickly. NOT for throttling control."
+        }
+      },
+      "rangeability": {
+        "definition": "Ratio of maximum to minimum controllable Cv. Typical globe valve: 50:1. Ball valve: up to 300:1. Butterfly: 20:1.",
+        "why_it_matters": "If your process turndown exceeds valve rangeability, you need a split-range setup or two different-sized valves."
+      }
+    },
+    "common_violations": [
+      "Sizing valve too large — oversized valve operates at low travel, hunts around setpoint, poor control. Number ONE mistake.",
+      "Ignoring cavitation — installing standard trim where anti-cavitation trim is needed. Destroys valve in months.",
+      "Not accounting for installed characteristic — using linear trim where equal percentage is needed and vice versa",
+      "Not checking noise levels — exceeding 85 dBA without attenuation violates OSHA exposure limits for nearby workers",
+      "Using butterfly valve for throttling below 10% open — extremely nonlinear, poor control resolution",
+      "Not considering fail position — fail-open vs fail-close must match process safety requirement"
+    ],
+    "practical_notes": "When a control loop is performing poorly, check valve sizing FIRST. Nine times out of ten, the valve is oversized because the engineer added too much safety factor. A valve operating between 20-80% travel with equal percentage trim will give the best control. If the valve is mostly at 10% or 90% travel, it is wrong-sized."
+  },
+  "ISA_84_IEC_61511_safety_instrumented_systems": {
+    "scope": "Defines requirements for Safety Instrumented Systems (SIS) in the process industries. This is LIFE SAFETY — get it wrong and people die. SIS is the last automated layer of protection before a catastrophic event.",
+    "key_concepts": {
+      "SIF": "Safety Instrumented Function — a specific safety function implemented by the SIS. Example: close the fuel gas valve on high-high furnace temperature.",
+      "SIL": "Safety Integrity Level — a measure of the required risk reduction. Higher SIL = more reliable safety function.",
+      "SIS": "Safety Instrumented System — the entire system: sensors, logic solver, and final elements that implement one or more SIFs.",
+      "SRS": "Safety Requirements Specification — THE document that defines what each SIF must do, at what SIL, with what response time. Every SIF must have an SRS before design begins."
+    },
+    "SIL_levels": {
+      "SIL_1": {
+        "PFDavg_range": "0.1 to 0.01 (risk reduction factor 10 to 100)",
+        "description": "Lowest level. Single-channel architecture often acceptable. Still requires documented proof testing.",
+        "typical_application": "Low-consequence process trips, non-lethal releases to flare"
+      },
+      "SIL_2": {
+        "PFDavg_range": "0.01 to 0.001 (risk reduction factor 100 to 1,000)",
+        "description": "Most common in refineries and petrochemical. Requires redundancy or very high-reliability components.",
+        "typical_application": "High-pressure trips, toxic release prevention, furnace safety shutdowns, reactor trips"
+      },
+      "SIL_3": {
+        "PFDavg_range": "0.001 to 0.0001 (risk reduction factor 1,000 to 10,000)",
+        "description": "High integrity. Requires redundant architecture with diagnostics. Rare in general refinery — more common in offshore, nuclear-adjacent, and high-consequence facilities.",
+        "typical_application": "Emergency shutdown systems for large inventories of lethal/explosive materials"
+      },
+      "SIL_4": {
+        "PFDavg_range": "0.0001 to 0.00001 (risk reduction factor 10,000 to 100,000)",
+        "description": "Extremely rare in process industries. Typically only nuclear and very specific applications. Do not design to SIL 4 unless explicitly required — it indicates the process design itself needs modification.",
+        "typical_application": "Almost never used in oil and gas or petrochemical"
+      }
+    },
+    "common_architectures": {
+      "1oo1": {
+        "meaning": "1 out of 1 — single sensor, single logic solver, single final element",
+        "use": "SIL 1 applications only. No redundancy. Single point of failure causes loss of safety function.",
+        "PFD_note": "Relies on proof test interval and component failure rate. Must proof test frequently."
+      },
+      "1oo2": {
+        "meaning": "1 out of 2 — two parallel channels, either one can trip the system",
+        "use": "SIL 2 typical. One failure does NOT lose safety function. But: higher spurious trip rate (nuisance trips) because either channel can trip.",
+        "PFD_note": "Much lower PFD than 1oo1. But spurious trip rate doubles."
+      },
+      "2oo3": {
+        "meaning": "2 out of 3 — three channels, any two must agree to trip",
+        "use": "SIL 2 or SIL 3. Best balance of safety AND availability. One failed sensor does not cause spurious trip OR loss of safety function.",
+        "PFD_note": "Lowest spurious trip rate with high safety integrity. Most expensive to install — three transmitters, three process connections, more wiring.",
+        "field_note": "When doing proof testing on 2oo3 systems, you MUST bypass properly. Testing one channel while the other two remain in service maintains safety but reduces redundancy during the test."
+      },
+      "2oo4": {
+        "meaning": "2 out of 4 — four channels, any two must agree. Used for very high availability requirements.",
+        "use": "SIL 3 with maximum availability. Rare — very expensive."
+      }
+    },
+    "proof_testing": {
+      "definition": "Periodic testing of SIS components to verify they will function on demand. Detects dangerous undetected failures.",
+      "interval": "Set during SIL verification — typically 1 year, 2 years, or during turnaround (4-5 years). Longer interval requires higher-reliability components.",
+      "partial_stroke_testing": "Testing a shutdown valve by moving it partially (10-20% of travel) without fully closing. Verifies valve is not stuck. Extends proof test interval for valve. Requires partial stroke test equipment (Fisher FIELDVUE, Emerson, Metso).",
+      "what_to_test": {
+        "sensors": "Apply known process condition (pressure, temperature) and verify correct trip signal at logic solver",
+        "logic_solver": "Simulate input trip and verify correct output action. Most SIS logic solvers have built-in diagnostic test capability.",
+        "final_elements": "Full stroke the valve to verify it moves to safe position. This is the MOST IMPORTANT test — a stuck valve is the most common SIS failure mode."
+      },
+      "documentation": "Every proof test MUST be documented: date, who performed, pass/fail, any anomalies, instrument tag, test equipment used and calibration due date. This documentation is auditable."
+    },
+    "common_violations": [
+      "Using BPCS (basic process control system) components in SIS without proper SIL rating",
+      "Not maintaining separation between SIS and BPCS — shared sensors, shared wiring, shared power",
+      "Missing or overdue proof tests — extending intervals without engineering justification",
+      "Bypassing SIS for convenience during operations without proper bypass management (MOC, time limit, notification)",
+      "Not documenting proof tests — if it is not documented, it did not happen",
+      "Using non-SIL-rated transmitters or valves in SIS loops",
+      "Common cause failures — all three transmitters in 2oo3 from same manufacturing lot, same installation error",
+      "Not proof testing final elements (valves) — only testing sensors and logic, which misses the most likely failure"
+    ],
+    "practical_notes": "SIS work is NOT the same as regular instrument work. Every modification requires Management of Change (MOC). Every bypass requires documented approval and time limit. Never tap into SIS wiring for a temporary reading. Never share a process tap between SIS and BPCS transmitters without documented engineering approval. The SRS is your bible — if it says the valve must close in 3 seconds, you verify it closes in 3 seconds during proof test, not just that it closes."
+  },
+  "ISA_88_batch_control": {
+    "scope": "Defines models and terminology for batch control systems. Relevant to instrumentation techs working in batch chemical plants, pharmaceutical, food/beverage, and specialty chemical facilities.",
+    "key_requirements": {
+      "physical_model": {
+        "enterprise": "The company",
+        "site": "The plant",
+        "area": "A production area within the plant",
+        "process_cell": "The equipment needed to make one batch (reactors, mixers, columns in a group)",
+        "unit": "A single piece of equipment that can execute a phase (a reactor, a dryer)",
+        "equipment_module": "A functional group within a unit (an agitator, a jacket cooling system, a feed system)",
+        "control_module": "The lowest level — a valve, transmitter, motor with its control logic"
+      },
+      "procedural_model": {
+        "procedure": "The complete batch recipe as executed",
+        "unit_procedure": "The part of the procedure that runs on one unit",
+        "operation": "A major step within a unit procedure (charge, react, transfer)",
+        "phase": "The smallest element of procedural control (open valve, heat to setpoint, hold for time)"
+      }
+    },
+    "common_violations": [
+      "Instrument techs not understanding which phase they are testing — causes incorrect valve positions during checkout",
+      "Not coordinating with the batch system during calibration — calibrating a transmitter while a batch is running can cause a batch abort",
+      "Assuming continuous control logic when the system is batch — setpoints and modes change per recipe step"
+    ],
+    "practical_notes": "In batch plants, instruments do not just sit at one operating point like in continuous plants. Temperature setpoints change per recipe step. Valves open and close in sequences. When troubleshooting, always ask the operator WHAT STEP the batch is in before assuming an instrument is wrong. The recipe logic may have commanded the valve to that position."
+  },
+  "NEC_500_506_hazardous_area_classification": {
+    "scope": "NEC Articles 500-506 define electrical equipment requirements for locations where flammable gases, vapors, or combustible dusts are present. THIS IS THE MOST CRITICAL CODE FOR INSTRUMENT INSTALLATION IN REFINERIES AND CHEMICAL PLANTS. Incorrect classification or wrong equipment causes explosions.",
+    "classification_systems": {
+      "class_division_system_NEC_500": {
+        "description": "Traditional North American system. Still widely used in US refineries.",
+        "Class_I": {
+          "definition": "Flammable gases or vapors present",
+          "Division_1": "Hazardous concentrations exist under normal operating conditions, or during repair/maintenance, or where equipment failure could release hazardous concentrations AND cause ignition",
+          "Division_2": "Hazardous concentrations exist only under abnormal conditions (equipment failure, rupture, breakdown). Handled/processed in closed containers. Ventilated areas adjacent to Div 1.",
+          "groups": {
+            "A": "Acetylene — extremely reactive, widest flammable range",
+            "B": "Hydrogen, butadiene, ethylene oxide, propylene oxide — very wide flammable range",
+            "C": "Ethylene, carbon monoxide, hydrogen sulfide, cyclopropane",
+            "D": "MOST COMMON in refineries — gasoline, hexane, naphtha, benzene, butane, propane, natural gas, methane, acetone, ammonia, ethanol"
+          }
+        },
+        "Class_II": {
+          "definition": "Combustible dust present",
+          "Division_1": "Dust in air under normal conditions or where equipment failure could produce ignitable dust-air mixture AND ignition source",
+          "Division_2": "Dust not normally in air, but deposits could be ignitable",
+          "groups": {
+            "E": "Metal dusts — aluminum, magnesium (extremely dangerous)",
+            "F": "Carbon dusts — coal, coke, carbon black",
+            "G": "Grain dust, flour, starch, wood dust, plastic dust, chemical dust"
+          }
+        },
+        "Class_III": {
+          "definition": "Ignitable fibers or flyings — textile mills, woodworking. Rarely encountered in refinery/petrochemical."
+        }
+      },
+      "zone_system_NEC_505_506": {
+        "description": "IEC-based system. Increasingly used on new projects, especially international companies. More granular than Division system.",
+        "Class_I_Zone_0": "Hazardous concentrations present continuously or for long periods. Inside vessels, tanks. Very restrictive — only intrinsically safe or specially designed equipment.",
+        "Class_I_Zone_1": "Hazardous concentrations likely under normal operating conditions. Equivalent to most of Division 1.",
+        "Class_I_Zone_2": "Hazardous concentrations only under abnormal conditions. Equivalent to Division 2.",
+        "Class_II_Zone_20": "Combustible dust continuously present",
+        "Class_II_Zone_21": "Combustible dust likely under normal conditions",
+        "Class_II_Zone_22": "Combustible dust only under abnormal conditions",
+        "gas_groups_zone": {
+          "IIC": "Hydrogen, acetylene (equivalent to Groups A and B)",
+          "IIB": "Ethylene (equivalent to Group C)",
+          "IIA": "Propane, methane (equivalent to Group D)"
+        }
+      }
+    },
+    "equipment_protection_methods": {
+      "XP_explosion_proof": {
+        "marking": "Class I, Division 1 (or Zone 1)",
+        "principle": "Equipment enclosed in a housing that can withstand an internal explosion and prevent it from igniting the surrounding atmosphere. Heavy cast enclosures with machined flame paths.",
+        "installation_requirements": "All covers must be bolted tight with ALL bolts installed (missing one bolt violates the protection). Threaded entries require 5 full threads engaged minimum. Conduit seals required within 18 inches of enclosure.",
+        "common_mistakes": [
+          "Missing cover bolts — even one missing bolt violates the XP rating",
+          "Damaged flame path (machined face) — any nick, gouge, or corrosion on the flame path surface voids the rating",
+          "Conduit seal not installed or not properly poured — the seal prevents flame propagation through conduit",
+          "Using the wrong seal compound — must be approved type, properly mixed, and fully cured",
+          "Paint on flame path surfaces — paint prevents proper metal-to-metal contact for flame quenching"
+        ]
+      },
+      "IS_intrinsically_safe": {
+        "marking": "Class I, Division 1 (or Zone 0/1) for entity-approved systems",
+        "principle": "Energy in the circuit is limited to below the ignition energy of the hazardous atmosphere. The circuit CANNOT produce a spark with enough energy to ignite. Safest method.",
+        "installation_requirements": "IS barriers (zener or galvanic isolator) installed in safe area. IS wiring must be separated from non-IS wiring. Blue cable jacket identifies IS circuits (NEC 504). IS wiring in separate conduit — NEVER mix with non-IS power wiring.",
+        "common_mistakes": [
+          "Running IS and non-IS wiring in the same conduit or cable tray — violates separation requirements",
+          "Not using IS-rated instruments in the field — the barrier only works if the field device is entity-approved for the IS system",
+          "Exceeding entity parameters — total cable capacitance + inductance must be within barrier limits. Long cable runs can exceed limits.",
+          "Grounding IS barriers incorrectly — zener barriers REQUIRE a dedicated IS ground bus connected to a single-point ground. Galvanic isolators do not require this ground but are more expensive.",
+          "Using blue cable for non-IS circuits — causes confusion and violates color coding"
+        ]
+      },
+      "NI_non_incendive": {
+        "marking": "Class I, Division 2 only",
+        "principle": "Circuit does not produce enough energy to ignite under normal operating conditions. NOT rated for Division 1.",
+        "use": "Common for Division 2 transmitters — less expensive than XP or IS. Typical modern 4-20mA HART transmitters are NI rated."
+      },
+      "AIS_associated_apparatus": {
+        "definition": "Equipment that is part of an IS system but located in the safe area (barriers, interface modules, power supplies). Must be marked and approved as associated apparatus.",
+        "note": "The IS barrier or galvanic isolator IS the associated apparatus. It must be installed in an unclassified (safe) area or in a purged/pressurized enclosure."
+      },
+      "purged_pressurized_Type_X_Y_Z": {
+        "Type_X": "Reduces classification from Division 1 to unclassified. Requires continuous pressurization with clean air/inert gas, automatic power disconnect on loss of purge.",
+        "Type_Y": "Reduces classification from Division 1 to Division 2. Requires alarm on loss of purge.",
+        "Type_Z": "Reduces classification from Division 2 to unclassified. Requires alarm on loss of purge.",
+        "common_use": "Analyzer shelters, large control panels in hazardous areas, VFD enclosures"
+      }
+    },
+    "sealing_requirements": {
+      "Division_1": "Conduit seal required within 18 inches of each explosion-proof enclosure. Seal required where conduit passes from Division 1 to Division 2 or unclassified area. Seal required where conduit enters an enclosure containing arcing/sparking devices.",
+      "Division_2": "Conduit seal required at boundary between Division 2 and unclassified area. Not required at each enclosure in Division 2 if no arcing devices inside.",
+      "seal_installation": {
+        "dam_fiber": "Pack the dam fiber BEFORE pouring compound. If compound leaks past, seal is void.",
+        "compound": "Must be approved sealing compound. Mix per manufacturer instructions. Pour to fill seal fitting completely — no voids.",
+        "cure_time": "Do not energize circuit until compound is fully cured (typically 24 hours depending on product and temperature).",
+        "drain_seals": "In vertical conduit runs, install drain seal at low point to prevent condensation from accumulating in enclosures."
+      }
+    },
+    "common_violations": [
+      "Installing Division 2 (NI) equipment in Division 1 area — the most dangerous violation",
+      "Missing conduit seals at classification boundaries — allows flame propagation through conduit from hazardous to safe area",
+      "Incomplete seals — compound not filling seal body, voids allow flame/gas passage",
+      "Opening XP enclosures while circuit is energized in hazardous area — hot work permit required OR de-energize first",
+      "Flexible conduit (liquidtight) not approved for the area classification — must check listing for Division/Zone",
+      "Cable tray in Division 1 area without proper cable type — MC-HL cable or approved alternatives required",
+      "Not verifying Group rating — equipment rated for Group D installed in Group B (hydrogen) area"
+    ],
+    "practical_notes": "Before you install ANYTHING in a classified area, check the area classification drawing. This drawing shows Division/Zone boundaries for the entire plant. If you are unsure of the classification at your installation point, STOP AND ASK. Never assume an area is unclassified. The area classification drawing is typically in the electrical engineering package. When in doubt, install to the more restrictive classification."
+  },
+  "NEC_725_instrument_wiring": {
+    "scope": "NEC Article 725 defines Class 1, Class 2, and Class 3 remote-control, signaling, and power-limited circuits. Most instrument circuits (4-20mA) fall under Class 2 or are treated as power-limited circuits. Critical for understanding IS circuit limitations.",
+    "key_requirements": {
+      "Class_1_circuits": {
+        "power_limit": "Not power-limited — up to 600V. Governed by same wiring methods as power circuits (Chapter 3 of NEC).",
+        "instrument_use": "Rarely used for instrumentation. Some solenoid valve circuits or motor-operated valve circuits may be Class 1."
+      },
+      "Class_2_circuits": {
+        "power_limit": "Power-limited to specific VA limits per NEC Table 725.121. Typically 100VA or less at various voltage levels.",
+        "instrument_use": "MOST 4-20mA instrument loops are Class 2 when powered by a Class 2 power supply (24VDC power-limited). Also: HART communication, thermocouple/RTD signals.",
+        "wiring_methods": "More relaxed than Class 1 — can use cable types not permitted for power wiring. CL2, CL2P (plenum), CL2R (riser) cable types."
+      },
+      "Class_3_circuits": {
+        "power_limit": "Power source limited per NEC Table 725.121, higher limits than Class 2 but still restricted.",
+        "instrument_use": "Less common. Some fieldbus segments, higher-power instrument circuits."
+      },
+      "separation_requirements": {
+        "Class_2_from_Class_1_or_power": "Class 2 cables must be separated from Class 1 and power cables. They can share a cable tray only if separated by a fixed barrier or maintained spacing per NEC 725.136.",
+        "IS_from_non_IS": "IS circuits require additional separation beyond standard Class 2 — separate conduit, separate cable tray, or 50mm separation with fixed barrier per NEC 504.",
+        "practical_approach": "In the field, the simplest approach is separate conduit runs for IS circuits. Blue conduit or blue cable identifies IS. Never pull IS and non-IS in the same conduit regardless of spacing."
+      }
+    },
+    "common_violations": [
+      "Mixing instrument (Class 2) wiring with power wiring in the same conduit without proper classification",
+      "Using non-rated cable for instrument circuits — must be appropriate cable type per NEC",
+      "IS circuits mixed with non-IS circuits in same conduit or cable tray without proper separation",
+      "Instrument cable tray too close to power cable tray without barrier or required separation distance"
+    ],
+    "practical_notes": "When running instrument cable, always use separate conduit from power wiring. Even if Code allows sharing with barriers, separate runs prevent noise coupling and make future troubleshooting easier. For IS circuits, the separation requirement is non-negotiable — it is a safety issue, not just a noise issue."
+  },
+  "API_551_process_measurement_installation": {
+    "scope": "Covers installation requirements for process measurement instruments — pressure, temperature, flow, and level. This is the standard that tells you HOW to install instruments correctly on process piping and vessels.",
+    "key_requirements": {
+      "pressure_measurement": {
+        "tap_location": "Side of pipe or top of pipe for gas service. Side or bottom for liquid. NEVER top for liquid (vapor accumulation) or bottom for gas (condensate accumulation).",
+        "impulse_lines": "Slope impulse tubing minimum 1 inch per foot toward process tap (for self-draining) or toward transmitter (for gas service). Fill legs with glycol/silicone for high-temperature or corrosive service.",
+        "diaphragm_seals": "Use when process fluid would plug impulse lines, is corrosive to tubing, or would freeze. Capillary length affects response time — keep as short as possible.",
+        "snubbers": "Install on pulsating services (reciprocating pumps/compressors). Needle valve or piston-type snubber. Without snubber, gauge/transmitter diaphragm will fatigue-fail."
+      },
+      "temperature_measurement": {
+        "thermowell_installation": "Install thermowell AGAINST flow direction (tip faces upstream). Insertion length: minimum 1/3 of pipe ID for pipes 4 inch and larger. For smaller pipes, use elbow installation or expanded section.",
+        "thermowell_types": "Tapered (best vibration resistance), straight, stepped. Material must match pipe material or better. Inconel for high-temp, Hastelloy for corrosive.",
+        "wake_frequency": "Thermowells can fail from vortex-induced vibration (VIV). Perform wake frequency calculation per ASME PTC 19.3 TW-2016 for high-velocity services. Failure = thermowell breaks off in process = catastrophic leak.",
+        "RTD_vs_thermocouple": "RTD for accuracy (below 600F typically). Thermocouple for high temperature (up to 3200F for Type B). RTD needs minimum 3-wire (preferably 4-wire) for lead resistance compensation."
+      },
+      "flow_measurement": {
+        "orifice_plate": {
+          "upstream_downstream": "Minimum straight run: 20D upstream, 5D downstream (varies by beta ratio and upstream disturbance — check ISO 5167 or AGA Report 3). More upstream for elbows out of plane, reducers, valves.",
+          "installation": "Orifice tab (handle) on top for horizontal pipe. Bevel faces downstream. Gaskets must not protrude into bore. Flange bolts torqued evenly.",
+          "drain_hole": "Small drain hole at bottom (for gas service) or vent hole at top (for liquid service) — prevents liquid accumulation in gas orifice or vapor accumulation in liquid orifice.",
+          "DP_tap_location": "Flange taps: 1 inch upstream, 1 inch downstream from orifice plate face. Most common in refineries."
+        },
+        "vortex_meter": "Minimum 20D upstream, 5D downstream. Must be completely filled with fluid (no two-phase flow). Install vibration-dampening pipe supports nearby for compressor piping.",
+        "magnetic_meter": "Must be full of liquid — install in vertical pipe with flow UP, or horizontal with electrodes horizontal (not top/bottom). Requires minimum 5D upstream, 3D downstream. Must be grounded properly — grounding rings or integral ground electrodes.",
+        "coriolis_meter": "No straight run requirement (measures mass flow directly). Install with flow tubes below centerline (inverted U avoids gas accumulation). Heavy — support properly. Sensitive to vibration — isolate from rotating equipment."
+      },
+      "level_measurement": {
+        "DP_level": "Transmitter below lower tap. For sealed vessels, reference leg connected to upper tap filled with reference fluid or use dry leg with purge. Calibration: LRV = (SG x lower tap height) - reference leg head. URV = (SG x upper tap height) - reference leg head.",
+        "radar": "GWR (guided wave radar): Install away from vessel walls, away from agitators, avoid nozzle buildup. Top-mounted. Through-air radar: requires adequate antenna length, low dielectric fluids need special considerations.",
+        "displacer": "Mount on vessel nozzle or in external chamber. Torque tube must be level. Process fluid specific gravity must be known — displacer calibration is SG-dependent."
+      }
+    },
+    "common_violations": [
+      "Pressure tap on bottom of pipe for gas service — collects condensate, gives wrong reading",
+      "Insufficient straight run before flow element — distorted flow profile gives measurement error of 5-15%",
+      "Thermowell too short — not reaching into flow stream, measuring pipe wall temperature instead of process",
+      "Magnetic flow meter installed with electrodes at top and bottom — top electrode collects air, loses signal",
+      "Missing grounding on magnetic flow meter — causes noise and signal instability",
+      "Orifice plate installed backwards — bevel must face downstream",
+      "DP transmitter mounted above taps on liquid service — air trapped in impulse lines gives wrong level reading"
+    ],
+    "practical_notes": "The single most common installation error is insufficient straight run for flow measurement. Always walk the field and measure actual straight run before installing flow instruments. If you cannot get the required straight run, use a flow conditioner plate or switch to a technology with lower straight run requirements (Coriolis, magnetic). Second most common: thermowell insertion too shallow — the reading will lag and read low."
+  },
+  "API_554_process_control_systems": {
+    "scope": "Covers design, installation, and maintenance of process control systems including DCS, PLC, SCADA, and field instrumentation integration.",
+    "key_requirements": {
+      "system_architecture": "Defines requirements for redundancy, network architecture, I/O subsystems, and operator workstations. Instrument techs need to understand the I/O level — marshalling cabinets, terminal blocks, signal types.",
+      "grounding_and_shielding": {
+        "single_point_ground": "Instrument signal shields should be grounded at ONE end only (typically at the marshalling cabinet/DCS I/O side). Grounding at both ends creates ground loops that introduce 60Hz noise.",
+        "shield_drain_wire": "Connect drain wire to ground bus at marshalling panel. Cut and tape the field end of the shield — do NOT ground it at the field device.",
+        "IS_grounding": "IS barrier ground bus is SEPARATE from instrument signal ground bus. IS ground must have less than 1 ohm impedance to facility ground grid."
+      },
+      "signal_types": {
+        "4_20mA": "THE standard analog signal. 4mA = 0% (LRV), 20mA = 100% (URV). 0mA = wire broken (fail downscale alarm). Less than 3.8mA or greater than 20.5mA indicates fault.",
+        "HART": "Highway Addressable Remote Transducer — digital signal superimposed on 4-20mA. Allows configuration, diagnostics, and secondary variables. Requires minimum 250 ohm loop resistance for communicator.",
+        "FOUNDATION_fieldbus_H1": "31.25 kbps digital protocol. Multiple devices on one wire pair (bus). Requires segment design — terminator, power conditioner, spur lengths per standard. Max 32 devices per segment (practical limit 8-16).",
+        "Profibus_PA": "Similar to FF H1 — 31.25 kbps on two-wire bus. Common with Siemens systems.",
+        "4_20mA_with_HART_vs_fieldbus": "Most refineries still use 4-20mA with HART for analog control and fieldbus for specific applications. HART is the dominant field protocol — if you only learn one digital protocol, learn HART."
+      }
+    },
+    "common_violations": [
+      "Grounding shield at both ends — introduces ground loops and 60Hz noise on signal",
+      "Exceeding HART minimum loop resistance — communicator will not connect below 250 ohms",
+      "Mixing signal types on fieldbus segments without proper design — causes communication errors",
+      "Not maintaining proper termination on fieldbus segments — reflection causes comm failures"
+    ],
+    "practical_notes": "When troubleshooting a noisy 4-20mA signal, check shield grounding FIRST. If the shield is grounded at both ends, you will see 60Hz noise superimposed on the signal. Disconnect the field end of the shield and the noise will disappear. For HART communication problems, measure loop resistance — if the DCS input impedance is too low (below 250 ohms), insert a 250 ohm HART resistor in series."
+  },
+  "API_555_process_analyzers": {
+    "scope": "Covers installation and maintenance of process analyzers — gas chromatographs, pH analyzers, oxygen analyzers, combustible gas detectors, moisture analyzers, and their sample conditioning systems.",
+    "key_requirements": {
+      "sample_system": {
+        "principle": "The analyzer is only as good as its sample system. 90% of analyzer problems are sample system problems, not analyzer problems.",
+        "components": "Sample probe, sample line (heat traced if needed), primary filter, pressure regulator, secondary filter, flow control, sample conditioning (temperature, moisture removal), sample to analyzer, sample return or vent.",
+        "fast_loop": "For distant analyzers, a fast loop continuously circulates process fluid past the analyzer tap point. The analyzer draws a small side stream. This dramatically reduces transport delay.",
+        "transport_time": "Time for sample to travel from process tap to analyzer. Must be minimized. Long transport times mean old data — useless for control."
+      },
+      "common_analyzers": {
+        "pH": "Clean electrodes regularly. Reference junction fouling is the #1 failure. Buffer calibration: 4.0, 7.0, 10.0 standard buffers. Temperature compensation required.",
+        "dissolved_oxygen": "Membrane-type or optical. Membrane needs periodic replacement. Keep flow across sensor constant.",
+        "combustible_gas": "Catalytic bead or IR. Catalytic bead sensors are poisoned by silicones, lead, sulfur compounds — destroyed permanently. IR sensors are immune to poisoning but more expensive.",
+        "gas_chromatograph": "Complex — carrier gas supply (helium, hydrogen, nitrogen), column oven, detector (TCD, FID). Calibrated with standard gas blends. Cycle time typically 3-15 minutes."
+      }
+    },
+    "common_violations": [
+      "Neglecting sample system maintenance — filters clogged, lines plugged, heat trace failed",
+      "Calibrating with expired or wrong concentration standard gas",
+      "Not accounting for transport delay when tuning analyzer-based control loops",
+      "Exposing catalytic bead combustible sensors to silicone-containing compounds (RTV sealant, silicone spray)"
+    ],
+    "practical_notes": "When an analyzer reads wrong, check the sample system FIRST. Is sample flowing? Is the filter clean? Is the heat trace working? Is the sample pressure and flow rate at spec? Only after you have verified good sample delivery should you suspect the analyzer itself. This is the 90/10 rule of analyzers — 90% sample system, 10% analyzer."
+  },
+  "ASME_B31_3_instrument_connections": {
+    "scope": "Instrument connection requirements per ASME B31.3 process piping code — process taps, orifice flanges, thermowell connections, and instrument valve manifolds.",
+    "key_requirements": {
+      "process_connections": {
+        "minimum_size": "1/2 inch NPT minimum for process taps (3/4 inch preferred for plugging resistance). Thermowells: typically 3/4 inch or 1 inch NPT connection to pipe/vessel.",
+        "weldolets_threadolets": "For instrument taps on pipe — weldolet (welded branch) or threadolet (threaded branch). Material must match pipe. Size per engineering specification.",
+        "block_valves": "Every instrument connection to process must have a block valve (root valve). Allows isolation for maintenance without shutting down the process.",
+        "bleed_valves": "Install bleed/vent valve between block valve and instrument for pressure relief before breaking the connection."
+      },
+      "orifice_flanges": {
+        "types": "Orifice flanges with flange taps (1 inch from plate face). ANSI Class 300 minimum for most refinery service.",
+        "jack_screws": "Orifice flanges have jack screws for separating flanges to remove/inspect orifice plate without fully unbolting.",
+        "gasket": "Use RTJ (ring type joint) or Flexitallic spiral wound — per flange rating and service. No Teflon on high-pressure orifice flanges.",
+        "alignment": "Orifice bore must be concentric with pipe bore. Misalignment causes measurement error."
+      },
+      "pressure_ratings": "All instrument components in the process boundary (root valves, manifolds, tubing up to first block) must be rated for the same pressure/temperature as the process piping."
+    },
+    "common_violations": [
+      "Root valve not installed — cannot isolate instrument for calibration or replacement without process shutdown",
+      "Instrument tubing/fittings rated below process pressure — tubing rupture under pressure is lethal",
+      "Wrong gasket material for orifice flanges — spiral wound gasket inner ring extending into bore affects flow measurement",
+      "Missing bleed valve — technician opens instrument connection under pressure, gets sprayed with hot process fluid"
+    ],
+    "practical_notes": "Before breaking ANY process instrument connection, verify isolation. Close the root valve. Open the bleed valve and verify zero pressure. If it is a liquid service, drain through the bleed. If it is hot service, let it cool. Never trust a single block valve — verify zero pressure at the bleed. This simple procedure prevents burns, chemical exposure, and fatalities every year."
+  },
+  "IEEE_518_guide_for_installation_of_electrical_equipment": {
+    "scope": "Guide for installation of electrical equipment to minimize noise and interference in instrumentation and control systems. Covers grounding, shielding, cable routing, and EMI/RFI protection.",
+    "key_requirements": {
+      "grounding_philosophy": {
+        "single_reference_ground": "All instrument grounds should reference a single ground point to prevent ground loops",
+        "instrument_ground_bus": "Separate from power ground bus. Connected to facility ground grid at ONE point.",
+        "IS_ground_bus": "Separate dedicated ground for intrinsically safe barriers. Less than 1 ohm to earth ground."
+      },
+      "cable_routing": {
+        "separation_from_power": "Instrument cables parallel to power cables: maintain minimum 12 inches separation for cables up to 600V power, 24 inches for cables over 600V. Crossing: cross at 90 degrees.",
+        "cable_tray_separation": "Instrument tray below power tray (heat rises). If side by side, maintain 12 inch minimum.",
+        "avoid_EMI_sources": "Route instrument cables away from VFDs, large motors, transformers, welding receptacles, fluorescent lights"
+      },
+      "shielding": {
+        "shield_type": "Aluminum foil with drain wire (most common for instrument cable) or braided copper shield (better shielding effectiveness but more expensive)",
+        "ground_shield_one_end": "Ground at marshalling cabinet end. Insulate and tape at field end.",
+        "shield_continuity": "In junction boxes where cables are spliced, maintain shield continuity — connect shield drain wires together but do NOT ground in junction box. Ground only at marshalling cabinet."
+      }
+    },
+    "common_violations": [
+      "Instrument cable routed directly alongside VFD output cables — induces noise that causes signal instability",
+      "Shield grounded at both ends — classic ground loop error causing 60Hz hum on analog signals",
+      "Instrument ground bus bonded to power ground bus at multiple points — creates ground loops",
+      "Thermocouple extension wire routed near high-power cables — induces error in millivolt signal"
+    ],
+    "practical_notes": "The #1 cause of spurious instrument readings in the field is electrical noise from improper cable routing or grounding. If a transmitter reading is bouncing and the process is steady, check: shield grounding (one end only), cable routing (away from power and VFDs), and cable integrity (no damaged insulation contacting tray). A 200mV noise pickup on a thermocouple circuit can cause a 10-degree temperature error."
+  }
+}

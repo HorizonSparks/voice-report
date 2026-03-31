@@ -70,6 +70,79 @@
       "hot pipe",
       "steam",
       "cryogenic"
+    ],
+    "analyzer_work": [
+      "analyzer",
+      "sample",
+      "sample system",
+      "probe",
+      "pH",
+      "O2",
+      "conductivity",
+      "chromatograph",
+      "GC",
+      "reagent",
+      "CEMS"
+    ],
+    "flow_measurement": [
+      "flow meter",
+      "magnetic meter",
+      "mag meter",
+      "coriolis",
+      "ultrasonic",
+      "vortex",
+      "orifice",
+      "dp cell",
+      "turbine meter",
+      "venturi"
+    ],
+    "level_measurement": [
+      "level",
+      "radar",
+      "guided wave",
+      "GWR",
+      "displacer",
+      "sight glass",
+      "gauge glass",
+      "capacitance",
+      "nuclear"
+    ],
+    "safety_systems": [
+      "SIS",
+      "SIL",
+      "safety instrumented",
+      "interlock",
+      "trip",
+      "shutdown",
+      "proof test",
+      "partial stroke",
+      "ESD",
+      "cause and effect"
+    ],
+    "commissioning": [
+      "commission",
+      "pre-commission",
+      "energize",
+      "startup",
+      "start-up",
+      "pre-comm",
+      "ITCC",
+      "punch list",
+      "turnover",
+      "handover",
+      "mechanical completion"
+    ],
+    "smart_instruments": [
+      "HART",
+      "fieldbus",
+      "foundation fieldbus",
+      "wireless",
+      "WirelessHART",
+      "AMS",
+      "PDM",
+      "configure",
+      "smart transmitter",
+      "DTM"
     ]
   },
   "electrical": {

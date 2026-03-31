@@ -1,0 +1,581 @@
+{
+  "trade": "Instrumentation",
+  "category": "materials",
+  "description": "Comprehensive materials knowledge for instrumentation technicians — tubing, fittings, cable, transmitters, control valves, junction boxes, manifolds, and heat tracing. Covers specifications, selection criteria, installation gotchas, and the common mistakes that cause rework on industrial construction sites.",
+  "tubing": {
+    "overview": "Instrument tubing carries process impulse signals (pressure, DP, level) and instrument air to final control elements. Material selection is critical — wrong material means corrosion failure, which means loss of measurement or loss of containment.",
+    "stainless_steel_316": {
+      "specification": "ASTM A269, TP316 or TP316L seamless",
+      "sizes": {
+        "quarter_inch": {
+          "OD": "0.250 inch",
+          "wall_thickness": "0.035 inch (standard) or 0.049 inch (heavy wall)",
+          "pressure_rating_ambient": "4600 psi (0.035 wall) or 6500 psi (0.049 wall) at ambient temperature",
+          "pressure_derating": "Derate above 200F — at 500F, working pressure is approximately 75% of ambient rating",
+          "use": "MOST COMMON for impulse lines, transmitter connections, gauge connections, analyzer sample lines"
+        },
+        "three_eighths_inch": {
+          "OD": "0.375 inch",
+          "wall_thickness": "0.035 inch or 0.049 inch",
+          "pressure_rating_ambient": "3000 psi (0.035 wall) or 4300 psi (0.049 wall)",
+          "use": "Signal lines where longer runs need less restriction, some pneumatic applications"
+        },
+        "half_inch": {
+          "OD": "0.500 inch",
+          "wall_thickness": "0.049 inch or 0.065 inch",
+          "pressure_rating_ambient": "3100 psi (0.049 wall) or 4100 psi (0.065 wall)",
+          "use": "Instrument air headers, longer pneumatic runs, sample system lines where flow rate matters"
+        }
+      },
+      "when_to_use": "Default material for all process impulse lines in refineries and petrochemical plants. Resists most common process fluids and atmospheric corrosion. Use 316L for better weldability if orbital welding of tubing is required.",
+      "bend_radius": "Minimum bend radius: 4x OD for manual bending, tighter with proper bender. Do NOT kink — kinked tubing restricts flow and creates stress riser. Use a proper tube bender, never bend by hand against a pipe or your knee.",
+      "cutting": "Use a tube cutter, NEVER a hacksaw. Hacksaw leaves burrs that damage ferrules and contaminate sample systems. Deburr inside and outside after cutting."
+    },
+    "stainless_steel_304": {
+      "specification": "ASTM A269, TP304 or TP304L",
+      "when_to_use": "Acceptable for instrument air service and non-corrosive process applications. Slightly less corrosion resistant than 316 (no molybdenum). Cheaper than 316.",
+      "NOT_for": "Chloride environments, seawater cooling systems, H2S service (use 316 or better)",
+      "practical_note": "Many projects specify 316SS for ALL instrument tubing to simplify material management. Mixing 304 and 316 in the field creates PMI and traceability headaches."
+    },
+    "inconel_625": {
+      "specification": "ASTM B444, UNS N06625",
+      "when_to_use": "Severe corrosion — high-temperature sulfuric acid, hydrofluoric acid, chloride stress corrosion cracking environments, sour gas (H2S + CO2). Extreme temperature service above 1000F.",
+      "cost": "5-8x the cost of 316SS. Only use where engineering specifies.",
+      "practical_note": "If you see Inconel tubing specified, the process fluid is nasty. Double-check all fittings are also Inconel — mixing Inconel tubing with 316SS fittings defeats the purpose and creates a galvanic corrosion cell."
+    },
+    "monel_400": {
+      "specification": "ASTM B165, UNS N04400 (nickel-copper alloy)",
+      "when_to_use": "Hydrofluoric acid (HF alkylation units), seawater, and fluoride-containing services. THE material for HF acid instrument tubing.",
+      "NOT_for": "Sulfur-containing environments above 700F (sulfidation attack), strong oxidizing acids (nitric acid)",
+      "practical_note": "HF alky units are entirely Monel or Inconel in the process-wetted instrument parts. If you are working on an HF alky unit, every fitting, valve, and tube must be verified Monel — one carbon steel fitting in HF service will corrode through in days and release HF acid, which is lethal on skin contact."
+    },
+    "copper": {
+      "specification": "ASTM B75, soft annealed copper, typically 1/4 inch or 3/8 inch OD",
+      "when_to_use": "Instrument air ONLY. Clean, dry, oil-free air service. Low cost and easy to work with.",
+      "absolutely_NOT_for": "ANY process fluid, ANY corrosive atmosphere, ANY service with moisture/condensation where ammonia may be present (stress corrosion cracking), natural gas, hydrogen, acetylene",
+      "practical_note": "Copper tubing is ONLY for instrument air supply to pneumatic devices. The moment you use copper for anything touching process fluid, you have created a safety hazard. If you find copper tubing connected to a process tap in the field, flag it immediately — it is wrong and dangerous."
+    },
+    "common_tubing_mistakes": [
+      "Using carbon steel tubing in any instrument service — corrodes, plugs impulse lines, gives wrong readings",
+      "Not sloping impulse tubing — creates liquid traps in gas service or vapor traps in liquid service",
+      "Running tubing without proper support clips — sagging tubing collects liquid, vibrates, fatigues at fittings",
+      "Kinking tubing during bending — restricts flow, creates weak point",
+      "Not deburring after cutting — burrs damage ferrules and contaminate downstream components",
+      "Mixing tubing materials without engineering approval — galvanic corrosion at connection points",
+      "Using refrigeration-grade copper tubing (ACR) instead of instrument-grade — different wall thickness and temper",
+      "Tubing runs without adequate support spacing: 1/4 inch tube every 24 inches, 1/2 inch tube every 36 inches minimum"
+    ]
+  },
+  "fittings": {
+    "overview": "Instrument fittings connect tubing to instruments, process taps, manifolds, and other tubing. Compression fittings are the standard in instrumentation — NO pipe thread tape (Teflon tape) on compression fittings. Ever.",
+    "swagelok_style_compression": {
+      "description": "Two-ferrule compression design. The front ferrule grips the tubing, the back ferrule drives the front ferrule and provides secondary seal. The most common instrument fitting worldwide.",
+      "initial_makeup": {
+        "standard_procedure": "Finger-tighten nut until snug, then 1-1/4 turns with wrench. For 1/4 inch and 3/8 inch tubing. This sets the ferrules permanently onto the tubing.",
+        "half_inch_and_larger": "Finger-tighten, then 1-1/4 turns. Some larger sizes require more — check manufacturer instructions.",
+        "over_tightening": "More turns does NOT mean better seal. Over-tightening deforms the ferrule and cuts into the tubing wall, WEAKENING the connection and potentially causing failure under pressure.",
+        "under_tightening": "Insufficient turns means the ferrule has not fully swaged onto the tube. Joint will leak under pressure or vibration."
+      },
+      "remake": {
+        "procedure": "Pull the fitting apart, inspect ferrules and tubing for damage. If ferrules are undamaged and tubing is not scored, reassemble finger-tight plus 1/4 turn to re-engage the seal.",
+        "maximum_remakes": "Swagelok fittings can be remade multiple times if ferrules and tubing are in good condition. Inspect every time.",
+        "ferrule_inspection": "Look for cracks, deformation beyond normal swaging, or deep scoring. If damaged, cut the tube behind the ferrules and use a new fitting."
+      },
+      "gap_inspection": {
+        "description": "After initial makeup, use a Swagelok gap inspection gauge to verify proper makeup. The gauge fits in the gap between nut and fitting body.",
+        "practical_note": "On projects requiring 100% fitting inspection, the gap gauge is your best friend. It is the fastest way to verify every fitting was made up correctly."
+      }
+    },
+    "parker_a_lok": {
+      "description": "Two-ferrule compression fitting, similar to Swagelok but NOT interchangeable. Parker A-LOK and Swagelok ferrules are different geometry.",
+      "initial_makeup": "Finger-tighten, then 1-1/4 turns for standard sizes.",
+      "critical_rule": "Do NOT mix Parker and Swagelok components. The ferrule angles and body geometry are different. A mixed connection WILL leak and may fail catastrophically under pressure. If you find a mixed connection, replace the entire fitting."
+    },
+    "flare_fittings": {
+      "description": "Flare fittings use a cone-shaped flare on the tubing end (37-degree flare per SAE J514, or 45-degree per SAE J512). Common in hydraulic and some instrument applications.",
+      "when_used": "Some older installations, hydraulic instrument systems, high-vibration applications where compression fittings may loosen",
+      "installation": "Tubing must be flared with proper flaring tool to correct angle. Over-flaring or under-flaring causes leaks.",
+      "practical_note": "Flare fittings are less common in modern instrumentation but you will encounter them in older plants. If you see flare fittings, do not try to use compression fittings on the same tubing — the flare prevents proper ferrule engagement."
+    },
+    "material_matching_rules": {
+      "rule": "Fitting material MUST match tubing material. 316SS fittings on 316SS tubing. Monel fittings on Monel tubing. Inconel fittings on Inconel tubing.",
+      "never_do": [
+        "Carbon steel fittings on stainless tubing — galvanic corrosion, contamination, and the fitting corrodes",
+        "Brass fittings on stainless tubing — galvanic corrosion, brass dezincifies in many process environments",
+        "316SS fittings on Monel tubing in HF acid service — the 316 fitting becomes the weak link",
+        "Mixing fitting brands (Swagelok body with Parker ferrules) — components are NOT interchangeable"
+      ],
+      "exception": "316SS fittings on 316SS tubing for instrument air is always acceptable. Brass fittings on copper tubing for instrument air is acceptable."
+    },
+    "teflon_tape_rule": {
+      "NEVER_on_compression_fittings": "Compression fittings seal metal-to-metal via ferrule compression. Teflon tape on the threads of a compression fitting prevents proper nut engagement and causes the fitting to loosen. It DOES NOT help seal and WILL cause leaks.",
+      "when_to_use_teflon_tape": "Only on NPT (tapered pipe thread) connections. Transmitter process connections, root valve connections to process taps, gauge connections. Apply 2-3 wraps in the direction of thread engagement.",
+      "alternative_to_teflon": "For NPT connections in process service, many projects require anaerobic thread sealant (Loctite 565 or equivalent) instead of Teflon tape. Check project spec."
+    },
+    "temperature_limits": {
+      "316SS_fittings": "Up to approximately 1200F continuous (derate pressure). Suitable for nearly all refinery instrument applications.",
+      "brass_fittings": "Up to 400F. For instrument air only. Not suitable for process service.",
+      "carbon_steel": "Not used in instrumentation — corrodes too easily.",
+      "alloy_fittings": "Monel, Inconel, Hastelloy — per manufacturer ratings. Generally higher than 316SS."
+    }
+  },
+  "cable_types": {
+    "overview": "Instrument cables carry the signals between field devices and the control room. Selecting the right cable type for the application and area classification is critical for signal integrity and safety.",
+    "intrinsically_safe_IS_cable": {
+      "jacket_color": "BLUE — this is a CODE requirement (NEC 504). Blue jacket means IS circuit. Do NOT use blue cable for non-IS circuits and do NOT use non-blue cable for IS circuits.",
+      "construction": "Shielded twisted pair, overall aluminum foil shield with drain wire. Typically 16 AWG or 18 AWG conductors.",
+      "installation_rules": [
+        "Separate conduit from all non-IS wiring — NO exceptions",
+        "If in cable tray, maintain minimum 50mm (2 inch) separation from non-IS cables with fixed barrier, or use separate tray",
+        "Label conduit and junction boxes as IS circuits",
+        "Maximum cable capacitance and inductance per manufacturer IS barrier entity parameters — calculate for actual run length",
+        "Do NOT splice IS cable in hazardous area junction boxes unless junction box is rated for the area and splice maintains IS parameters"
+      ],
+      "practical_note": "When pulling IS cable, calculate total cable capacitance (pF/ft x total length) and inductance (uH/ft x total length). Compare against the IS barrier entity parameters (Ci and Li). If cable parameters exceed barrier limits, the IS certification is void. This bites people on long runs — a 1000-foot run of standard IS cable may exceed limits for some barriers."
+    },
+    "explosion_proof_XP_rated_cable": {
+      "types": "MC-HL (metal-clad, hazardous location), PLTC (power-limited tray cable), ITC (instrument tray cable) — check NEC and project spec for approved cable types in classified areas",
+      "conduit": "In Division 1 areas, most projects require cable in rigid metal conduit (RMC) or intermediate metal conduit (IMC). Liquidtight flexible metal conduit (LFMC) only for final connection to vibrating equipment, with length limitations.",
+      "sealing": "Conduit seals required at each XP enclosure entry (within 18 inches) and at classification boundaries."
+    },
+    "thermocouple_extension_wire": {
+      "critical_rule": "Extension wire material MUST match the thermocouple type. Using wrong extension wire introduces measurement error proportional to the temperature difference at the junction point.",
+      "types": {
+        "Type_J_iron_constantan": {
+          "jacket_color": "BLACK (overall), WHITE (+) conductor, RED (-) conductor per ANSI/ASTM color code",
+          "temperature_range": "32F to 1400F (0C to 760C)",
+          "use": "General purpose, lower temperature industrial applications. Less common in refineries than Type K.",
+          "gotcha": "Iron positive conductor WILL RUST in wet environments. Do not use in outdoor exposed installations without proper protection."
+        },
+        "Type_K_chromel_alumel": {
+          "jacket_color": "BROWN (overall), YELLOW (+) conductor, RED (-) conductor",
+          "temperature_range": "-328F to 2282F (-200C to 1250C)",
+          "use": "THE most common thermocouple in refineries and power plants. Wide range, reasonable accuracy.",
+          "gotcha": "Type K suffers from drift above 600C (1112F) in reducing atmospheres (low oxygen). If you see Type K reading low after extended high-temperature service, suspect drift — replace the element."
+        },
+        "Type_T_copper_constantan": {
+          "jacket_color": "BLUE (overall), BLUE (+) conductor, RED (-) conductor",
+          "temperature_range": "-328F to 662F (-200C to 350C)",
+          "use": "Low temperature, cryogenic applications, food industry. Very accurate at low temperatures.",
+          "gotcha": "Limited high-temperature range. Do not use above 350C."
+        },
+        "Type_E_chromel_constantan": {
+          "jacket_color": "PURPLE (overall), PURPLE (+) conductor, RED (-) conductor",
+          "temperature_range": "-328F to 1652F (-200C to 900C)",
+          "use": "Highest millivolt output per degree — best sensitivity. Good for cryogenic to moderate temperature.",
+          "gotcha": "Less common in refineries. Make sure you have the right readout/transmitter configured for Type E."
+        },
+        "Type_N_nicrosil_nisil": {
+          "jacket_color": "ORANGE (overall), ORANGE (+) conductor, RED (-) conductor",
+          "temperature_range": "-328F to 2372F (-200C to 1300C)",
+          "use": "Improved Type K — better stability at high temperature, less drift. Increasingly specified for high-temperature furnace and reactor applications.",
+          "gotcha": "Not as widely stocked as Type K. Verify material availability before specifying."
+        }
+      },
+      "common_mistakes": [
+        "Using copper wire instead of TC extension wire — introduces massive error at transition junction",
+        "Reversing polarity — reading goes wrong direction from ambient. RED is ALWAYS negative in ANSI color code.",
+        "Splicing different TC types — Type J wire connected to Type K creates unknown junction that adds error",
+        "Running TC wire next to power cables — millivolt signals are extremely susceptible to noise pickup",
+        "Extension wire in high-temperature zone — extension wire is rated for lower temperature than the thermocouple itself. Route away from hot pipes."
+      ],
+      "polarity_rule": "RED wire is ALWAYS the NEGATIVE conductor in ANSI color code for ALL thermocouple types. This is counterintuitive (red = negative, not positive). Getting this wrong reverses the reading."
+    },
+    "shielded_twisted_pair": {
+      "use": "Standard 4-20mA analog signals, HART communication, general instrument signals",
+      "construction": "Two insulated conductors twisted together with overall foil shield and bare drain wire. Typical: 16 AWG or 18 AWG.",
+      "why_twisted": "Twisting the pair causes each conductor to be equally exposed to external electromagnetic fields — the induced noise cancels out (common-mode rejection).",
+      "shield_grounding": "Ground drain wire at DCS/marshalling cabinet end ONLY. Tape and insulate at field end. Grounding at both ends creates a ground loop."
+    },
+    "multi_conductor_cable": {
+      "use": "Multiple signals in one cable — RTD circuits (3-wire or 4-wire), solenoid valve circuits, limit switch circuits, digital communication",
+      "construction": "Multiple individually shielded pairs within one overall jacket. Each pair may have its own foil shield plus an overall braid or foil shield.",
+      "RTD_wiring": {
+        "2_wire": "Cheapest but least accurate. Lead resistance adds directly to measurement. Only use for short runs or where accuracy is not critical.",
+        "3_wire": "MOST COMMON in industrial installations. Two wires on one side, one on the other. Compensates for lead resistance assuming all three leads are the same length and resistance. If lead lengths differ, error is introduced.",
+        "4_wire": "Most accurate. Two wires carry excitation current, two wires sense voltage. Lead resistance is completely eliminated. Use for precision measurements and laboratory applications."
+      }
+    },
+    "tray_cable_vs_plenum": {
+      "tray_cable_TC": "Rated for installation in cable trays, raceways, and direct burial. Flame-retardant jacket.",
+      "plenum_cable_CMP_CL2P": "Rated for air-handling spaces (plenums). Low-smoke, low-flame-spread jacket. Required by building code in indoor HVAC plenum spaces.",
+      "practical_note": "In outdoor refinery/plant construction, tray cable (TC) is the standard. Plenum cable is for indoor/building instrument installations. Using outdoor tray cable in a plenum space violates code."
+    }
+  },
+  "transmitters": {
+    "overview": "Transmitters convert process measurements (pressure, temperature, level, flow) into standard 4-20mA output signals for the control system. The transmitter is the eyes and ears of the control system — if the transmitter is wrong, the control is wrong.",
+    "differential_pressure_DP": {
+      "rosemount_3051": {
+        "manufacturer": "Emerson (Rosemount)",
+        "description": "THE most common DP transmitter in refineries worldwide. Coplanar or traditional remote mount.",
+        "ranges": "Ranges from 0-0.5 inH2O to 0-2000 psi differential. Select sensor module for your range.",
+        "accuracy": "0.04% of span (reference accuracy). With total performance specifications: 0.035% of span.",
+        "output": "4-20mA with HART, optional FOUNDATION Fieldbus",
+        "features": "Built-in diagnostics, plugged impulse line detection, statistical process monitoring",
+        "field_tips": [
+          "Always 5-point calibration: 0%, 25%, 50%, 75%, 100% of span — verify at each point",
+          "Zero trim with equalizing valve OPEN and block valves CLOSED to process. Do NOT zero with block valves open — you will zero out the actual process reading.",
+          "For DP level applications: LRV and URV must account for specific gravity and reference leg fill fluid.",
+          "Check for impulse line leaks by isolating and watching for drift — a leaking impulse line causes a slowly changing reading."
+        ]
+      },
+      "yokogawa_EJA": {
+        "manufacturer": "Yokogawa",
+        "description": "EJA-A series (DPharp) — silicon resonant sensor technology. Very stable, popular in Asia and increasingly worldwide.",
+        "ranges": "Similar range coverage to Rosemount 3051",
+        "accuracy": "0.04% of span",
+        "output": "4-20mA with HART or FOUNDATION Fieldbus",
+        "field_tips": "Configuration via Yokogawa FieldMate software or HART communicator. Menu structure differs from Rosemount — get familiar with the Yokogawa parameter tree before going to the field."
+      }
+    },
+    "pressure_gauge_and_absolute": {
+      "rosemount_3051TG_TA": {
+        "description": "3051T is the gauge/absolute pressure version of the 3051 platform. TG = gauge, TA = absolute.",
+        "ranges": "0-15 psi to 0-10000 psi gauge. Absolute ranges for vacuum service.",
+        "use": "Process pressure measurement, compressor suction/discharge, vessel pressure, pump discharge",
+        "field_tips": [
+          "Gauge pressure transmitters read zero at atmospheric pressure. Absolute transmitters read atmospheric pressure (approximately 14.7 psi) when vented to atmosphere — verify during commissioning.",
+          "For vacuum service, absolute pressure transmitters are preferred — gauge transmitters lose accuracy near and below zero."
+        ]
+      },
+      "endress_hauser_cerabar": {
+        "manufacturer": "Endress+Hauser",
+        "description": "Cerabar PMC/PMP series — ceramic or metallic sensor. Very popular in chemical and pharmaceutical plants.",
+        "differentiator": "Ceramic sensor (PMC) has no oil fill — direct media contact with corrosion-resistant ceramic. Excellent for food/pharma clean-in-place applications.",
+        "field_tips": "E+H uses CDI (Common Data Interface) for local adjustment. Can also configure with HART communicator or E+H FieldCare software."
+      }
+    },
+    "temperature": {
+      "rosemount_3144P": {
+        "manufacturer": "Emerson (Rosemount)",
+        "description": "Dual-input temperature transmitter. Accepts RTD, thermocouple, millivolt, and ohm inputs. THE standard temperature transmitter in most refineries.",
+        "dual_sensor_capability": "Can accept two independent sensors — provides backup, sensor drift detection, or hot-standby. If one sensor fails, automatically switches to the backup.",
+        "accuracy": "Digital accuracy: 0.02C for RTD, 0.5C for thermocouple (plus sensor accuracy)",
+        "output": "4-20mA with HART",
+        "field_tips": [
+          "Configure sensor type BEFORE connecting to the sensor. Wrong sensor type configuration on a live thermocouple can damage the transmitter input.",
+          "For RTD: configure for 3-wire or 4-wire to match the actual wiring. Wrong configuration causes offset error.",
+          "Thermowell response time is typically much slower than transmitter response — the thermowell is the bottleneck, not the transmitter. Do not over-filter in the transmitter when the thermowell already provides damping."
+        ]
+      },
+      "yokogawa_YTA": {
+        "manufacturer": "Yokogawa",
+        "description": "YTA series — dual input, accepts RTD and TC. Common in plants standardized on Yokogawa.",
+        "field_tips": "Same basic configuration approach as Rosemount but with Yokogawa parameter structure. Always verify sensor type and wiring configuration before energizing."
+      }
+    },
+    "level": {
+      "rosemount_5300_GWR": {
+        "manufacturer": "Emerson (Rosemount)",
+        "description": "Guided Wave Radar — uses electromagnetic pulses on a probe to measure level. Works with all liquids and many solids. Not affected by pressure, temperature, or vapor space composition.",
+        "probe_types": "Single rod (for clean liquids), twin rod (for low dielectric fluids), coaxial (highest sensitivity, for very low dielectric or interface measurement)",
+        "advantages": "No impulse lines (no plugging, no freezing, no fill fluid). Direct mount on vessel. Measures level AND interface (oil/water).",
+        "field_tips": [
+          "Probe must not touch vessel walls or internal obstructions — causes false reflections.",
+          "For interface measurement, the upper fluid dielectric must be significantly different from the lower fluid. Oil/water works well. Two similar-density hydrocarbons do not.",
+          "Empty vessel calibration (air map) on first startup removes fixed echoes from nozzle, vessel internals.",
+          "Probe length must be trimmed to match vessel height — measure carefully before cutting."
+        ]
+      },
+      "vega_radar": {
+        "manufacturer": "VEGA",
+        "description": "VEGAPULS series — through-air radar (non-contacting) and VEGAFLEX (guided wave radar). Strong in chemical and water/wastewater applications.",
+        "differentiator": "VEGAPULS 80 GHz series — very narrow beam angle, can be installed in small nozzles, less affected by vessel internals.",
+        "field_tips": "VEGA uses PLICSCOM local display for configuration. Also configurable via HART, Bluetooth (on newer models), or VEGA DTM in PACTware software."
+      }
+    },
+    "flow": {
+      "rosemount_8800_vortex": {
+        "manufacturer": "Emerson (Rosemount)",
+        "description": "Vortex flow meter — measures volumetric flow by detecting vortices shed from a bluff body. Works with gas, steam, and liquid.",
+        "range": "Depends on pipe size and fluid. Turndown typically 30:1 for gas, 20:1 for liquid.",
+        "accuracy": "0.65% of rate for gas, 1% of rate for liquid, 1% for saturated steam",
+        "installation": "Minimum 20D upstream straight run, 5D downstream. Must be full of fluid (no two-phase). Pipe must match meter bore size — no reduced connections.",
+        "field_tips": [
+          "If the meter reads zero but there is flow: check for insufficient Reynolds number (flow too low for vortex generation), or sensor failure, or air in liquid service.",
+          "Vortex meters are sensitive to vibration — pipe vibration from nearby pumps/compressors can cause false readings. Use the high-vibration filter setting.",
+          "For steam service: install drain leg upstream. Condensate slugs damage the shedder bar."
+        ]
+      },
+      "endress_hauser_promag_magnetic": {
+        "manufacturer": "Endress+Hauser",
+        "description": "Promag electromagnetic flow meter — measures volumetric flow of conductive liquids. Works with dirty, slurry, and corrosive fluids that would destroy other meter types.",
+        "minimum_conductivity": "5 microSiemens/cm (standard). Will NOT work on hydrocarbons, deionized water, or non-conductive fluids.",
+        "accuracy": "0.2% of rate (Promag 400) to 0.5% of rate (Promag 100)",
+        "liner_materials": {
+          "hard_rubber": "Water, wastewater, mild chemicals. Up to 180F.",
+          "PTFE_Teflon": "Aggressive chemicals, acids, solvents. Up to 350F.",
+          "PFA": "Similar to PTFE with better adhesion to pipe body.",
+          "ceramic_Al2O3": "Extremely abrasive slurries — mining, cement."
+        },
+        "electrode_materials": {
+          "316L_SS": "Standard — water, mild chemicals",
+          "Hastelloy_C": "Aggressive acids, chlorides",
+          "Tantalum": "Hydrochloric acid, sulfuric acid (hot/concentrated)",
+          "Platinum": "Most corrosion resistant but extremely expensive. Used where nothing else survives."
+        },
+        "field_tips": [
+          "GROUNDING IS CRITICAL. Install grounding rings (or use integral ground electrodes) to provide proper reference. Without grounding, the signal floats and you get noisy, unstable readings.",
+          "Install with electrodes HORIZONTAL (not top/bottom). Top electrode can collect air bubbles = signal dropout. Bottom electrode collects sediment = coating = signal loss.",
+          "Pipe must be FULL. Empty or partially full pipe = wrong reading. Install in vertical pipe with flow UP for best results, or horizontal with proper back-pressure.",
+          "Never install immediately after a pump — turbulence and air entrainment cause erratic readings. Minimum 5D downstream of pump."
+        ]
+      }
+    }
+  },
+  "control_valves": {
+    "overview": "Control valves are the final control element — they are what actually changes the process. A perfectly tuned controller with a bad valve gives bad control. Valve selection, sizing, and maintenance are fundamental to process control performance.",
+    "globe_valves": {
+      "description": "Linear motion valve — plug moves up and down in the seat. THE workhorse of process control. Best throttling characteristics of any valve type.",
+      "manufacturers": {
+        "Fisher": "Emerson brand. Fisher ED, ET, EZ valves. Fisher is THE dominant name in control valves worldwide. If someone says 'control valve' in a refinery, they usually mean a Fisher.",
+        "Masoneilan": "Baker Hughes/GE. Camflex, 21000 series. Strong in power generation and chemical.",
+        "Flowserve_Valtek": "Valtek Mark One. Popular in specific plants and regions."
+      },
+      "trim_materials": {
+        "316SS": "Standard trim for non-corrosive, moderate-temperature service. Most common.",
+        "Stellite_6": "Cobalt-chromium alloy — hard-faced for erosive service, high-temperature, and tight shutoff applications. Stellite seat and plug on a 316SS body.",
+        "ceramic_trim": "Extreme erosion resistance — slurry service, catalyst-laden streams, high-DP letdown. Very expensive.",
+        "Hastelloy_C": "Severe corrosion — HCl, H2SO4, wet chlorine. When 316SS is not enough.",
+        "tungsten_carbide": "Extreme erosion — flashing service, high-velocity particles. Hardest common trim material."
+      },
+      "packing": {
+        "PTFE_V_ring": {
+          "description": "Standard packing for most services. Low friction, good chemical resistance.",
+          "temperature_limit": "450F maximum continuous. Above this, PTFE degrades.",
+          "emission_compliance": "Standard PTFE packing typically does NOT meet EPA Method 21 fugitive emission requirements (500 ppm). Need low-emission packing for environmental compliance.",
+          "practical_note": "PTFE packing is what you will encounter 80% of the time. When it leaks, first try tightening the packing flange bolts (1/8 turn at a time, alternating sides). If that does not stop the leak, repack the valve."
+        },
+        "graphite": {
+          "description": "For high-temperature service above PTFE limits. Higher friction than PTFE — requires higher actuator thrust.",
+          "temperature_limit": "Up to 1200F in non-oxidizing service. In air, limited to about 850F.",
+          "emission_compliance": "Graphite packing sets (especially die-formed rings with Belleville springs) can meet EPA 500 ppm and even 100 ppm fugitive emission limits.",
+          "practical_note": "Graphite packing has higher friction — actuator may need to be larger than with PTFE. If you replace PTFE with graphite on an existing valve, verify the actuator can still stroke the valve. Live-loading (Belleville spring stacks on packing flange) helps maintain seal as packing wears."
+        },
+        "low_emission_packing": {
+          "description": "Special packing sets designed to meet EPA Method 21 fugitive emission limits — 100 ppm or 500 ppm threshold.",
+          "components": "Combination of braided graphite rings, die-formed end rings, and Belleville spring live-loading. Specific torque values for packing flange bolts.",
+          "practical_note": "Most modern refinery projects require low-emission packing on ALL control valves. This is an environmental regulatory requirement. Installing standard PTFE packing when low-emission is specified results in a compliance violation and rework."
+        }
+      },
+      "actuator_types": {
+        "pneumatic_spring_return": {
+          "description": "Air pushes diaphragm in one direction, spring returns to fail position. MOST COMMON in process control.",
+          "fail_action": "Fail-close (air-to-open, spring-to-close) or fail-open (air-to-close, spring-to-open). Fail position determined by process safety — what is safest on air failure?",
+          "air_supply": "Typically 20 psi supply air for standard diaphragm actuators. Higher-thrust actuators may need 40-60 psi. ALWAYS check nameplate.",
+          "bench_set": "The air pressure range that strokes the valve from closed to open (or open to closed). Example: 6-30 psi for a fail-close valve means 6 psi starts to open, 30 psi is fully open. Verify bench set during commissioning."
+        },
+        "pneumatic_double_acting": {
+          "description": "Air on both sides of a piston — no spring. Higher thrust than spring-return. Requires a positioner with two output ports.",
+          "fail_action": "Has NO inherent fail position. Requires volume tank/accumulator or lock-in-last-position design for air failure scenario. Or use trip valve to vent one side for fail-safe.",
+          "use": "Large valves requiring high thrust, or where spring return cannot provide enough force."
+        },
+        "electric": {
+          "description": "Motor-driven actuator. Used where instrument air is not available or where precise position control is needed.",
+          "types": "Multi-turn (for globe/gate valves) or quarter-turn (for ball/butterfly). Common brands: Rotork, Limitorque, AUMA.",
+          "fail_action": "Stays in last position on power failure unless battery backup or supercapacitor is installed.",
+          "practical_note": "Electric actuators are slower than pneumatic. Do not use where fast stroke time is required for safety (ESD valves). For safety applications, pneumatic spring-return is almost always the correct choice."
+        }
+      }
+    },
+    "ball_valves": {
+      "description": "Quarter-turn (90-degree rotation) valve. Excellent shutoff. Good for on-off and moderate throttling applications.",
+      "manufacturers": {
+        "Neles_Metso_Valmet": "Segment ball (V-port) for excellent throttling. The Neles ND9000 positioner is industry standard.",
+        "Flowserve": "Full-bore and V-port ball valves. Common in pipeline and heavy process.",
+        "Fisher_Baumann": "Fisher/Baumann V-notch ball valve — good throttling characteristics with V-notch ball design."
+      },
+      "when_to_use": "Slurry service (no crevices to plug), high-Cv applications (large flow in small body), on-off with some throttling, polymer/viscous fluid (full bore for no restriction)",
+      "field_tips": [
+        "Ball valves have very high Cv for their size — be careful not to oversize. A 2-inch ball valve may have the Cv of a 4-inch globe.",
+        "Characterization is achieved through V-port or contoured ball — not through inherent body design like a globe valve.",
+        "Seat leakage is controlled by seat material (PTFE, PEEK, metal) and preload. Metal-seated ball valves for high temperature may leak more than soft-seated at low pressure."
+      ]
+    },
+    "butterfly_valves": {
+      "description": "Quarter-turn disc valve. Compact, lightweight, low cost. Good for large-pipe, low-pressure applications.",
+      "manufacturers": {
+        "Fisher": "Fisher 8580 series rotary valve.",
+        "Flowserve_Limitorque": "Commonly paired with electric actuators for large butterfly valves."
+      },
+      "when_to_use": "Large pipe sizes (6 inch and above) where globe valve would be enormous and expensive, cooling water, low-pressure gas, HVAC damper applications",
+      "limitations": "Poor throttling below 15-20% open. Not suitable for high-DP applications. Not suitable for tight shutoff in most designs (except triple-offset for high-performance shutoff).",
+      "field_tips": [
+        "Triple-offset (double-eccentric plus conical seat) butterfly valves CAN provide tight shutoff and good throttling — used as control valves in power plant steam and feedwater applications.",
+        "Standard butterfly valves are NOT suitable for throttling service — they are on-off or very coarse control only."
+      ]
+    }
+  },
+  "junction_boxes": {
+    "overview": "Junction boxes provide a weatherproof and/or explosion-proof enclosure for wire terminations, splice points, and IS barrier mounting. Correct selection for the area classification is mandatory.",
+    "explosion_proof_XP": {
+      "manufacturers": {
+        "Crouse_Hinds_Eaton": "GUB, GUA series — cast aluminum or iron, UL listed for Class I Division 1.",
+        "Appleton_Emerson": "DERA, EFD series — cast iron or aluminum."
+      },
+      "requirements": [
+        "All covers fully bolted with ALL bolts — missing bolts void the XP rating",
+        "Threaded entries must have 5 full threads of engagement minimum",
+        "Conduit seal within 18 inches of each entry",
+        "No modification (drilling, cutting) of the enclosure without proper approval — voids the UL listing",
+        "Drain plugs at lowest point to prevent condensation accumulation"
+      ],
+      "field_tips": "In the field, XP junction boxes get opened frequently for wire termination and troubleshooting. ALWAYS replace ALL cover bolts before re-energizing in a classified area. Carry spare bolts — lost bolts in dirt/grass are never found. A bolt hole without a bolt is a flame path that will not quench an internal explosion."
+    },
+    "general_purpose": {
+      "description": "NEMA 4X (stainless steel) or NEMA 4 (painted steel) for unclassified areas. Weatherproof and corrosion-resistant.",
+      "use": "Unclassified outdoor installations. Indoor installations. Areas without hazardous gas classification.",
+      "terminal_blocks": {
+        "types": "DIN-rail mounted terminal blocks (Phoenix Contact, Weidmuller, Allen-Bradley) are the modern standard. Older installations may have barrier strip (Cinch-Jones style) terminals.",
+        "marking": "Every terminal must be labeled with wire number per project wiring diagram. Unmarked terminals cause commissioning nightmares and troubleshooting delays.",
+        "torque": "Tighten terminal screws to manufacturer specified torque — typically 5-7 in-lb for small terminals. Over-torque strips threads, under-torque causes high-resistance connections that create heat and signal noise."
+      }
+    },
+    "IS_barrier_mounting": {
+      "location": "IS barriers (zener or galvanic isolator) MUST be mounted in safe (unclassified) area or in a purged enclosure. Typically mounted in a marshalling cabinet in the control room or a safe-area junction box.",
+      "zener_barriers": {
+        "description": "Simple, inexpensive. Contains zener diodes that clamp voltage and fuse that limits current. Requires dedicated IS ground bus with less than 1 ohm impedance to earth.",
+        "critical_requirement": "The IS ground bus must be a DEDICATED ground, connected to the facility ground grid at a SINGLE POINT. If the IS ground is shared with other systems or has multiple ground points, ground fault current can flow through the IS circuit and exceed IS energy limits."
+      },
+      "galvanic_isolators": {
+        "description": "Provides galvanic isolation between field (hazardous) and safe side. More expensive than zener barriers but does NOT require a dedicated IS ground bus.",
+        "advantages": "No special grounding, inherent isolation prevents ground loops, cleaner signal. Becoming the preferred choice on new projects.",
+        "practical_note": "If you have a choice and the project budget allows, always recommend galvanic isolators over zener barriers. They eliminate the IS ground headache entirely."
+      }
+    }
+  },
+  "manifolds": {
+    "overview": "Instrument manifolds provide isolation, venting, and equalization for transmitters — primarily DP transmitters. Correct manifold operation is critical for accurate measurement and safe maintenance.",
+    "three_valve_manifold": {
+      "description": "Standard manifold for DP transmitters. Two block valves (HP and LP isolation) and one equalizing valve.",
+      "valves": {
+        "HP_block": "Isolates the high-pressure side impulse line from the transmitter",
+        "LP_block": "Isolates the low-pressure side impulse line from the transmitter",
+        "equalizing": "Connects HP and LP sides together — used for zeroing the transmitter"
+      },
+      "putting_in_service": {
+        "step_1": "Verify equalizing valve is OPEN (transmitter sees zero DP)",
+        "step_2": "Open HP block valve (exposes both HP and LP sides of transmitter to HP process through equalizing valve)",
+        "step_3": "Open LP block valve",
+        "step_4": "CLOSE equalizing valve (transmitter now sees actual DP)",
+        "warning": "If you open both block valves before opening the equalizing valve, or close the equalizing valve before opening both blocks, you may overpressure one side of the transmitter. On high-pressure service, this destroys the sensing element."
+      },
+      "taking_out_of_service": {
+        "step_1": "CLOSE LP block valve first (isolates LP side)",
+        "step_2": "OPEN equalizing valve (equalizes pressure on both sides of transmitter to HP pressure)",
+        "step_3": "CLOSE HP block valve (transmitter is now isolated at equalized pressure)",
+        "step_4": "Bleed pressure through bleed valves (if equipped) before disconnecting transmitter"
+      },
+      "zeroing": {
+        "procedure": "Close BOTH block valves. Open equalizing valve. Both sides of transmitter see the same pressure = zero DP. Perform zero trim on transmitter. Close equalizing valve. Open block valves to return to service.",
+        "critical_warning": "Do NOT zero with both block valves open to process and equalizing valve open. This bypasses the orifice/flow element and shorts HP to LP, which can cause process disturbance and measurement error."
+      }
+    },
+    "five_valve_manifold": {
+      "description": "Same as 3-valve but with two additional vent/drain valves. One vent on HP side, one on LP side. Allows draining impulse lines and bleeding pressure before transmitter removal.",
+      "use": "High-pressure service, toxic/lethal service, any application where you must verify zero pressure before breaking a connection.",
+      "field_tip": "On 5-valve manifolds, ALWAYS use the vent valves to verify zero pressure before disconnecting the transmitter. Do not trust the block valves alone — valves can pass (leak through). The vent valve lets you confirm isolation."
+    },
+    "block_and_bleed": {
+      "description": "Single block valve with integral bleed/drain. Used on gauge and absolute pressure transmitter connections.",
+      "procedure": "Close block valve, open bleed to verify zero pressure, then safe to work on instrument.",
+      "field_tip": "The bleed valve is your safety confirmation. If you close the block and open the bleed and pressure is still present, the block valve is leaking — DO NOT proceed with disassembly."
+    },
+    "orientation_rules": {
+      "liquid_service": "Manifold mounted BELOW transmitter. Impulse lines slope down from process tap to manifold/transmitter. Allows air to vent back to process.",
+      "gas_service": "Manifold mounted ABOVE or at same elevation as transmitter. Impulse lines slope down FROM manifold/transmitter TO process tap. Allows condensate to drain back to process.",
+      "steam_service": "Condensate legs required. Manifold mounted below process tap at consistent elevation. Fill legs with water/glycol to protect transmitter from steam temperature."
+    }
+  },
+  "heat_tracing": {
+    "overview": "Heat tracing maintains instrument tubing and sensing lines above a minimum temperature to prevent freezing or process fluid solidification. Critical in cold climates and for any process that solidifies above ambient temperature (sulfur, heavy hydrocarbons, caustic).",
+    "electric_self_regulating": {
+      "manufacturers": {
+        "Raychem_nVent": "BTV, QTVR, XTV series. Self-regulating cable — most common for instrument tracing.",
+        "Thermon": "BSX, RSX, HSX series. Direct competitor to Raychem."
+      },
+      "principle": "Self-regulating cable contains a polymer core with conductive carbon particles between two bus wires. As temperature increases, polymer expands, carbon particles separate, resistance increases, power output decreases. As temperature drops, polymer contracts, particles reconnect, resistance drops, power increases. Self-regulating = cannot overheat.",
+      "installation_for_instruments": {
+        "tubing_tracing": "Run trace cable alongside instrument tubing, secure with cable ties or aluminum tape every 12 inches. Cover with fiberglass insulation and weather jacket.",
+        "transmitter_tracing": "Wrap cable around transmitter housing or use a trace cable loop inside a small insulation box around the transmitter.",
+        "thermal_insulation": "Heat trace without insulation is nearly useless — the heat dissipates before it can warm the tubing. Minimum 1 inch fiberglass insulation over traced tubing.",
+        "power_connection": "Connection kit (splice and end seal) must be properly installed per manufacturer instructions. Moisture in the cable ends causes ground faults and cable failure."
+      },
+      "common_mistakes": [
+        "Heat trace installed but insulation missing — trace cable runs but tubing still freezes",
+        "Cable end seal not installed or damaged — moisture enters cable end, causes ground fault, trips circuit breaker",
+        "Cable crossed over itself — creates hot spot. Self-regulating cable can handle this better than constant-wattage, but still not recommended",
+        "Wrong cable selection for the temperature class — cable must maintain temperature above process freeze point at minimum ambient",
+        "Circuit too long — exceeds maximum circuit length for the cable and breaker combination. Check manufacturer circuit design tables."
+      ]
+    },
+    "steam_tracing": {
+      "description": "Small-bore steam tubing (typically 3/8 inch or 1/2 inch copper or stainless) routed alongside instrument tubing. Steam provides heat, condensate returns through steam traps.",
+      "when_used": "Plants with abundant steam supply, very cold climates where electric trace capacity is insufficient, or when plant standard requires steam tracing.",
+      "installation": "Steam tracer tube bundled with instrument tube, both enclosed in insulation. Steam supply at high point, condensate collection at low point through steam trap.",
+      "field_tips": [
+        "Steam tracing is harder to control than electric — temperature depends on steam pressure. Overheating can damage transmitter electronics.",
+        "Check steam traps regularly — failed trap (stuck open) wastes steam and can overheat. Failed trap (stuck closed) means no tracing.",
+        "In the spring, when ambient temperature rises, steam tracing can OVERHEAT electronics. Some plants shut down steam tracing seasonally."
+      ]
+    },
+    "when_heat_tracing_is_required": [
+      "Process fluid freezes above minimum ambient temperature — water lines below 32F, caustic below 50F, sulfur below 250F",
+      "Process fluid viscosity increases to the point where impulse lines plug — heavy crude, asphalt, molten sulfur",
+      "Condensation in gas impulse lines would cause measurement error — trace to keep above dew point",
+      "Analyzer sample lines must maintain sample in vapor or liquid phase — no phase change in the sample line",
+      "Control valve actuator diaphragm/spring housing in extremely cold climates — condensation can freeze and prevent valve movement"
+    ]
+  },
+  "common_material_mistakes": {
+    "description": "The most common material-related mistakes that cause rework, instrument failure, safety incidents, and commissioning delays on industrial construction sites. Learn these and you will avoid 80% of material problems.",
+    "wrong_thermocouple_extension_wire": {
+      "mistake": "Using Type K extension wire on a Type J thermocouple (or any mismatch). Using plain copper wire for thermocouple extension.",
+      "consequence": "Measurement error of 10-50 degrees or more depending on temperature at the junction where the wire types change. The error changes with ambient temperature, making it look like drift.",
+      "how_to_catch": "Verify wire type color code matches thermocouple type at the connection head. Check with TC wire identifier tool if unsure. RED is always negative (ANSI).",
+      "prevention": "Order and store each TC extension wire type in clearly labeled, separate locations. Mark every spool."
+    },
+    "carbon_steel_fittings_on_stainless_tubing": {
+      "mistake": "Using carbon steel (zinc-plated or black) compression fittings on 316SS tubing because they look similar and are cheaper.",
+      "consequence": "Galvanic corrosion at the fitting-tubing interface. Carbon steel corrodes rapidly in outdoor environments. Fitting weakens, tubing gets stained and pits at contact point. Eventually leaks.",
+      "how_to_catch": "316SS fittings are marked 316 on the body. Use a magnet — 316SS is slightly magnetic but much less than carbon steel. Carbon steel is strongly magnetic.",
+      "prevention": "Keep 316SS and carbon steel fittings physically separated in the warehouse and on the truck. Different bins, clearly labeled."
+    },
+    "copper_tubing_for_process_service": {
+      "mistake": "Using copper tubing for a process impulse line instead of 316SS. Copper is only for instrument air.",
+      "consequence": "Copper is attacked by most process chemicals — acids, ammonia, H2S, chlorides. Copper tubing in process service corrodes, plugs, and eventually fails. In ammonia service, copper stress-corrosion cracks rapidly.",
+      "how_to_catch": "Copper is visually obvious (red/orange color). Verify all process impulse lines are stainless steel during walkdown.",
+      "prevention": "Label copper tubing at the warehouse: INSTRUMENT AIR ONLY. Include material verification in installation QC checklist."
+    },
+    "mixing_fitting_brands": {
+      "mistake": "Using a Swagelok nut on a Parker A-LOK body (or vice versa), or mixing ferrules between brands.",
+      "consequence": "Ferrule geometry is different between manufacturers. The seal is compromised — may appear tight initially but fails under pressure cycling, vibration, or temperature change. Potential for catastrophic blowout on high-pressure service.",
+      "how_to_catch": "Check manufacturer markings on fitting bodies and nuts. Swagelok has the 'S' logo. Parker has 'CPI' or 'A-LOK' marked.",
+      "prevention": "Standardize on one fitting brand per project. Do not allow mixing on site. If both brands are present, segregate them physically."
+    },
+    "wrong_gasket_material_for_service": {
+      "mistake": "Using wrong gasket material on orifice flanges, instrument flanges, or transmitter connections. Common: Teflon gasket in high-temperature service (melts), rubber gasket in hydrocarbon service (swells/dissolves), wrong spiral wound inner ring material.",
+      "consequence": "Gasket failure — leak, fire, loss of containment. Spiral wound gasket with wrong inner ring (protruding into bore) causes flow measurement error on orifice flanges.",
+      "how_to_catch": "Check gasket material specification against the service (fluid, temperature, pressure). Spiral wound gaskets are color-coded by material: green stripe = 316SS winding with flexible graphite fill (most common in refineries).",
+      "prevention": "Include gasket material verification in QC checklist. For orifice flanges specifically, verify the inner ring does not protrude into the orifice bore opening."
+    },
+    "wrong_transmitter_material_for_process": {
+      "mistake": "Installing a transmitter with 316SS wetted parts in a service that attacks 316SS — concentrated sulfuric acid above 140F, hydrofluoric acid, concentrated chloride solutions.",
+      "consequence": "Transmitter diaphragm corrodes and fails — process fluid enters transmitter body, destroys electronics, and potentially leaks to atmosphere. On toxic/lethal service, this is a safety emergency.",
+      "how_to_catch": "Cross-check transmitter material code against process fluid on the data sheet. Rosemount uses material codes (e.g., S = 316SS, H = Hastelloy C, T = Tantalum, M = Monel).",
+      "prevention": "Always verify wetted material compatibility during instrument receiving inspection. Do not install ANY transmitter without checking the data sheet against the process."
+    },
+    "is_barrier_entity_parameter_violation": {
+      "mistake": "Installing IS barriers without verifying that total cable capacitance and inductance are within entity parameters. Long cable runs or wrong cable type can exceed limits.",
+      "consequence": "IS certification is void. The circuit may have enough stored energy to ignite a hazardous atmosphere. This turns a 'safe' IS circuit into a potential ignition source.",
+      "how_to_catch": "Calculate: Total cable capacitance (pF/ft from cable spec x total cable length) must be less than barrier Ca parameter. Total cable inductance (uH/ft x total length) must be less than barrier La parameter.",
+      "prevention": "Include IS entity parameter verification as a required step in the IS loop check procedure. Document the calculation."
+    },
+    "missing_conduit_seals_in_classified_areas": {
+      "mistake": "Forgetting to install conduit seals at explosion-proof enclosures or at classification boundaries.",
+      "consequence": "Flame and gas can propagate through the conduit system from a hazardous area into a safe area, or from one enclosure to another. An explosion in one enclosure can ignite the atmosphere in a connected space.",
+      "how_to_catch": "Walk down every conduit run in classified areas. Every XP enclosure entry needs a seal within 18 inches. Every boundary crossing needs a seal. No exceptions.",
+      "prevention": "Include conduit seal checklist in installation QC procedure. Photograph every seal installation for documentation."
+    }
+  }
+}

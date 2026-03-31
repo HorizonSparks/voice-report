@@ -1,44 +1,70 @@
 {
   "trade": "Instrumentation",
   "category": "safety",
-  "description": "Safety requirements by task type for instrumentation construction",
+  "description": "Comprehensive safety requirements by task type for instrumentation construction, commissioning, and maintenance",
   "tasks": {
     "instrument_installation": {
       "ppe": ["Safety glasses", "Hard hat", "Steel-toe boots", "Chemical-resistant gloves", "FR clothing", "Face shield when breaking containment"],
-      "jsa_items": ["Verify line depressurized and drained before opening connections", "Use bleed valve to confirm zero energy", "Install root valves first, close before connecting transmitter", "Never stand in front of open process connection", "Use thread sealant compatible with process fluid", "Never use Teflon tape on oxygen service"],
-      "hazards": ["Stored energy in process lines", "Hot/cold surfaces", "Toxic/flammable process fluids", "High-pressure blowout from open connections"],
-      "permits": ["Hot work permit if welding connections", "Confined space if inside vessels", "Line break permit for opening live process connections"]
+      "jsa_items": ["Verify line depressurized and drained before opening connections", "Use bleed valve to confirm zero energy", "Install root valves first, close before connecting transmitter", "Never stand in front of open process connection — fluid under pressure can spray", "Use thread sealant compatible with process fluid", "Never use Teflon tape on oxygen service — fire/explosion risk", "Verify instrument rated for area classification before installation"],
+      "hazards": ["Stored energy in process lines — even depressurized lines can have pockets", "Hot/cold surfaces — burns or frostbite from uninsulated piping", "Toxic/flammable process fluids — H2S, hydrocarbons, acids", "High-pressure blowout from open connections — can cause severe injury"],
+      "permits": ["Hot work permit if welding thermowell or process connection", "Confined space permit if inside vessels or tanks", "Line break permit for opening any process connection", "LOTO for electrical isolation when working on powered instruments"]
     },
     "tubing_runs": {
-      "ppe": ["Safety glasses (mandatory — tubing spring-back is common eye injury)", "Cut-resistant gloves", "Fall protection above 6 ft"],
-      "jsa_items": ["Deburr ALL tubing cuts inside and outside", "Blow out tubing with clean dry air/N2 before connecting", "Never use copper for instrument air — use 316SS", "Pressure test ALL tubing before connecting to instruments", "Cap open tubing ends at end of each shift"],
-      "hazards": ["Sharp tubing ends", "Eye hazard from spring-back during bending", "Compressed air stored energy", "Falls during routing"],
-      "support_spacing": {"half_inch_SS_horizontal": "5 ft max", "half_inch_SS_vertical": "8 ft max"}
+      "ppe": ["Safety glasses (MANDATORY — tubing spring-back is the most common eye injury in instrumentation)", "Cut-resistant gloves when handling freshly cut tubing", "Fall protection above 6 ft when routing on pipe racks"],
+      "jsa_items": ["Deburr ALL tubing cuts — inside AND outside edge", "Blow out tubing with clean dry air/N2 before connecting to instrument", "Never use copper tubing for process service — only for instrument air", "Pressure test ALL tubing before connecting to instruments", "Cap ALL open tubing ends at the end of each shift — prevent contamination", "Use proper tube bender — minimum 5x OD bend radius for 316SS", "Support tubing per spec — 5 ft horizontal, 8 ft vertical for 1/2-inch 316SS"],
+      "hazards": ["Sharp tubing ends — cuts and puncture wounds", "Eye hazard from spring-back during bending — tubing stored energy", "Compressed air/N2 stored energy during pressure testing", "Falls during routing on pipe racks and structural steel", "Pinch points when installing tubing clamps and supports"],
+      "support_spacing": {"316ss_half_inch_horizontal": "5 ft max", "316ss_half_inch_vertical": "8 ft max", "316ss_quarter_inch_horizontal": "4 ft max"}
     },
     "control_valve_installation": {
-      "ppe": ["Steel-toe boots", "Hard hat", "Hearing protection near pressure letdown", "Rigging gloves"],
-      "jsa_items": ["Verify tag number matches P&ID and line number", "Check flow direction arrow matches process flow", "Remove shipping blocks from actuator", "Verify actuator air supply pressure matches nameplate", "Stroke valve full range before connecting to process", "Verify fail position matches data sheet"],
-      "hazards": ["Heavy equipment (hundreds to thousands of pounds)", "Pinch points during rigging", "Stored energy in actuator springs", "High noise"]
+      "ppe": ["Steel-toe boots", "Hard hat", "Hearing protection near pressure letdown valves (noise >85 dB)", "Rigging gloves for handling heavy valves", "Safety glasses"],
+      "jsa_items": ["Verify tag number matches P&ID and line number before installation", "Check flow direction arrow matches process flow direction", "Remove ALL shipping blocks and stops from actuator before testing", "Verify actuator air supply pressure matches nameplate", "Stroke valve full range BEFORE connecting to process — verify no binding", "Verify fail position matches data sheet — incorrect fail position is a safety hazard", "Install bypass around valve if required for startup/maintenance"],
+      "hazards": ["Heavy equipment — control valves can weigh hundreds to thousands of pounds", "Pinch points during rigging and positioning", "Stored energy in actuator springs — can snap closed/open unexpectedly", "High noise from pressure letdown in operation (>100 dB possible)", "Process fluid release if flange gasket fails"],
+      "permits": ["Crane/rigging permit for heavy valves", "Hot work if welding valve connections"]
     },
     "calibration": {
-      "safety": ["Use intrinsically safe calibrators in classified areas", "LOTO before disconnecting wiring", "Never apply test pressure exceeding instrument rated range", "Secure calibration gas cylinders upright"],
-      "documentation": ["Record as-found and as-left readings", "Apply calibration sticker with date and initials"]
+      "safety": ["Use ONLY intrinsically safe calibrators in classified (hazardous) areas", "LOTO before disconnecting wiring in any energized system", "Never apply test pressure exceeding instrument rated range — overpressure can rupture diaphragm", "Secure calibration gas cylinders upright with chain — falling cylinders are lethal", "Verify calibration gas is not toxic before use in open area", "When calibrating in-situ: verify instrument is properly isolated from process", "Bleed pressure slowly through bleed valve before disconnecting any pressure instrument"],
+      "documentation": ["Record as-found readings BEFORE any adjustment", "Record as-left readings AFTER adjustment", "Apply calibration sticker with date, initials, and next due date", "Enter calibration data in CMMS tracking system"]
     },
     "loop_testing": {
-      "safety": ["Notify operations/control room before ANY loop test", "Verify DCS/PLC in manual or test mode before driving outputs", "Place warning tags on control valves being tested", "Confirm safety interlocks bypassed with proper authorization", "Two-person communication required — one at field, one at control room"],
-      "test_order": "Verify power → check signal at field device → verify at marshalling panel → verify in DCS/PLC → drive output to verify actuator"
+      "safety": ["NOTIFY operations/control room BEFORE any loop test", "Verify DCS/PLC is in MANUAL or TEST mode before driving outputs", "Place WARNING TAGS on all control valves being tested", "Confirm safety interlocks are properly BYPASSED with written authorization", "Two-person communication REQUIRED — one at field, one at control room", "Verify no personnel are near control valves or final elements before commanding movement", "After test: REMOVE all bypasses, verify interlocks back in service, remove warning tags"],
+      "test_order": "Verify power → check signal at field device → verify at marshalling panel → verify in DCS/PLC → drive output → verify actuator responds → verify feedback → verify fail-safe"
     },
     "hazardous_areas": {
-      "requirements": ["ALL instruments must have appropriate classification rating (XP, IS, or nonincendive)", "IS barriers in safe area marshalling cabinets", "XP junction boxes: ALL cover bolts installed — no missing bolts", "Seal fittings within 18 in of enclosure in Div 1", "Only approved tools — no unapproved phones, cameras, radios", "Hot work permits for any spark-producing activity"],
-      "classifications": {"div_1": "Flammable present under NORMAL conditions", "div_2": "Flammable present only under ABNORMAL conditions"}
+      "requirements": ["ALL instruments must have appropriate area classification rating matching the location", "Explosion-proof (XP): heavy cast housing, all cover bolts MUST be installed — even ONE missing violates rating", "Intrinsically Safe (IS): energy-limited circuits, IS barriers required in safe area", "Non-incendive (NI): for Division 2 only", "Seal fittings (EYS/EYD) within 18 inches of enclosure boundary in Division 1", "Only approved tools in classified areas — no unapproved phones, cameras, radios, flashlights", "Hot work permits REQUIRED for any spark-producing activity", "Never open XP enclosures in energized classified areas without gas testing first"],
+      "classifications": {"class_I": "Flammable gases or vapors (refineries, petrochemical)", "class_II": "Combustible dust", "class_III": "Ignitable fibers", "div_1": "Hazardous present under NORMAL conditions", "div_2": "Hazardous present only under ABNORMAL conditions", "zone_0": "Continuous or long periods — worst case", "zone_1": "Normal operations — equivalent to Div 1", "zone_2": "Abnormal conditions only — equivalent to Div 2"},
+      "equipment_markings": {"XP": "Explosion-proof — Type d. Heavy cast housing contains explosion.", "IS": "Intrinsically Safe — Type ia (Div 1), ib (Div 2). Energy too low to ignite.", "NI": "Non-Incendive — Type nC. Div 2 only."}
     },
     "pneumatic_systems": {
-      "safety": ["Bleed pressure before disconnecting fittings", "Instrument air must be clean, dry, oil-free", "Typical supply: 20 psi for instruments, 60-80 psi for valve actuators", "Install filter/regulators at each air supply takeoff"],
-      "hazards": ["Stored energy in air headers", "Whipping lines if connections fail", "Eye injury from blown debris"]
+      "safety": ["BLEED pressure before disconnecting ANY fitting", "Instrument air must be clean, dry, oil-free — contaminated air damages instruments", "Typical supply: 20 PSI for instruments, 60-80 PSI for valve actuators", "Install filter/regulators at each air supply takeoff", "NEVER use plant air (shop air) for instruments — contains oil and moisture", "Stand clear of tubing connections during pressure testing — lines can whip"],
+      "hazards": ["Stored energy in air headers and tubing", "Whipping lines if connections fail under pressure", "Eye injury from blown debris during blowdown", "Noise hazard during large-volume blowdowns"]
     },
     "working_near_process_piping": {
-      "safety": ["Identify pipe contents from labels or P&ID before working near any pipe", "Maintain safe distance from uninsulated hot pipes", "Never route instrument tubing in direct contact with hot process piping", "Report any leaks (hissing, frost, discoloration) immediately"],
-      "hazards": ["Burns from steam/hot oil (can exceed 700F)", "Frostbite from cryogenic lines", "Chemical exposure from leaks"]
+      "safety": ["IDENTIFY pipe contents from labels or P&ID BEFORE working near any pipe", "Maintain safe distance from uninsulated hot pipes — steam pipes exceed 700°F", "Never route instrument tubing in direct contact with hot process piping — use standoff clamps", "Report ANY leaks immediately — hissing, frost, discoloration, dripping", "Be aware of steam traps — discharge causes severe burns"],
+      "hazards": ["Burns from steam/hot oil (can exceed 700°F)", "Frostbite from cryogenic lines (LNG, liquid nitrogen, ethylene)", "Chemical exposure from leaks — H2S is IDLH at 100 ppm", "High-pressure release — small leaks can cut through skin (hydraulic injection)"]
+    },
+    "analyzer_work": {
+      "ppe": ["Chemical-resistant gloves appropriate for process fluid", "Safety glasses with splash guard or chemical goggles", "Face shield when working with reagents or sample systems", "Supplied air respirator for toxic sample streams (H2S, CO, HCN)", "FR clothing in classified areas"],
+      "jsa_items": ["Identify ALL chemicals in sample system before opening any connection", "Review SDS for all reagents and calibration gases", "Verify sample bypass is OPEN and block valves are CLOSED before working on analyzer", "Never smell a sample stream — use detection equipment", "Calibration gases may be toxic — use in ventilated area with proper respiratory protection", "Liquid reagents: handle with chemical gloves and eye protection", "Dispose of waste reagents per site environmental procedures"],
+      "hazards": ["Toxic process fluids in sample lines (H2S, HCN, benzene, HF)", "Corrosive reagents (acids, caustics)", "High-pressure sample streams", "Hot sample streams — sample conditioning may not cool fluid completely", "Toxic calibration gases"]
+    },
+    "safety_system_testing": {
+      "jsa_items": ["SIS testing requires WRITTEN AUTHORIZATION from operations", "Verify process is in safe state before initiating any safety function test", "Have spotter at final element before initiating test", "NEVER bypass safety function without documented authorization", "After test: VERIFY all bypasses removed, all safety functions back in service", "Partial stroke tests: verify valve moves and returns without process upset", "Full stroke tests may require process shutdown — coordinate with operations", "Document ALL test results — SIS testing documentation is regulatory requirement"],
+      "hazards": ["Unexpected process upset from safety function activation", "Unexpected valve movement — pressure surge, water hammer", "Equipment damage from uncontrolled shutdown", "Personnel near final elements struck by moving equipment"],
+      "regulatory": "SIS testing per SRS defined under IEC 61511 / ISA 84. Missing/late proof tests degrade SIL rating."
+    },
+    "commissioning_safety": {
+      "jsa_items": ["Pre-energization checklist COMPLETED and SIGNED before any power applied", "Verify ALL construction complete — no open flanges, missing bolts, incomplete welds", "Verify instrument air quality meets spec before connecting to instruments", "Monitor ALL instruments for abnormal readings during first process introduction", "Fire watch present during first hot startup in classified areas", "Bump test all gas detectors before relying on them for area monitoring", "Communications plan established: positions, radio channels, emergency contacts", "Clear STOP WORK authority — anyone can call stop for unsafe conditions"],
+      "hazards": ["First-time startup has highest incident rate", "Unexpected leaks during initial pressurization", "Gas/vapor release during purging and inerting", "Instruments may read incorrectly until process stabilizes", "Electrical hazards during first energization"],
+      "sequence": "Construction complete → Pre-commissioning → Instrument air → Power → Individual instrument checkout → Loop testing → Interlock testing → Process introduction → Performance testing"
+    },
+    "radiation_safety": {
+      "applies_to": "Nuclear level gauges (Cesium-137 or Cobalt-60 gamma sources)",
+      "requirements": ["Radiation Safety Officer must be present for source installation/removal", "Maintain distance from source — follow ALARA principle", "Never open source housing without RSO authorization", "Annual wipe test required to verify source containment", "Dosimeter badge required for personnel working near sources", "Source must be SHIELDED when not in measurement service", "Report any damage to source housing immediately"],
+      "signage": "Trefoil radiation symbol required on all source housings and area boundaries"
+    },
+    "cryogenic_safety": {
+      "applies_to": "Instruments on LNG, liquid nitrogen, liquid oxygen, ethylene, propylene",
+      "requirements": ["Cryogenic-rated gloves — standard work gloves provide NO protection", "Face shield when breaking connections — cryogenic spray causes instant frostbite", "Materials must be cryogenic-rated — carbon steel shatters at cryogenic temps", "316SS or special alloys required for wetted parts", "Do NOT use standard gaskets — use PTFE or cryogenic-rated", "Oxygen-enriched atmosphere risk when LN2/LOX evaporates — ventilate area"]
     }
   }
 }

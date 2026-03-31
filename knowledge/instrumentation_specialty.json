@@ -1,0 +1,1098 @@
+{
+  "trade": "Instrumentation",
+  "category": "specialty_instruments",
+  "description": "Deep field knowledge for specialty instrument types — analyzers, flow meters, level instruments, temperature, pressure, safety instrumented systems, and wireless. Covers selection, installation, calibration, troubleshooting, and real-world gotchas for journeyman instrument techs on industrial construction and turnarounds.",
+
+  "analyzers": {
+    "golden_rule": "Sample conditioning is 80% of analyzer maintenance. If the sample is not representative, the reading is garbage. Always install a bypass so you can maintain the sample system without shutting down the process.",
+
+    "o2_analyzers": {
+      "types": {
+        "paramagnetic": {
+          "principle": "Oxygen is paramagnetic — attracted to strong magnetic fields. Measures partial pressure of O2.",
+          "accuracy": "Typically 0.01-0.1% O2",
+          "applications": "Combustion control, inert gas blanketing, purity measurement",
+          "installation": "Extractive only — requires clean dry sample. Sample system must remove moisture (Nafion dryer or refrigeration) and particulate.",
+          "calibration": "Zero with certified nitrogen (99.999%), span with certified O2 blend or instrument air (20.9%). Calibration gas must be within 6 months of certification date.",
+          "common_issues": ["Moisture in sample condenses and damages cell", "Slow response if sample lines are too long — keep under 50 feet", "Barometric pressure changes affect reading — some units have auto compensation", "Cross-sensitivity to other paramagnetic gases (NO, NO2) — rare but real"]
+        },
+        "zirconia_in_situ": {
+          "principle": "Zirconia ceramic cell at 700-850C generates voltage proportional to O2 difference between reference air and flue gas (Nernst equation).",
+          "accuracy": "Typically 0.5-1% O2 in combustion applications",
+          "applications": "Flue gas O2 for combustion control — heaters, boilers, furnaces",
+          "installation": "Probe mounts directly in stack/duct. Insertion depth must reach representative gas flow — typically 12-18 inches past duct wall. Avoid dead zones behind baffles. Reference air must be clean instrument air, NOT plant air.",
+          "calibration": "Span with certified 4% O2 balance nitrogen (typical). Zero with nitrogen. Some units use internal reference cell — still need periodic gas cal.",
+          "common_issues": [
+            "Probe fouling from soot/fly ash — especially on heavy fuel oil or coal",
+            "Diffusion element degradation — ceramic cracks from thermal shock. Never quench a hot probe with cold air.",
+            "Reference air contamination — if plant air has oil or moisture, readings drift",
+            "Heater element failure — probe must be at 700C+ to work. If heater fails, reading goes to zero or erratic",
+            "Insertion length too short — reads dilution air instead of true flue gas",
+            "Calibration gas must flow at correct rate — too fast cools the cell, too slow does not purge dead volume"
+          ],
+          "maintenance_interval": "Quarterly calibration typical. Annual diffusion element inspection. Heater element life 3-5 years."
+        },
+        "zirconia_extractive": {
+          "principle": "Same zirconia cell but housed in a heated enclosure with sample conditioning system",
+          "applications": "When in-situ probe cannot survive process conditions, or when multiple sample points feed one analyzer",
+          "sample_system": "Heated sample line (above dewpoint, typically 300-400F), coalescing filter, sample pump, flow control. Sample line MUST stay above acid dewpoint in sulfur-bearing applications or it will corrode.",
+          "advantages_over_insitu": "Protected from vibration/thermal shock, easier calibration access, can switch between multiple sample points"
+        },
+        "electrochemical": {
+          "principle": "Galvanic or polarographic cell — oxygen diffuses through membrane and generates current proportional to O2 concentration",
+          "accuracy": "0.1-1% O2 typical",
+          "applications": "Portable safety monitors, ambient O2 monitoring, confined space entry",
+          "limitations": "Cell has limited life (1-3 years typical), affected by temperature and pressure, slow response vs paramagnetic or zirconia",
+          "calibration": "Span in fresh air (20.9% O2). Zero with nitrogen if available. Must calibrate in same atmospheric pressure as measurement.",
+          "field_note": "For confined space entry monitors — ALWAYS bump test before EVERY entry. A bump test is NOT a calibration. Bump test = expose to known gas and verify alarm activates within required time."
+        }
+      }
+    },
+
+    "ph_analyzers": {
+      "principle": "Glass electrode develops voltage proportional to hydrogen ion activity. Reference electrode provides stable reference potential. Combined electrode has both in one probe.",
+      "range": "0-14 pH, resolution to 0.01 pH typical",
+      "temperature_effect": "pH of solution AND electrode response both change with temperature. Automatic temperature compensation (ATC) with Pt100 or thermistor is mandatory for accuracy.",
+
+      "installation": {
+        "flow_cell": {
+          "description": "Preferred for process measurement. Sample flows through a chamber past the electrode.",
+          "requirements": "Constant flow rate (1-3 GPM typical), no air bubbles, no dead legs, electrode orientation per manufacturer (usually 15-45 degrees from horizontal)",
+          "advantages": "Consistent exposure, easier maintenance access, sample can be conditioned before measurement"
+        },
+        "submersion": {
+          "description": "Electrode submerged directly in tank, channel, or basin.",
+          "requirements": "Minimum flow velocity past electrode (0.5 ft/s), retractable mounting assembly for maintenance without draining, cable length rated for submersion depth",
+          "applications": "Wastewater, cooling towers, large basins, neutralization tanks"
+        }
+      },
+
+      "calibration": {
+        "buffer_solutions": {
+          "standard_points": "pH 4.00 (red), pH 7.00 (yellow/green), pH 10.00 (blue). Colors are NIST convention but vary by manufacturer.",
+          "procedure": [
+            "Rinse electrode with DI water between buffers — never wipe (damages glass)",
+            "Start with pH 7 buffer (set zero/asymmetry potential)",
+            "Then use buffer closest to process pH (set slope)",
+            "Electrode slope should be 95-102% of theoretical (59.16 mV/pH at 25C). Below 90% = replace electrode",
+            "Allow stabilization time — 1-3 minutes per buffer"
+          ],
+          "buffer_rules": "Never pour used buffer back into bottle. Buffer shelf life typically 1 year unopened, 3-6 months opened. Discard if cloudy or contaminated. Store at room temperature."
+        },
+        "frequency": "Weekly to monthly depending on application fouling rate. High-fouling (wastewater, slurries) may need daily cleaning and weekly cal."
+      },
+
+      "electrode_life": {
+        "typical": "6-18 months depending on process conditions",
+        "factors_reducing_life": ["High temperature (above 80C)", "Strong acids/bases (below pH 1 or above pH 13)", "HF (hydrofluoric acid) dissolves glass — use antimony electrode instead", "High pressure — deforms reference junction", "Low-ionic-strength water — reference electrode potassium leaches faster"],
+        "signs_of_failure": ["Slow response time (>60 seconds to stabilize)", "Slope below 90%", "Noisy/erratic signal", "Cannot calibrate to buffer values", "Asymmetry potential shifted more than 30 mV from zero"]
+      },
+
+      "common_issues": {
+        "coating": "Oils, greite, biological growth coat the glass bulb and block response. Solution: automatic ultrasonic cleaner, chemical wash system, or manual cleaning schedule.",
+        "reference_junction_fouling": "Process material clogs the porous reference junction. Causes drift and slow response. Solution: pressurized reference electrode (flows outward), or gel-filled electrode for dirty service.",
+        "poisoning": "Sulfides, cyanides, and heavy metals poison the reference electrode. Causes large offset errors. Solution: double-junction electrode isolates inner reference from process.",
+        "ground_loop": "Stray electrical currents cause erratic readings. Solution: solution ground electrode, proper grounding of transmitter, isolate pH sensor from metallic pipe.",
+        "temperature_compensation_failure": "If ATC element fails, pH reads correctly ONLY at calibration temperature. Can cause large errors. Always verify ATC element with ohmmeter."
+      }
+    },
+
+    "conductivity_analyzers": {
+      "principle": "Measures ability of solution to conduct electrical current. Directly related to dissolved ion concentration.",
+      "units": "microSiemens/cm (uS/cm) or milliSiemens/cm (mS/cm). 1 mS = 1000 uS.",
+
+      "contacting_type": {
+        "description": "Two or four electrodes in direct contact with solution. AC excitation prevents polarization.",
+        "cell_constant": "K=0.01 for ultrapure water (0-20 uS), K=0.1 for pure/clean water (0-2000 uS), K=1.0 for general process (0-200 mS), K=10 for concentrated solutions (0-2000 mS). Match cell constant to expected range.",
+        "limitations": "Electrode fouling in dirty service, polarization at high conductivity if cell constant too low",
+        "calibration": "Calibrate with certified conductivity standard (KCl solutions). Zero is air (essentially zero). Must temperature-compensate — conductivity changes ~2%/C."
+      },
+      "toroidal_type": {
+        "description": "Two toroids (inductively coupled) — no electrodes touch the solution. AC signal induced in solution loop.",
+        "advantages": "No electrode fouling, no polarization, works in dirty/coating/corrosive service, wider range",
+        "applications": "Chemical plants, wastewater, slurries, acids, caustics, anywhere contacting electrodes would foul",
+        "calibration": "Same standards as contacting. Verify toroid is fully submerged — air bubbles in the bore cause errors."
+      },
+      "temperature_compensation": "Critical — most analyzers compensate to 25C reference. Verify compensation type matches solution (linear for most, non-linear for ultrapure water, NaCl tables for brine).",
+      "applications": "Boiler blowdown, RO membrane monitoring, CIP (clean-in-place) rinse verification, cooling tower cycles, chemical concentration control"
+    },
+
+    "turbidity_analyzers": {
+      "principle": "Measures light scattering caused by suspended particles. Higher turbidity = more scatter.",
+      "units": "NTU (Nephelometric Turbidity Units) or FNU (Formazin Nephelometric Units). Numerically equivalent for practical purposes.",
+
+      "measurement_methods": {
+        "ninety_degree_scatter": {
+          "description": "Detector at 90 degrees to light source. Standard nephelometric method per EPA 180.1 and ISO 7027.",
+          "range": "0-1000 NTU typical. Best accuracy at low range (0-40 NTU).",
+          "applications": "Drinking water (must be <1 NTU for regulatory), filter effluent monitoring"
+        },
+        "ratio_method": {
+          "description": "Multiple detectors (90-degree, forward scatter, transmitted). Ratio calculation cancels out lamp aging and window fouling effects.",
+          "advantages": "More stable over time, less affected by color, self-compensating for fouling",
+          "applications": "Process water where extended service intervals needed"
+        }
+      },
+      "installation": {
+        "flow_cell": "Constant flow rate (0.25-1 GPM typical), no air bubbles (bubbles read as turbidity), sample must be at ambient pressure (degas if pressurized process), install bubble trap upstream",
+        "submersion": "Probe at 45-degree angle to avoid bubble accumulation on optical window, minimum submersion depth per manufacturer, avoid direct sunlight",
+        "wiper_systems": "Mechanical wiper cleans optical window automatically on a timer. Essential for any application with biological growth or scaling potential. Verify wiper operation during commissioning."
+      },
+      "calibration": {
+        "primary_standard": "Formazin suspension — prepare fresh from hydrazine sulfate and hexamethylenetetramine per ASTM D6855. Shelf life 1 year in sealed container at 25C.",
+        "secondary_standards": "StablCal sealed vials or AMCO-AEPA polymer microsphere standards. Easier to use, longer shelf life, traceable to formazin.",
+        "procedure": "Zero with filtered DI water (< 0.02 NTU). Span with standard closest to expected process value.",
+        "caution": "Never shake formazin vigorously — creates microbubbles that read as false turbidity. Invert gently."
+      }
+    },
+
+    "gas_chromatograph": {
+      "principle": "Separates gas mixture components by differential migration through a chromatographic column. Detector identifies and quantifies each component by retention time and peak area.",
+      "typical_applications": "Natural gas composition (C1-C6+, CO2, N2, H2S), BTU/heating value, process gas streams in petrochemical",
+
+      "sample_conditioning": {
+        "importance": "GC requires clean, dry, particulate-free sample at correct pressure and flow rate. Sample system failure is #1 cause of GC downtime.",
+        "components": [
+          "Sample probe — heated if condensation possible",
+          "Coalescing filter — removes liquid droplets",
+          "Particulate filter — 2-micron typical",
+          "Pressure regulator — reduce to analyzer inlet pressure (typically 15-30 PSIG)",
+          "Flow control — rotameter or mass flow controller",
+          "Sample bypass (fast loop) — keeps sample fresh and reduces lag time. Return to low-pressure point in process."
+        ],
+        "heated_lines": "If sample contains components that condense at ambient temperature, entire sample path must be heat-traced above dewpoint. Loss of heat trace = loss of heavy components = wrong analysis."
+      },
+
+      "carrier_gas": {
+        "helium": "Traditional carrier. Inert, good thermal conductivity (for TCD detectors). Becoming expensive and scarce — some sites switching to hydrogen.",
+        "hydrogen": "Faster analysis, better separation, cheaper. BUT: flammable — requires hydrogen safety (leak detection, proper venting, classified area installation). Generator preferred over cylinders in some installations.",
+        "nitrogen": "Used as carrier in some applications. Slower separation but cheap and available.",
+        "purity": "Carrier gas must be high purity (99.999% minimum). Moisture and oxygen in carrier damage columns. Install molecular sieve trap on carrier gas supply."
+      },
+
+      "column_types": {
+        "packed": "Older technology, robust, lower resolution. Used for simple separations (C1-C6 natural gas).",
+        "capillary_wall_coated": "Higher resolution, faster analysis, smaller sample size. Used for detailed analysis. More fragile.",
+        "micropacked": "Compromise between packed and capillary. Common in process GCs."
+      },
+
+      "cycle_time": "Time for one complete analysis. Typically 3-20 minutes depending on number of components and column length. Faster is not always better — must have complete separation of all peaks.",
+
+      "stream_switching": {
+        "description": "Multi-stream GC analyzes multiple process points sequentially using a stream selection valve.",
+        "typical": "4-16 streams per analyzer. Cycle through all streams, then repeat.",
+        "requirements": "Each stream must have individual sample conditioning. Stream switching valve must not leak between streams (cross-contamination). Verify dead-volume purge between streams.",
+        "validation": "After stream switch, first analysis may not be valid (dead volume). Many GC programs discard first analysis after switch."
+      },
+
+      "calibration": {
+        "calibration_blend": "Certified gas blend with known concentration of each component. Must bracket expected process composition. Traceable to NIST or equivalent.",
+        "frequency": "Daily to weekly depending on regulatory requirements and drift. Natural gas custody transfer may require daily cal verification.",
+        "procedure": "Inject calibration blend through sample system (not direct to analyzer) to verify entire sample path. Compare measured composition to certified values. Adjust response factors if outside tolerance.",
+        "shelf_life": "Calibration gas cylinders have expiration dates — typically 1-2 years. Do NOT use expired cal gas."
+      },
+
+      "troubleshooting": {
+        "no_peaks": "No sample reaching detector — check sample system, carrier gas supply, detector flame (FID)",
+        "baseline_drift": "Column contamination, carrier gas impurity, temperature instability",
+        "shifted_retention_times": "Column degradation, carrier gas flow change, oven temperature drift",
+        "extra_peaks": "Contamination in sample system, column bleed at high temperature, previous sample carryover",
+        "broad_peaks": "Column overloaded, injection volume too large, column aging"
+      }
+    },
+
+    "sample_system_general": {
+      "golden_rules": [
+        "The sample must be REPRESENTATIVE of the process — wrong sample point location = wrong measurement no matter how good the analyzer is",
+        "Sample transport time (lag time) must be minimized — dead volume kills response time. Use small-bore tubing, fast loops, and short runs.",
+        "Sample conditioning MUST maintain the sample in the same phase as it exists at the tap — no condensation, no vaporization, no absorption of components",
+        "Always install a bypass/fast loop so the sample is continuously flowing. Dead-ended sample lines go stale.",
+        "Every connection is a potential leak. Fewer fittings = fewer problems. Use same-material wetted parts throughout.",
+        "Label everything — sample source, destination analyzer, flow direction, block valve positions"
+      ],
+      "common_failures": [
+        "Plugged filters — #1 cause of sample system downtime. Install pressure differential indicator across filters.",
+        "Heat trace failure — condensation in sample line removes heavy components or creates slugs",
+        "Regulator freeze-up — moisture in high-pressure gas freezes in regulator orifice on expansion. Install coalescing filter upstream.",
+        "Pump failure — diaphragm pumps need periodic diaphragm replacement. Check stroke rate and discharge pressure.",
+        "Tubing contamination — old tubing absorbs components and releases them later. Replace tubing if you cannot zero the analyzer."
+      ]
+    }
+  },
+
+  "flow_meters": {
+    "selection_overview": "Flow meter selection depends on: fluid type (liquid/gas/steam), conductivity, viscosity, density, cleanliness, temperature, pressure, accuracy requirement, rangeability, straight run available, and budget. There is no universal flow meter.",
+
+    "magnetic_flow_meter": {
+      "principle": "Faraday's law — conductive fluid moving through a magnetic field generates voltage proportional to velocity. Voltage measured between electrodes in pipe wall.",
+      "accuracy": "0.2-0.5% of rate typical",
+      "rangeability": "100:1 or better",
+
+      "requirements": {
+        "conductivity": "Minimum 5 microSiemens/cm (uS/cm). Will NOT work on hydrocarbons, DI water, or non-conductive fluids. Verify before specifying.",
+        "full_pipe": "Pipe must be completely full. Partially full pipe = inaccurate reading. Install at low point in piping or with electrodes horizontal to ensure full pipe. Most modern mag meters have empty pipe detection — enable it.",
+        "electrode_orientation": "Electrodes MUST be horizontal (3 o'clock and 9 o'clock position). If electrodes are at 12 and 6 o'clock, air bubbles collect at top electrode and coating settles at bottom electrode. Both cause errors.",
+        "straight_run": "Minimum 5 pipe diameters upstream, 2 diameters downstream. Less critical than most other meters because mag meter averages velocity across full bore.",
+        "grounding": "CRITICAL on plastic or lined pipe — process fluid must be electrically connected to meter body. Install grounding rings or grounding electrodes. Without proper grounding, stray currents cause massive errors and noise.",
+        "liner_compatibility": "Match liner to process — PTFE for chemicals, rubber for slurries/abrasive, ceramic for extreme abrasion. Liner damage = catastrophic failure."
+      },
+
+      "installation_notes": [
+        "Flow arrow on body must match flow direction",
+        "Do NOT install immediately downstream of a partially open valve — jet effect causes errors",
+        "Vertical flow upward is preferred orientation — guarantees full pipe",
+        "Protect from direct sunlight (affects electronics) and vibration",
+        "Cable between sensor and transmitter is matched pair — do NOT substitute or extend without manufacturer approval"
+      ],
+
+      "calibration": "Factory wet-calibrated. Field verification with portable clamp-on ultrasonic or comparison to reference meter. Zero verification: close both block valves with fluid in meter, verify output = 4.00 mA. Non-zero at zero flow usually means grounding issue.",
+
+      "troubleshooting": {
+        "noisy_signal": "Grounding problem (#1 cause), air entrainment, electrode coating, low conductivity fluid, electromagnetic interference from nearby VFDs",
+        "reads_when_no_flow": "Grounding issue, stray current, failed empty pipe detection",
+        "reads_low": "Electrode coating (insulating buildup), partially full pipe, wrong pipe ID programmed",
+        "reads_high": "Air entrainment (bubbles increase apparent velocity), electrical noise"
+      }
+    },
+
+    "coriolis_flow_meter": {
+      "principle": "Vibrating tube(s) — mass flow causes Coriolis effect (phase shift between inlet and outlet of vibrating tube proportional to mass flow rate). Also measures density from tube vibration frequency and temperature from RTD on tube.",
+      "accuracy": "0.1% of rate for liquids (best available), 0.35-0.5% for gas",
+      "rangeability": "100:1 or better",
+
+      "advantages": [
+        "Measures MASS directly — no density compensation needed",
+        "No straight run requirements — install anywhere in the piping",
+        "Multi-variable: mass flow, volume flow, density, temperature from one device",
+        "Works on virtually any fluid — liquids, gases, slurries, two-phase (with limitations)",
+        "No moving parts to wear"
+      ],
+
+      "limitations": {
+        "vibration_sensitivity": "External pipe vibration at or near tube natural frequency causes errors. Mount on rigid supports, use vibration isolation if needed. Dual-tube designs are less sensitive than single-tube.",
+        "tube_coating": "Buildup inside tubes changes mass of tube, shifts natural frequency, affects density and flow measurement. CIP (clean-in-place) or periodic mechanical cleaning required for coating service.",
+        "two_phase_flow": "Gas bubbles in liquid or liquid droplets in gas cause tube dampening and measurement errors. Severe two-phase can stall tube vibration entirely — meter goes to fault. Some newer meters have two-phase flow algorithms but accuracy degrades significantly.",
+        "pressure_drop": "Bent-tube designs create significant pressure drop, especially on large sizes. Check available differential pressure.",
+        "size_and_weight": "Large Coriolis meters (6-inch and above) are heavy and expensive. Flow splitter manifold sometimes used instead of one large meter.",
+        "cost": "Most expensive flow meter technology per line size"
+      },
+
+      "installation": [
+        "Orientation: tubes should be filled with fluid. For liquids, flow upward preferred. Avoid mounting with tubes pointing down where air can trap.",
+        "Support the adjacent piping — do NOT hang piping from the meter. Meter must be decoupled from pipe stress and vibration.",
+        "For gas service: install at high pressure point to maximize density. Low-pressure gas has low density = low signal = poor accuracy.",
+        "Thermal insulation may be needed to prevent tube temperature gradients affecting zero"
+      ],
+
+      "calibration": "Factory water-calibrated. Field zero required after installation — close block valves with fluid in meter, allow fluid to reach thermal equilibrium (30+ minutes), then zero. Zero stability is critical — recheck after major temperature changes.",
+
+      "applications": "Custody transfer (highest accuracy), batching, chemical injection, LNG/cryogenic, blending, any application requiring mass measurement or high accuracy"
+    },
+
+    "ultrasonic_flow_meter": {
+      "transit_time": {
+        "principle": "Measures difference in transit time of ultrasonic pulses traveling upstream vs downstream. Faster with flow, slower against flow. Difference is proportional to flow velocity.",
+        "accuracy": "0.5-1% for clamp-on, 0.15-0.5% for wetted (spool piece)",
+
+        "clamp_on": {
+          "description": "Transducers mount OUTSIDE the pipe — no pipe cutting, no process shutdown, no wetted parts.",
+          "requirements": [
+            "Must know pipe OD, wall thickness, and pipe material precisely — errors here = systematic flow error",
+            "Pipe must be full, no air pockets",
+            "Clean fluid — particles and bubbles scatter signal and cause dropouts",
+            "Pipe wall must be in good condition — heavy corrosion or internal lining delamination blocks signal",
+            "Coupling compound or gel between transducer and pipe — must maintain acoustic coupling",
+            "Minimum 10D upstream straight run, 5D downstream"
+          ],
+          "advantages": "No process shutdown, no pressure drop, portable versions available for survey/verification, works on very large pipes",
+          "limitations": "Less accurate than wetted types, signal quality depends on pipe condition, not suitable for dirty/aerated fluids",
+          "field_tip": "Always clean pipe surface to bare metal at transducer locations. Paint, rust, and scale block ultrasonic signal. Use angle grinder or wire brush. Mark transducer positions with paint pen for reinstallation."
+        },
+
+        "wetted_spool_piece": {
+          "description": "Transducers installed in pipe wall or in a factory-built spool piece. Better signal path, higher accuracy.",
+          "accuracy": "0.15-0.5% — approaching custody transfer quality",
+          "applications": "Custody transfer of hydrocarbons, high-accuracy process measurement"
+        }
+      },
+
+      "doppler": {
+        "principle": "Ultrasonic signal reflects off particles or bubbles in the fluid. Frequency shift (Doppler effect) proportional to velocity of particles.",
+        "requirements": "Fluid MUST contain particles (>100 microns) or bubbles — opposite requirement from transit time",
+        "accuracy": "2-5% — much less accurate than transit time, but works where transit time cannot",
+        "applications": "Slurries, wastewater, mining, any dirty or aerated fluid",
+        "field_tip": "If transit time ultrasonic gives no signal or unstable reading on a process you expected to be clean — the fluid may be dirtier than expected. Try Doppler type."
+      }
+    },
+
+    "vortex_flow_meter": {
+      "principle": "Bluff body in flow creates von Karman vortex street. Vortex shedding frequency is directly proportional to flow velocity. Piezoelectric or capacitive sensor detects vortex frequency.",
+      "accuracy": "0.75-1.5% of rate for liquids, 1-2% for gas/steam",
+      "rangeability": "20:1 to 40:1",
+
+      "requirements": {
+        "minimum_reynolds_number": "Approximately 20,000. Below this (low velocity or high viscosity), vortices do not form reliably and meter loses signal. Check turndown at minimum flow conditions.",
+        "straight_run": "15 pipe diameters upstream minimum (20D after two elbows in different planes), 5D downstream",
+        "full_pipe": "Must be completely full for liquid service",
+        "bluff_body_orientation": "Must be perpendicular to flow. Verify alignment mark during installation."
+      },
+
+      "vibration_sensitivity": "Pipe vibration can be detected as false vortices — biggest source of errors. Solutions: vibration-resistant sensor designs (dual-sensor cancellation), proper pipe support, avoid mounting near reciprocating compressors or pumps. If vibration is severe, choose a different meter type.",
+
+      "applications": "Steam flow (saturated and superheated), clean liquids, gas flow. Very popular for steam because of low maintenance and good accuracy. Multivariable vortex meters measure flow + pressure + temperature and compute mass/energy flow internally.",
+
+      "installation_notes": [
+        "Gasket must NOT protrude into flow bore — causes vortex disruption",
+        "Align flow arrow with flow direction",
+        "For steam: install with sensor at top to keep condensate out of sensor cavity",
+        "For liquid: install with sensor at side (not top, where air accumulates)",
+        "Insulate meter body if fluid temperature is >200F to protect transmitter electronics"
+      ],
+
+      "calibration": "Factory-calibrated. K-factor (pulses per unit volume) is stamped on nameplate. Field verification by comparison. No field adjustable zero — if output at zero flow is not zero, there is a vibration or noise problem, not a calibration problem."
+    },
+
+    "orifice_plate": {
+      "principle": "Restriction in pipe creates differential pressure proportional to flow squared. Oldest and most widely understood flow measurement technology.",
+      "accuracy": "0.5-2% of rate if installed per AGA/API/ISO 5167 standards",
+      "rangeability": "3:1 to 5:1 (limited by square root relationship and DP transmitter turndown)",
+
+      "key_specifications": {
+        "beta_ratio": "Ratio of bore diameter to pipe ID. Typical range 0.2 to 0.7. Lower beta = higher DP = more signal but more permanent pressure loss. Most common 0.4-0.6.",
+        "tap_location": "Flange taps (most common in North America, 1 inch from plate face), corner taps, D and D/2 taps. Must match calculation method.",
+        "material": "316 SS most common. Paddle handle and plate tab must specify bore size, tag number, flow direction"
+      },
+
+      "installation_critical": {
+        "direction": "BEVEL faces DOWNSTREAM. Paddle text/tag faces UPSTREAM. This is the #1 installation error — an orifice installed backwards reads significantly wrong (higher DP than actual).",
+        "gaskets": "Must NOT protrude into bore. Use ring-type gaskets or spiral-wound gaskets that do not overlap the bore.",
+        "straight_run": "Per AGA Report No. 3 / ISO 5167. Varies by beta ratio and upstream fitting. Typical minimums: 20D upstream / 5D downstream for single elbow. 45D for two elbows in different planes. Flow conditioners can reduce requirements.",
+        "concentric_alignment": "Plate bore must be concentric with pipe bore. Eccentricity causes flow measurement error.",
+        "drain_hole": "Small hole in plate for horizontal liquid lines (drains condensate), or vent hole for gas lines (bleeds trapped liquid). Hole must be at top for gas, bottom for liquid."
+      },
+
+      "dp_transmitter_connection": {
+        "liquid_service": "Both impulse lines slope DOWN from orifice taps to transmitter. Transmitter below pipe. Lines filled with process liquid.",
+        "gas_service": "Both impulse lines slope UP from orifice taps to transmitter. Transmitter above pipe. Lines dry.",
+        "steam_service": "Condensate legs must be equal length and filled to same level. Install condensate pots at orifice taps. Fill with distilled water.",
+        "five_way_manifold": "Allows online isolation, equalization, and venting for maintenance. Block high, block low, equalize, vent high, vent low. Learn valve sequence before touching."
+      },
+
+      "common_errors": [
+        "Installed backwards — most common field error. Reading will be higher than actual.",
+        "Wrong bore size — someone grabbed the wrong plate from the warehouse. Always verify bore matches datasheet.",
+        "Gasket protruding into bore — creates additional restriction, reads high",
+        "Impulse lines not properly sloped — trapped liquid in gas lines or air in liquid lines causes zero shift",
+        "Plate edge damaged — nicked or bent upstream edge changes discharge coefficient. Handle plates carefully."
+      ]
+    },
+
+    "turbine_flow_meter": {
+      "principle": "Rotor spins proportional to flow velocity. Magnetic pickup generates pulse output — frequency proportional to flow rate.",
+      "accuracy": "0.25-0.5% for liquid, 0.5-1% for gas",
+      "rangeability": "10:1 to 20:1",
+
+      "requirements": [
+        "Strainer REQUIRED upstream — debris damages bearings and blades",
+        "Minimum 10D upstream, 5D downstream straight run",
+        "Viscosity-sensitive — calibration shifts with viscosity changes. Use universal viscosity curve if viscosity varies.",
+        "Must be full pipe with no swirl"
+      ],
+
+      "maintenance": {
+        "bearing_wear": "Primary failure mode. Worn bearings = rotor slows down = reads low. Monitor K-factor trend — decreasing K-factor indicates bearing wear.",
+        "blade_damage": "Debris impact chips blades — changes rotor dynamics. Strainer prevents most damage.",
+        "magnetic_drag": "Magnetic pickup exerts drag on rotor — effect increases at low flow. Maintain proper pickup gap per manufacturer."
+      },
+
+      "applications": "Custody transfer of clean hydrocarbons (gasoline, diesel, jet fuel), blending, batch loading. Very common at truck loading racks and pipeline metering.",
+      "field_tip": "Never blow compressed air through a turbine meter at high velocity — can overspin and damage bearings or blades. When purging lines, bypass the meter."
+    },
+
+    "positive_displacement_flow_meter": {
+      "principle": "Fluid fills and empties a known volume chamber repeatedly. Each revolution or cycle = known volume. Counts total volume directly.",
+      "types": "Oval gear, rotary vane, nutating disc, reciprocating piston, roots-type (for gas)",
+      "accuracy": "0.1-0.5% — very high accuracy for totalized volume",
+
+      "advantages": [
+        "Measures volume DIRECTLY — not inferring from velocity",
+        "Not affected by flow profile — no straight run needed",
+        "Works on viscous fluids (actually improves with viscosity because slippage decreases)"
+      ],
+
+      "limitations": [
+        "Mechanical wear — moving parts eventually wear and slippage increases. Regular proving/calibration required.",
+        "Not suitable for dirty fluids — particles damage precision surfaces",
+        "Significant pressure drop — especially at high flow rates",
+        "Slippage at low viscosity — thin fluids leak past clearances. Accuracy degrades on very low-viscosity fluids."
+      ],
+
+      "applications": "Custody transfer of petroleum products, LPG, chemical batching, fuel dispensing, tank truck loading",
+      "proving": "Proved against a pipe prover or master meter. Meter factor = (prover volume) / (meter volume). Apply meter factor to all readings. Re-prove at regular intervals and whenever product changes."
+    }
+  },
+
+  "level_instruments": {
+    "selection_overview": "Level technology selection depends on: media (liquid/solid/slurry/interface), dielectric constant, temperature, pressure, vapor space conditions (foam, dust, condensation), tank geometry (nozzle location, internals, agitators), accuracy requirement, and whether continuous or point level.",
+
+    "through_air_radar": {
+      "principle": "Transmits microwave signal (FMCW 6-26 GHz or pulse 26 GHz) through vapor space. Signal reflects off liquid surface. Time-of-flight = distance to surface. Level = tank height minus distance.",
+      "accuracy": "2-3 mm typical",
+      "types": {
+        "fmcw": "Frequency Modulated Continuous Wave — continuous sweep, higher accuracy, better for turbulent surfaces and low-dielectric materials",
+        "pulse": "Short burst, simpler electronics, lower cost, adequate for most applications"
+      },
+
+      "antenna_selection": {
+        "horn": "Most common. 2-inch to 8-inch. Larger horn = narrower beam = fewer false echoes from walls. Use 3-inch or larger for nozzles without extensions.",
+        "rod_antenna": "For small nozzles or tight spaces. Susceptible to buildup — use PTFE-coated for sticky media.",
+        "parabolic": "Largest beam focus. For very long range, small dielectric, or severe conditions. Used on large storage tanks.",
+        "drop_antenna": "Extended antenna reaches below nozzle into tank. Keeps antenna tip below condensation zone."
+      },
+
+      "installation": {
+        "nozzle_position": "Mount away from center (off-center by 1/3 to 2/3 of radius) to avoid agitator or center internals. Avoid symmetrical positions where multiple reflections reinforce.",
+        "nozzle_height": "Antenna tip should be flush with or extending below nozzle. Nozzle acts as waveguide — long nozzles cause problems if antenna does not extend through.",
+        "beam_angle": "Beam must not hit tank walls, ladders, heating coils, or nozzle walls within near range. Use beam angle chart to verify clearance.",
+        "blanking_distance": "Minimum distance below antenna where measurement is not valid — typically 6-12 inches depending on antenna. Level above blanking = alarm condition, not measurement."
+      },
+
+      "common_issues": {
+        "false_echoes": "Reflections from tank internals, welds, baffles, heating coils. Solution: map false echoes during commissioning (auto-false-echo suppression function in transmitter). Re-map if internals change.",
+        "foam": "Low-dielectric foam absorbs radar signal. Light foam may reduce signal strength. Thick foam can block signal entirely. GWR may be better choice for foam applications.",
+        "condensation": "Moisture on antenna reduces signal. Use purge air connection or drip-resistant antenna design. Plastic rod antennas especially affected.",
+        "vapor_effects": "Heavy hydrocarbon vapors, steam, or high-pressure gas can slow microwave propagation and cause reading errors. Apply vapor correction factor if available in transmitter.",
+        "agitator_interference": "Moving agitator blades create intermittent false echoes. Use software echo tracking that ignores transient echoes. Mount antenna where beam misses agitator path."
+      }
+    },
+
+    "guided_wave_radar": {
+      "principle": "Microwave pulse travels down a probe (waveguide). Signal reflects off surface where dielectric constant changes (air-to-liquid interface). Time-of-flight = level. Also reflects at liquid-liquid interface if dielectric constants differ sufficiently.",
+      "accuracy": "2-3 mm typical",
+
+      "probe_types": {
+        "single_rod": "Simplest. For most liquid applications. Maximum length typically 10-20 feet. Signal dissipates on long probes. Requires centering discs in narrow stillwells.",
+        "twin_rod": "Coaxial signal path — stronger signal, better in low-dielectric and high-temperature applications. Does not need centering.",
+        "coaxial": "Completely shielded signal — immune to tank internals and interference. Limited to clean, non-viscous, non-coating liquids because annular space plugs easily. Best accuracy.",
+        "cable": "Flexible — for tall tanks up to 100+ feet. Requires weight on bottom end. Signal weaker than rigid probes on long lengths."
+      },
+
+      "installation": {
+        "nozzle": "Probe must hang vertically without touching nozzle walls. Verify nozzle ID is large enough. Reference point is top of nozzle flange face.",
+        "probe_length": "Measure from reference point to tank bottom (or to desired zero point). Order probe length to reach zero level. Allow for thermal expansion on hot service.",
+        "centering_discs": "Required in stillwells to keep probe centered. Disc holes must be large enough for liquid to flow freely. Too many discs create false echoes.",
+        "avoid_contact": "Probe must not touch tank bottom, internals, or walls. Contact creates false echoes or prevents measurement of bottom level."
+      },
+
+      "interface_measurement": {
+        "description": "GWR can simultaneously measure top liquid surface AND interface between two immiscible liquids (e.g., oil on water, hydrocarbon on caustic).",
+        "requirements": "Upper liquid dielectric constant must be less than ~10 (so signal partially passes through to interface). Lower liquid dielectric must be significantly higher than upper (water = 80, most hydrocarbons = 2-4). Emulsion layer causes uncertainty.",
+        "setup": "Configure transmitter for interface mode. Enter dielectric constants of both fluids. Verify with manual gauging during commissioning."
+      },
+
+      "common_issues": {
+        "buildup_on_probe": "Sticky, viscous, or crystallizing products coat the probe and change its apparent dielectric environment. Causes measurement error. Solution: PTFE-coated probe, steam or chemical cleaning lance, or switch to through-air radar if buildup is severe.",
+        "end_of_probe_echo": "Signal reflects off bottom of probe — can be confused with low-level echo. Transmitter must be configured with correct probe length so it ignores end-of-probe reflection.",
+        "false_echoes_from_probe_supports": "Centering discs, mounting flanges, and process connections create small reflections. Map during commissioning.",
+        "turbulence": "Heavy turbulence or agitation near probe causes signal scatter. Mount probe in stillwell if turbulence is excessive."
+      }
+    },
+
+    "dp_level": {
+      "principle": "Hydrostatic pressure at bottom of vessel is proportional to liquid height times specific gravity. DP transmitter measures this pressure against a reference (atmospheric, gas space, or sealed reference leg).",
+
+      "configurations": {
+        "wet_leg": {
+          "description": "High side on bottom of vessel, low side connected to top of vessel through a reference leg FILLED with known liquid (usually glycol or silicone). Used when vessel is pressurized (closed tank).",
+          "calculation": "DP = (H x SG_process x 0.0361) - (h_ref x SG_ref x 0.0361) inches WC. Note: 0.0361 converts inches of liquid (SG=1) to inches WC per inch of height.",
+          "critical": "Reference leg must ALWAYS be full. Any bubble in reference leg = level error. Use seal pots at top to maintain fill. Check periodically.",
+          "zeroing": "With vessel empty but reference leg full, output should be negative (or at some offset). With vessel at 100%, output should be at maximum. Calibrate accordingly — LRV and URV may not be 0 and full scale."
+        },
+        "dry_leg": {
+          "description": "High side on bottom of vessel, low side open to top of vessel (gas space) with no fill fluid. Used when no condensation occurs in the low-side line.",
+          "calculation": "DP = H x SG x 0.0361 inches WC (simpler because no reference leg offset)",
+          "limitation": "If vapors condense in the low-side impulse line, liquid accumulates and creates false offset. Must install drain at low point of impulse line and drain periodically."
+        },
+        "electronic_remote_seal": {
+          "description": "Diaphragm seals mounted directly on vessel nozzles. Capillary tubes filled with silicone oil connect seals to DP transmitter. Eliminates impulse tubing, wet legs, and heat tracing.",
+          "advantages": "No plugging, no freeze protection needed (capillary fill fluid rated for temperature), no impulse line maintenance, fast installation",
+          "limitations": {
+            "temperature_effects": "Fill fluid expands/contracts with temperature. Ambient temperature changes cause zero shift. Use transmitter temperature compensation if available. Minimize capillary length.",
+            "capillary_length": "Maximum typically 50 feet. Longer capillary = slower response + more temperature error. Keep as short as possible.",
+            "sun_exposure": "Unequal sun exposure on two capillaries causes differential temperature = zero shift. Route capillaries together and insulate/shield from sun.",
+            "elevation_difference": "If diaphragm seals are at different elevations from transmitter, fill fluid column height creates offset. Factory calibration must account for mounting geometry.",
+            "response_time": "Slower than direct-mount or impulse tubing. Acceptable for level but may be too slow for pressure control applications."
+          }
+        }
+      },
+
+      "density_compensation": "If process fluid density (SG) changes with temperature or composition, level reading will be wrong unless compensated. Options: temperature-compensated SG table in transmitter, separate density measurement input, or accept the error if it is within tolerance.",
+
+      "suppression_and_elevation": {
+        "suppression": "When transmitter is mounted below the lower tap. Static head in the impulse line adds to reading. Suppress (subtract) this offset. Also called LRV shift.",
+        "elevation": "When transmitter is mounted above the upper tap. Reference leg creates offset. Elevate (add to) reading. Common with wet legs."
+      },
+
+      "troubleshooting": {
+        "reads_high": "Plugged low-side line (dry leg), loss of reference fluid (wet leg), condensate in low-side impulse line, SG higher than calibration",
+        "reads_low": "Plugged high-side line, air in high-side impulse line, SG lower than calibration",
+        "erratic_reading": "Boiling at process connection, plugging/clearing cycle, transmitter hunting",
+        "always_reads_100_percent": "Low side isolated (valve closed or plugged), reference leg empty"
+      }
+    },
+
+    "displacer_level": {
+      "principle": "Archimedes principle — a cylindrical displacer is partially immersed in liquid. Buoyant force on displacer changes with liquid level. Torque tube converts force change to angular rotation, detected by sensor. Net weight change = (displacer volume immersed) x (fluid SG) x (0.0361).",
+      "accuracy": "Typically 0.5-1% of span",
+
+      "critical_factors": {
+        "specific_gravity": "SG MUST be known accurately. Error of 0.01 SG on a 14-inch displacer span = approximately 1% level error. If SG varies with temperature or composition, level reading will drift. SG calibration fluid must match operating SG.",
+        "torque_tube": "Must be oriented horizontally or per manufacturer specification. Tube must be free to flex — any binding from corrosion, coating, or mechanical interference causes errors. Material selection critical for corrosion resistance.",
+        "displacer_weight": "Displacer must be heavy enough to keep torque tube under tension at all levels. If displacer is too light for the fluid SG, it floats and loses measurement range.",
+        "interface_measurement": "Can measure liquid-liquid interface by sizing displacer to span the interface zone. Both fluid SGs must be known. Range = (upper SG - lower SG) x displacer length x 0.0361."
+      },
+
+      "calibration": {
+        "wet_cal": "Fill displacer cage with fluid of known SG. Verify 0%, 25%, 50%, 75%, 100%. Most accurate method.",
+        "dry_cal": "Hang calibrated weights on displacer rod to simulate buoyancy at various levels. Weights = (displacer_volume_immersed x fluid_SG x 62.4 lb/ft3). Requires accurate weight calculations.",
+        "bench_check": "Remove torque tube assembly, verify free rotation, check for corrosion or deposits on displacer and tube."
+      },
+
+      "common_issues": [
+        "SG change — process fluid gets heavier or lighter. Level reads wrong. Re-enter SG or recalibrate.",
+        "Displacer coated with wax, scale, or solids — apparent weight changes, level drifts. Clean displacer.",
+        "Torque tube corroded or fatigued — loses spring constant. Level drifts or becomes nonlinear. Replace torque tube.",
+        "Displacer hung up on cage internals — stuck at one level. Clear obstruction.",
+        "Equalizing valve left closed — cage does not fill or drain with vessel level. Level reads constant."
+      ]
+    },
+
+    "ultrasonic_level": {
+      "principle": "Transducer emits ultrasonic pulse through air (or gas) above liquid surface. Pulse reflects off surface. Time-of-flight = distance to surface. Level = tank height minus distance.",
+      "accuracy": "0.25% of range typical",
+      "frequency": "40-70 kHz typical. Lower frequency = longer range but larger beam angle. Higher frequency = shorter range but tighter beam.",
+
+      "requirements": {
+        "temperature_compensation": "Speed of sound in air varies with temperature (~0.17%/C). Built-in temperature sensor required for compensation. If vapor composition differs significantly from air (e.g., steam, hydrocarbon vapor), speed of sound changes and must be corrected.",
+        "blanking_distance": "Minimum distance below transducer face — typically 6-18 inches. Level within blanking zone cannot be measured.",
+        "maximum_range": "Typically 30-50 feet for industrial units. Signal attenuates with distance."
+      },
+
+      "limitations": {
+        "foam": "Absorbs ultrasonic signal. Thick foam = no echo = lost measurement. One of the biggest failure modes for ultrasonic level.",
+        "dust_and_vapor": "Heavy dust, dense vapor, or steam in the vapor space attenuates signal and can block measurement entirely.",
+        "turbulent_surface": "Heavy agitation scatters signal and reduces echo strength. Stillwell can help.",
+        "pressure": "High pressure increases air density, changes speed of sound. Most units rated for atmospheric or low-pressure vessels only."
+      },
+
+      "applications": "Open tanks, atmospheric storage, water/wastewater, chemical day tanks. Good for non-contact, non-fouling applications where radar is not needed.",
+      "vs_radar": "Radar is unaffected by temperature, vapor, dust, and pressure changes. Radar has replaced ultrasonic in many applications. Use ultrasonic where budget is limited and conditions are mild."
+    },
+
+    "capacitance_rf_admittance": {
+      "principle": "Probe and vessel wall form a capacitor. Liquid between them changes capacitance (dielectric constant of liquid vs air). RF admittance adds measurement of conductance and capacitance to eliminate effects of probe coating.",
+      "accuracy": "0.5-2% typical",
+
+      "applications": [
+        "Solids level (granular, powder) — one of few continuous technologies for solids",
+        "Sticky, coating, viscous liquids — RF admittance handles coating that defeats capacitance-only",
+        "Corrosive service — PTFE-insulated probe",
+        "Interface measurement — if dielectric constants of two liquids differ significantly",
+        "High-temperature, high-pressure service (with proper probe material)"
+      ],
+
+      "calibration": {
+        "method": "Set empty (air = low capacitance) and full (media = high capacitance) calibration points. Must enter dielectric constant of media. Dielectric constants: air=1, most hydrocarbons=2-4, most organic solvents=5-30, water=80.",
+        "critical": "If media dielectric constant changes (e.g., different product in tank), level reading will be wrong. Recalibrate for new media."
+      },
+
+      "probe_types": "Rigid rod for short tanks, flexible cable for tall tanks/silos, concentric tube for guided measurement. Insulation (PTFE or ceramic) required for conductive media.",
+      "installation": "Mount so probe does not touch tank wall or internals. Avoid areas where material bridges between probe and wall. Grounding is critical — vessel must be properly grounded."
+    },
+
+    "nuclear_gamma_level": {
+      "principle": "Gamma radiation source (Cesium-137 or Cobalt-60) mounted on one side of vessel. Detector on opposite side. Liquid between source and detector attenuates gamma radiation. Higher level = more attenuation = lower detector count.",
+      "accuracy": "1-2% typical for continuous, point level switch is highly reliable",
+
+      "applications": [
+        "Extremely harsh environments where no other technology survives — high temperature, high pressure, corrosive, abrasive",
+        "Measurement through vessel wall — completely non-contact, non-intrusive. No nozzles or process penetrations required.",
+        "Coke drums, FCC reactors, letdown vessels, slurry digesters, molten metal",
+        "Point level switch for high-reliability applications"
+      ],
+
+      "radiation_safety": {
+        "licensing": "Radioactive source requires NRC or state license. Radiation Safety Officer (RSO) must oversee installation, maintenance, and disposal.",
+        "source_handling": "NEVER handle source container without RSO present and radiation survey meter in hand. Follow ALARA principles — As Low As Reasonably Achievable exposure.",
+        "shielding": "Source housing provides shielding when shutter is closed. Verify shutter is CLOSED and LOCKED before working near source side of vessel.",
+        "wipe_tests": "Annual (minimum) leak test of source capsule. Wipe surface and analyze for contamination. Required by license. Failure to perform = regulatory violation.",
+        "signage": "Trefoil radiation warning signs required on all source containers and in area around vessel. Survey and mark radiation exclusion zones.",
+        "disposal": "Sources have half-life (Cs-137 = 30 years, Co-60 = 5.3 years). Decayed sources must be disposed through licensed broker. Cannot be thrown in dumpster."
+      },
+
+      "source_strength_calculation": "Source activity (millicuries) must be calculated based on: vessel diameter, wall thickness, insulation thickness, process fluid density, and desired detector count rate. Manufacturer or health physicist performs this calculation. Too weak = poor measurement. Too strong = unnecessary radiation exposure.",
+
+      "installation": [
+        "Source and detector must be precisely aligned — detector in direct line-of-sight with source through vessel",
+        "Account for vessel wall absorption and insulation absorption in source strength calculation",
+        "Detector mounting must be rigid — vibration causes noise in measurement",
+        "Protect detector from heat radiation (insulate or shade if vessel is hot)",
+        "Route detector cable away from high-radiation areas"
+      ],
+
+      "field_note": "Nuclear level is a last resort technology — use it when nothing else will work. The regulatory burden (licensing, RSO, wipe tests, disposal, security plan) is significant. But for truly extreme conditions, it is unmatched in reliability because it requires NO process contact."
+    }
+  },
+
+  "temperature_instruments": {
+    "thermocouple_types": {
+      "description": "Thermocouples generate a millivolt signal proportional to the temperature difference between the measurement junction (hot) and the reference junction (cold). Different wire combinations have different temperature ranges and characteristics.",
+
+      "type_j": {
+        "materials": "Iron (+) / Constantan (-)",
+        "range": "-210 to 760C (1200F)",
+        "jacket_color": "Black (ANSI)",
+        "wire_colors": "White (+) / Red (-)",
+        "characteristics": "Good general purpose. Higher output than K type. Iron wire oxidizes above 540C — do not use in oxidizing atmospheres at high temperature. Good in reducing atmospheres and vacuum.",
+        "applications": "General industrial, heat treating, plastics processing"
+      },
+      "type_k": {
+        "materials": "Chromel (+) / Alumel (-)",
+        "range": "-270 to 1260C (2300F)",
+        "jacket_color": "Brown (ANSI)",
+        "wire_colors": "Yellow (+) / Red (-)",
+        "characteristics": "MOST COMMON industrial thermocouple. Wide range, relatively linear. Subject to green rot (preferential oxidation of chromel) in reducing atmospheres between 800-1050C. Use Type N if this is a concern.",
+        "applications": "Almost everything — furnaces, boilers, heat exchangers, exhaust gas, general process"
+      },
+      "type_t": {
+        "materials": "Copper (+) / Constantan (-)",
+        "range": "-270 to 370C (700F)",
+        "jacket_color": "Blue (ANSI)",
+        "wire_colors": "Blue (+) / Red (-)",
+        "characteristics": "Best accuracy and stability at low temperatures. Only type suitable for cryogenic service. Copper wire is easily identified with magnet (magnetic vs non-magnetic).",
+        "applications": "Cryogenics (LNG, liquid nitrogen/oxygen), food processing, HVAC, environmental"
+      },
+      "type_e": {
+        "materials": "Chromel (+) / Constantan (-)",
+        "range": "-270 to 870C (1600F)",
+        "jacket_color": "Purple (ANSI)",
+        "wire_colors": "Purple (+) / Red (-)",
+        "characteristics": "Highest millivolt output per degree of any common type. Good for detecting small temperature changes. Non-magnetic.",
+        "applications": "Cryogenic, general purpose where high output is beneficial"
+      },
+      "type_n": {
+        "materials": "Nicrosil (+) / Nisil (-)",
+        "range": "-270 to 1300C (2370F)",
+        "jacket_color": "Orange (ANSI)",
+        "wire_colors": "Orange (+) / Red (-)",
+        "characteristics": "Improved version of Type K — better stability, less drift, resistant to green rot. Increasingly replacing K in new installations at higher temperatures.",
+        "applications": "High-temperature industrial, gas turbines, nuclear, anywhere K-type stability is insufficient"
+      },
+      "type_r": {
+        "materials": "Platinum-13% Rhodium (+) / Platinum (-)",
+        "range": "0 to 1480C (2700F)",
+        "jacket_color": "Green (ANSI)",
+        "characteristics": "Noble metal — expensive but very stable and accurate at high temperatures. Low output (~10 uV/C). Must use in clean (non-contaminating) environment.",
+        "applications": "Glass industry, semiconductor processing, high-accuracy laboratory, primary standard calibration"
+      },
+      "type_s": {
+        "materials": "Platinum-10% Rhodium (+) / Platinum (-)",
+        "range": "0 to 1480C (2700F)",
+        "jacket_color": "Green (ANSI)",
+        "characteristics": "Similar to Type R. Historically used as reference standard. Slightly lower output than R.",
+        "applications": "Calibration standard, glass industry, high-temperature precision"
+      },
+      "type_b": {
+        "materials": "Platinum-30% Rhodium (+) / Platinum-6% Rhodium (-)",
+        "range": "0 to 1700C (3100F)",
+        "jacket_color": "Gray (ANSI)",
+        "characteristics": "Highest temperature rating of standard types. Very low output below 600C (essentially unusable below 400C). Does not need reference junction compensation at room temperature (output is nearly zero at ambient).",
+        "applications": "Extremely high temperature — glass melting, sintering furnaces, ceramic kilns"
+      },
+
+      "universal_rules": [
+        "Red wire is ALWAYS negative in ANSI/ASTM standard. Always. Every type. No exceptions.",
+        "ALWAYS use matching extension wire type — K-type thermocouple must use K-type extension wire. Mixing types creates errors at every connection.",
+        "Connections introduce error — minimize junctions. Every connection is a potential thermocouple junction.",
+        "Polarity reversal reads backwards — if temperature goes UP but reading goes DOWN, wires are reversed.",
+        "Never use regular copper wire to extend thermocouple circuits — it creates additional junctions and introduces error.",
+        "Check for open circuit by measuring resistance — open = infinite resistance. T/C has very low resistance (typically <100 ohms for short runs)."
+      ]
+    },
+
+    "rtd": {
+      "principle": "Resistance of platinum wire increases predictably with temperature. Measure resistance to determine temperature.",
+      "common_types": {
+        "pt100": "100.00 ohms at 0C. Most common industrial RTD worldwide. Standard per IEC 60751.",
+        "pt1000": "1000.00 ohms at 0C. Higher resistance reduces effect of lead wire resistance. Preferred for 2-wire installations or long wire runs.",
+        "pt200_pt500": "Less common. Used in specific applications."
+      },
+      "alpha_coefficient": "0.00385 ohms/ohm/C for standard industrial RTD (IEC 60751). This means resistance changes 0.385 ohms per degree C for Pt100. Some older standards use 0.003916 or 0.003926 — must match RTD to transmitter setting.",
+
+      "wiring_configurations": {
+        "two_wire": {
+          "description": "Single pair of wires. Lead resistance adds directly to measured resistance = temperature reading is always HIGH.",
+          "error": "Approximately 2.5 ohms per 1000 feet of 20 AWG copper wire = 6.5C error per 1000 feet for Pt100. Significant for long runs.",
+          "use": "Only acceptable for short runs or Pt1000 (where lead resistance is small fraction of total), or where accuracy requirement is loose."
+        },
+        "three_wire": {
+          "description": "Two wires on one terminal, one wire on the other. Transmitter measures and subtracts lead resistance assuming all three wires are identical (same length, same gauge, same temperature).",
+          "accuracy": "Compensates lead resistance to within ~0.1C for matched wires. Most common industrial configuration.",
+          "critical": "All three wires MUST be the same length, gauge, and material. If one wire is different (e.g., someone spliced in a shorter piece), compensation fails and reading is wrong."
+        },
+        "four_wire": {
+          "description": "Two pairs — one pair carries excitation current, other pair senses voltage directly across RTD element. Completely eliminates lead resistance effect.",
+          "accuracy": "Best possible — limited only by RTD element accuracy. Used for laboratory, custody transfer, and high-accuracy applications.",
+          "use": "When accuracy is paramount and budget allows extra wire pair."
+        }
+      },
+
+      "advantages_over_thermocouple": ["Higher accuracy (0.1C vs 1-2C)", "Better stability (less drift over time)", "No reference junction compensation needed", "More linear signal", "No special extension wire — standard copper"],
+      "disadvantages_vs_thermocouple": ["Slower response (larger thermal mass)", "More fragile (vibration can break platinum wire)", "Limited to ~850C max (thermocouple goes much higher)", "More expensive", "Self-heating if excitation current too high"],
+
+      "field_tips": [
+        "Measure resistance at room temperature with ohmmeter — should be close to 100 ohms (Pt100) or 1000 ohms (Pt1000). If infinite = open wire. If zero = shorted.",
+        "For 3-wire: measure resistance between each pair of wires. Two pairs should be equal (the two that include lead resistance), one pair should be lower (across RTD element only). If all three are equal, the RTD may be shorted.",
+        "RTD elements are fragile — avoid dropping thermowell assemblies or subjecting them to severe vibration."
+      ]
+    },
+
+    "bimetallic_thermometer": {
+      "description": "Two metals with different thermal expansion rates bonded together in a coil. Temperature change causes coil to wind/unwind, moving pointer.",
+      "accuracy": "1-2% of full scale",
+      "applications": "Local indication only. No electrical output for remote monitoring. Used on pipes, tanks, and equipment for operator visual reference.",
+      "limitations": "No remote signal output. Cannot be connected to DCS/PLC. Subject to mechanical damage. Accuracy degrades over time from metal fatigue.",
+      "field_note": "Check by comparing to calibrated RTD or thermocouple at actual process temperature. If pointer is stuck or reads obviously wrong, tap gently — sometimes pointer sticks from vibration deformation. Replace if bent or damaged."
+    },
+
+    "infrared_pyrometer": {
+      "principle": "Measures thermal infrared radiation emitted by target surface. Non-contact — no physical connection to process. Temperature calculated from radiation intensity using Stefan-Boltzmann law.",
+      "applications": "Rotating equipment (kiln shells, rotary dryers), moving objects (conveyor products), extremely high temperature, electrical equipment survey, refractory/furnace exterior",
+      "emissivity": {
+        "description": "Emissivity is the ratio of actual radiation emitted vs a perfect blackbody. MUST be set correctly for accurate measurement.",
+        "values": "Oxidized steel ~0.8, polished metal ~0.1-0.3, painted surface ~0.9, water ~0.95, refractory brick ~0.75-0.9",
+        "critical": "Wrong emissivity = wrong temperature. Polished/reflective surfaces are hardest — low emissivity AND they reflect radiation from surrounding objects (background temperature error). Apply high-emissivity tape or paint to target for more reliable measurement on reflective surfaces."
+      },
+      "interference": "Dust, steam, flame, and smoke between sensor and target absorb/emit IR radiation and cause errors. Some pyrometers use specific wavelengths to see through flame or steam. Two-color (ratio) pyrometers compensate for partial obscuration."
+    },
+
+    "thermowell": {
+      "description": "Closed-end tube that protects temperature sensor (thermocouple or RTD) from process fluid while allowing thermal transfer. Allows sensor replacement without process shutdown.",
+
+      "materials": {
+        "316_ss": "General purpose, good for most water, steam, and mild chemical service",
+        "hastelloy_c276": "Severe corrosion — chlorides, acids, mixed chemical",
+        "monel_400": "Seawater, hydrofluoric acid, alkaline solutions",
+        "inconel_600": "High temperature oxidation and carburization resistance",
+        "ceramic_alumina": "Extreme temperature (molten metal, glass), chemically inert but brittle and poor thermal shock resistance",
+        "tantalum": "Most corrosion-resistant metal thermowell — for extreme acid service"
+      },
+
+      "wake_frequency_calculation": {
+        "description": "In high-velocity flow, vortices shed from the thermowell create vibration. If shedding frequency approaches thermowell natural frequency, resonance occurs and thermowell can fail catastrophically (break off in the pipe/vessel).",
+        "standard": "ASME PTC 19.3 TW-2016 (formerly ASME STS-1)",
+        "when_required": "ANY new thermowell installation in flowing fluid should be checked. Critical for high velocity, long immersion, or thin-wall wells.",
+        "factors": "Fluid velocity, fluid density, thermowell dimensions (OD, bore, length, tip style), material properties (modulus of elasticity)",
+        "result": "Calculation gives frequency ratio and Scruton number. Must demonstrate adequate separation between natural frequency and vortex shedding frequency — typically natural frequency must be >2.5x shedding frequency.",
+        "field_note": "If you see a thermowell vibrating visibly or hear it singing/whistling, SHUT DOWN AND INVESTIGATE. It may be at or near resonance and could fail."
+      },
+
+      "immersion_length": {
+        "minimum": "Sensor tip must extend into the flow stream — minimum immersion of 10 times sheath OD, or to centerline of pipe, whichever is greater.",
+        "too_short": "Insufficient immersion = stem conduction error. Heat travels up the thermowell stem to the cooler pipe wall, pulling the sensor reading low. Very common error on small-bore pipe.",
+        "too_long": "Excessive length increases vibration risk and makes wake frequency calculation harder to pass."
+      },
+
+      "bore_size": "Must match sensor element sheath OD for good thermal contact. Air gap between sensor and thermowell bore reduces response time. Use thermal conducting compound (never on food/pharma service) to improve contact.",
+
+      "installation_notes": [
+        "Install against flow direction (into the flow) for fastest response and best thermal contact",
+        "Thread compound or gasket rated for process temperature and pressure",
+        "Verify pressure rating matches or exceeds process MAWP",
+        "Tag the thermowell with instrument tag number"
+      ]
+    }
+  },
+
+  "pressure_instruments": {
+    "measurement_types": {
+      "gauge_pressure": {
+        "description": "Referenced to atmospheric pressure. Most common type. Zero = atmospheric. Bourdon tube gauge is the most recognizable instrument on any job site.",
+        "symbol": "PSIG or kPaG (g = gauge)"
+      },
+      "absolute_pressure": {
+        "description": "Referenced to perfect vacuum. Zero = absolute vacuum. Used for vacuum service, custody transfer, and barometric measurement.",
+        "symbol": "PSIA or kPaA (a = absolute)",
+        "note": "Absolute = Gauge + Atmospheric. At sea level: 0 PSIG = 14.696 PSIA."
+      },
+      "differential_pressure": {
+        "description": "Difference between two process connections. High side and low side. Used for flow (across restriction), level (hydrostatic), and filter monitoring.",
+        "symbol": "PSID or inches WC (water column)"
+      }
+    },
+
+    "bourdon_tube_gauge": {
+      "principle": "C-shaped or helical tube. Increasing pressure straightens tube, moving pointer via gear mechanism.",
+      "types": {
+        "c_tube": "Most common. For pressures 15-100,000 PSI. Accuracy 0.5-2% of full scale.",
+        "spiral": "Higher sensitivity than C-tube. Used for lower pressures.",
+        "helical": "Multiple turns for very low-pressure measurement."
+      },
+      "installation": [
+        "Select range so normal operating pressure is at 25-75% of dial range. Ideal is 50%. Operating at full scale = short life.",
+        "Use siphon (pigtail) for steam service — prevents live steam from reaching bourdon tube",
+        "Use diaphragm seal for corrosive or viscous service",
+        "Install needle valve (isolation valve) between process and gauge for maintenance",
+        "For pulsating service (pump discharge, reciprocating compressor): install snubber (restriction) to dampen pulsation and prevent gear mechanism damage"
+      ]
+    },
+
+    "diaphragm_pressure": {
+      "description": "Thin diaphragm deflects under pressure. Used for low-pressure and corrosive/viscous applications where bourdon tube would plug or corrode.",
+      "applications": "Low-pressure gas, corrosive chemicals, slurries, food/pharma (sanitary diaphragm)"
+    },
+
+    "vacuum_measurement": {
+      "compound_gauge": "Reads both vacuum and positive pressure. Range typically -30 to +30 PSIG. Uses standard bourdon tube.",
+      "dedicated_vacuum_transmitter": "Use absolute pressure transmitter for accurate vacuum measurement. Gauge-reference transmitters lose accuracy near zero.",
+      "high_vacuum": "Pirani gauge (thermal conductivity), thermocouple gauge, or capacitance manometer for vacuums below 1 Torr. These are specialized instruments rarely seen in general instrument tech work."
+    },
+
+    "differential_pressure_transmitter": {
+      "description": "Workhorse of instrumentation — measures DP for flow, level, and filter monitoring. Two process connections (high and low).",
+      "typical_ranges": "0-10 inches WC (low DP) to 0-1000 PSI. Turndown 100:1 or better on modern transmitters.",
+
+      "five_way_manifold": {
+        "description": "Isolates transmitter from process for maintenance, allows equalization and venting.",
+        "valves": {
+          "block_high": "Isolates high-pressure side from process",
+          "block_low": "Isolates low-pressure side from process",
+          "equalize": "Connects high and low sides together",
+          "vent_high": "Vents high-pressure side to atmosphere (or drain)",
+          "vent_low": "Vents low-pressure side to atmosphere (or drain)"
+        },
+        "to_isolate": "1. Close equalize valve (verify closed). 2. Close block high. 3. Close block low. 4. Open vent high and vent low to bleed pressure. NEVER open equalize while both blocks are open to process — it shorts the DP and you lose measurement plus potential cross-contamination.",
+        "to_equalize_for_zero_check": "1. Close block high. 2. Close block low. 3. Open equalize. 4. Verify output reads zero (4.00 mA). If not zero, zero-adjust transmitter.",
+        "to_return_to_service": "1. Close equalize. 2. Close vent high and vent low. 3. Open block high. 4. Open block low. 5. Verify reading returns to normal."
+      }
+    },
+
+    "diaphragm_seals_remote_seals": {
+      "description": "Diaphragm isolates transmitter from process. Capillary tube filled with inert fluid transmits pressure from diaphragm to transmitter sensing element. Used for corrosive, high-temperature, viscous, plugging, or sanitary applications.",
+
+      "fill_fluids": {
+        "silicone_dc200": "Most common. -40 to 400F. Good general purpose.",
+        "fluorinated_silicone": "For oxygen service and strong oxidizers. Compatible where standard silicone is not.",
+        "halocarbon": "-20 to 400F. For chlorine, oxygen, strong acid vapors.",
+        "nak_sodium_potassium": "High temperature to 1200F. Liquid metal — requires special handling. Used on high-temperature applications like catalytic crackers.",
+        "glycerin_water": "Food-grade applications. Limited temperature range."
+      },
+
+      "capillary_considerations": {
+        "maximum_length": "Typically 50 feet. Longer = slower response, more temperature error, more fill fluid expansion.",
+        "temperature_effects": "Fill fluid volume changes with temperature. This appears as a pressure change to the transmitter. Minimize capillary length and route capillaries together so both sides see the same temperature.",
+        "elevation_effects": "Fill fluid has density. Height difference between seal and transmitter creates a static head offset. Must be accounted for in calibration or mounting configuration.",
+        "armor": "Capillary tubing is thin-wall stainless. Protect with armor jacket (flexible metal braid or plastic covering) against mechanical damage."
+      },
+
+      "installation_rules": [
+        "Never kink capillary — permanently damages tubing and creates restriction. Handle with large-radius bends only.",
+        "Support capillary every 3-5 feet to prevent sagging and stress on connections",
+        "Route both capillaries together (same tray, same side of pipe rack) for equal temperature exposure",
+        "Shield from direct sunlight — solar heating of one capillary but not the other causes zero shift on DP applications",
+        "Never heat capillary with torch — fill fluid can decompose and generate gas, destroying the seal system"
+      ]
+    },
+
+    "pressure_gauge_snubbers": {
+      "description": "Restrict pulsation to protect gauge mechanism. Pulsating pressure from pumps, compressors, or hydraulic systems destroys standard gauges.",
+      "types": {
+        "needle_valve": "Partially closed needle valve restricts flow. Adjustable damping. Most common.",
+        "capillary_restriction": "Fixed orifice. Non-adjustable but cannot be mis-set.",
+        "piston_snubber": "Mechanical piston absorbs pulses. For severe pulsation."
+      },
+      "field_tip": "If a gauge pointer is vibrating wildly, the gauge needs a snubber or the existing snubber has failed/been set too open. A vibrating pointer is unreadable AND damages the gauge gear mechanism."
+    }
+  },
+
+  "safety_instrumented_systems": {
+    "description": "Safety Instrumented Systems (SIS) protect people, equipment, and environment by automatically taking process to a safe state when dangerous conditions are detected. Separate from and independent of the Basic Process Control System (BPCS).",
+
+    "sil_ratings": {
+      "description": "Safety Integrity Level — measure of required risk reduction. Higher SIL = more redundancy and stricter requirements.",
+      "levels": {
+        "sil_1": {
+          "risk_reduction": "10x to 100x (PFD 0.01-0.1)",
+          "proof_test": "Typically annual",
+          "architecture": "Single channel (1oo1) usually sufficient",
+          "common_for": "Non-critical shutdowns, most process trips"
+        },
+        "sil_2": {
+          "risk_reduction": "100x to 1000x (PFD 0.001-0.01)",
+          "proof_test": "Semi-annual or per Safety Requirement Specification (SRS)",
+          "architecture": "Redundancy often needed (1oo2) depending on device failure rates",
+          "common_for": "Critical shutdowns, most refinery ESD systems"
+        },
+        "sil_3": {
+          "risk_reduction": "1000x to 10,000x (PFD 0.0001-0.001)",
+          "architecture": "Redundancy REQUIRED — typically 2oo3 (two out of three) voting for sensors, 1oo2 for final elements",
+          "common_for": "High-consequence scenarios — offshore platforms, high-hazard chemical processes. Rare in general industrial."
+        }
+      },
+      "critical_rule": "SIL certification applies to the ENTIRE safety loop — sensor + logic solver + final element. A SIL-2 transmitter connected to a non-SIL logic solver does NOT make a SIL-2 loop. Every component must be rated."
+    },
+
+    "sil_rated_devices": {
+      "certification": "Certified to IEC 61508 (device level) and used in systems designed per IEC 61511 (process industry). Certification by third party (TUV, Exida, FM).",
+      "installation_requirements": [
+        "Install EXACTLY per Safety Manual provided by manufacturer. Any deviation voids SIL rating.",
+        "No field modifications — do not add snubbers, filters, or restrictions not specified in Safety Manual",
+        "Dedicated wiring — do not share signal cable with non-safety devices",
+        "Junction boxes must be clearly labeled SIS and physically separated from BPCS",
+        "Documentation: record model, serial number, firmware version, and configuration parameters"
+      ]
+    },
+
+    "partial_stroke_testing": {
+      "description": "Tests shutdown valve by commanding a small movement (10-20% of travel) to verify valve is not stuck, without fully closing and upsetting the process.",
+      "purpose": "Extends proof test interval by detecting valve failures between full-stroke proof tests. Detects stuck valve, broken spring, air supply failure.",
+      "methods": {
+        "manual": "Technician slowly applies test signal from positioner, monitors valve movement, returns to operating position. Requires coordination with operations.",
+        "automated": "Integrated PST function in smart positioner (Fisher DVC6200, Emerson, Neles). Triggered remotely on schedule. Valve moves to test position, records stem position and signature, returns automatically.",
+        "solenoid_trip": "Momentary pulse to trip solenoid — verifies solenoid and spring action. Valve starts to close, then signal is restored."
+      },
+      "caution": "PST does NOT replace full-stroke proof testing. It supplements it. Full-stroke test (valve goes to full shutoff) is still required at SRS-defined interval.",
+      "documentation": "Record date, method, valve position achieved, pass/fail, and any anomalies. This is SIS documentation — treat it with the same rigor as calibration records."
+    },
+
+    "proof_test_intervals": {
+      "description": "Full functional test of entire safety loop. Verifies sensor, logic solver, and final element all function correctly under simulated demand conditions.",
+      "procedure": [
+        "Review Safety Requirement Specification (SRS) for test procedure and acceptance criteria",
+        "Notify operations and get work permit / LOTO as required",
+        "Bypass trip in logic solver (or use designated test mode) to prevent plant upset",
+        "Apply simulated trip condition at sensor (e.g., pressure above trip setpoint)",
+        "Verify logic solver detects trip condition",
+        "Verify final element actuates (valve closes, relay de-energizes, etc.)",
+        "Verify trip alarms annunciate in control room",
+        "Restore system: remove bypass, return to normal, verify alarm clears",
+        "Document as-found / as-left results. Any failed test = immediate investigation and corrective action."
+      ],
+      "intervals": "Defined in SRS based on SIL level, device failure rates, and required PFD. Common intervals: SIL-1 annual, SIL-2 annual or semi-annual, SIL-3 per engineering calculation. NEVER exceed specified interval."
+    },
+
+    "common_sis_instruments": {
+      "pressure_safety_transmitters": "Often triple modular redundant (TMR) — three independent transmitters, 2oo3 voting. One can fail and system remains functional.",
+      "shutdown_valves": "Spring-return actuator — fails to safe position on loss of signal or air. Valve position switch confirms actual position. Tight shutoff required — test leakage rate during proof test.",
+      "flame_detectors": "UV, IR, UV/IR combined, or multi-spectrum IR. Detect presence of flame in furnaces, heaters. False alarm from welding, lightning, sunlight — multi-spectrum reduces false alarms.",
+      "gas_detectors": {
+        "combustible": "Catalytic bead (0-100% LEL) or infrared point/open-path. Catalytic bead is poisoned by silicone, lead, sulfur compounds. IR type is not affected by poisons but more expensive.",
+        "toxic": "Electrochemical cells (H2S, CO, Cl2, NH3, etc.). Cell life 1-3 years typical. Cross-sensitivity to other gases — check interference data. Must bump test regularly.",
+        "placement": "Per gas dispersion study or API RP 752. For heavier-than-air gases (H2S, propane): mount low (12-18 inches above grade). For lighter-than-air gases (hydrogen, methane): mount high (near ceiling/structure top). For CO and similar: mount at breathing zone height."
+      },
+      "high_level_switches": "For overfill protection. Vibrating fork, float, displacer, capacitance types. Must be independent of level transmitter used for control. Separate nozzle, separate wiring, separate logic."
+    },
+
+    "separation_from_bpcs": {
+      "description": "SIS must be independent from BPCS to prevent common-cause failure.",
+      "requirements": [
+        "Dedicated SIS wiring — separate conduit and cable tray from BPCS. Color-code or label clearly.",
+        "Separate I/O cards — SIS sensors connect to dedicated SIS I/O, never to BPCS I/O cards",
+        "Separate logic solver — SIS uses dedicated safety PLC (e.g., Triconex, HIMA, ABB AC800M HI, Yokogawa ProSafe). NOT the BPCS DCS.",
+        "No shared utilities — SIS power supply, UPS, and instrument air supply should be independent or have sufficient redundancy",
+        "Separate HMI displays — SIS alarms and bypasses on dedicated SIS operator interface or clearly separated display",
+        "Communication: data can flow FROM SIS TO BPCS for display purposes, but BPCS must NEVER be able to command or change SIS logic. One-way data diode or read-only communication."
+      ],
+      "field_note": "If you are told to land an SIS instrument on a BPCS I/O card because the SIS card is full — STOP and escalate. This is a serious safety design violation. Get engineering to add an SIS I/O card."
+    }
+  },
+
+  "wireless_instrumentation": {
+    "overview": "Wireless field instruments eliminate wiring — transmitter powered by internal battery, communicates via radio to gateway connected to control system. Dramatically reduces installation cost for remote, hard-to-wire, or retrofit measurements.",
+
+    "wirelesshart": {
+      "standard": "IEC 62591, based on HART protocol over IEEE 802.15.4 radio",
+      "frequency": "2.4 GHz ISM band (worldwide license-free)",
+      "network_topology": "Self-organizing mesh — each device can relay messages for other devices. If one path is blocked, network finds alternative route. More devices = more paths = more reliable network.",
+      "update_rates": {
+        "typical": "1 to 60 seconds. Faster update = more battery drain.",
+        "one_second": "Fastest available. Battery life approximately 1-2 years.",
+        "eight_seconds": "Common for process monitoring. Battery life 3-5 years.",
+        "sixty_seconds": "For slow-changing parameters (corrosion, tank level). Battery life 7-10 years."
+      },
+      "battery_life": "Lithium thionyl chloride (Li-SOCl2) primary cells. Non-rechargeable. Life depends on update rate, ambient temperature, and network traffic (relaying). Cold temperature reduces battery life significantly.",
+      "gateway": {
+        "description": "Receives radio signals from all wireless devices in its network and passes data to control system via Modbus, OPC, HART-IP, or Ethernet.",
+        "capacity": "Typically 100 devices per gateway. Deploy multiple gateways for larger installations.",
+        "placement": "Elevated position with line-of-sight to as many devices as possible. Top of pipe rack, roof of building, pole mount. Minimum 6 feet above ground. Avoid mounting near large metal structures that block or reflect RF.",
+        "redundancy": "Dual-gateway configurations for critical applications — if one gateway fails, other maintains communication."
+      },
+      "device_to_device_range": "Up to 200 meters (650 feet) between devices with clear line of sight. Obstructions (vessels, buildings, pipe racks) reduce range. Dense mesh (more devices) compensates."
+    },
+
+    "isa100_11a": {
+      "standard": "ISA-100.11a (IEC 62734)",
+      "frequency": "2.4 GHz ISM band (same as WirelessHART)",
+      "differences_from_wirelesshart": "Supports backbone routing (infrastructure devices relay without being field instruments), more flexible network management, supports IPv6 addressing. Less widely adopted than WirelessHART.",
+      "coexistence": "Both WirelessHART and ISA100.11a can operate in same area — they use channel hopping and TDMA to minimize interference. Some gateways support both protocols."
+    },
+
+    "suitable_applications": [
+      "Remote monitoring — tank farms, remote well pads, distant equipment",
+      "Non-critical measurements — equipment health monitoring, corrosion, environmental",
+      "Retrofit — adding measurement to existing plant without pulling cable",
+      "Rotating equipment monitoring — vibration, temperature, bearing health",
+      "Temporary measurement — turnaround monitoring, troubleshooting campaigns",
+      "Difficult-to-wire locations — across roads, waterways, or in areas with no cable tray"
+    ],
+
+    "not_suitable_for": {
+      "safety_sis": "Wireless is NOT accepted for SIS safety functions. Wired, dedicated SIS I/O is required. No exceptions.",
+      "fast_control_loops": "Update rates (seconds) are too slow for tight control loops that need <1 second response (pressure control, anti-surge, fast-acting flow control).",
+      "custody_transfer": "Not accepted for custody transfer metering where continuous, high-integrity data is required.",
+      "emergency_shutdown": "ESD and fire and gas systems must be hardwired. Wireless has latency and potential for communication failure."
+    },
+
+    "installation_best_practices": {
+      "antenna_orientation": "Vertical orientation for omnidirectional antennas (most common). Tilting the antenna changes the radiation pattern and reduces range.",
+      "metal_obstructions": "Metal vessels, buildings, and pipe racks block 2.4 GHz signals. Mount devices on outward-facing side of structures. Do not mount behind large metal objects relative to the gateway.",
+      "device_density": "Minimum 3-5 devices within communication range of each device to ensure mesh redundancy. Isolated single devices with only one path to gateway are vulnerable to single-point failure.",
+      "rf_interference": "Other 2.4 GHz devices (WiFi, Bluetooth, microwave ovens) can interfere. WirelessHART and ISA100.11a use frequency hopping to mitigate, but dense WiFi environments can still cause packet loss. Perform site survey before deployment.",
+      "height": "Mount devices and gateway as high as practical. Elevated positions have fewer obstructions and better propagation.",
+      "commissioning": "After installation, verify signal strength (RSSI) and reliability statistics in gateway management software. Low RSSI = marginal communication. Add relay devices or reposition if needed.",
+      "battery_management": "Establish battery replacement schedule based on predicted life. Track battery voltage in gateway — replace when voltage drops to manufacturer threshold. Do NOT wait for device to go offline. Keep spare batteries on-site in climate-controlled storage."
+    },
+
+    "security": {
+      "wirelesshart_security": "AES-128 encryption built into protocol. Join key required for device to join network. Network key rotated automatically. Over-the-air snooping is encrypted.",
+      "best_practices": [
+        "Change default join keys — do not use factory default",
+        "Restrict physical access to gateway (contains network keys)",
+        "Monitor for unknown devices attempting to join network",
+        "Keep firmware updated on gateway and devices"
+      ]
+    }
+  },
+
+  "field_wisdom": {
+    "description": "Hard-won practical knowledge that does not fit neatly into one instrument category. The kind of thing journeymen teach apprentices.",
+
+    "general_rules": [
+      "If the instrument is reading wrong, check the installation BEFORE blaming the instrument. 80% of measurement problems are installation problems — wrong orientation, insufficient straight run, air in impulse lines, plugged taps, wrong process connection.",
+      "Always read the manual for the specific make/model BEFORE working on an unfamiliar instrument. Assuming it works like the last one you touched will burn you.",
+      "Document everything — as-found, as-left, what you changed, what you did NOT change. If it is not documented, it did not happen.",
+      "When troubleshooting: change ONE thing at a time. If you change three things and it starts working, you do not know which one fixed it.",
+      "Never assume a valve is isolated just because someone said so. Verify LOTO yourself. Check for bleed.",
+      "If a reading looks suspicious, get a second measurement with a different instrument. Do not chase phantom problems based on one bad data point.",
+      "Keep your calibration tools calibrated. A transmitter is only as accurate as the calibrator you checked it with. Track calibrator certification dates."
+    ],
+
+    "turnaround_survival": [
+      "Label every wire, tube, and cable you disconnect BEFORE disconnecting it. Use wire tags, tape flags, or photos. You will NOT remember where it went in two weeks.",
+      "Take photos of everything before disassembly — piping orientation, wire terminations, tubing runs, nameplate data. Your phone camera is your best documentation tool.",
+      "Keep your tools organized and accounted for. A wrench left inside a vessel is a foreign material exclusion (FME) violation and can damage rotating equipment.",
+      "Communicate with operations before touching anything. They need to know what you are doing and when. Surprises cause incidents.",
+      "Verify instrument tag against P&ID before doing work. Wrong instrument = wrong process effect. Check loop number, service description, and location."
+    ]
+  }
+}
