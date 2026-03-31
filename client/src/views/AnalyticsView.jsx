@@ -36,7 +36,9 @@ export default function AnalyticsView({ goBack }) {
       } else if (dateRange === 'today') {
         params.set('from', new Date().toISOString().split('T')[0]);
       }
-      const res = await fetch('/api/analytics/dashboard?' + params.toString());
+      // Scope to simulated company if active
+      if (window.__simulatingCompanyId) params.set("company_id", window.__simulatingCompanyId);
+      const res = await fetch("/api/analytics/dashboard?" + params.toString());
       if (!res.ok) throw new Error('Failed to load');
       setData(await res.json());
     } catch (e) {

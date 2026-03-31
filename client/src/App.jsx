@@ -314,6 +314,21 @@ export default function App() {
     setActiveTrade(null);
     setView('home');
     setViewHistory([]);
+    // Scope trades to this company's licensed trades
+    if (company?.id) {
+      fetch('/api/sparks/companies/' + company.id)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.trades) {
+            const activeTrades = data.trades.filter(t => t.status === 'active').map(t => t.trade);
+            if (activeTrades.length > 0) {
+              setStarredTrades(activeTrades);
+              setActiveTrade(activeTrades[0]);
+            }
+          }
+        })
+        .catch(() => {});
+    }
   };
   const exitSimulation = () => {
     if (editModeEnabled) fetch('/api/sparks/edit-mode/disable', { method: 'POST', credentials: 'include' }).catch(() => {});
@@ -325,6 +340,8 @@ export default function App() {
     window.__simulatingCompanyId = null;
     window.__simulationMode = null;
     setActiveTrade(null);
+    // Restore all trades for admin view
+    setStarredTrades(ALL_TRADES_KEYS.map(t => t.key));
     setView('home');
     setViewHistory([]);
   };
