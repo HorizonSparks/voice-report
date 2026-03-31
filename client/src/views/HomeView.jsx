@@ -53,7 +53,7 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
     if (user.sparks_role && !isSimulating) {
     }
     if (isAdmin) {
-      tiles.push({ id: 'projects', icon: '📁', label: 'Projects', view: 'projects' });
+      if ((user.role_level || 0) >= 5 || user.is_admin) tiles.push({ id: 'projects', icon: '📁', label: 'Projects', view: 'projects' });
       tiles.push({ id: 'crew', icon: '👥', label: t('home.peopleCrew'), view: 'people' });
       tiles.push({ id: 'dailyplan', icon: '📌', label: t('home.dailyPlanPunchList'), view: 'dailyplan' });
       tiles.push({ id: 'reports', icon: '📋', label: t('home.reports'), view: 'reports' });
