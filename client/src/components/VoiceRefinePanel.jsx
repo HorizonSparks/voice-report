@@ -769,79 +769,83 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
 
       {/* LISTENING — WhatsApp-like input bar pinned to bottom */}
       {stage === 'listening' && (
-        <Box sx={{ flexShrink: 0, py: '8px', pb: '16px', borderTop: '1px solid #e0e0e0', bgcolor: 'background.default' }}>
-          {/* Hidden photo input */}
-          <input ref={chatPhotoRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleChatPhoto} />
+        <>
+          {/* Spacer pushes input bar to bottom when no chat messages */}
+          {chatHistory.length === 0 && <Box sx={{ flex: 1 }} />}
 
-          {/* Input bar row: camera | text input | mic button */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '8px', mb: '10px' }}>
-            {/* Camera button */}
-            <IconButton onClick={() => chatPhotoRef.current?.click()} sx={{
-              width: '48px', height: '48px', border: '2px solid #ccc',
-              bgcolor: 'white', flexShrink: 0,
-              '&:hover': { bgcolor: 'grey.100' },
-            }}>
-              <CameraAltIcon sx={{ color: 'text.primary', fontSize: '22px' }} />
-            </IconButton>
+          <Box sx={{ flexShrink: 0, py: '8px', pb: '16px', borderTop: '1px solid #e0e0e0', bgcolor: 'background.default', mt: 'auto' }}>
+            {/* Hidden photo input */}
+            <input ref={chatPhotoRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleChatPhoto} />
 
-            {/* Text input — smaller to encourage voice */}
-            <Box sx={{ flex: 1, position: 'relative' }}>
-              <TextField
-                type="text"
-                value={chatText}
-                onChange={e => setChatText(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && chatText.trim()) sendTextMessage(); }}
-                placeholder="Type a message..."
-                size="small"
-                fullWidth
-                slotProps={{
-                  input: {
-                    sx: {
-                      borderRadius: '24px',
-                      fontSize: '14px',
-                      bgcolor: 'white',
-                      '& fieldset': { borderWidth: '2px', borderColor: '#e0e0e0' },
+            {/* Input bar row: camera | text input | mic button */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: '10px' }}>
+              {/* Camera button */}
+              <IconButton onClick={() => chatPhotoRef.current?.click()} sx={{
+                width: '48px', height: '48px', border: '2px solid #ccc',
+                bgcolor: 'white', flexShrink: 0,
+                '&:hover': { bgcolor: 'grey.100' },
+              }}>
+                <CameraAltIcon sx={{ color: 'text.primary', fontSize: '22px' }} />
+              </IconButton>
+
+              {/* Text input — same height as mic button */}
+              <Box sx={{ flex: 1, position: 'relative' }}>
+                <TextField
+                  type="text"
+                  value={chatText}
+                  onChange={e => setChatText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && chatText.trim()) sendTextMessage(); }}
+                  placeholder="Type a message..."
+                  fullWidth
+                  slotProps={{
+                    input: {
+                      sx: {
+                        borderRadius: '24px',
+                        fontSize: '15px',
+                        height: '48px',
+                        bgcolor: 'white',
+                        '& fieldset': { borderWidth: '2px', borderColor: '#e0e0e0' },
+                      },
                     },
-                  },
-                }}
-              />
-              {chatText.trim() && (
-                <IconButton onClick={sendTextMessage} sx={{
-                  position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)',
-                  width: '32px', height: '32px',
-                  bgcolor: 'primary.main',
-                  '&:hover': { bgcolor: 'primary.dark' },
+                  }}
+                />
+                {chatText.trim() && (
+                  <IconButton onClick={sendTextMessage} sx={{
+                    position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)',
+                    width: '32px', height: '32px',
+                    bgcolor: 'primary.main',
+                    '&:hover': { bgcolor: 'primary.dark' },
+                  }}>
+                    <SendIcon sx={{ color: 'white', fontSize: '16px' }} />
+                  </IconButton>
+                )}
+              </Box>
+
+              {/* Mic button — compact, same height as text input */}
+              {!chatText.trim() && (
+                <Button onClick={voiceMode === 'flow' ? startFlowListening : startRecording} sx={{
+                  height: '48px', minWidth: '48px', borderRadius: '24px', bgcolor: 'secondary.main',
+                  color: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  px: '14px', fontWeight: 700, fontSize: '14px', flexShrink: 0,
+                  textTransform: 'none', gap: '6px',
+                  '&:hover': { bgcolor: 'secondary.dark' },
                 }}>
-                  <SendIcon sx={{ color: 'white', fontSize: '16px' }} />
-                </IconButton>
+                  <MicIcon sx={{ fontSize: '20px' }} />
+                </Button>
               )}
             </Box>
 
-            {/* Mic button — big and prominent */}
-            {!chatText.trim() && (
-              <Button onClick={voiceMode === 'flow' ? startFlowListening : startRecording} sx={{
-                height: '48px', borderRadius: '24px', bgcolor: 'secondary.main',
-                color: 'primary.main', display: 'flex', alignItems: 'center', gap: '8px',
-                px: '20px', fontWeight: 700, fontSize: '15px', flexShrink: 0,
-                textTransform: 'none',
-                '&:hover': { bgcolor: 'secondary.dark' },
-              }}>
-                <MicIcon sx={{ fontSize: '20px' }} />
-                Tap to respond
+            {/* Save / Cancel — small, centered */}
+            <Box sx={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <Button variant="contained" color="primary" onClick={() => finalizeTask()} sx={{ py: '8px', px: '24px', fontSize: '13px', fontWeight: 700, borderRadius: '20px', textTransform: 'none' }}>
+                Save it
               </Button>
-            )}
+              <Button variant="outlined" onClick={handleCancel} sx={{ py: '8px', px: '24px', fontSize: '13px', fontWeight: 700, borderRadius: '20px', color: 'text.primary', borderColor: '#ccc', textTransform: 'none' }}>
+                Cancel
+              </Button>
+            </Box>
           </Box>
-
-          {/* Save / Cancel — small, centered */}
-          <Box sx={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-            <Button variant="contained" color="primary" onClick={() => finalizeTask()} sx={{ py: '8px', px: '24px', fontSize: '13px', fontWeight: 700, borderRadius: '20px', textTransform: 'none' }}>
-              Save it
-            </Button>
-            <Button variant="outlined" onClick={handleCancel} sx={{ py: '8px', px: '24px', fontSize: '13px', fontWeight: 700, borderRadius: '20px', color: 'text.primary', borderColor: '#ccc', textTransform: 'none' }}>
-              Cancel
-            </Button>
-          </Box>
-        </Box>
+        </>
       )}
 
       {/* REVIEW — Final task preview with approve/change */}
