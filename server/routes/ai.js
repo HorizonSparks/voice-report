@@ -15,7 +15,7 @@ const { callClaude, callClaudeJSON, cleanupFieldText } = require('../services/ai
 const { detectSafety } = require('../services/ai/safetyDetector');
 
 const router = Router();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Audio file storage
 const storage = multer.diskStorage({
