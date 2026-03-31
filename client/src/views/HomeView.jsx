@@ -92,15 +92,21 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
         color: '#fff',
         borderRadius: 4,
       }}>
-        <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+        <CardContent sx={{ p: 3, '&:last-child': { pb: 3 }, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+          {/* Company name — vertically centered, prominent */}
+          {simulatingCompany && (
+            <Typography sx={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: 0.5, mb: 0.5 }}>
+              {simulatingCompany.name}
+            </Typography>
+          )}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Avatar
                 src={user.photo ? `/api/photos/${user.photo}` : undefined}
                 sx={{
-                  width: 56, height: 56,
+                  width: 48, height: 48,
                   bgcolor: alpha('#fff', 0.24),
-                  fontSize: 24, fontWeight: 700,
+                  fontSize: 20, fontWeight: 700,
                   border: '2px solid',
                   borderColor: alpha('#fff', 0.48),
                 }}
@@ -108,13 +114,10 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
                 {!user.photo && (user.name?.charAt(0) || 'U')}
               </Avatar>
               <Box>
-                <Typography variant="h5" sx={{ color: '#fff', fontWeight: 800, mb: 0.25 }}>
-                  {getGreeting()},
+                <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>
+                  {getGreeting()}, {user.name}
                 </Typography>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 800 }}>
-                  {user.name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: alpha('#fff', 0.72), mt: 0.5 }}>
+                <Typography variant="body2" sx={{ color: alpha('#fff', 0.72) }}>
                   {user.role_title || t('common.administrator')}
                 </Typography>
               </Box>
@@ -183,11 +186,6 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
               </Box>
             )}
           </Box>
-          {simulatingCompany && (
-            <Typography sx={{ textAlign: "center", fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: 0.5 }}>
-              {simulatingCompany.name}
-            </Typography>
-          )}
         </CardContent>
       </Card>
 
