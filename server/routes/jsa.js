@@ -92,7 +92,7 @@ module.exports = function(db) {
       const own = (await (req.db || DB).db.query(ownQuery, ownParams)).rows;
 
       // JSAs shared with me (I'm in crew_members) — scoped by company
-      let sharedQuery = "SELECT * FROM jsa_records WHERE date >= CURRENT_DATE - INTERVAL '7 days' AND status != 'draft'";
+      let sharedQuery = "SELECT * FROM jsa_records WHERE date::date >= CURRENT_DATE - INTERVAL '7 days' AND status != 'draft'";
       const sharedParams = [];
       if (req.companyId) { sharedParams.push(req.companyId); sharedQuery += ` AND company_id = $${sharedParams.length}`; }
       sharedQuery += ' ORDER BY date DESC';

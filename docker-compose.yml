@@ -30,7 +30,7 @@ services:
     env_file:
       - .env
     environment:
-      PG_HOST: postgres
+      PG_HOST: postgress_horizonsparks
       PG_PORT: 5432
       PG_DATABASE: horizon
       PG_USER: horizon_spark
@@ -44,13 +44,14 @@ services:
       - ./key.pem:/app/key.pem:ro
     networks:
       - app-net
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - hasura-network
 
 networks:
   app-net:
     driver: bridge
+  hasura-network:
+    external: true
+    name: hasura_app-network-hasura
 
 volumes:
   pg_data:

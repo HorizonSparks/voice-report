@@ -69,7 +69,7 @@ async function buildContextPackage(person, template, dbOverride) {
     role_description: pc.role_description || template.role_description,
     report_focus: pc.report_focus || template.report_focus,
     output_sections: (pc.output_sections && pc.output_sections.length > 0) ? pc.output_sections : template.output_sections,
-    vocabulary_terms: template.vocabulary ? template.vocabulary.terms.join(', ') : '',
+    vocabulary_terms: (() => { try { const v = typeof template.vocabulary === 'string' ? JSON.parse(template.vocabulary) : template.vocabulary; return v?.terms ? v.terms.join(', ') : ''; } catch { return ''; } })(),
     language_notes: pc.language_preference || template.language_notes || '',
     personal_experience: pc.experience || '',
     personal_specialties: pc.specialties || '',
