@@ -5,12 +5,12 @@ import {
   Card, CardContent, CardActionArea, alpha, Chip
 } from '@mui/material';
 
-export default function HomeView({ user, setView, logout, activeTrade, setActiveTrade, starredTrades, allTrades, onSafetyOpen, simulatingCompany, currentWorld, onEnterCompany, onSupportOpen }) {
+export default function HomeView({ user, setView, logout, activeTrade, setActiveTrade, starredTrades, allTrades, onSafetyOpen, simulatingCompany, onEnterCompany, onSupportOpen }) {
   const { t } = useTranslation();
   const isSimulating = !!simulatingCompany;
   const isAdmin = isSimulating ? true : user.is_admin;
   const isSupervisor = isSimulating ? true : (user.role_level || 1) >= 2;
-  const isOperator = !!user.sparks_role && currentWorld === 'voice-report';
+  const isOperator = !!user.sparks_role;
 
   const [jsaStatus, setJsaStatus] = useState('none');
   useEffect(() => {
