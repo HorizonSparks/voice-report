@@ -304,47 +304,33 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
             ))}
           </Box>
 
-          {/* Safety card */}
-          <Box sx={{ px: 2.5, mt: 3 }}>
+          {/* Safety card — compact, centered */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
             <Card
               sx={{
                 cursor: 'pointer',
-                background: (theme) => {
-                  const c = theme.palette[jsaColor];
-                  return `linear-gradient(135deg, ${alpha(c.light, 0.5)} 0%, ${alpha(c.main, 0.12)} 100%)`;
-                },
+                bgcolor: '#ffffff',
                 border: '1px solid',
                 borderColor: (theme) => alpha(theme.palette[jsaColor].main, 0.24),
+                borderRadius: 3,
                 transition: 'box-shadow 0.25s ease, transform 0.25s ease',
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: (theme) => theme.shadows[8],
+                  boxShadow: (theme) => theme.shadows[4],
                 },
               }}
               onClick={() => onSafetyOpen && onSafetyOpen()}
             >
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2.5, '&:last-child': { pb: 2.5 } }}>
-                <Box sx={{
-                  width: 52, height: 52, borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  bgcolor: (theme) => alpha(theme.palette[jsaColor].main, 0.16),
-                  fontSize: 26,
-                }}>
-                  ⛑️
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    {t('home.safetyFirst')}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Review your daily safety checklist
-                  </Typography>
-                </Box>
+              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography sx={{ fontSize: 22 }}>⛑️</Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'text.primary' }}>
+                  {t('home.safetyFirst')}
+                </Typography>
                 <Chip
                   label={jsaLabel}
                   color={jsaColor}
                   size="small"
-                  sx={{ fontWeight: 700 }}
+                  sx={{ fontWeight: 700, fontSize: 11 }}
                 />
               </CardContent>
             </Card>
