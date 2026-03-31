@@ -51,7 +51,6 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
   const getActionTiles = () => {
     const tiles = [];
     if (user.sparks_role && !isSimulating) {
-      tiles.push({ id: 'sparks', icon: '⚡', label: 'Command Center', view: 'sparks', accent: 'primary' });
     }
     if (isAdmin) {
       tiles.push({ id: 'projects', icon: '📁', label: 'Projects', view: 'projects' });
