@@ -554,13 +554,13 @@ export default function App() {
           sx={{
             borderRadius: 0, py: 0.5,
             display: 'flex', alignItems: 'center',
-            '& .MuiAlert-message': { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 1 },
+            '& .MuiAlert-message': { display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 1 },
           }}
         >
-          <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 14, textAlign: 'center' }}>
             {editModeEnabled
               ? '✏️ EDIT MODE — ' + simulatingCompany.name
-              : '👁 Viewing: ' + simulatingCompany.name}
+              : simulatingCompany.name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             {editModeEnabled ? (
