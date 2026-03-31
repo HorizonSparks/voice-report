@@ -184,7 +184,7 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
             )}
           </Box>
           {simulatingCompany && (
-            <Typography sx={{ textAlign: "center", mt: 1.5, fontSize: 16, fontWeight: 800, color: "#fff", letterSpacing: 0.5 }}>
+            <Typography sx={{ textAlign: "center", fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: 0.5 }}>
               {simulatingCompany.name}
             </Typography>
           )}

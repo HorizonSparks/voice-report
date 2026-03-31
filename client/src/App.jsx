@@ -557,7 +557,7 @@ export default function App() {
             '& .MuiAlert-message': { display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 1 },
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: 14, textAlign: 'center' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 20, textAlign: 'center', flex: 1 }}>
             {editModeEnabled
               ? '✏️ EDIT MODE — ' + simulatingCompany.name
               : simulatingCompany.name}
