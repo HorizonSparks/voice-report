@@ -173,8 +173,7 @@ export default function TaskDetailView({ user, taskId, goBack, onNavigate, activ
         <VoiceRefinePanel
           contextType="shift_update"
           personId={personId}
-          defaultVoiceMode={(user.role_level || 1) >= 2 ? 'flow' : 'walkie'}
-          autoStart
+          defaultVoiceMode="walkie"
           taskContext={{
             task_title: task.title,
             task_description: task.description,

@@ -153,8 +153,7 @@ export default function PunchListView({ user, embedded, onNavigate, goBack, read
             <VoiceRefinePanel
               contextType="punch_item"
               personId={personId}
-              defaultVoiceMode={(user.role_level || 1) >= 2 ? 'flow' : 'walkie'}
-              autoStart
+              defaultVoiceMode="walkie"
               onAccept={(fields) => {
                 setNewItem(t => ({ ...t, ...fields }));
                 setShowPunchVoiceRefine(false);

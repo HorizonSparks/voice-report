@@ -221,8 +221,7 @@ export default function DailyPlanView({ user, initialTab, onNavigate, goBack, re
           contextType="daily_task"
           teamContext={team.map(p => `${p.name} (${p.id})`).join(', ')}
           personId={personId}
-          defaultVoiceMode={(user.role_level || 1) >= 2 ? 'flow' : 'walkie'}
-          autoStart
+          defaultVoiceMode="walkie"
           onAccept={(fields) => {
             setNewTask(t => {
               const updated = { ...t, ...fields };
