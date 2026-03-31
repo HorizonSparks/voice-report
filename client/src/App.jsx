@@ -554,10 +554,10 @@ export default function App() {
           sx={{
             borderRadius: 0, py: 0.5,
             display: 'flex', alignItems: 'center',
-            '& .MuiAlert-message': { display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 1 },
+            '& .MuiAlert-message': { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 1 },
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: 20, textAlign: 'center', flex: 1 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: 18, flex: 1, textAlign: 'center' }}>
             {editModeEnabled
               ? '✏️ EDIT MODE — ' + simulatingCompany.name
               : simulatingCompany.name}
@@ -583,11 +583,7 @@ export default function App() {
       )}
 
       <Box component="main" sx={{ flex: 1 }}>
-        {readOnly && (
-          <Alert severity="warning" variant="standard" sx={{ borderRadius: 0, fontSize: 12, fontWeight: 700, justifyContent: 'center' }}>
-            Read-only mode — viewing as {simulatingCompany?.name}. Enable editing to make changes.
-          </Alert>
-        )}
+        {/* Read-only warning removed — simulation bar already shows company name */}
         {view === 'home' && <HomeView user={user} setView={navigateTo} logout={logout} activeTrade={activeTrade} setActiveTrade={setActiveTrade} starredTrades={starredTrades} allTrades={ALL_TRADES} onSafetyOpen={() => setSafetyPanelOpen(true)} simulatingCompany={simulatingCompany} onEnterCompany={enterSimulation} onSupportOpen={() => setSupportChatOpen(true)} />}
         {view === 'record' && <RecordView readOnly={readOnly} user={user} onSaved={() => navigateTo('list')} />}
         {view === 'list' && <ListView user={user} onOpen={openReport} />}
