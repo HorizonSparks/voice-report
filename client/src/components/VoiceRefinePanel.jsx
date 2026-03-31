@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Button, IconButton, TextField, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, IconButton, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import MicIcon from '@mui/icons-material/Mic';
-import SendIcon from '@mui/icons-material/Send';
-import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import AnalyticsTracker from '../utils/AnalyticsTracker.js';
 
 export default function VoiceRefinePanel({ contextType, teamContext, onAccept, onCancel, personId, defaultVoiceMode, autoStart, taskContext }) {
@@ -22,7 +19,6 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
   const [error, setError] = useState('');
   const [voiceMode, setVoiceMode] = useState(defaultVoiceMode || 'walkie'); // honor caller's preferred mode, fallback to walkie
   const [flowBannerPulse, setFlowBannerPulse] = useState(false);
-  const [chatText, setChatText] = useState('');
   const chatPhotoRef = useRef(null);
   const pendingPhotoRef = useRef(null); // base64 photo waiting to be sent with next message
   const stageRef = useRef('idle'); // mirror of stage for closure-safe access
@@ -576,13 +572,6 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
     }
   };
 
-  const sendTextMessage = () => {
-    const text = chatText.trim();
-    if (!text) return;
-    setChatText('');
-    processFlowTranscript(text);
-  };
-
   const handleChatPhoto = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -674,52 +663,122 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
         </Box>
       )} */}
 
-      {/* IDLE — Initial mic button */}
+      {/* IDLE — Big centered mic button (matches RecordView) */}
       {stage === 'idle' && chatHistory.length === 0 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', py: '40px' }}>
-          <Typography sx={{ color: 'text.primary', fontSize: '15px', textAlign: 'center', m: 0 }}>
-            Tap the mic and describe your {contextType === 'daily_task' ? 'task' : contextType === 'shift_update' ? 'work today' : 'issue'}
-          </Typography>
-          <Button onClick={voiceMode === 'flow' ? startFlowListening : startRecording} className="refine-mic-btn" sx={{ py: '20px', px: '36px', fontSize: '17px' }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="var(--primary)" stroke="none"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/></svg>
-            {contextType === 'daily_task' ? 'Speak your task' : contextType === 'shift_update' ? 'Tell me about your day' : 'Describe the issue'}
-          </Button>
+        <Box className="record-view">
+          <Box className="record-center">
+            <Button className="record-btn-main" onClick={voiceMode === 'flow' ? startFlowListening : startRecording}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+            </Button>
+            <Typography className="record-label">
+              {contextType === 'daily_task' ? 'Speak your task' : contextType === 'shift_update' ? 'Tell me about your day' : 'Describe the issue'}
+            </Typography>
+            <Typography className="record-sublabel">Tap the mic to start recording</Typography>
+          </Box>
         </Box>
       )}
 
-      {/* CHAT HISTORY — conversation bubbles */}
-      {chatHistory.length > 0 && (
-        <Box className="refine-chat" sx={{ flex: 1, overflowY: 'auto', mb: '8px' }}>
-          {chatHistory.map((msg, i) => (
-            <Box key={i} className={`refine-bubble refine-bubble-${msg.role}`}>
-              {msg.photo && (
-                <Box component="img" src={msg.photo} alt="Attached" sx={{ width: '100%', maxWidth: '200px', borderRadius: '8px', mb: '6px' }} />
-              )}
-              <Typography sx={{ m: 0, fontSize: '16px', lineHeight: 1.6, fontWeight: 600 }}>{msg.text}</Typography>
-              {msg.role === 'ai' && (
-                <Button onClick={() => {
-                  if (aiSpeaking && speakingMsgIndex === i) { stopSpeaking(); setSpeakingMsgIndex(null); }
-                  else { setSpeakingMsgIndex(i); speakText(msg.text, () => setSpeakingMsgIndex(null)); }
-                }}
-                  className={`refine-read-btn ${aiSpeaking && speakingMsgIndex === i ? 'refine-reading' : ''}`}
-                  sx={{ mt: '8px', fontSize: '15px', p: '10px 20px', fontWeight: 700 }}>
-                  {aiSpeaking && speakingMsgIndex === i ? '⏹ Stop' : '🔊 Listen'}
+      {/* RECORDING — Big centered stop button (matches RecordView) */}
+      {stage === 'recording' && chatHistory.length === 0 && (
+        <Box className="record-view">
+          <Box className="record-center">
+            <Button className="record-btn-main recording-main" onClick={stopRecording}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+            </Button>
+            <Typography className="record-timer">{formatTime(recordTime)}</Typography>
+            <Typography className="record-label">Recording... Tap to Stop</Typography>
+            {liveText && <Box className="live-transcript"><Typography component="span" className="live-final">{liveText}</Typography></Box>}
+            <Button className="btn btn-delete" sx={{ fontSize: '14px', p: '10px 20px', mt: '20px' }} onClick={handleCancel}>✕ Cancel</Button>
+          </Box>
+        </Box>
+      )}
+
+      {/* PROCESSING (first time, no chat yet) */}
+      {stage === 'processing' && chatHistory.length === 0 && (
+        <Box className="record-view">
+          <Box className="record-center"><Box className="spinner" /><Typography className="record-label">Processing...</Typography></Box>
+        </Box>
+      )}
+
+      {/* CONVERSATION VIEW — chat bubbles + bottom action bar (matches RecordView) */}
+      {chatHistory.length > 0 && (stage === 'listening' || stage === 'recording' || stage === 'processing' || stage === 'talking') && (
+        <Box className="conversation-view" sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {/* Hidden photo input */}
+          <input ref={chatPhotoRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleChatPhoto} />
+
+          <Box className="chat-container">
+            {chatHistory.map((msg, i) => (
+              <Box key={i} className={`chat-bubble ${msg.role === 'user' ? 'user' : 'ai'}`}>
+                <Box className="chat-role">{msg.role === 'user' ? 'YOU' : 'AI ASSISTANT'}</Box>
+                {msg.photo && (
+                  <Box component="img" src={msg.photo} alt="Attached" sx={{ width: '100%', maxWidth: '200px', borderRadius: '8px', mb: '6px' }} />
+                )}
+                <Box className="chat-text">{msg.text}</Box>
+                {msg.role === 'ai' && (
+                  (aiSpeaking && speakingMsgIndex === i) ? (
+                    <Button className="read-btn reading-active" onClick={() => { stopSpeaking(); setSpeakingMsgIndex(null); }}>
+                      ⏸ Pause
+                    </Button>
+                  ) : (
+                    <Button className="read-btn" onClick={() => { setSpeakingMsgIndex(i); speakText(msg.text, () => setSpeakingMsgIndex(null)); }} disabled={aiSpeaking && speakingMsgIndex !== i}>
+                      🔊 Read
+                    </Button>
+                  )
+                )}
+              </Box>
+            ))}
+            {/* Live transcript while recording in conversation */}
+            {stage === 'recording' && liveText && (
+              <Box className="chat-bubble user recording-live">
+                <Box className="chat-role">Recording</Box>
+                <Box className="chat-text">{liveText}</Box>
+              </Box>
+            )}
+            {stage === 'processing' && (
+              <Box className="chat-bubble processing-bubble">
+                <Box className="spinner-small" />
+                <Typography component="span">Processing...</Typography>
+              </Box>
+            )}
+            <Box ref={chatEndRef} />
+          </Box>
+
+          {/* Bottom action bar (matches RecordView) */}
+          <Box className="conversation-actions">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '10px' }}>
+              <Button onClick={handleCancel} sx={{ background: '#E8922A', color: 'text.primary', border: 'none', borderRadius: '10px', p: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'none', '&:hover': { background: '#d4831f' } }}>
+                Cancel
+              </Button>
+              <Button className="btn btn-primary finalize-btn" onClick={() => finalizeTask()} disabled={stage !== 'listening'} sx={{ flex: 1, p: '14px', fontSize: '16px', textTransform: 'none' }}>
+                Save it
+              </Button>
+            </Box>
+            <Box sx={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', mt: '8px' }}>
+              <Button className="record-btn-conv" onClick={() => chatPhotoRef.current?.click()} title="Take Photo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+              </Button>
+              {stage === 'recording' ? (
+                <Button className="record-btn-conv recording-conv" onClick={stopRecording}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+                  <Typography component="span">{formatTime(recordTime)}</Typography>
+                </Button>
+              ) : stage === 'processing' ? (
+                <Box className="record-btn-conv processing-conv">
+                  <Box className="spinner-small" />
+                </Box>
+              ) : (
+                <Button className="record-btn-conv" onClick={() => { stopSpeaking(); startRecording(); }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                  </svg>
                 </Button>
               )}
             </Box>
-          ))}
-          <Box ref={chatEndRef} />
-        </Box>
-      )}
-
-      {/* RECORDING — walkie-talkie mode */}
-      {stage === 'recording' && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', py: '12px' }}>
-          <Button onClick={stopRecording} className="refine-mic-btn refine-mic-recording">
-            <Box component="span" className="refine-pulse-dot" />
-            Stop — {formatTime(recordTime)}
-          </Button>
-          {liveText && <Typography className="refine-live-text">{liveText}</Typography>}
+          </Box>
         </Box>
       )}
 
@@ -740,112 +799,12 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
         </Box>
       )}
 
-      {/* PROCESSING */}
-      {stage === 'processing' && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', py: '16px' }}>
-          <CircularProgress size={32} />
-          <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 600 }}>AI is thinking...</Typography>
-        </Box>
-      )}
-
-      {/* TALKING — AI is speaking, show speaker animation */}
-      {stage === 'talking' && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', py: '16px' }}>
-          <Box className="refine-speaking-indicator">
-            <Box component="span" /><Box component="span" /><Box component="span" /><Box component="span" /><Box component="span" />
-          </Box>
-          <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 600 }}>AI is talking...</Typography>
-          <Button onClick={() => { stopSpeaking(); setStage('listening'); }} className="refine-cancel-btn" sx={{ fontSize: '13px' }}>Skip</Button>
-        </Box>
-      )}
-
       {/* FINALIZING */}
       {stage === 'finalizing' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', py: '16px' }}>
           <CircularProgress size={32} />
           <Typography sx={{ color: 'text.primary', fontSize: '14px', fontWeight: 600 }}>Preparing your {contextType === 'daily_task' ? 'task' : 'punch item'}...</Typography>
         </Box>
-      )}
-
-      {/* LISTENING — WhatsApp-like input bar pinned to bottom */}
-      {stage === 'listening' && (
-        <>
-          {/* Spacer pushes input bar to bottom when no chat messages */}
-          {chatHistory.length === 0 && <Box sx={{ flex: 1 }} />}
-
-          <Box sx={{ flexShrink: 0, py: '8px', pb: '16px', borderTop: '1px solid #e0e0e0', bgcolor: 'background.default', mt: 'auto' }}>
-            {/* Hidden photo input */}
-            <input ref={chatPhotoRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleChatPhoto} />
-
-            {/* Input bar row: camera | text input | mic button */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: '10px' }}>
-              {/* Camera button */}
-              <IconButton onClick={() => chatPhotoRef.current?.click()} sx={{
-                width: '48px', height: '48px', border: '2px solid #ccc',
-                bgcolor: 'white', flexShrink: 0,
-                '&:hover': { bgcolor: 'grey.100' },
-              }}>
-                <CameraAltIcon sx={{ color: 'text.primary', fontSize: '22px' }} />
-              </IconButton>
-
-              {/* Text input — same height as mic button */}
-              <Box sx={{ flex: 1, position: 'relative' }}>
-                <TextField
-                  type="text"
-                  value={chatText}
-                  onChange={e => setChatText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && chatText.trim()) sendTextMessage(); }}
-                  placeholder="Type a message..."
-                  fullWidth
-                  slotProps={{
-                    input: {
-                      sx: {
-                        borderRadius: '24px',
-                        fontSize: '15px',
-                        height: '48px',
-                        bgcolor: 'white',
-                        '& fieldset': { borderWidth: '2px', borderColor: '#e0e0e0' },
-                      },
-                    },
-                  }}
-                />
-                {chatText.trim() && (
-                  <IconButton onClick={sendTextMessage} sx={{
-                    position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)',
-                    width: '32px', height: '32px',
-                    bgcolor: 'primary.main',
-                    '&:hover': { bgcolor: 'primary.dark' },
-                  }}>
-                    <SendIcon sx={{ color: 'white', fontSize: '16px' }} />
-                  </IconButton>
-                )}
-              </Box>
-
-              {/* Mic button — compact, same height as text input */}
-              {!chatText.trim() && (
-                <Button onClick={voiceMode === 'flow' ? startFlowListening : startRecording} sx={{
-                  height: '48px', minWidth: '48px', borderRadius: '24px', bgcolor: 'secondary.main',
-                  color: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  px: '14px', fontWeight: 700, fontSize: '14px', flexShrink: 0,
-                  textTransform: 'none', gap: '6px',
-                  '&:hover': { bgcolor: 'secondary.dark' },
-                }}>
-                  <MicIcon sx={{ fontSize: '20px' }} />
-                </Button>
-              )}
-            </Box>
-
-            {/* Save / Cancel — small, centered */}
-            <Box sx={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <Button variant="contained" color="primary" onClick={() => finalizeTask()} sx={{ py: '8px', px: '24px', fontSize: '13px', fontWeight: 700, borderRadius: '20px', textTransform: 'none' }}>
-                Save it
-              </Button>
-              <Button variant="outlined" onClick={handleCancel} sx={{ py: '8px', px: '24px', fontSize: '13px', fontWeight: 700, borderRadius: '20px', color: 'text.primary', borderColor: '#ccc', textTransform: 'none' }}>
-                Cancel
-              </Button>
-            </Box>
-          </Box>
-        </>
       )}
 
       {/* REVIEW — Final task preview with approve/change */}
@@ -877,14 +836,31 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
         </Box>
       )}
 
-      {/* IDLE with existing chat (error recovery) */}
+      {/* IDLE with existing chat (error recovery) — show conversation with action bar */}
       {stage === 'idle' && chatHistory.length > 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: '8px', py: '12px' }}>
-          <Button onClick={startRecording} className="refine-mic-btn">
-            <MicIcon sx={{ fontSize: '20px', color: 'primary.main' }} />
-            Try again
-          </Button>
-          <Button onClick={handleCancel} className="refine-cancel-btn">Cancel</Button>
+        <Box className="conversation-view" sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box className="chat-container">
+            {chatHistory.map((msg, i) => (
+              <Box key={i} className={`chat-bubble ${msg.role === 'user' ? 'user' : 'ai'}`}>
+                <Box className="chat-role">{msg.role === 'user' ? 'YOU' : 'AI ASSISTANT'}</Box>
+                <Box className="chat-text">{msg.text}</Box>
+              </Box>
+            ))}
+            <Box ref={chatEndRef} />
+          </Box>
+          <Box className="conversation-actions">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <Button onClick={handleCancel} sx={{ background: '#E8922A', color: 'text.primary', border: 'none', borderRadius: '10px', p: '10px 16px', fontSize: '13px', fontWeight: 700, textTransform: 'none', '&:hover': { background: '#d4831f' } }}>
+                Cancel
+              </Button>
+              <Button className="record-btn-conv" onClick={startRecording}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+              </Button>
+            </Box>
+          </Box>
         </Box>
       )}
     </Box>
