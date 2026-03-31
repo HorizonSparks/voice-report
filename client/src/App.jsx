@@ -591,8 +591,8 @@ export default function App() {
       </Box>
 
       {/* Safety Quick-Access Panel */}
-      <Drawer anchor="bottom" open={safetyPanelOpen} onClose={() => setSafetyPanelOpen(false)}
-        slotProps={{ paper: { sx: { borderRadius: '20px 20px 0 0', maxHeight: '80vh' } } }}>
+      <Dialog open={safetyPanelOpen} onClose={() => setSafetyPanelOpen(false)} maxWidth="xs" fullWidth
+        PaperProps={{ sx: { borderRadius: 4, maxHeight: "80vh" } }}>
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary' }}>⛑️ {t('safety.title')}</Typography>
@@ -640,7 +640,7 @@ export default function App() {
             </Button>
           </Box>
         </Box>
-      </Drawer>
+      </Dialog>
 
       <InstallBanner />
       {user && user.sparks_role && (
