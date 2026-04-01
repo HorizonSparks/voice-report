@@ -78,6 +78,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/sparks', require('./routes/sparks'));
 app.use('/api/billing', require('./routes/billing'));
+app.use('/api/support', require('./routes/support'));
 app.use('/api', require('./routes/files'));
 
 // In production, serve built client files

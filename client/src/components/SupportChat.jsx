@@ -1,45 +1,118 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, IconButton, TextField, Button, Paper, Fab } from '@mui/material';
+import { Box, Typography, IconButton, TextField, Button, Paper, Fab, Badge } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 
-export default function SupportChat({ user, simulatingCompany, externalOpen, onExternalOpenChange }) {
+/**
+ * SupportChat — Floating chat bubble
+ *
+ * FOR CUSTOMERS: Send messages to Sparks support, saved to database
+ * FOR SPARKS ADMIN: Shows active support conversation when viewing a customer's ticket
+ *
+ * The bubble persists across all views — it follows you everywhere.
+ */
+export default function SupportChat({ user, simulatingCompany, externalOpen, onExternalOpenChange, activeConversation, onConversationChange }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (val) => { setInternalOpen(val); if (onExternalOpenChange) onExternalOpenChange(val); };
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
+  const pollRef = useRef(null);
 
+  const isSparksUser = !!user?.sparks_role;
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
+  // Focus input when opened
   useEffect(() => {
     if (open && inputRef.current) {
       setTimeout(() => inputRef.current.focus(), 100);
     }
   }, [open]);
 
+  // Load conversation on open
   useEffect(() => {
-    if (open && messages.length === 0) {
-      setMessages([{
-        id: 'welcome',
-        role: 'support',
-        text: 'Hi! How can we help you today? Describe your issue and our team will get back to you.',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }]);
+    if (!open) return;
+
+    if (isSparksUser && activeConversation) {
+      // Sparks admin viewing a specific customer conversation
+      loadSparksConversation(activeConversation);
+    } else if (!isSparksUser) {
+      // Customer loading their own conversation
+      loadCustomerConversation();
     }
-  }, [open]);
+  }, [open, activeConversation]);
+
+  // Poll for new messages every 5 seconds when open
+  useEffect(() => {
+    if (!open || !conversationId) return;
+
+    pollRef.current = setInterval(() => {
+      if (isSparksUser && conversationId) {
+        loadSparksConversation(conversationId);
+      } else if (!isSparksUser) {
+        loadCustomerConversation();
+      }
+    }, 5000);
+
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [open, conversationId]);
+
+  const loadCustomerConversation = async () => {
+    try {
+      const r = await fetch('/api/support/my-conversation');
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.conversation_id) setConversationId(data.conversation_id);
+      if (data.messages && data.messages.length > 0) {
+        setMessages(data.messages.map(m => ({
+          id: m.id,
+          role: m.sender_type === 'customer' ? 'user' : 'support',
+          text: m.content,
+          time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        })));
+      } else if (messages.length === 0) {
+        setMessages([{
+          id: 'welcome',
+          role: 'support',
+          text: 'Hi! How can we help you today? Describe your issue and our team will get back to you.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }]);
+      }
+    } catch {}
+  };
+
+  const loadSparksConversation = async (convId) => {
+    try {
+      const r = await fetch(`/api/support/conversation/${convId}`);
+      if (!r.ok) return;
+      const data = await r.json();
+      setConversationId(convId);
+      if (data.messages) {
+        setMessages(data.messages.map(m => ({
+          id: m.id,
+          role: m.sender_type === 'customer' ? 'user' : 'support',
+          text: m.content,
+          name: m.person_name,
+          time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        })));
+      }
+    } catch {}
+  };
 
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || sending) return;
 
     const newMsg = {
-      id: 'msg_' + Date.now(),
+      id: 'temp_' + Date.now(),
       role: 'user',
       text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -48,15 +121,37 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     setInput('');
     setSending(true);
 
-    setTimeout(() => {
+    try {
+      if (isSparksUser && conversationId) {
+        // Sparks admin replying to customer
+        const r = await fetch(`/api/support/reply/${conversationId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text }),
+        });
+        if (!r.ok) throw new Error('Failed to send');
+      } else {
+        // Customer sending to support
+        const r = await fetch('/api/support/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text }),
+        });
+        if (!r.ok) throw new Error('Failed to send');
+        const data = await r.json();
+        if (data.conversation_id) setConversationId(data.conversation_id);
+      }
+    } catch (err) {
+      console.error('Support send error:', err);
       setMessages(prev => [...prev, {
-        id: 'ack_' + Date.now(),
+        id: 'err_' + Date.now(),
         role: 'support',
-        text: 'Thanks! Your message has been received. Our team will respond shortly.',
+        text: 'Failed to send message. Please try again.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }]);
-      setSending(false);
-    }, 800);
+    }
+
+    setSending(false);
   };
 
   const handleKeyDown = (e) => {
@@ -66,11 +161,12 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     }
   };
 
-  const companyName = simulatingCompany?.name || 'Horizon Sparks';
+  const headerTitle = isSparksUser ? 'Support Chat' : 'Horizon Sparks Support';
+  const headerSub = isSparksUser && activeConversation ? (messages[0]?.name || 'Customer') : (simulatingCompany?.name || user?.company_name || '');
 
   return (
     <>
-      {/* Floating Bubble */}
+      {/* Floating Bubble — always visible except when chat is open */}
       {!open && (
         <Fab onClick={() => setOpen(true)} title="Support Chat"
           sx={{
@@ -99,13 +195,15 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           }}>
             <Box>
               <Typography sx={{ color: 'primary.main', fontWeight: 700, fontSize: 14 }}>
-                Horizon Sparks Support
+                {headerTitle}
               </Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, mt: 0.25 }}>
-                {companyName}
-              </Typography>
+              {headerSub && (
+                <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, mt: 0.25 }}>
+                  {headerSub}
+                </Typography>
+              )}
             </Box>
-            <IconButton onClick={() => setOpen(false)} sx={{ color: 'white' }}>
+            <IconButton onClick={() => { setOpen(false); if (onConversationChange) onConversationChange(null); }} sx={{ color: 'white' }}>
               <CloseIcon />
             </IconButton>
           </Box>
@@ -121,6 +219,9 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '80%',
               }}>
+                {msg.name && msg.role === 'user' && (
+                  <Typography sx={{ fontSize: 10, color: 'text.secondary', px: 0.5, mb: 0.25 }}>{msg.name}</Typography>
+                )}
                 <Paper elevation={msg.role === 'support' ? 1 : 0} sx={{
                   px: 1.75, py: 1.25, borderRadius: 3.5,
                   bgcolor: msg.role === 'user' ? 'secondary.main' : 'background.paper',
@@ -155,7 +256,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
+              placeholder={isSparksUser ? "Reply to customer..." : "Type your message..."}
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 5 } }}
             />
             <Button
