@@ -249,20 +249,6 @@ export default function PersonEditor({
           <label className="admin-label">Certifications</label>
           <Box className="cert-box">
             <TextField fullWidth size="small" multiline rows={4} value={pc.certifications || ''} onChange={e => updateCtx('certifications', e.target.value)} placeholder="Licenses, OSHA, NFPA 70E, TWIC, etc." className="cert-textarea" />
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-              <Button size="small" onClick={() => {
-                const inp = document.createElement('input');
-                inp.type = 'file'; inp.accept = 'image/*,.pdf'; inp.capture = 'environment';
-                inp.onchange = e => { if (e.target.files[0]) onUploadCert(e.target.files[0]); };
-                inp.click();
-              }} sx={{ bgcolor: '#48484A', color: '#fff', fontSize: 12, fontWeight: 700, px: 2, py: 0.75, borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#3a3a3c' } }}>Camera</Button>
-              <Button size="small" onClick={() => {
-                const inp = document.createElement('input');
-                inp.type = 'file'; inp.accept = 'image/*,.pdf';
-                inp.onchange = e => { if (e.target.files[0]) onUploadCert(e.target.files[0]); };
-                inp.click();
-              }} sx={{ bgcolor: '#F99440', color: '#48484A', fontSize: 12, fontWeight: 700, px: 2, py: 0.75, borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#e07c26' } }}>Upload File</Button>
-            </Box>
             {(form.certifications_files || []).length > 0 && (
               <Box className="cert-file-list">
                 {(form.certifications_files || []).map(cf => (
@@ -278,7 +264,23 @@ export default function PersonEditor({
                 ))}
               </Box>
             )}
-            {editing === 'new' && <Typography className="cert-hint">Save person first to upload certification files.</Typography>}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+              {editing === 'new' ? <Typography sx={{ fontSize: 12, color: 'text.secondary', fontStyle: 'italic' }}>Save person first to upload certification files.</Typography> : <Box />}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button size="small" onClick={() => {
+                  const inp = document.createElement('input');
+                  inp.type = 'file'; inp.accept = 'image/*,.pdf'; inp.capture = 'environment';
+                  inp.onchange = e => { if (e.target.files[0]) onUploadCert(e.target.files[0]); };
+                  inp.click();
+                }} sx={{ bgcolor: '#48484A', color: '#fff', fontSize: 11, fontWeight: 700, px: 1.5, py: 0.5, borderRadius: 1.5, textTransform: 'none', minWidth: 'auto', '&:hover': { bgcolor: '#3a3a3c' } }}>Camera</Button>
+                <Button size="small" onClick={() => {
+                  const inp = document.createElement('input');
+                  inp.type = 'file'; inp.accept = 'image/*,.pdf';
+                  inp.onchange = e => { if (e.target.files[0]) onUploadCert(e.target.files[0]); };
+                  inp.click();
+                }} sx={{ bgcolor: '#F99440', color: '#48484A', fontSize: 11, fontWeight: 700, px: 1.5, py: 0.5, borderRadius: 1.5, textTransform: 'none', minWidth: 'auto', '&:hover': { bgcolor: '#e07c26' } }}>Upload File</Button>
+              </Box>
+            </Box>
           </Box>
         </Box>}
       </Box>
