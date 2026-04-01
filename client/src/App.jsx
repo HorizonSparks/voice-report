@@ -148,6 +148,12 @@ export default function App() {
         setActiveTrade(lastTrade);
       } else if (user.trade) {
         setActiveTrade(user.trade);
+      } else {
+        // Admin/Sparks users have no trade — default to first starred trade
+        const savedStars = localStorage.getItem(`starred_trades_${userKey}`);
+        if (savedStars) {
+          try { const stars = JSON.parse(savedStars); if (stars.length > 0) setActiveTrade(stars[0]); } catch {}
+        }
       }
     }
   }, [user]);
@@ -231,8 +237,13 @@ export default function App() {
 
   const handleLogin = (userData) => {
     setUser(userData);
+    // Auto-route: Sparks admin/support land on Control Center
     setAuthStatus('authenticated');
-    setView('home');
+    if (userData.sparks_role === 'admin' || userData.sparks_role === 'support') {
+      setView('control-center');
+    } else {
+      setView('home');
+    }
     setViewHistory([]);
     AnalyticsTracker.personId = userData.person_id || userData.id || null;
     AnalyticsTracker.track('auth', 'login', { role: userData.role_level, trade: userData.trade });
@@ -421,13 +432,27 @@ export default function App() {
           </Box>
         </Box>
 
-        {/* Sparks Hub link for admin users */}
-        {user?.sparks_role && (
+        {/* Navigation buttons for Sparks users */}
+        {user?.sparks_role && view !== 'control-center' && (
           <Box sx={{ px: 2, pb: 1.5 }}>
             <Button fullWidth variant="contained" color="secondary"
               onClick={() => { setView('control-center'); setMenuOpen(false); }}
               sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13 }}>
               Control Center
+            </Button>
+          </Box>
+        )}
+        {user?.sparks_role && view === 'control-center' && (
+          <Box sx={{ px: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Button fullWidth variant="contained" color="secondary"
+              onClick={() => { setView('home'); setMenuOpen(false); }}
+              sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13 }}>
+              Field Operations
+            </Button>
+            <Button fullWidth variant="outlined" color="secondary"
+              onClick={() => { window.open('https://app.horizonsparks.ai', '_blank'); setMenuOpen(false); }}
+              sx={{ fontSize: 13 }}>
+              LoopFolders
             </Button>
           </Box>
         )}
