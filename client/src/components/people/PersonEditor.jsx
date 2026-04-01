@@ -156,8 +156,8 @@ export default function PersonEditor({
           <Typography sx={{ fontSize: '13px', color: 'text.primary', mb: '12px', opacity: 0.7 }}>
             Upload resumes, knowledge papers, technical docs. The AI will learn from these files.
           </Typography>
-          <Box sx={{ display: 'flex', gap: '8px', mb: '16px' }}>
-            <label className="btn btn-orange" style={{fontSize:'13px', cursor:'pointer', flex:1, textAlign:'center'}}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: '16px' }}>
+            <label style={{fontSize:'13px', cursor:'pointer', textAlign:'center', backgroundColor: 'var(--primary)', color: 'var(--charcoal)', padding: '8px 20px', borderRadius: '8px', fontWeight: 700}}>
               Upload File
               <input type="file" accept="*/*" onChange={async (e) => {
                 const file = e.target.files[0];
