@@ -20,7 +20,7 @@ function useSupportUnread(setSupportUnread) {
   }, []);
 }
 
-export default forwardRef(function SparksCommandCenter({ user, onEnterCompany }, ref) {
+export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, navigateTo }, ref) {
   const [screen, setScreen] = useState('dashboard');
   const [supportInbox, setSupportInbox] = useState([]);
   const [supportUnread, setSupportUnread] = useState(0);
@@ -297,6 +297,19 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
         <Typography sx={{ fontSize: 12, color: 'primary.main', fontWeight: 600 }}>
           {user.sparks_role?.toUpperCase()} ACCESS
         </Typography>
+        {/* Product launchers */}
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 2, justifyContent: 'center' }}>
+          <Button variant="contained" color="secondary"
+            onClick={() => { if (typeof navigateTo === 'function') navigateTo('home'); }}
+            sx={{ px: 3, py: 1, borderRadius: 3, fontWeight: 700, fontSize: 14, border: '2px solid', borderColor: 'primary.main' }}>
+            Field Operations
+          </Button>
+          <Button variant="outlined" color="secondary"
+            onClick={() => window.open('https://app.horizonsparks.ai', '_blank')}
+            sx={{ px: 3, py: 1, borderRadius: 3, fontWeight: 700, fontSize: 14 }}>
+            LoopFolders
+          </Button>
+        </Box>
       </Box>
 
       {/* Back button for internal CC navigation */}
