@@ -1,4 +1,33 @@
 require('dotenv').config({ override: true });
+const rateLimit = require('express-rate-limit');
+
+// Rate limiters — protect against brute force and cost abuse
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 AI requests per minute per user
+  message: { error: 'Too many AI requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.auth ? req.auth.person_id : req.ip,
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // 20 uploads per minute
+  message: { error: 'Too many uploads. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.auth ? req.auth.person_id : req.ip,
+});
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -26,9 +55,14 @@ app.use(tenantFilter);
 app.use(attachCompanyDb);
 
 // Mount routes
+app.use('/api/login', loginLimiter);
 app.use('/api', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
 app.use('/api/people', require('./routes/people'));
+app.use('/api/transcribe', aiLimiter);
+app.use('/api/structure', aiLimiter);
+app.use('/api/converse', aiLimiter);
+app.use('/api/refine', aiLimiter);
 app.use('/api', require('./routes/ai'));
 app.use('/api', require('./routes/messages'));
 app.use('/api/reports', require('./routes/reports'));
