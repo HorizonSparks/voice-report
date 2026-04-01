@@ -306,7 +306,7 @@ export default function App() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
         <h1 style={{ color: 'var(--primary)', fontFamily: 'var(--font-header)', letterSpacing: '3px', fontSize: '28px' }}>Horizon Sparks</h1>
-        <p style={{ color: 'var(--charcoal)', marginTop: '8px', fontSize: '14px' }}>Voice-Report.ai</p>
+        <p style={{ color: 'var(--charcoal)', marginTop: '8px', fontSize: '14px' }}>horizonsparks.com</p>
       </div>
     );
   }
@@ -462,7 +462,7 @@ export default function App() {
         )}
 
         {/* Trade stars — only for admin and supervisors, NOT in Control Center */}
-        {(user.is_admin || (user.role_level || 0) >= 4) && (
+        {view !== 'control-center' && (user.is_admin || (user.role_level || 0) >= 4) && (
           <Box sx={{ px: 2, py: 2 }}>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
               {t('nav.activeTrades')}
@@ -532,7 +532,8 @@ export default function App() {
           </Box>
         )}
 
-        {/* Menu links */}
+        {/* Menu links — hide in Control Center */}
+        {view !== "control-center" && (<>
         <Divider />
         <List sx={{ px: 1 }}>
           {user.is_admin && (
@@ -547,6 +548,7 @@ export default function App() {
             <ListItemText primary="🛠️ Tech Support" />
           </ListItemButton>
         </List>
+        </>)}
 
         {/* Language toggle */}
         <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
