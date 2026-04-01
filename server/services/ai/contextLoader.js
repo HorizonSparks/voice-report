@@ -169,7 +169,7 @@ function loadTradeKnowledge(trade, allText) {
     // Load other knowledge files as needed
     const knowledgeFiles = [
       { file: `${trade}_procedures.json`, key: 'procedures' },
-      { file: `${trade}_materials_specs.json`, key: 'materials' },
+      { file: `${trade}_materials.json`, key: 'materials' },
     ];
 
     for (const { file, key } of knowledgeFiles) {

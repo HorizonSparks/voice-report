@@ -38,6 +38,7 @@ const ALL_TRADES_KEYS = [
   { key: 'Pipe Fitting', icon: '🔩', tradeKey: 'trades.pipeFitting' },
   { key: 'Industrial Erection', icon: '🏗️', tradeKey: 'trades.erection' },
   { key: 'Safety', icon: '⛑️', tradeKey: 'trades.safety' },
+  { key: 'Millwright', icon: '⚙️', tradeKey: 'trades.millwright' },
 ];
 
 export default function App() {
@@ -85,9 +86,10 @@ export default function App() {
   const ROLE_LEVEL_LABELS = {
     Electrical: { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
     Instrumentation: { 0: 'Junior Techs', 1: 'Instrument Techs', 2: 'Senior Techs', 3: 'Instrument Leads', 4: 'Instrument Supervisors', 5: 'Project Management' },
-    'Pipe Fitting': { 0: 'Pipefitter Helpers', 1: 'Journeyman Pipefitters', 2: 'Pipefitter Foremen', 3: 'Pipe General Foremen', 4: 'Pipe Superintendents', 5: 'Project Management' },
+    'Pipe Fitting': { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
     'Industrial Erection': { 0: 'Ironworker Helpers', 1: 'Journeyman Ironworkers', 2: 'Ironworker Foremen', 3: 'Erection General Foremen', 4: 'Erection Superintendents', 5: 'Project Management' },
     Safety: { 2: 'Safety Coordinators', 3: 'Safety Officers', 4: 'HSE Managers', 5: 'Site Safety Directors' },
+    Millwright: { 0: 'Millwright Helpers', 1: 'Journeyman Millwrights', 2: 'Millwright Foremen', 3: 'Millwright General Foremen', 4: 'Millwright Superintendents', 5: 'Project Management' },
   };
 
   // Toggle a role level for a trade and save to server
