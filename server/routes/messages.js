@@ -140,7 +140,11 @@ const msgPhotoDir = path.join(__dirname, '../../message-photos');
 if (!fs.existsSync(msgPhotoDir)) fs.mkdirSync(msgPhotoDir, { recursive: true });
 const msgPhotoStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, msgPhotoDir),
-  filename: (req, file, cb) => cb(null, `msg_${Date.now()}_${file.originalname}`),
+  filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      const safeName = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + ext;
+      cb(null, safeName);
+    },
 });
 const msgPhotoUpload = multer({ storage: msgPhotoStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -281,7 +285,7 @@ router.post('/v2/messages/file', requireAuth, requireSparksEditMode, msgFileUplo
 
 // Serve message files
 router.get('/message-files/:filename', requireAuth, (req, res) => {
-  const filePath = path.join(__dirname, '../../message-files', req.params.filename);
+  const filePath = path.join(__dirname, '../../message-files', path.basename(req.params.filename));
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
   res.download(filePath);
 });

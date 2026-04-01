@@ -15,18 +15,31 @@ const { callClaude, callClaudeJSON, cleanupFieldText } = require('../services/ai
 const { detectSafety } = require('../services/ai/safetyDetector');
 
 const router = Router();
+
+// SECURITY: Resolve person_id — use session identity, allow override only for supervisor+
+function resolvePersonId(req) {
+  const clientId = req.body && req.body.person_id || req.query && req.query.person_id;
+  const sessionId = req.auth && req.auth.person_id;
+  if (!clientId || clientId === sessionId) return sessionId;
+  if (req.auth && (req.auth.is_admin || req.auth.role_level >= 3 || req.auth.sparks_role)) return clientId;
+  return sessionId;
+}
 const PORT = process.env.PORT || 3000;
 
 // Audio file storage
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '../../audio'),
   filename: (req, file, cb) => {
-    const id = req.body.report_id || new Date().toISOString().replace(/[:.]/g, '-');
+    const id = 'audio_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const ext = file.originalname.split('.').pop() || 'webm';
     cb(null, `${id}.${ext}`);
   }
 });
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+const audioFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('audio/')) cb(null, true);
+  else cb(new Error('Only audio files allowed'), false);
+};
+const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 }, fileFilter: audioFilter });
 
 router.post('/save-audio', requireAuth, upload.single('audio'), async (req, res) => {
   try {
@@ -47,11 +60,12 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
 
     const audioBuffer = fs.readFileSync(req.file.path);
     const ext = req.file.originalname.split('.').pop() || 'webm';
-    const whisperPrompt = await getTradeWhisperPrompt(req.body?.person_id || req.query?.person_id, req.db);
+    const person_id = resolvePersonId(req);
+    const whisperPrompt = await getTradeWhisperPrompt(person_id, req.db);
 
     const result = await transcribe(audioBuffer, ext, whisperPrompt, {
       requestId: req.analyticsId,
-      personId: req.body?.person_id || null,
+      personId: person_id,
     });
 
     res.json({ transcript: result.text, audio_file: req.file.filename });
@@ -66,7 +80,8 @@ router.post('/transcribe', requireAuth, upload.single('audio'), async (req, res)
 // ============================================================
 router.post('/structure', requireAuth, async (req, res) => {
   try {
-    const { transcript, person_id, field_cleanup, custom_prompt } = req.body;
+    const { transcript, field_cleanup, custom_prompt } = req.body;
+    const person_id = resolvePersonId(req);
     if (!transcript) return res.status(400).json({ error: 'No transcript provided' });
 
     // Field cleanup mode — just clean up spoken text for a form field
@@ -96,7 +111,7 @@ router.post('/structure', requireAuth, async (req, res) => {
 
     const result = await callClaudeJSON({
       systemPrompt,
-      messages: [{ role: 'user', content: `Here is the voice transcript to structure:\n\n${transcript}` }],
+      messages: [{ role: 'user', content: `Here is the voice transcript to structure:\n\n<transcript>\n${transcript}\n</transcript>` }],
       maxTokens: 4096,
       tracking: { requestId: req.analyticsId, personId: person_id, service: 'structure' },
     });
@@ -152,7 +167,8 @@ router.post('/tts', requireAuth, async (req, res) => {
 // ============================================================
 router.post('/converse', requireAuth, async (req, res) => {
   try {
-    const { person_id, transcript_so_far, conversation, messages_for_person } = req.body;
+    const { transcript_so_far, conversation, messages_for_person } = req.body;
+    const person_id = resolvePersonId(req);
     if (!transcript_so_far && (!conversation || conversation.length === 0)) return res.status(400).json({ error: 'No transcript provided' });
 
     // Load person and template context
@@ -200,7 +216,8 @@ router.post('/converse', requireAuth, async (req, res) => {
 // ============================================================
 router.post('/refine', requireAuth, async (req, res) => {
   try {
-    const { context_type, raw_transcript, conversation, round, team_context, phase, person_id, task_context, existing_fields, image_data } = req.body;
+    const { context_type, raw_transcript, conversation, round, team_context, phase, task_context, existing_fields, image_data } = req.body;
+    const person_id = resolvePersonId(req);
     const currentPhase = phase || 'dialogue';
 
     // Load person context using extracted module
@@ -255,7 +272,10 @@ router.post('/refine', requireAuth, async (req, res) => {
     // Build messages array
     const messages = [];
     if (conversation && conversation.length > 0) {
-      conversation.forEach(msg => messages.push({ role: msg.role, content: msg.content }));
+      conversation.forEach(msg => {
+        const role = (msg.role === 'assistant') ? 'assistant' : 'user';
+        messages.push({ role, content: String(msg.content || '') });
+      });
     }
 
     // Build user message content — supports multimodal (text + image) for photo attachments

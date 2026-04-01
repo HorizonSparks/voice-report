@@ -245,6 +245,14 @@ module.exports = function(db) {
     const { form_data, crew_members, status } = req.body;
 
     try {
+      // SECURITY: Verify actor is creator, crew member, or supervisor+
+      const { rows: [existing] } = await (req.db || DB).db.query('SELECT person_id, crew_members FROM jsa_records WHERE id = $1', [id]);
+      if (!existing) return res.status(404).json({ error: 'JSA not found' });
+      const actorId = req.auth.person_id;
+      const isCreator = existing.person_id === actorId;
+      const isCrew = (() => { try { return JSON.parse(existing.crew_members || '[]').some(c => c.id === actorId || c.person_id === actorId); } catch { return false; } })();
+      const isSupervisor = req.auth.role_level >= 3 || req.auth.is_admin || !!req.auth.sparks_role;
+      if (!isCreator && !isCrew && !isSupervisor) return res.status(403).json({ error: 'Not authorized to modify this JSA' });
       const updates = [];
       const values = [];
       let paramIdx = 1;

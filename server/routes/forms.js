@@ -45,6 +45,7 @@ router.get('/', requireAuth, (req, res) => {
       form_type: f.form_type, form_title: f.form_title, created_at: f.created_at,
     }));
     if (req.query.person_id) forms = forms.filter(f => f.person_id === req.query.person_id);
+    if (req.companyId) forms = forms.filter(f => f.company_id === req.companyId);
     forms.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     res.json(forms);
   } catch (err) { res.status(500).json({ error: err.message }); }
