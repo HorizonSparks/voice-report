@@ -29,6 +29,7 @@ const ROLE_GROUPS_BY_TRADE = {
   'Pipe Fitting': [
     { level: 0, label: 'Helpers' },
     { level: 1, label: 'Journeymen' },
+    { level: 1, label: 'Boilermakers', roleTitle: 'Boilermaker' },
     { level: 2, label: 'Foremen' },
     { level: 3, label: 'General Foremen' },
     { level: 4, label: 'Superintendents' },
@@ -101,6 +102,18 @@ export default function PeopleListSection({
     const tmpl = templates.find(tp => tp.id === p.template_id);
     if (tmpl && tmpl.id && tmpl.id.includes('other')) return -1;
     return parseInt(p.role_level) || 0;
+  };
+
+  // Get the role group key for a person (handles same-level splits like Journeyman vs Boilermaker)
+  const getGroupKey = (p) => {
+    const level = getLevelForPerson(p);
+    // Check if person matches a roleTitle-specific group
+    const titleGroup = roleGroups.find(g => g.roleTitle && g.level === level && p.role_title === g.roleTitle);
+    if (titleGroup) return `${level}_${titleGroup.roleTitle}`;
+    // Check if there's a roleTitle group at this level — if so, exclude those people from the generic group
+    const hasSpecificGroup = roleGroups.some(g => g.roleTitle && g.level === level);
+    if (hasSpecificGroup && roleGroups.find(g => g.roleTitle && g.level === level)?.roleTitle === p.role_title) return `${level}_${p.role_title}`;
+    return `${level}`;
   };
 
   const renderPersonCard = (p) => {
@@ -180,7 +193,14 @@ export default function PeopleListSection({
         return false;
       }
       if (!isAdmin) {
-        const gp = sortedPeople.filter(p => getLevelForPerson(p) === group.level);
+        const gp = sortedPeople.filter(p => {
+          const level = getLevelForPerson(p);
+          if (level !== group.level) return false;
+          if (group.roleTitle) return p.role_title === group.roleTitle;
+          const specificGroups = roleGroups.filter(g => g.roleTitle && g.level === level);
+          if (specificGroups.length > 0) return !specificGroups.some(g => p.role_title === g.roleTitle);
+          return true;
+        });
         return gp.length > 0;
       }
       return true;
@@ -210,10 +230,18 @@ export default function PeopleListSection({
       </Box>
 
       <Box className="people-grid">
-        {visibleGroups.map(group => {
-          const groupPeople = sortedPeople.filter(p => getLevelForPerson(p) === group.level);
+        {visibleGroups.map((group, gi) => {
+          const groupPeople = sortedPeople.filter(p => {
+            const level = getLevelForPerson(p);
+            if (level !== group.level) return false;
+            if (group.roleTitle) return p.role_title === group.roleTitle;
+            // Exclude people who match a roleTitle-specific group at this level
+            const specificGroups = roleGroups.filter(g => g.roleTitle && g.level === level);
+            if (specificGroups.length > 0) return !specificGroups.some(g => p.role_title === g.roleTitle);
+            return true;
+          });
           return (
-            <Box key={group.level} className="people-category-bubble">
+            <Box key={`${group.level}_${group.roleTitle || gi}`} className="people-category-bubble">
               <Box className="people-category-header">
                 <Box component="span" className="people-category-title" onClick={() => setExpandedCategory(group.level)} sx={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, cursor: 'pointer' }}>
                   <Typography component="span" className="people-category-label">{group.label}</Typography>
