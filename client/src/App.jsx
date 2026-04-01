@@ -87,7 +87,7 @@ export default function App() {
     Electrical: { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
     Instrumentation: { 0: 'Junior Techs', 1: 'Instrument Techs', 2: 'Senior Techs', 3: 'Instrument Leads', 4: 'Instrument Supervisors', 5: 'Project Management' },
     'Pipe Fitting': { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
-    'Industrial Erection': { 0: 'Ironworker Helpers', 1: 'Journeyman Ironworkers', 2: 'Ironworker Foremen', 3: 'Erection General Foremen', 4: 'Erection Superintendents', 5: 'Project Management' },
+    'Industrial Erection': { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
     Safety: { 2: 'Safety Coordinators', 3: 'Safety Officers', 4: 'HSE Managers', 5: 'Site Safety Directors' },
     Millwright: { 0: 'Millwright Helpers', 1: 'Journeyman Millwrights', 2: 'Millwright Foremen', 3: 'Millwright General Foremen', 4: 'Millwright Superintendents', 5: 'Project Management' },
   };
