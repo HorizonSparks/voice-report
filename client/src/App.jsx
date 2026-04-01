@@ -414,7 +414,7 @@ export default function App() {
               </>
             )}
           </Box>
-          {view !== 'home' && (
+          {view !== 'home' && view !== 'control-center' && (
             <Typography sx={{ fontSize: 13, color: 'primary.main', fontWeight: 600, ml: 'auto', whiteSpace: 'nowrap', alignSelf: 'flex-end' }}>
               {activeTrade}
             </Typography>
