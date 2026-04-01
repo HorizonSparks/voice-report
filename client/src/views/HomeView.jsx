@@ -54,14 +54,16 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
     }
     if (isAdmin) {
       if ((user.role_level || 0) >= 5 || user.is_admin) tiles.push({ id: 'projects', icon: '📁', label: 'Projects', view: 'projects' });
-      tiles.push({ id: 'crew', icon: '👥', label: t('home.peopleCrew'), view: 'people' });
+      const crewLabel = (user.role_level || 0) <= 4 && !user.sparks_role ? t('home.myCrew') : t('home.peopleCrew');
+      tiles.push({ id: 'crew', icon: '👥', label: crewLabel, view: 'people' });
       tiles.push({ id: 'dailyplan', icon: '📌', label: t('home.dailyPlanPunchList'), view: 'dailyplan' });
       tiles.push({ id: 'reports', icon: '📋', label: t('home.reports'), view: 'reports' });
       tiles.push({ id: 'messages', icon: '💬', label: t('home.messages'), view: 'messages' });
       tiles.push({ id: 'forms', icon: '📝', label: t('home.forms'), view: 'forms' });
     } else {
       if (isSupervisor) {
-        tiles.push({ id: 'crew', icon: '👥', label: t('home.peopleCrew'), view: 'people' });
+        const crewLabel2 = (user.role_level || 0) <= 4 ? t('home.myCrew') : t('home.peopleCrew');
+        tiles.push({ id: 'crew', icon: '👥', label: crewLabel2, view: 'people' });
       }
       tiles.push({ id: 'dailyplan', icon: '📌', label: t('home.dailyPlanPunchList'), view: 'dailyplan' });
       tiles.push({ id: 'reports', icon: '📋', label: t('home.reports'), view: 'reports' });
