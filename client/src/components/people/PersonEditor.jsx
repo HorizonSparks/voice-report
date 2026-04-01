@@ -249,19 +249,19 @@ export default function PersonEditor({
           <label className="admin-label">Certifications</label>
           <Box className="cert-box">
             <TextField fullWidth size="small" multiline rows={4} value={pc.certifications || ''} onChange={e => updateCtx('certifications', e.target.value)} placeholder="Licenses, OSHA, NFPA 70E, TWIC, etc." className="cert-textarea" />
-            <Box className="cert-upload-row">
-              <Button className="btn btn-charcoal cert-upload-btn" onClick={() => {
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+              <Button size="small" onClick={() => {
                 const inp = document.createElement('input');
                 inp.type = 'file'; inp.accept = 'image/*,.pdf'; inp.capture = 'environment';
                 inp.onchange = e => { if (e.target.files[0]) onUploadCert(e.target.files[0]); };
                 inp.click();
-              }}>Camera</Button>
-              <Button className="btn btn-orange cert-upload-btn" onClick={() => {
+              }} sx={{ bgcolor: '#48484A', color: '#fff', fontSize: 12, fontWeight: 700, px: 2, py: 0.75, borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#3a3a3c' } }}>Camera</Button>
+              <Button size="small" onClick={() => {
                 const inp = document.createElement('input');
                 inp.type = 'file'; inp.accept = 'image/*,.pdf';
                 inp.onchange = e => { if (e.target.files[0]) onUploadCert(e.target.files[0]); };
                 inp.click();
-              }}>Upload File</Button>
+              }} sx={{ bgcolor: '#F99440', color: '#48484A', fontSize: 12, fontWeight: 700, px: 2, py: 0.75, borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#e07c26' } }}>Upload File</Button>
             </Box>
             {(form.certifications_files || []).length > 0 && (
               <Box className="cert-file-list">
