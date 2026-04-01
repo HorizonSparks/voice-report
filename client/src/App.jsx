@@ -29,7 +29,7 @@ import AnalyticsView from './views/AnalyticsView.jsx';
 import ProjectsView from './views/ProjectsView.jsx';
 import InstallBanner from './components/InstallBanner.jsx';
 import PinModal from './components/PinModal.jsx';
-// SparksCommandCenter removed — now lives in sparks-hub at horizonsparks.com
+import SparksCommandCenter from './views/SparksCommandCenter.jsx';
 import SupportChat from './components/SupportChat.jsx';
 
 const ALL_TRADES_KEYS = [
@@ -64,7 +64,7 @@ export default function App() {
   const [pinError, setPinError] = useState('');
   const readOnly = !!simulatingCompany && !editModeEnabled;
   const [supportChatOpen, setSupportChatOpen] = useState(false); // 'customer' or 'support'
-  // currentWorld removed — Voice Report is always Voice Report now (Control Center at horizonsparks.com)
+  // Control Center is back inside Voice Report — horizonsparks.com IS Voice Report
   const [dialogConfig, setDialogConfig] = useState(null); // { title, message, onConfirm, confirmText, cancelText }
 
   const closeDialog = () => setDialogConfig(null);
@@ -249,7 +249,7 @@ export default function App() {
     fetch('/api/logout', { method: 'POST' }).catch(() => {});
   };
 
-  // World switching removed — Control Center now at horizonsparks.com
+  // Control Center view accessible via hamburger menu or home screen
 
   // Auto-expire edit mode after 15 min inactivity
   useEffect(() => {
@@ -425,9 +425,9 @@ export default function App() {
         {user?.sparks_role && (
           <Box sx={{ px: 2, pb: 1.5 }}>
             <Button fullWidth variant="contained" color="secondary"
-              onClick={() => { window.open('https://horizonsparks.com', '_blank'); setMenuOpen(false); }}
+              onClick={() => { setView('control-center'); setMenuOpen(false); }}
               sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13 }}>
-              {'\u2190'} Sparks Control Center
+              Control Center
             </Button>
           </Box>
         )}
@@ -600,7 +600,7 @@ export default function App() {
         {view === 'taskdetail' && <TaskDetailView readOnly={readOnly} user={user} taskId={selectedTaskId} goBack={goBack} onNavigate={navigateTo} activeTrade={activeTrade} />}
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
-        {/* SparksCommandCenter removed — now at horizonsparks.com */}
+        {view === "control-center" && <SparksCommandCenter user={user} navigateTo={navigateTo} goHome={goHome} readOnly={readOnly} simulatingCompany={simulatingCompany} setSimulatingCompany={setSimulatingCompany} setSimulationMode={setSimulationMode} editModeEnabled={editModeEnabled} setEditModeEnabled={setEditModeEnabled} editModeExpiry={editModeExpiry} setEditModeExpiry={setEditModeExpiry} showPinModal={showPinModal} setShowPinModal={setShowPinModal} showAlert={showAlert} showConfirm={showConfirm} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>

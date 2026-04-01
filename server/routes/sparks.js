@@ -31,7 +31,7 @@ router.get('/companies', requireSparksRole('support'), async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('Sparks companies error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -60,7 +60,7 @@ router.post('/companies', requireSparksRole('admin'), async (req, res) => {
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Company with that slug already exists' });
     console.error('Create company error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -112,7 +112,7 @@ router.get('/companies/:id', requireSparksRole('support'), async (req, res) => {
     });
   } catch (err) {
     console.error('Company detail error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -145,7 +145,7 @@ router.put('/companies/:id', requireSparksRole('admin'), async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('Update company error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -174,7 +174,7 @@ router.post('/companies/:id/products', requireSparksRole('admin'), async (req, r
     res.json({ success: true, product, status: 'active' });
   } catch (err) {
     console.error('Add product error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -195,7 +195,7 @@ router.delete('/companies/:id/products/:product', requireSparksRole('admin'), as
     res.json({ success: true, product: req.params.product, status: 'suspended' });
   } catch (err) {
     console.error('Suspend product error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -224,7 +224,7 @@ router.post('/companies/:id/trades', requireSparksRole('admin'), async (req, res
     res.json({ success: true, trade, status: 'active' });
   } catch (err) {
     console.error('Add trade error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -245,7 +245,7 @@ router.delete('/companies/:id/trades/:trade', requireSparksRole('admin'), async 
     res.json({ success: true, trade: req.params.trade, status: 'suspended' });
   } catch (err) {
     console.error('Suspend trade error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -267,7 +267,7 @@ router.get('/team', requireSparksRole('advisor'), async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('Team list error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -289,7 +289,7 @@ router.put('/team/:id/role', requireSparksRole('admin'), async (req, res) => {
     res.json({ success: true, person_id: req.params.id, sparks_role: role });
   } catch (err) {
     console.error('Update role error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -343,7 +343,7 @@ router.get('/dashboard', requireSparksRole('support'), async (req, res) => {
     });
   } catch (err) {
     console.error('Dashboard error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -365,7 +365,7 @@ router.get('/audit', requireSparksRole('admin'), async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('Audit log error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -376,7 +376,7 @@ router.get('/audit', requireSparksRole('admin'), async (req, res) => {
 // ============================================
 
 // Enable edit mode — requires operator's PIN
-router.post('/edit-mode/enable', requireAuth, async (req, res) => {
+router.post('/edit-mode/enable', requireAuth, requireSparksRole('support'), async (req, res) => {
   try {
     if (!req.auth.sparks_role) return res.status(403).json({ error: 'Not a Sparks operator' });
     const { pin, company_id } = req.body;
@@ -406,12 +406,12 @@ router.post('/edit-mode/enable', requireAuth, async (req, res) => {
 
     res.json({ enabled: true, expiresInSeconds: 900 });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Disable edit mode
-router.post('/edit-mode/disable', requireAuth, async (req, res) => {
+router.post('/edit-mode/disable', requireAuth, requireSparksRole('support'), async (req, res) => {
   try {
     const { disableEditMode } = require('../middleware/sessionAuth');
     disableEditMode(req.auth.sessionId);
@@ -425,12 +425,12 @@ router.post('/edit-mode/disable', requireAuth, async (req, res) => {
 
     res.json({ enabled: false });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Check edit mode status
-router.get('/edit-mode/status', requireAuth, async (req, res) => {
+router.get('/edit-mode/status', requireAuth, requireSparksRole('advisor'), async (req, res) => {
   const { isEditModeActive, getEditModeRemaining } = require('../middleware/sessionAuth');
   res.json({
     enabled: isEditModeActive(req.auth.sessionId),

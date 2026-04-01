@@ -22,7 +22,7 @@ router.get('/plans', requireSparksRole('support'), async (req, res) => {
     res.json(plans);
   } catch (err) {
     console.error('Billing plans error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -38,7 +38,7 @@ router.get('/company/:companyId', requireSparksRole('support'), async (req, res)
     res.json({ subscription, invoices });
   } catch (err) {
     console.error('Company billing error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -82,7 +82,7 @@ router.post('/company/:companyId/subscribe', requireSparksRole('admin'), async (
     res.json(sub);
   } catch (err) {
     console.error('Subscribe error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -103,7 +103,7 @@ router.post('/company/:companyId/cancel', requireSparksRole('admin'), async (req
     res.json({ success: true, cancelled_at: new Date() });
   } catch (err) {
     console.error('Cancel error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -136,7 +136,7 @@ router.post('/company/:companyId/invoice', requireSparksRole('admin'), async (re
     res.json(invoice);
   } catch (err) {
     console.error('Create invoice error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -154,7 +154,7 @@ router.post('/invoice/:invoiceId/pay', requireSparksRole('admin'), async (req, r
     res.json({ success: true, paid_at: new Date() });
   } catch (err) {
     console.error('Pay invoice error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -197,7 +197,7 @@ router.get('/revenue', requireSparksRole('support'), async (req, res) => {
     });
   } catch (err) {
     console.error('Revenue error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
