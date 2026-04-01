@@ -347,7 +347,7 @@ module.exports = function(db) {
     const { id } = req.params;
     try {
       const acks = await getAcknowledgments(id);
-      const completed = acks.filter(a => a.status === 'completed').length;
+      const completed = acks.filter(a => a.status === 'signed').length;
       res.json({ acknowledgments: acks, completed, total: acks.length });
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch acknowledgments' });

@@ -239,6 +239,8 @@ router.post('/login', async (req, res) => {
       is_admin: false,
       role_level: person.role_level || 1,
       trade: person.trade || null,
+      company_id: person.company_id || null,
+      sparks_role: person.sparks_role || null,
       user_agent: req.headers['user-agent'],
       ip_address: req.ip,
     });

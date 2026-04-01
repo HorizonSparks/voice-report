@@ -10,7 +10,8 @@ router.post('/login', async (req, res) => {
     const { pin } = req.body;
     if (!pin) return res.status(400).json({ error: 'PIN required' });
 
-    const adminPin = process.env.ADMIN_PIN || '12345678';
+    const adminPin = process.env.ADMIN_PIN;
+    if (!adminPin) return res.status(503).json({ error: 'Server misconfigured: ADMIN_PIN not set' });
 
     if (pin === adminPin) {
       // Admin login — use sentinel admin ID (avoids null person_id edge cases)

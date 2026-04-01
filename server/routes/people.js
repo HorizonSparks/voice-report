@@ -79,8 +79,19 @@ router.post('/', requireAuth, requireSparksEditMode, requireRoleLevel(3), async 
 });
 
 // Update person — self or supervisor+
+// SECURITY: Strip privileged fields for self-edits (prevent self-promotion)
 router.put('/:id', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('id', 3), async (req, res) => {
   try {
+    // SECURITY: Block self-promotion — strip privileged fields for self-edits
+    const isSelfEdit = req.params.id === req.auth.person_id;
+    const isAdmin = req.auth.is_admin || req.auth.sparks_role === 'admin';
+    if (isSelfEdit && !isAdmin) {
+      delete req.body.role_level;
+      delete req.body.is_admin;
+      delete req.body.sparks_role;
+      delete req.body.status;
+      delete req.body.company_id;
+    }
     const result = await (req.db || DB).people.update(req.params.id, req.body);
     if (!result) return res.status(404).json({ error: 'Person not found' });
     res.json(result);

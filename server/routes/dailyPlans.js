@@ -12,7 +12,7 @@ async function enrichWithJsaStatus(tasks, date, companyId, db) {
     let jsaQuery = "SELECT id, person_id, crew_members, form_data, jsa_number FROM jsa_records WHERE date = $1 AND status != 'rejected'";
     const jsaParams = [date];
     if (companyId) { jsaParams.push(companyId); jsaQuery += ` AND company_id = $${jsaParams.length}`; }
-    const jsas = (await (req.db || DB).db.query(jsaQuery, jsaParams)).rows;
+    const jsas = (await (db || DB).db.query(jsaQuery, jsaParams)).rows;
     return tasks.map(task => {
       if (!task.assigned_to) return { ...task, jsa_status: 'unknown' };
       const personJsas = jsas.filter(j => {
