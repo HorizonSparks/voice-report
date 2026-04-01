@@ -111,7 +111,7 @@ export default forwardRef(function PeopleView({ activeTrade, activeRoleLevels, o
   };
 
   const startNew = () => {
-    setForm({ name: '', pin: '', template_id: '', role_title: '', role_level: 1, personal_context: {} });
+    setForm({ name: '', pin: '', template_id: '', role_title: '', role_level: 1, personal_context: {}, _selectedTrade: activeTrade || '' });
     setEditing('new');
     setShowMessages(false);
   };
