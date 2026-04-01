@@ -302,8 +302,8 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
       {/* Back button for internal CC navigation */}
       {screen !== "dashboard" && (
         <Box sx={{ px: 2, mb: 1 }}>
-          <Button startIcon={<ArrowBackIcon />} onClick={handleBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
-            Back
+          <Button onClick={handleBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
+            ← Back
           </Button>
         </Box>
       )}
