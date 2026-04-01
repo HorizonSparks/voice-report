@@ -1,0 +1,136 @@
+{
+  "trade": "Industrial Erection",
+  "category": "quality_inspection",
+  "description": "Erection quality and inspection knowledge — bolt tension verification, structural weld inspection, alignment and plumbness tolerances, base plate and grouting inspection, coating inspection, and as-built documentation.",
+  "bolt_tension_verification": {
+    "turn_of_nut_inspection": {
+      "method": "After snug-tight, verify rotation marks show correct additional turn. Crayon or paint mark on nut and steel before turning.",
+      "required_turn": {
+        "bolt_length_up_to_4D": "1/3 turn (120 degrees)",
+        "bolt_length_4D_to_8D": "1/2 turn (180 degrees)",
+        "bolt_length_8D_to_12D": "2/3 turn (240 degrees)"
+      },
+      "inspection_rate": "10% of bolts in each connection minimum. All bolts in slip-critical connections.",
+      "rejection": "If any bolt in sample fails, inspect all bolts in that connection."
+    },
+    "TC_bolt_inspection": {
+      "method": "Visual — verify spline has sheared off on every TC bolt.",
+      "unshearedspline": "Bolt is NOT tensioned. Must be replaced or retightened until spline shears.",
+      "inspection_rate": "100% visual — every TC bolt must have sheared spline."
+    },
+    "DTI_inspection": {
+      "method": "Insert 0.005 inch feeler gauge into DTI gaps. Count how many gaps refuse the gauge.",
+      "acceptance": "Minimum number of gaps refusing gauge depends on bolt diameter. Typically: 3/4 inch bolt = 3 of 4 gaps refuse, 7/8 inch = 3 of 5, 1 inch = 4 of 6.",
+      "inspection_rate": "10% minimum for pretensioned. 100% for slip-critical."
+    },
+    "Skidmore_Wilhelm": {
+      "description": "Bolt tension calibrator. Measures actual tension (kips) produced by the installation method.",
+      "use": "Calibrate torque wrenches. Verify bolt lot characteristics. Daily calibration for calibrated wrench method.",
+      "procedure": "Install representative bolt from the lot into Skidmore. Apply torque or turns. Read tension. Compare to RCSC Table for minimum tension.",
+      "record": "Log bolt lot number, manufacturer, date, calibration results. Required documentation."
+    },
+    "common_issues": {
+      "under_tensioned": "Most common problem. Cause: insufficient turns, worn TC wrench, wrong torque value, friction variation.",
+      "over_tensioned": "Can break bolt or strip threads. More common with A490 (more brittle). Watch for thread deformation.",
+      "missing_washers": "Hardened washer required under turned element (nut or bolt head). Without washer, nut digs into steel surface and galls.",
+      "wrong_bolt_length": "Bolt too short: insufficient thread engagement. Bolt too long: nut bottoms on thread runout. Verify 2-3 threads show past nut."
+    }
+  },
+  "structural_weld_inspection": {
+    "visual_VT": {
+      "performed_on": "ALL structural welds. 100% visual inspection required by AWS D1.1.",
+      "acceptance_criteria": {
+        "cracks": "NONE permitted. Any crack is reject.",
+        "undercut": "1/32 inch max for primary members. 1/16 inch max for secondary members.",
+        "porosity": "Sum of visible porosity diameter shall not exceed 3/8 inch in any linear inch or 3/4 inch in any 12 inches.",
+        "fillet_weld_size": "Shall meet or exceed specified size. Undersize by more than 1/16 inch = reject.",
+        "fillet_weld_profile": "Shall be convex or flat. Excessively concave fillet = reject (throat is undersize).",
+        "overlap": "Not permitted. Weld metal rolling over base metal without fusion.",
+        "arc_strikes": "Not permitted on primary tension members. Grind smooth on other members.",
+        "weld_length": "Shall meet drawing dimension +/- 1/2 inch."
+      },
+      "tools": "Fillet weld gauge (set of gauges or multi-gauge), flashlight, magnifying glass (10x for cracks), AWS weld gauge."
+    },
+    "ultrasonic_UT": {
+      "performed_on": "Complete Joint Penetration (CJP) welds — typically beam flange-to-column moment connections.",
+      "standard": "AWS D1.1 Chapter 6 Part F. Acceptance criteria based on indication rating vs rejection level.",
+      "inspector_qualification": "AWS CWI (Certified Welding Inspector) for visual. ASNT Level II for UT.",
+      "timing": "UT inspection after 48 hours for A36/A992 steel (to allow delayed hydrogen cracking to develop, if any). Immediate UT acceptable for preheat-controlled joints."
+    },
+    "magnetic_particle_MT": {
+      "performed_on": "Fillet welds, partial penetration welds, and base metal when specified.",
+      "use": "Detects surface and near-surface cracks, particularly in fillet weld toes and HAZ.",
+      "method": "Yoke method (AC or DC electromagnetic yoke). Apply magnetic particles (dry or wet fluorescent). Crack interrupts magnetic field and particles cluster at crack."
+    },
+    "dye_penetrant_PT": {
+      "performed_on": "Non-magnetic materials (stainless steel, aluminum) or where MT is not practical.",
+      "procedure": "Clean surface, apply penetrant, dwell time (10-30 minutes), remove excess, apply developer, inspect for indications.",
+      "limitation": "Surface must be clean and dry. Cannot detect subsurface defects. Temperature-sensitive (40-125F)."
+    }
+  },
+  "alignment_tolerances_AISC": {
+    "column_plumbness": {
+      "individual_column": "1/500 of column height. Maximum 1 inch toward building exterior, 2 inches total.",
+      "column_to_column": "Variation from plumb between adjacent columns: 1/500 of distance between columns.",
+      "measurement": "Transit, total station, or laser plumb. Measure at column top. Reference to baseline at column base."
+    },
+    "beam_elevation": {
+      "tolerance": "+/- 3/8 inch from theoretical elevation for members up to 20 feet above base.",
+      "additional": "Plus 1/16 inch for each additional 10 feet of elevation.",
+      "measurement": "Level survey from benchmark. Measure at each end and midspan."
+    },
+    "beam_sweep": {
+      "tolerance": "Lateral offset from straight: 1/8 inch per 10 feet of beam length. Maximum 1/2 inch.",
+      "measurement": "String line or laser along beam flange."
+    },
+    "column_base_plate_position": {
+      "tolerance": "+/- 1/4 inch from design grid line.",
+      "elevation": "+/- 1/8 inch from design elevation (before grouting).",
+      "measurement": "Survey from control points."
+    },
+    "anchor_bolt_position": {
+      "tolerance": "+/- 1/4 inch from design location in plan.",
+      "elevation": "+/- 1/2 inch from design projection above concrete.",
+      "CRITICAL": "Measure anchor bolt pattern BEFORE concrete sets. After concrete is set, you cannot move them. Template is essential."
+    }
+  },
+  "grouting_inspection": {
+    "before_pour": {
+      "concrete_surface": "Roughened (chipped or sandblasted), clean, free of oil/grease/laitance. Saturated surface dry (SSD).",
+      "forms": "Leak-proof. Waxed plywood or steel. No gaps — epoxy grout will find and leak through any gap.",
+      "baseplate_preparation": "Bottom of baseplate clean, free of mill scale, paint, oil. Some specs require blast cleaning.",
+      "temperature": "Concrete and baseplate between 40F and 90F for epoxy grout. Grout materials conditioned to same range.",
+      "anchor_bolts": "Protected from grout (wrap with tape or foam). Anchor bolt holes in baseplate protected."
+    },
+    "during_pour": {
+      "mixing": "Per manufacturer instructions. Correct ratio of resin, hardener, aggregate. Timed mixing sequence.",
+      "pour_technique": "Pour from one side only. Grout must flow under baseplate to opposite side. No trapped air.",
+      "verification": "Grout should come up through vent holes on opposite side. If not, void exists — continue pouring.",
+      "pot_life": "Monitor pot life — do not use grout past its working time. In hot weather, pot life can be as short as 15 minutes."
+    },
+    "after_cure": {
+      "cure_time": "Per manufacturer. Typically 24-72 hours to full cure depending on temperature.",
+      "tap_test": "Tap grout and baseplate with hammer. Solid sound = good bond. Hollow = void. Mark and repair voids.",
+      "anchor_bolt_torque": "After grout is fully cured, torque anchor bolts to specification. Re-check baseplate level after torquing.",
+      "documentation": "Record: grout product, lot number, mix date/time, ambient temperature, grout temperature, pour start/finish time, cure start time, tap test results, anchor bolt torque values."
+    }
+  },
+  "coating_inspection": {
+    "surface_preparation": {
+      "verification": "Visual comparison to SSPC/NACE standards (photographic comparators). SP6 = commercial, SP10 = near-white, SP5 = white metal.",
+      "profile": "Measure anchor profile depth with Testex tape or profilometer. Typically 1.5-3.0 mils for most coating systems.",
+      "cleanliness": "No dust, oil, moisture, or blast debris on surface before coating. Salt contamination test (Bresle patch) for critical applications."
+    },
+    "DFT_measurement": {
+      "wet_film": "Measure during application with wet film gauge (notched gauge). Allows immediate correction.",
+      "dry_film": "Measure after cure with magnetic gauge (Positector, Elcometer) for steel substrates.",
+      "spot_measurements": "Minimum 3 measurements per area. Average must meet spec. No single reading below 80% of specified minimum.",
+      "each_coat": "Measure DFT after EACH coat — primer, intermediate, finish. Cannot verify primer thickness after topcoat is applied."
+    },
+    "adhesion_testing": {
+      "cross_hatch": "ASTM D3359. Cut X-pattern, apply tape, pull tape. Rate adhesion on 0-5 scale. 4B or 5B = acceptable.",
+      "pull_off": "ASTM D4541. Glue dolly to coating, pull with calibrated adhesion tester. Minimum pull-off value per spec (typically 200-500 psi)."
+    },
+    "field_touch_up": "After erection, all bolted connections, field welds, and damage must be touch-up coated. Match existing system. Surface prep (power tool cleaning SSPC SP11 minimum) required before touch-up."
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "trade": "Millwright",
+  "category": "specialty",
+  "description": "Advanced millwright knowledge — centrifugal pump internals, positive displacement pumps, compressor types in depth, steam turbines, cooling tower equipment, agitators, valve actuators, precision measurement, thermal growth, oil mist lubrication, condition monitoring programs, and equipment commissioning.",
+  "centrifugal_pump_internals": {
+    "impeller_types": {
+      "closed": {"description": "Shrouds on both sides of vanes. Most efficient. Most common in process pumps.", "wear_rings": "Front and back wear rings control leakage from discharge to suction. Clearance: 0.010-0.020 inch diametral for new (API 610). Replace when clearance exceeds 2x original."},
+      "semi_open": {"description": "Shroud on back only. Handles light solids. Less efficient than closed.", "clearance": "Front clearance between impeller vanes and casing set at 0.015-0.020 inch. Adjust by shimming bearing housing."},
+      "open": {"description": "No shrouds. For heavy slurries, solids, fibrous material. Least efficient.", "use": "Waste water, pulp and paper, mining slurries."}
+    },
+    "wear_rings": {
+      "purpose": "Replaceable ring that controls internal leakage. Cheaper to replace a ring than a casing or impeller.",
+      "materials": {"standard": "316SS case ring, 316SS impeller ring (different hardness to prevent galling)", "hard": "Stellite overlay or chrome oxide coating for abrasive service", "non_metallic": "Carbon-filled PTFE, PEEK for chemical service or where galling is a concern"},
+      "clearance_check": "Measure ring ID and impeller hub OD. Difference = diametral clearance. API 610 new clearance: 0.010 + (ring diameter in inches x 0.001). Example: 6 inch ring = 0.016 inch minimum.",
+      "replacement": "Press out old ring (if interference fit) or heat casing and shrink-fit new ring. Verify final clearance after installation. Some rings are held by set screws or pins — check before pressing."
+    },
+    "NPSH": {
+      "description": "Net Positive Suction Head — the energy available at pump suction above vapor pressure of the liquid.",
+      "NPSHa": "Available NPSH — determined by system (suction vessel pressure, liquid level, pipe friction loss, vapor pressure). This is what the SYSTEM provides.",
+      "NPSHr": "Required NPSH — determined by pump design (on pump curve). This is what the PUMP needs.",
+      "rule": "NPSHa must be greater than NPSHr by a margin (typically 3 feet or 10%, whichever is greater). If NPSHa < NPSHr, pump cavitates.",
+      "improving_NPSHa": "Raise suction vessel level, increase suction vessel pressure, reduce suction pipe friction (larger pipe, fewer elbows, shorter run), lower liquid temperature, lower pump elevation relative to suction source.",
+      "practical_note": "NPSH problems are the most common pump application issue. If a pump cavitates, the first thing to check is NPSHa — not the pump itself."
+    },
+    "minimum_flow": {
+      "why": "Below minimum flow, the pump recirculates internally. Energy stays in the liquid as heat. Temperature rises. In extreme cases, liquid flashes to vapor inside pump — catastrophic damage.",
+      "protection": "Minimum flow bypass line from discharge back to suction source (NOT to suction piping). Continuous bypass or automatic bypass valve that opens when flow drops.",
+      "rule": "Never deadhead a centrifugal pump (run with discharge valve closed). Even for a few minutes, damage occurs."
+    },
+    "thrust_management": {
+      "source": "Pressure difference between impeller front and back creates axial thrust toward suction.",
+      "balance_methods": {"back_vanes": "Vanes on back of impeller reduce pressure behind impeller.", "balance_holes": "Holes through impeller hub equalize pressure.", "balance_drum": "Separate drum on shaft with close clearance — creates counter-thrust. Used on multistage pumps.", "thrust_bearing": "Absorbs residual thrust. Tilting pad thrust bearing in API 610 pumps."},
+      "failure_indicator": "If thrust bearing fails repeatedly, suspect worn balance device (drum, holes plugged) or changed operating conditions."
+    }
+  },
+  "positive_displacement_pumps": {
+    "reciprocating": {
+      "types": {"plunger": "Solid plunger, packing seal. High pressure (up to 40,000 psi). Metering, hydraulic, high-pressure wash.", "piston": "Hollow piston with rings. Moderate pressure. Larger displacement.", "diaphragm": "Flexible diaphragm isolates process from pump mechanism. For hazardous, corrosive, or sterile fluids."},
+      "valves": "Suction and discharge check valves control flow direction. Valve failure = loss of pump capacity. Most common reciprocating pump maintenance item.",
+      "pulsation": "Reciprocating pumps produce pulsating flow. Pulsation dampener (gas-charged bladder) smooths flow and protects piping.",
+      "common_issues": "Packing leakage (normal wear, adjust or replace), valve failure (replace valve and seat), pulsation damage to piping (install dampener, check gas charge)"
+    },
+    "gear_pump": {"description": "Two meshing gears trap and move fluid. Simple, reliable.", "use": "Lube oil, hydraulic, fuel, viscous fluids.", "wear": "Gears and housing wear over time — clearance increases, flow decreases. Measure flow vs original spec."},
+    "screw_pump": {"description": "Two or three intermeshing screws move fluid axially. Smooth, non-pulsating flow.", "use": "Lube oil systems, fuel transfer, viscous fluids. IMO, Leistritz, Bornemann brands."},
+    "progressive_cavity": {"description": "Single helical rotor in double-helix stator. Handles solids, high viscosity, shear-sensitive fluids.", "use": "Waste water, sludge, food processing, oil production.", "stator_wear": "Rubber stator wears against metal rotor. Stator is the primary wear item — replace when flow drops or pressure capacity decreases.", "NEVER": "Never run dry — stator rubber overheats and destroys instantly without fluid lubrication."}
+  },
+  "compressor_types_detailed": {
+    "centrifugal": {
+      "description": "Multiple impeller stages compress gas by converting velocity to pressure.",
+      "components": "Impellers, diffusers, return channels, balance piston, labyrinth seals, journal bearings, thrust bearing, dry gas seals (modern) or oil seals (older).",
+      "surge": {"description": "Flow reversal through compressor when flow drops below minimum. Causes violent vibration, thrust reversal, and rapid temperature rise.", "protection": "Anti-surge controller with recycle valve. Opens recycle valve before surge line is reached.", "detection": "Surge is detected by rapid fluctuation in discharge pressure and surge in motor current. Vibration spikes dramatically."},
+      "performance_map": "Compressor curve shows head vs flow for each speed. Operating point must stay to the right of surge line and below stonewall (choke) line.",
+      "dry_gas_seals": {"description": "Non-contacting seal using gas film between rotating and stationary faces. Replaced oil seals on most modern compressors.", "seal_gas": "Clean, dry gas supplied at pressure above process gas pressure. Filters must be maintained — contamination destroys seal faces.", "monitoring": "Primary seal leakage rate is key indicator. Increasing leakage = seal face degradation. Trend daily."}
+    },
+    "reciprocating": {
+      "description": "Piston in cylinder compresses gas. Capacity controlled by unloading pockets, clearance adjustment, or speed.",
+      "components": "Piston, piston rings, rider bands, cylinder, suction and discharge valves, crosshead, connecting rod, crankshaft, distance piece, packing.",
+      "valve_monitoring": "Each valve has a thermowell or temperature indicator. Hot valve = leaking valve. Compare temperature across all valves — outlier indicates problem.",
+      "rod_packing": "Segmented rings around piston rod prevent gas leakage from cylinder to distance piece. Wear indicator: rod packing leakage rate. Replace packing when leakage exceeds limit.",
+      "rod_drop": {"description": "Piston rider band wears, piston drops in cylinder. Measured with proximity probe.", "limit": "Typically 0.020-0.030 inch maximum. Excessive rod drop = piston contacting cylinder = catastrophic.", "monitoring": "Continuous rod drop monitoring system on all API 618 compressors."},
+      "distance_piece": "Compartment between cylinder and crankcase. Single compartment for non-hazardous gas. Double compartment (with purge) for hazardous/toxic gas to prevent gas migration to crankcase."
+    },
+    "screw": {
+      "description": "Male and female helical rotors compress gas between rotor lobes and casing.",
+      "types": {"oil_flooded": "Oil injected for sealing, cooling, lubrication. Oil must be separated from discharge gas. Most common for air compressors and refrigeration.", "oil_free": "No oil injection. Timing gears keep rotors from contacting. Used where oil contamination is unacceptable (food, pharma, instrument air)."},
+      "maintenance": "Oil-flooded: change oil and filters on schedule. Monitor oil temperature and separator element dP. Oil-free: inspect timing gears and bearings on schedule. Monitor vibration and discharge temperature."
+    }
+  },
+  "steam_turbines": {
+    "overview": "Converts steam energy to mechanical rotation. Drives pumps, compressors, generators, fans.",
+    "components": {
+      "nozzles": "Convert steam pressure to velocity (impulse) or both pressure and velocity (reaction).",
+      "blading": "Rotating blades on rotor extract energy from steam. Stationary nozzles/diaphragms direct steam to blades.",
+      "governor": "Controls turbine speed by adjusting steam admission. Woodward, Honeywell, Triumph brands.",
+      "trip_system": "Overspeed trip (typically 110% of rated speed), low oil pressure trip, high vibration trip, axial displacement trip. ALL trips must be tested periodically.",
+      "barring_gear": "Slow-turning device that rotates turbine rotor during startup warmup and cooldown to prevent shaft bowing from uneven cooling. NEVER stop barring gear on a hot turbine.",
+      "labyrinth_seals": "Non-contacting seals at shaft penetrations. Close-clearance fins create pressure drop. Gland steam or extraction steam prevents air inleakage.",
+      "bearings": "Journal bearings (babbitt-lined) and thrust bearing (tilting pad). Oil-lubricated from shared lube oil system."
+    },
+    "startup": [
+      "Verify lube oil system running, oil pressure and temperature normal",
+      "Start barring gear — rotate slowly for warmup period (per manufacturer — often 2-4 hours for cold start)",
+      "Warm steam lines — open drain valves, slowly open steam supply valve, drain condensate",
+      "Admit steam slowly — increase speed gradually per startup curve",
+      "Trip test at intermediate speed (before reaching operating speed on first start)",
+      "Accelerate through critical speeds quickly — do not hold at critical speed",
+      "Bring to operating speed, verify governor control",
+      "Monitor vibration, bearing temperatures, steam temperatures throughout startup"
+    ],
+    "critical_speed": "Speed at which rotor natural frequency equals rotating speed. Vibration amplifies dramatically. Most turbines operate ABOVE first critical speed — must accelerate through it quickly during startup and decelerate through it quickly during shutdown."
+  },
+  "cooling_tower_equipment": {
+    "fans": {"types": "Induced draft (fan on top, pulling air up) or forced draft (fan on bottom, pushing air up). Industrial cooling towers are mostly induced draft.", "blades": "FRP (fiberglass), aluminum, or stainless steel. Adjustable pitch. Blade angle affects air flow and motor load.", "vibration_switch": "Required on all cooling tower fans. Excessive vibration from ice accumulation, blade damage, or gearbox failure. Switch trips fan motor."},
+    "gearbox": {"type": "Right-angle gear reducer. Motor shaft horizontal, fan shaft vertical. Ratio typically 4:1 to 8:1.", "oil": "Synthetic gear oil (PAO) for wide temperature range. Level sight glass — check regularly. Oil analysis quarterly.", "common_failure": "Gearbox failure is the most common cooling tower mechanical failure. Vibration monitoring and oil analysis are the best predictors."},
+    "drive_shaft": {"description": "Connects motor to gearbox. Carbon fiber or steel. Must be dynamically balanced.", "alignment": "Angular alignment between motor, drive shaft, and gearbox must be within manufacturer tolerance. Misalignment causes U-joint wear and vibration."}
+  },
+  "valve_actuators": {
+    "electric": {"brands": "Rotork (IQ series), Limitorque (MX/QX), Auma, Bettis (Emerson)", "types": "Multi-turn (gate, globe) or quarter-turn (ball, butterfly)", "setup": "Torque limits, position limits, speed, local/remote control. Configured at commissioning.", "maintenance": "Grease gearbox per schedule. Test torque switch operation. Check handwheel operation (must have manual override)."},
+    "pneumatic": {"types": "Diaphragm (spring-return or double-acting) or piston (cylinder) actuator.", "positioner": "I/P converter + positioner converts 4-20mA control signal to pneumatic pressure to move actuator. Fisher DVC, ABB TZIDC, Siemens SIPART.", "fail_position": "Spring-return actuators have a defined fail position: fail-open (FO), fail-closed (FC), or fail-last (FL). CRITICAL for safety — process valves must fail to safe position on air loss."},
+    "hydraulic": {"use": "Where very high force is needed — large gate valves, subsea valves, emergency shutdown valves.", "brands": "Bettis, Rotork, Flowserve", "accumulator": "Stores hydraulic energy for emergency closure. Spring or gas-charged. Must be tested regularly."}
+  },
+  "precision_measurement": {
+    "micrometers": {"outside": "Measures shaft diameter, bearing housing bore (with bore micrometer adapters). Resolution: 0.0001 inch.", "inside": "Measures bore diameter. Telescoping gauge + outside micrometer or dedicated bore micrometer.", "depth": "Measures depth of keyways, counterbores, recesses.", "calibration": "Check zero against gauge block before every use. Calibrate annually per shop schedule."},
+    "bore_gauges": {"description": "Spring-loaded contact gauge for measuring bore diameter. Transfer measurement to outside micrometer or comparator.", "use": "Bearing housing bores, cylinder bores, seal chamber bores.", "accuracy": "0.0001 inch when properly used."},
+    "dial_indicators": {"AGD_types": "Group 1 (0.250 range, 0.001 resolution), Group 2 (1.000 range, 0.001 resolution), Group 3 (0.025 range, 0.0001 resolution for precision work)", "test_indicators": "Lever type. For runout measurement where plunger indicator cannot reach. Resolution 0.0005 or 0.0001 inch."},
+    "laser_measurement": {"description": "Laser tracker or laser distance meter for large-scale dimensional verification.", "use": "Turbine alignment, compressor train alignment, large equipment base elevation verification.", "brands": "Leica, FARO, API"}
+  },
+  "thermal_growth": {
+    "description": "When equipment heats up from ambient to operating temperature, metal expands. Shafts, casings, and supports grow. This changes alignment.",
+    "calculation": "Growth (inches) = Length (inches) x Temperature Rise (F) x Coefficient of Expansion. Steel: 6.5 x 10^-6 per F. Cast iron: 5.9 x 10^-6 per F.",
+    "example": "Motor bearing centerline is 18 inches above base. Operating temp rise: 100F. Growth = 18 x 100 x 6.5E-6 = 0.012 inch. Motor grows UP 0.012 inch. Set motor LOW by 0.012 inch at cold alignment.",
+    "hot_alignment_check": "After equipment reaches operating temperature, take alignment readings to verify actual thermal growth matches calculated. Adjust cold alignment targets if actual differs from calculated.",
+    "practical_note": "Thermal growth is the most commonly overlooked factor in alignment. A pump running at 400F process temperature will grow significantly more than the motor at 150F. If you align perfectly cold, it will be misaligned when hot. ALWAYS account for thermal growth."
+  },
+  "condition_monitoring": {
+    "vibration_program": {
+      "route_based": "Walk a vibration route monthly. Measure overall velocity at each bearing in H, V, A directions. Trend over time.",
+      "online": "Permanently mounted sensors with continuous monitoring. For critical equipment (turbines, large compressors). Alerts on threshold exceedance.",
+      "acceptance_criteria": "ISO 10816 or API standards. Trend is more important than absolute value. Sudden change = investigate immediately."
+    },
+    "oil_analysis_program": {
+      "routine": "Sample quarterly for general equipment, monthly for critical. Same sample point, same conditions each time.",
+      "tests": "Viscosity, water content, particle count, wear metals, acid number, oxidation",
+      "trending": "Plot results over time. Look for trends, not just single values. Sudden change in any parameter = investigate."
+    },
+    "thermography": {
+      "equipment": "Scan bearings, couplings, electrical connections, steam traps.",
+      "bearing_temperature": "Compare similar bearings on same machine. One hot = bearing problem. Both hot = overloaded or lubrication issue.",
+      "frequency": "Quarterly for general equipment. Monthly for critical."
+    },
+    "ultrasound": {
+      "use": "Early bearing defect detection (before vibration shows it), compressed air leak detection, steam trap testing, electrical arcing/corona detection.",
+      "advantage": "Detects problems earlier than vibration analysis. Bearing defects detectable 3-6 months before vibration change."
+    }
+  },
+  "commissioning": {
+    "pre_commissioning": [
+      "Verify all construction is complete — no temporary supports, all guards installed",
+      "Verify alignment record is complete and within tolerance",
+      "Verify bearing lubrication — correct oil level or grease fill",
+      "Verify coupling installation — correct gap, guard installed",
+      "Verify rotation direction — bump motor uncoupled, verify correct rotation",
+      "Verify all auxiliaries — lube oil system, seal flush system, cooling water",
+      "Verify instrumentation — vibration probes, temperature sensors, pressure gauges",
+      "Verify LOTO cleared and all isolation removed"
+    ],
+    "initial_startup": [
+      "Start lube oil system (if separate). Verify oil pressure and flow.",
+      "Start seal flush or barrier fluid system.",
+      "Open suction valve fully (pumps). Crack open discharge valve.",
+      "Start equipment. Immediately check: rotation correct, no unusual noise, no vibration, bearing temperatures stable.",
+      "Slowly open discharge valve to operating point.",
+      "Monitor for minimum 30 minutes: vibration, bearing temperatures, seal leakage, motor amps.",
+      "Record all commissioning data — baseline for future comparison."
+    ],
+    "performance_test": "Run equipment at design conditions. Verify flow, pressure, power consumption match data sheet. Record as performance baseline.",
+    "common_mistake": "Starting equipment without priming the pump or checking oil level. Dry start = instant damage. The pre-commissioning checklist exists for a reason — follow every step."
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "trade": "Industrial Erection",
+  "category": "codes_standards",
+  "description": "Codes and standards governing steel erection — AISC, AWS D1.1, RCSC bolt specification, OSHA Subpart R, SSPC coating standards, and ASME rigging standards.",
+  "AISC": {
+    "Code_of_Standard_Practice": {
+      "description": "AISC 303 — THE reference for fabrication and erection tolerances, responsibilities, and practices.",
+      "key_sections": {
+        "section_6": "Fabrication — mill tolerances, shop tolerances, cambering, bolt holes.",
+        "section_7": "Erection — erection tolerances, plumbing, temporary bracing, field connections.",
+        "table_7_1": "Erection tolerances — column plumbness, beam elevation, sweep. The specific numbers inspectors measure against."
+      },
+      "practical_note": "When an inspector measures your column plumbness, they are checking against AISC 303 Table 7.1. Know these numbers."
+    },
+    "AISC_360": {
+      "description": "Specification for Structural Steel Buildings. Design standard — engineers use this.",
+      "relevance_to_field": "Chapter J covers connection design that the field must execute. Chapter N covers quality control and quality assurance.",
+      "inspection_categories": {"Category_A": "Visual inspection by contractor QC. Most connections.", "Category_B": "Visual inspection plus UT/MT/PT by independent QA. CJP welds on moment connections."}
+    },
+    "AISC_341": {"description": "Seismic Provisions for Structural Steel Buildings. Applies in seismic design categories C, D, E, F.", "field_impact": "Demand-critical welds, protected zones (no holes, no attachments), special connection requirements. More stringent welding and inspection."},
+    "AISC_358": {"description": "Prequalified Connections for Special and Intermediate Steel Moment Frames.", "field_impact": "Defines approved moment connection designs — reduced beam section (dogbone), bolted unstiffened/stiffened extended end plate, etc. Welder must follow these details exactly."}
+  },
+  "AWS_D1_1": {
+    "description": "Structural Welding Code — Steel. Governs ALL structural welding on steel buildings and structures.",
+    "key_provisions": {
+      "WPS_qualification": "Section 4. All welding must be per a qualified WPS. Prequalified or qualification-tested.",
+      "welder_qualification": "Section 4. All welders must be tested and qualified for the positions and processes they will use. Qualification valid per Section 4 rules (continuity typically requires welding within 6 months).",
+      "inspection": "Section 6. Visual inspection criteria, UT acceptance criteria, RT acceptance criteria. This is what the inspector reads when deciding accept or reject.",
+      "prequalified_joints": "Section 3. Joint details that are accepted without testing. Bevel angles, root openings, root faces, effective throats. Most field joints use prequalified details."
+    },
+    "visual_acceptance": {
+      "cracks": "None. Any crack = reject.",
+      "fusion": "Complete fusion required between weld and base metal and between weld passes.",
+      "undercut": "Primary members: 1/32 inch max. Secondary: 1/16 inch max.",
+      "porosity": "CJP groove: shall not exceed criteria in Table 6.1. Fillet: sum of diameters shall not exceed 3/8 inch in any linear inch.",
+      "profiles": "Fillet: convex or flat. Groove: flush to 1/8 inch reinforcement max (butt joints)."
+    },
+    "practical_note": "Every structural welder should have access to AWS D1.1 on the job. When an inspector rejects a weld, they will cite the specific D1.1 clause. Knowing the code helps you dispute questionable rejections and avoid legitimate ones."
+  },
+  "RCSC": {
+    "description": "Research Council on Structural Connections — Specification for Structural Joints Using High-Strength Bolts.",
+    "key_provisions": {
+      "snug_tight": "Section 8.1. Plies in firm contact. A few impacts of impact wrench or full effort of one person.",
+      "pretensioned": "Section 8.2. Minimum tension per Table 8.1. Methods: turn-of-nut, calibrated wrench, TC bolt, DTI.",
+      "slip_critical": "Section 8.3. Same tensioning as pretensioned PLUS faying surface requirements (Class A or B slip coefficient).",
+      "Table_8_1": {
+        "description": "Minimum bolt pretension (kips)",
+        "A325_3_4": 28, "A325_7_8": 39, "A325_1": 51, "A325_1_1_8": 56, "A325_1_1_4": 71,
+        "A490_3_4": 35, "A490_7_8": 49, "A490_1": 64, "A490_1_1_8": 80, "A490_1_1_4": 102
+      },
+      "installation": "Bolts must be installed from snug-tight condition. All bolts in a joint snugged before pretensioning begins. Pretensioning progresses systematically from most rigid part of joint outward.",
+      "reuse": "A325: may be reused if approved by Engineer of Record. A490: SHALL NOT be reused. TC bolts: single use only (spline is gone)."
+    },
+    "washers": {
+      "hardened": "F436 hardened washer required under the element being turned (nut or bolt head) for pretensioned and slip-critical.",
+      "beveled": "Required when outer face of bolted parts has slope greater than 1:20 from perpendicular to bolt axis.",
+      "DTI": "F959 Direct Tension Indicator washer is placed under the stationary element (not the turned element)."
+    }
+  },
+  "OSHA_1926_Subpart_R": {
+    "description": "Safety Standards for Steel Erection. OSHA 1926.750 through 1926.761.",
+    "key_rules": {
+      "1926_752": "Site layout and construction sequence. Erection plan, adequate access roads, firm footing for cranes.",
+      "1926_753": "Hoisting and rigging. Load charts, sling inspection, tag lines.",
+      "1926_754": "Structural steel assembly. Anchor bolts (min 4 per column), column stability, beam connection (min 2 bolts), double connections.",
+      "1926_755": "Column anchorage. Minimum 4 anchor bolts. Repair anchor bolts only with engineer approval.",
+      "1926_756": "Beams and columns. Plumbing-up by temporary bracing. Double connection procedures.",
+      "1926_757": "Open web steel joists. Erection bridging before releasing crane. Attachment before any load.",
+      "1926_760": "Fall protection. 100% protection above 15 feet for connectors (if qualified), 6 feet for all others. Controlled access zone option.",
+      "1926_761": "Training. All workers in steel erection must be trained in fall protection, connection procedures, hazard recognition."
+    },
+    "practical_note": "OSHA Subpart R is law, not a guideline. Violations result in fines (,000+ per serious violation) and potential criminal charges if a death occurs. Every ironworker foreman must know these rules."
+  },
+  "SSPC": {
+    "description": "Society for Protective Coatings (formerly Steel Structures Painting Council). Standards for surface preparation and coating.",
+    "surface_prep": {
+      "SP1": "Solvent cleaning. Remove oil, grease, dirt. Required before any blast cleaning.",
+      "SP2": "Hand tool cleaning. Wire brush, scraping, sanding. Minimum preparation — use only where better prep is not possible.",
+      "SP3": "Power tool cleaning. Grinders, wire wheels, needle guns. Better than SP2, not as good as blast.",
+      "SP6": "Commercial blast cleaning. 66% clean. Acceptable for many shop primers.",
+      "SP7": "Brush-off blast. Lightest blast — removes loose material only.",
+      "SP10": "Near-white blast. 95% clean. Standard for most industrial coating systems.",
+      "SP11": "Power tool cleaning to bare metal. Equivalent to near-white but by mechanical means. Used for field touch-up where blasting is not practical.",
+      "SP5": "White metal blast. 100% clean. Highest level. For immersion service or where spec demands it."
+    },
+    "SSPC_PA2": "Measurement of Dry Film Thickness with Magnetic Gauges. The procedure for DFT measurement — how many readings, where to take them, how to calculate compliance.",
+    "practical_note": "Surface preparation is 80% of coating success. The best paint in the world will fail on poorly prepared steel. Spend the time on prep."
+  },
+  "ASME_B30": {
+    "description": "Standards for cranes, hoists, rigging, and material handling.",
+    "key_volumes": {
+      "B30_5": "Mobile and Locomotive Cranes. Load charts, inspection, operation.",
+      "B30_9": "Slings. Rated capacities, inspection criteria, usage.",
+      "B30_10": "Hooks. Inspection, throat opening, twist, load rating.",
+      "B30_26": "Rigging Hardware. Shackles, links, rings, turnbuckles."
+    },
+    "signal_person": "ASME B30.5 defines standard hand signals. These are the signals used industry-wide. Qualification required per OSHA.",
+    "annual_inspection": "All cranes, slings, and rigging hardware must be inspected annually (or more frequently for heavy use). Documented inspection records required."
+  }
+}
