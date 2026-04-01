@@ -1,0 +1,99 @@
+{
+  "trade": "Industrial Erection",
+  "category": "materials",
+  "description": "Materials knowledge for ironworkers and erection crews — structural steel shapes, high-strength bolts, anchor bolts, welding consumables, coatings, grating, handrail, and miscellaneous metals used in industrial construction.",
+  "structural_steel": {
+    "shapes": {
+      "W_beams": {"description": "Wide flange beams. Most common structural member.", "designation": "W followed by nominal depth x weight per foot. Example: W12x26 = 12 inch deep, 26 lbs/ft.", "grades": "A992 (50 ksi yield) is standard for W shapes. Replaced A36 (36 ksi) for most applications."},
+      "HSS": {"description": "Hollow Structural Sections — round, square, or rectangular tubes.", "designation": "HSS followed by dimensions. Round: HSS6.625x0.250 (OD x wall). Rect: HSS8x4x3/8 (depth x width x wall).", "grades": "A500 Grade B (46 ksi) or Grade C (50 ksi). ASTM A1085 for improved properties."},
+      "angles": {"description": "L-shapes. Bracing, connections, miscellaneous framing.", "designation": "L followed by leg lengths x thickness. Example: L4x4x3/8.", "grade": "A36 standard."},
+      "channels": {"description": "C-shapes. Framing, stair stringers, miscellaneous.", "designation": "C or MC followed by depth x weight. Example: C10x20.", "grade": "A36 standard."},
+      "plates": {"description": "Flat stock. Base plates, gussets, stiffeners, connection plates.", "grades": "A36 (36 ksi), A572 Gr 50 (50 ksi). Use grade matching the connected member."},
+      "pipe": {"description": "Round pipe columns and bracing.", "grades": "A53 Gr B for standard, A106 Gr B for high-temperature service."}
+    },
+    "identification": "Steel members should have mill markings (heat number, grade). For unmarked steel, PMI (Positive Material Identification) may be required before welding."
+  },
+  "high_strength_bolts": {
+    "A325": {
+      "description": "Standard high-strength structural bolt. 120 ksi minimum tensile.",
+      "head_marking": "A325 and manufacturer mark on head. Three radial lines.",
+      "use": "Most structural connections in buildings and industrial structures.",
+      "installation": "Snug-tight, pretensioned, or slip-critical depending on connection type.",
+      "reuse": "A325 bolts CAN be reused if not damaged. Inspect threads and head."
+    },
+    "A490": {
+      "description": "Higher strength structural bolt. 150 ksi minimum tensile.",
+      "head_marking": "A490 on head. Not interchangeable with A325.",
+      "use": "Where A325 is insufficient — heavy connections, moment connections.",
+      "reuse": "A490 bolts SHALL NOT be reused (RCSC specification). One-time use only.",
+      "note": "A490 is more brittle than A325. Do not over-tighten. Galvanizing A490 is prohibited (hydrogen embrittlement risk)."
+    },
+    "TC_bolts": {
+      "description": "Tension Control bolt — has a splined end that shears off at the specified tension.",
+      "advantage": "No torque wrench needed. Electric shear wrench shears the spline at correct tension. Faster installation.",
+      "inspection": "Sheared spline = correct tension achieved. If spline doesn't shear, bolt is not tensioned — reject.",
+      "practical_note": "TC bolts are the fastest way to achieve pretensioned bolts in the field. Preferred for large connection bolt-up."
+    },
+    "DTI_washers": {
+      "description": "Direct Tension Indicator — washer with bumps that flatten under bolt tension.",
+      "use": "Verification of bolt tension. Place under bolt head or nut.",
+      "inspection": "Measure gap with feeler gauge. When bumps are compressed to specified gap (typically 0.005 inch), tension is achieved.",
+      "practical_note": "DTI washers plus feeler gauge is the most reliable field verification of bolt tension."
+    },
+    "installation_methods": {
+      "snug_tight": "Tighten with a few impacts of an impact wrench or full effort with a spud wrench. Plies in firm contact.",
+      "pretensioned": {
+        "turn_of_nut": "Snug-tight, then turn nut: 1/3 turn for bolt length up to 4D, 1/2 turn for 4D-8D, 2/3 turn for 8D-12D.",
+        "calibrated_wrench": "Torque wrench calibrated daily with Skidmore-Wilhelm bolt tension calibrator. Apply torque to specified value.",
+        "TC_bolt": "Use shear wrench — tighten until spline shears off.",
+        "DTI": "Tighten until DTI gap meets specification."
+      },
+      "slip_critical": "Same tensioning as pretensioned, but faying surfaces must meet Class A or B slip coefficient. No paint between plies unless qualified.",
+      "bolt_lot_testing": "Before installation, test a sample from each bolt lot in a Skidmore-Wilhelm to verify tension vs turns/torque relationship. Document results."
+    }
+  },
+  "anchor_bolts": {
+    "cast_in_place": {
+      "J_bolt": "J-shaped, cast into concrete during pour. Most common for equipment and columns.",
+      "L_bolt": "L-shaped. Used where J-bolt hook interferes with rebar.",
+      "headed_anchor": "Straight bolt with hex head or plate washer at bottom. Best pullout resistance.",
+      "template": "Use template from equipment drawing to set anchor bolt pattern before concrete pour. Check pattern BEFORE concrete sets — you cannot move them after.",
+      "projection": "Verify projection above concrete matches equipment drawing. Too short = cannot get nut on. Too long = thread damage."
+    },
+    "post_installed": {
+      "epoxy_anchor": "Drilled hole, filled with epoxy (Hilti HIT-RE 500 V3, Simpson SET-3G), anchor rod inserted. Wait for cure before loading.",
+      "expansion_anchor": "Mechanical wedge expansion (Hilti HSL-3, Kwik Bolt). Immediate loading but lower capacity than epoxy in cracked concrete.",
+      "undercut_anchor": "Drilled and undercut hole creates mechanical interlock. Hilti HDA. Highest capacity post-installed anchor."
+    },
+    "materials": "F1554 Grade 36, 55, or 105. Grade 105 for heavy anchor bolts. A193 B7 for high-temperature applications. Galvanized where exposed to weather.",
+    "common_mistake": "Not checking anchor bolt pattern and elevation BEFORE concrete pour. Once concrete is set, you are drilling, and drilled anchors have lower capacity than cast-in-place."
+  },
+  "welding_consumables": {
+    "E7018": {"type": "Low-hydrogen SMAW electrode", "tensile": "70 ksi", "use": "THE standard structural welding electrode. All position.", "storage": "Must be kept dry. Open rods: use within 4 hours or re-dry at 500-800F for 1 hour. Rod oven required."},
+    "E6010": {"type": "Cellulosic SMAW electrode", "use": "Root passes in pipe, not typically used in structural (lower toughness than 7018)."},
+    "ER70S_6": {"type": "GMAW (MIG) solid wire", "tensile": "70 ksi", "use": "Shop welding of structural steel. Fast deposition."},
+    "E71T_1": {"type": "FCAW gas-shielded flux core wire", "tensile": "70 ksi", "use": "Field structural welding. High deposition rate. CO2 or 75/25 Ar/CO2 shielding gas.", "advantage": "Faster than 7018 SMAW. Better wind tolerance than GMAW. Most common field structural process."},
+    "E71T_8": {"type": "FCAW self-shielded flux core", "tensile": "70 ksi", "use": "Field welding where wind prevents gas-shielded processes. No external shielding gas needed.", "limitation": "Lower toughness than gas-shielded. Some projects restrict use."}
+  },
+  "coatings": {
+    "surface_prep": {
+      "SSPC_SP6": "Commercial blast cleaning. Removes most mill scale, rust, old coating. 66% clean.",
+      "SSPC_SP10": "Near-white blast cleaning. 95% clean. Standard for industrial steel.",
+      "SSPC_SP5": "White metal blast. 100% clean. For immersion service or severe environments."
+    },
+    "paint_systems": {
+      "shop_primer": "Inorganic zinc (IOZ) or organic zinc-rich primer. Applied in fabrication shop. 3-5 mils DFT.",
+      "intermediate": "Epoxy intermediate coat. 4-8 mils DFT. Applied over primer.",
+      "finish": "Polyurethane topcoat for UV resistance and color. 2-4 mils DFT. Or epoxy for chemical resistance.",
+      "fireproofing": "Cementitious or intumescent fireproofing on structural members per fire rating requirements. Thickness per engineering."
+    },
+    "field_touch_up": "After erection, all bolted connections, welds, and damaged areas need touch-up coating. Match existing system — primer + intermediate + finish.",
+    "DFT_measurement": "Dry Film Thickness measured with magnetic gauge (Positector, Elcometer). Verify each coat meets specification range."
+  },
+  "grating_and_misc": {
+    "bar_grating": {"types": "Welded (W), press-locked (P), swage-locked. Carbon steel A1011, galvanized, aluminum, stainless.", "bearing_bar": "1 inch, 1-1/4 inch, or 1-1/2 inch depth. Spacing: 15/16 inch or 1-3/16 inch center-to-center.", "fastening": "Saddle clips, bolt-down clips, welded. Clips preferred for removable grating."},
+    "handrail": {"OSHA_requirements": "42 inch top rail, mid-rail at 21 inches, toe board 4 inches minimum height. Must withstand 200 lb top rail load.", "types": "Pipe rail (1-1/2 inch pipe), Unistrut rail, prefabricated industrial rail."},
+    "stair_treads": "Grating tread, checkered plate (diamond plate), or grip strut. Anti-slip nosing on front edge.",
+    "checkered_plate": "A36 steel with raised diamond pattern. Floor plate for platforms, covers, walkways. Minimum 1/4 inch thick."
+  }
+}

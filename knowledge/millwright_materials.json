@@ -1,0 +1,117 @@
+{
+  "trade": "Millwright",
+  "category": "materials",
+  "description": "Comprehensive materials knowledge for millwrights — bearings, couplings, mechanical seals, packing, shim stock, grout, alignment tools, vibration equipment, lubricants, fasteners, and the specifications that matter in the field.",
+  "bearings": {
+    "overview": "Bearings are the heart of rotating equipment. Wrong bearing selection, installation, or lubrication is the #1 cause of premature equipment failure.",
+    "ball_bearings": {
+      "deep_groove": {"designation": "6000 series (6205, 6210, 6310, etc.)", "use": "General purpose, moderate radial and light axial loads. Most common bearing type.", "example": "6310 = 50mm bore, medium series"},
+      "angular_contact": {"designation": "7000 series", "use": "Combined radial and axial loads. Often used in pairs (back-to-back or face-to-face) for bidirectional thrust.", "note": "Contact angle determines thrust capacity — 15, 25, or 40 degrees."},
+      "self_aligning": {"designation": "1200/2200 series", "use": "Where shaft deflection or housing misalignment exists. Forgiving of alignment errors."}
+    },
+    "roller_bearings": {
+      "cylindrical": {"designation": "N/NU/NJ series", "use": "Heavy radial loads, high speed. Allows axial shaft movement (thermal growth). Common in electric motors."},
+      "tapered_roller": {"designation": "30000/32000 series (Timken)", "use": "Combined heavy radial and axial loads. Pumps, gearboxes, conveyor idlers. Always used in pairs.", "setting": "Requires endplay or preload setting during installation. Too tight = overheating. Too loose = vibration."},
+      "spherical_roller": {"designation": "22000/23000 series", "use": "Very heavy radial loads with moderate thrust. Self-aligning capability. Vibrating screens, crushers, heavy conveyors.", "note": "Most expensive standard bearing type but handles the worst conditions."}
+    },
+    "thrust_bearings": {
+      "ball_thrust": {"designation": "51000 series", "use": "Pure axial loads, low to moderate speed."},
+      "spherical_roller_thrust": {"designation": "29000 series", "use": "Extremely heavy axial loads. Vertical pumps, extruders."}
+    },
+    "sleeve_bearings": {
+      "description": "Plain journal bearings — shaft rides on oil film, no rolling elements.",
+      "use": "Large turbines, compressors, generators. Very high speed, heavy loads.",
+      "types": "Babbitt-lined (tin-based white metal), bronze, PTFE-lined",
+      "clearance": "Typically 0.001 to 0.002 inch per inch of journal diameter. Too tight = wiping. Too loose = vibration.",
+      "oil_supply": "Ring-oiled (gravity), pressure-fed (oil pump), or oil mist. Critical — loss of oil = instant bearing failure."
+    },
+    "brands": "SKF, Timken, FAG (Schaeffler), NSK, NTN, Koyo, Dodge, Rexnord, Cooper",
+    "identification": "Bearing number tells you everything: 6310-2RS = 6(deep groove) 3(medium series) 10(50mm bore) 2RS(double sealed). Learn the numbering system.",
+    "storage": "Store flat in original packaging. Cool, dry, vibration-free. Do NOT unwrap until ready to install. Contamination is the enemy.",
+    "common_mistake": "Driving a bearing onto a shaft by hitting the outer race. Force must be applied to the INNER race only (the race being press-fitted). Hitting outer race damages rolling elements."
+  },
+  "couplings": {
+    "flexible_jaw": {"brands": "Lovejoy, TB Woods", "use": "Light duty, pumps under 50 HP. Easy to install and replace spider insert.", "misalignment_tolerance": "Up to 1 degree angular, 0.015 inch parallel"},
+    "gear_coupling": {"description": "Hardened gear teeth mesh between hub and sleeve. High torque capacity.", "use": "High power, high speed — turbines, compressors, large pumps.", "lubrication": "Requires grease — gear teeth will wear without lubrication.", "alignment": "Tight alignment required despite gear tooth flexibility. Recommended 0.002 inch/inch TIR."},
+    "disc_coupling": {"brands": "Rexnord Thomas, Lovejoy Disc", "description": "Flexible metallic disc packs transmit torque.", "use": "Moderate to high power. No lubrication required. Good for high temperature.", "advantage": "Zero backlash, maintenance-free, handles axial movement."},
+    "diaphragm_coupling": {"brands": "Bendix, Zurn, John Crane", "use": "High speed, high power — turbomachinery. Single or multi-diaphragm.", "advantage": "Highest speed rating of any coupling type. No lubrication."},
+    "grid_coupling": {"brands": "Falk (Rexnord) Steelflex", "description": "Spring steel grid element between hubs absorbs shock.", "use": "Crushers, mills, conveyors — applications with shock loading.", "lubrication": "Requires grease in grid cavity."},
+    "spacer_coupling": {"description": "Any coupling type with a spacer element between hubs.", "use": "Allows removal of pump/compressor without moving motor. Standard length per API 610: 7 inches minimum."},
+    "common_mistake": "Installing coupling hubs with wrong fit — too tight damages shaft, too loose allows fretting. Check bore/shaft fit tolerance. Typical: 0.0005 to 0.001 inch interference for press fit."
+  },
+  "mechanical_seals": {
+    "overview": "Mechanical seals prevent process fluid leakage at the shaft penetration through the pump casing.",
+    "single_seal": {"use": "Standard applications. Seal faces run against each other with thin fluid film between them.", "flush": "API Plan 11 (recirculation from discharge), Plan 13 (recirculation from seal chamber), Plan 32 (external flush)"},
+    "double_seal": {"use": "Hazardous, toxic, or volatile fluids. Two sets of seal faces with barrier fluid between them.", "barrier": "Pressurized barrier fluid (Plan 53A/53B/53C) or unpressurized buffer fluid (Plan 52).", "note": "Double seal provides containment — if primary seal fails, barrier fluid contains leakage."},
+    "cartridge_seal": {"description": "Pre-assembled, pre-set seal unit. Slides onto shaft as a complete assembly.", "advantage": "Eliminates field setting of seal face compression. Much faster installation. Fewer errors.", "note": "ALWAYS use cartridge seals when available. Field-set seals have much higher failure rate due to incorrect setting height."},
+    "brands": "John Crane (Type 1, Type 2100, Type 4610), Flowserve (SLC, ISC, GASPAC), EagleBurgmann (M7N, MFL85N), AES (CDSA, BDSA)",
+    "face_materials": {
+      "carbon_vs_silicon_carbide": "Carbon (soft face) runs against SiC or tungsten carbide (hard face). Carbon is self-lubricating.",
+      "SiC_vs_SiC": "Both hard faces — for abrasive services. Better wear resistance but requires clean flush.",
+      "tungsten_carbide": "Extremely hard. For abrasive slurries, high-pressure service."
+    },
+    "common_failure_causes": "Dry running (no flush = instant face damage), contamination (particles between faces), thermal shock (rapid temperature change), incorrect setting height (too much spring compression = face overload, too little = leakage)",
+    "common_mistake": "Touching seal faces with bare hands. Skin oil contaminates the lapped faces. Always handle with clean gloves and keep faces wrapped until installation."
+  },
+  "grout": {
+    "epoxy_grout": {
+      "brands": "Masterflow 648 (BASF), Chockfast Orange (ITW), Five Star DP Epoxy, Escoweld 7505 (ITW)",
+      "use": "Equipment baseplates, sole plates, compressor and turbine foundations. THE standard for rotating equipment.",
+      "advantage": "High compressive strength (12000-16000 psi), chemical resistant, vibration dampening, no shrinkage.",
+      "mixing": "Three components — resin, hardener, aggregate. Mix per manufacturer instructions exactly. Temperature sensitive — resin viscosity changes with temperature.",
+      "pour_temperature": "Minimum 40F, maximum 90F for most products. Below 60F, preheat materials. Above 90F, cool materials or pour early morning.",
+      "pot_life": "30-60 minutes depending on temperature. In hot weather, pot life can be as short as 15 minutes. Mix small batches.",
+      "cure_time": "24-72 hours to full cure depending on temperature. Do not apply load until fully cured.",
+      "common_mistake": "Not enough aggregate. Epoxy grout without proper aggregate loading generates excessive heat during cure (exothermic reaction) and can crack."
+    },
+    "cementitious_grout": {
+      "brands": "Masterflow 713 (BASF), Five Star Grout, SikaGrout",
+      "use": "Non-critical equipment, structural baseplates. Lower cost than epoxy.",
+      "limitation": "Lower strength than epoxy. Can shrink if not properly mixed. Not chemical resistant.",
+      "mixing": "Controlled water ratio is critical. Too much water = shrinkage and low strength. Use manufacturer's recommended water ratio."
+    },
+    "surface_preparation": "Concrete must be clean, roughened (chipped or sandblasted), saturated surface dry (SSD). Remove all oil, grease, laitance. Forms must be leak-proof — epoxy grout is thin and will find any gap."
+  },
+  "alignment_tools": {
+    "dial_indicators": {"resolution": "0.001 inch (1 mil) standard. 0.0001 inch (0.1 mil) for precision work.", "types": "Plunger type (AGD), test indicator (lever type)", "mounting": "Magnetic base or bracket clamped to coupling hub. Must be rigid — flex in bracket gives false readings."},
+    "laser_alignment": {
+      "brands": "Fixturlaser (Acoem), SKF TKSA, Hamar, Easy-Laser, Pruftechnik (Fluke)",
+      "advantage": "Faster than dial indicators, stores data, calculates shim corrections, thermal growth compensation, live adjustment mode.",
+      "accuracy": "0.0001 inch (0.1 mil) — better than most dial indicator setups.",
+      "practical_note": "Laser systems save hours on alignment. Worth the investment for any shop doing regular alignment work. But you must still understand alignment principles — the laser is a tool, not a brain."
+    },
+    "straightedge_and_feeler_gauge": {"use": "Rough alignment before precision alignment. Get within 0.010-0.020 inch first, then use dial indicators or laser for final."}
+  },
+  "lubricants": {
+    "grease": {
+      "NLGI_grades": {"0": "Semi-fluid — centralized systems", "1": "Soft — low temp, slow speed", "2": "Standard — most general bearing applications", "3": "Firm — high speed, high temp"},
+      "base_oils": {"mineral": "Standard, cheapest", "synthetic_PAO": "Extended temperature range, longer life", "synthetic_ester": "Good high temp, biodegradable"},
+      "thickeners": {"lithium": "Most common general purpose", "lithium_complex": "Higher temp than plain lithium (350F+)", "polyurea": "Electric motor bearings — long life, quiet", "calcium_sulfonate": "Extreme water resistance"},
+      "compatibility": "NOT all greases are compatible. Mixing incompatible greases causes softening or hardening. Check manufacturer compatibility chart. When in doubt, purge old grease completely before switching.",
+      "common_mistake": "Over-greasing bearings. More grease is NOT better. Excess grease causes churning, heat, and premature failure. Follow manufacturer fill quantity — typically 30-50% of bearing free space."
+    },
+    "oil": {
+      "viscosity_grades": "ISO VG 32 (light), 46, 68 (medium), 100, 150, 220, 320 (heavy). Higher number = thicker oil.",
+      "selection": "Based on bearing speed, load, and temperature. Manufacturer specifies grade. Using wrong viscosity is like using wrong blood type.",
+      "analysis": {"particle_count": "ISO 4406 cleanliness code. Target depends on equipment — hydraulics need cleaner oil than gearboxes.", "wear_metals": "Iron, copper, lead, tin indicate which component is wearing.", "water": "Above 200 ppm = investigate source. Above 500 ppm = change oil immediately.", "viscosity": "Change greater than 10% from new oil = oxidation or contamination."}
+    }
+  },
+  "fasteners": {
+    "SAE_grades": {
+      "grade_2": "Low carbon. General purpose, non-critical. No head markings.",
+      "grade_5": "Medium carbon, quenched and tempered. 120,000 psi tensile. Three radial lines on head. Most common structural bolt.",
+      "grade_8": "Alloy steel, quenched and tempered. 150,000 psi tensile. Six radial lines on head. High-strength critical applications."
+    },
+    "metric_classes": {
+      "class_8_8": "Equivalent to SAE Grade 5. Marked 8.8 on head.",
+      "class_10_9": "Between Grade 5 and Grade 8. Marked 10.9.",
+      "class_12_9": "Highest standard metric grade. Marked 12.9. Equivalent to above Grade 8."
+    },
+    "stainless_steel": {
+      "A2_70": "304 stainless, 70 ksi tensile. For corrosive environments.",
+      "A4_80": "316 stainless, 80 ksi tensile. Marine and chemical environments.",
+      "CAUTION": "Stainless bolts gall easily — ALWAYS use anti-seize compound on stainless fasteners. Without anti-seize, they seize during tightening and cannot be removed."
+    },
+    "common_mistake": "Using Grade 2 hardware where Grade 5 is specified. It looks the same but is only half the strength. Always verify grade markings on head."
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "trade": "Industrial Erection",
+  "category": "procedures",
+  "description": "Steel erection procedures — erection sequence, column setting, beam connections, bolt-up methods, plumbing and aligning, equipment setting for vessels and exchangers, pipe rack erection, and field welding of structural connections.",
+  "erection_sequence": {
+    "general_rule": "Erect from the center outward or from the braced bay outward. Complete connections and bracing in each bay before moving to the next. Never leave a partially connected bay overnight without temporary bracing.",
+    "columns_first": "Set columns, install minimum 4 anchor bolts snug-tight, plumb within tolerance, install temporary bracing if needed before releasing crane.",
+    "then_beams": "Hang beams between columns. Minimum 2 bolts at each connection before releasing crane. Complete bolt-up of each connection before loading with additional steel.",
+    "then_bracing": "Install diagonal bracing per erection drawings. Bracing provides lateral stability — without it, the frame is unstable.",
+    "then_decking": "Install metal decking as soon as practical behind erection. Decking acts as a diaphragm and provides fall protection.",
+    "then_misc": "Grating, handrail, stairs, toe boards, checkered plate after primary steel and decking."
+  },
+  "column_setting": {
+    "base_plate_leveling": {
+      "methods": {
+        "leveling_nuts": "Heavy hex nuts on anchor bolts below base plate. Level plate by adjusting nuts. MOST COMMON for industrial columns.",
+        "shim_stacks": "Stainless steel shim packs at 3 or 4 points around base plate.",
+        "leveling_screws": "Jacking bolts in base plate legs. Fine adjustment."
+      },
+      "tolerance": "Level within 1/16 inch across base plate for most industrial columns. Tighter for tall columns (plumbness accumulates)."
+    },
+    "anchor_bolt_tightening": "After column is plumbed, tighten anchor bolts to snug-tight minimum. For base plates designed as moment connections, pretension anchor bolts per engineer's spec.",
+    "grouting": "After column is plumbed, aligned, and base plate bolt-up complete — grout under base plate. Non-shrink cementitious or epoxy grout. Fill completely — no voids.",
+    "plumbing": {
+      "tolerance": "AISC Code of Standard Practice: 1/500 of column height, max 1 inch toward building exterior, max 2 inches total.",
+      "methods": "Transit or total station sighting two faces. Plumb bob for short columns. Laser plumb for tall columns.",
+      "correction": "Adjust by shimming base plate, adjusting leveling nuts, or using turnbuckle on temporary bracing cable. NEVER heat or bend column to correct plumbness."
+    }
+  },
+  "beam_connections": {
+    "shear_connections": {
+      "types": "Single plate (shear tab), double angle, single angle, seated connection, end plate.",
+      "bolt_up": "Install all bolts in connection. Snug-tight for bearing-type, pretensioned for slip-critical. Sequence: start from center of bolt group, work outward.",
+      "erection_bolts": "Minimum 2 bolts per OSHA before releasing crane. Then complete remaining bolts before loading connection with additional steel."
+    },
+    "moment_connections": {
+      "description": "Connection designed to transfer moment (bending) from beam to column. Full penetration welds on beam flanges, bolted or welded web connection.",
+      "CJP_welds": "Complete Joint Penetration welds on flanges. Requires backing bar, weld access holes in beam web, and UT inspection.",
+      "quality": "Moment connections are structural critical. All CJP welds must be UT inspected per AWS D1.1. Filler metal must match or exceed base metal strength.",
+      "seismic": "In seismic zones, moment connections have special requirements — reduced beam section (dogbone), prequalified connections per AISC 358. Welding is even more critical."
+    },
+    "field_welding": {
+      "AWS_D1_1": "Structural Welding Code — Steel. Governs ALL structural welding.",
+      "WPS_required": "Every structural weld must be made per a qualified WPS (Welding Procedure Specification).",
+      "welder_qualification": "Every welder must be qualified per AWS D1.1 for the position and process being used. Qualification records on file.",
+      "preheat": "Required for thick material (over 3/4 inch for A36, over 1 inch for A992) and for low ambient temperature (below 32F, preheat to 70F minimum for any thickness).",
+      "inspection": "Visual (VT) on all welds. UT on CJP welds per code. MT or PT on fillet welds if required by specification.",
+      "wind_protection": "Shield welding from wind. FCAW-GS: max 5 mph at arc. SMAW: more tolerant but still shield. FCAW-SS: most wind-tolerant field process."
+    }
+  },
+  "equipment_setting": {
+    "vessels": {
+      "vertical_vessels": "Tailed up from horizontal to vertical using crane and tail crane. Tailing lug and lifting lugs per manufacturer rigging diagram. CRITICAL LIFT.",
+      "horizontal_vessels": "Set on saddles. Level on saddle centerlines. Allow for thermal growth — one saddle is fixed, other has slotted holes.",
+      "orientation": "Verify nozzle orientation matches P&ID and plot plan. Rotating a vessel after setting is extremely costly.",
+      "anchor_bolts": "Install and hand-tight only until vessel is aligned. Then tighten per specification."
+    },
+    "heat_exchangers": {
+      "setting": "Set on support saddles or structural steel frame. Level across tube sheet faces.",
+      "bundle_pull_space": "Verify there is enough clearance on the tube bundle pull end for bundle removal. Common design oversight — structure blocks bundle removal.",
+      "nozzle_alignment": "Verify nozzle orientation and elevation match piping design before tightening hold-downs."
+    },
+    "columns_towers": {
+      "tailing_up": "Large columns/towers are shipped horizontal, tailed up in field. Requires detailed rigging plan — CG shifts during tilt.",
+      "internals": "Some columns have internals (trays, packing) installed after erection. Some are shipped with internals installed. Verify before rigging — internals add weight and change CG.",
+      "davit": "Davit arm on column head for lifting internals, manway covers, instruments during maintenance."
+    },
+    "pipe_racks": {
+      "erection": "Columns set first (usually pre-assembled with stub-up for beam connection). Then transverse beams. Then longitudinal struts and bracing.",
+      "alignment": "Survey centerline and elevation of all columns. Adjust before completing connections.",
+      "typical_tolerances": "Column spacing: +/- 1/4 inch. Beam elevation: +/- 1/4 inch. Column plumbness: 1/500 of height."
+    }
+  },
+  "bolt_up_procedures": {
+    "snug_tight": {
+      "definition": "Plies of joint in firm contact. Achieved by a few impacts of impact wrench or full effort of one person with a standard wrench.",
+      "use": "Bearing-type connections where slip is acceptable. Most shear connections in industrial structures."
+    },
+    "pretensioned": {
+      "minimum_tension": {"A325_3_4_inch": "28 kips", "A325_7_8_inch": "39 kips", "A325_1_inch": "51 kips", "A325_1_1_8_inch": "56 kips", "A490_3_4_inch": "35 kips", "A490_7_8_inch": "49 kips", "A490_1_inch": "64 kips"},
+      "methods": {
+        "turn_of_nut": "Snug all bolts, then apply additional rotation. 1/3 turn for bolt up to 4D long, 1/2 turn for 4D-8D, 2/3 turn for 8D-12D. Mark with crayon to track rotation.",
+        "calibrated_wrench": "Calibrate wrench with Skidmore-Wilhelm using bolts from the actual lot being installed. Daily calibration required.",
+        "TC_bolt": "Shear wrench until spline shears. Simplest field method.",
+        "DTI": "Tighten until DTI washer gap meets specification (0.005 inch typical with feeler gauge)."
+      }
+    },
+    "inspection": {
+      "visual": "All bolts in place, no missing bolts, nuts flush with bolt end, washers properly placed.",
+      "snug_tight_check": "Arbitrarily selected bolts checked with wrench — should not turn further.",
+      "pretensioned_check": {
+        "turn_of_nut": "Verify crayon marks show correct rotation from snug.",
+        "TC": "All splines sheared off.",
+        "DTI": "Feeler gauge check on 10% of bolts minimum."
+      }
+    }
+  }
+}

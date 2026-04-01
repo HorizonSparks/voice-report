@@ -1,0 +1,154 @@
+{
+  "trade": "Pipe Fitting",
+  "category": "boilermaker_specialty",
+  "description": "Boilermaker specialty knowledge — boiler tube replacement, pressure vessel work, heat exchanger bundle pulling, refractory installation, ASME Section I and VIII code requirements, and NBIC repairs. For boilermakers working under the Pipe Fitting trade.",
+  "boiler_tubes": {
+    "waterwall_tubes": {
+      "description": "Tubes forming the furnace walls of a water-tube boiler. Carry water/steam mixture. Exposed to direct flame radiation.",
+      "materials": "SA-210 Grade A1 (carbon steel) for most waterwalls. SA-213 T11 or T22 for higher temperature zones.",
+      "sizes": "Typically 2 inch to 3 inch OD, various wall thicknesses.",
+      "replacement_procedure": [
+        "Identify damaged tube(s) — UT thickness survey, visual inspection for bulges/cracks",
+        "Cut out damaged section — leave straight, clean ends for fit-up",
+        "Prepare replacement tube — match material, OD, wall thickness exactly",
+        "Bevel tube ends per WPS (typically 37.5 degree bevel, 1/16 land, 1/16 gap)",
+        "Fit-up with internal alignment clamp or external jig",
+        "Purge with argon for alloy tubes (T11, T22)",
+        "Weld root pass GTAW, fill and cap SMAW or GTAW",
+        "NDE per code — typically RT or UT for waterwall tube butt welds",
+        "Hydrotest before returning to service"
+      ],
+      "window_cuts": "When access is limited, cut a window (rectangular opening) in adjacent tubes to reach the damaged tube. After repair, weld window tubes back with full penetration welds. Very labor-intensive.",
+      "common_mistake": "Not matching tube material exactly. Putting carbon steel tube in an alloy zone or vice versa. Always verify material with PMI before welding."
+    },
+    "economizer_tubes": {
+      "description": "Finned tubes that preheat feedwater using flue gas. Located in the cooler gas path.",
+      "material": "SA-210 A1 (carbon steel). Fins are carbon steel welded or extruded.",
+      "failure_modes": "Erosion from fly ash (especially at tube bends), cold-end corrosion (sulfuric acid condensation below dewpoint), FAC (flow accelerated corrosion) on inside.",
+      "replacement": "Often replaced in banks (multiple tubes at once). Tubes are pre-fabricated in shop with fins, shipped to field, and welded in place."
+    },
+    "superheater_reheater_tubes": {
+      "description": "Tubes carrying steam at highest temperature in the boiler. Subject to creep, oxidation, and fireside corrosion.",
+      "materials": "SA-213 T11, T22, T91 (for highest temperature sections). TP304H, TP321H (austenitic stainless for extreme conditions).",
+      "failure_modes": "Creep rupture (long-term high-temperature exposure), fireside corrosion (alkali sulfates, vanadium attack), steam-side oxidation (exfoliation scale).",
+      "tube_sampling": "Periodically remove tube samples for metallurgical analysis — measure remaining creep life, wall thickness, internal scale thickness.",
+      "CRITICAL": "Dissimilar metal welds (DMW) between ferritic and austenitic tubes require special procedures — Inconel 82/182 filler, or direct P91-to-TP347H with proper procedure. DMW failures are common and costly."
+    }
+  },
+  "tube_rolling": {
+    "description": "Expanding tube into tube sheet hole using a roller expander tool. Creates a mechanical seal between tube and tube sheet.",
+    "procedure": [
+      "Clean tube sheet holes — no corrosion, scale, or debris",
+      "Insert tube through tube sheet — verify projection per spec (typically 1/8 inch beyond tube sheet face)",
+      "Insert roller expander tool into tube end",
+      "Expand tube using torque-controlled roller — expand to specified wall reduction (typically 5-8% wall thinning)",
+      "Measure tube ID after rolling to verify expansion amount",
+      "Roll from both ends if tube passes through two tube sheets"
+    ],
+    "torque_control": "Modern tube rollers use torque-controlled drives. Set torque to achieve target wall reduction. Over-rolling thins tube wall excessively and weakens it. Under-rolling allows leakage.",
+    "tube_projection": "Tube must project beyond tube sheet face per engineering spec. Too much projection interferes with channel cover. Too little does not allow proper seal weld (if strength-welded).",
+    "strength_weld_vs_seal_weld": {
+      "seal_weld": "Light fillet weld around tube-to-tube sheet joint. Prevents leakage but tube is held by rolling. Most common.",
+      "strength_weld": "Full penetration or high-strength weld. Tube is held by weld, not rolling. Used in high-pressure or high-temperature service.",
+      "qualification": "Tube-to-tube sheet welding requires separate WPS qualification per ASME IX. Standard pipe WPS does not apply."
+    }
+  },
+  "tube_plugging": {
+    "when": "Leaking tube that cannot be repaired in place. Plug the tube to isolate it from service. Reduces heat transfer area but allows continued operation.",
+    "types": {
+      "tapered_plug": "Solid metal plug driven into tube end with hammer. Simple, fast, temporary. Not code-approved for permanent repair in many jurisdictions.",
+      "welded_plug": "Plug welded into tube sheet. Permanent. Code-approved per NBIC.",
+      "explosive_plug": "Plug expanded by small explosive charge. Fast, no welding. Used where many plugs needed quickly (turnaround work).",
+      "mechanical_plug": "Expanding plug tightened with bolt. Removable. Good for temporary isolation during inspection."
+    },
+    "limit": "Most boilers can tolerate 5-10% plugged tubes before derating is required. Engineering must approve plug count and location — too many plugs in one area causes flow maldistribution."
+  },
+  "pressure_vessels": {
+    "ASME_Section_VIII": {
+      "Div_1": "Design by rules. Most common for process vessels. Covers shells, heads, nozzles, supports, openings.",
+      "Div_2": "Design by analysis. Allows thinner walls through detailed stress analysis. Used for high-pressure or unusual configurations.",
+      "U_stamp": "Manufacturer authorization to build new vessels. Vessel gets U stamp on nameplate.",
+      "R_stamp": "Holder authorization to repair or alter existing vessels per NBIC.",
+      "alterations_vs_repairs": {
+        "repair": "Restoring vessel to original design condition. Same material, same thickness, same configuration.",
+        "alteration": "Changing vessel from original design — adding nozzles, re-rating pressure, changing material. Requires engineering review and may require re-stamping."
+      }
+    },
+    "nozzle_replacement": {
+      "procedure": [
+        "Verify new nozzle matches engineering design — size, schedule, flange rating, material",
+        "Cut out old nozzle — preserve shell material for examination",
+        "Prep shell opening — grind smooth, verify dimensions",
+        "Check reinforcement requirements — reinforcing pad or integral reinforcement",
+        "Fit new nozzle — align with centerline and projection per drawing",
+        "Weld per qualified WPS — typically full penetration weld through shell",
+        "If reinforcing pad: install pad, weld to shell and nozzle neck, install telltale hole (weep hole) in pad",
+        "NDE per code — RT or UT on shell-to-nozzle weld, PT on pad fillet welds",
+        "Hydrotest after all welding complete"
+      ],
+      "telltale_hole": "1/4 inch hole drilled and tapped in reinforcing pad. Allows pressure testing of pad welds and detection of through-wall cracks during service. DO NOT plug this hole — it is a safety device."
+    },
+    "vessel_internals": {
+      "trays": "Distillation column trays — sieve, valve, bubble cap. Remove from top through manway. Inspect for corrosion, plugging, mechanical damage.",
+      "baffles": "Heat exchanger baffles — guide tube bundle flow. Check for erosion, vibration damage.",
+      "demisters": "Wire mesh or vane-type. Remove through manway. Clean or replace if plugged.",
+      "distributors": "Liquid distribution devices in columns. Check spray nozzles, weir levels, trough levelness."
+    }
+  },
+  "heat_exchanger_bundle": {
+    "bundle_pulling": {
+      "procedure": [
+        "Drain and decontaminate exchanger",
+        "Remove channel head cover bolts (or floating head cover)",
+        "Remove channel head (for fixed tube sheet: not applicable — bundle does not pull)",
+        "Break bundle free — may be stuck from corrosion or scale. Use hydraulic bundle extractor or mechanical puller.",
+        "Pull bundle out on rails or rollers. Bundle can weigh tons — proper support essential.",
+        "Inspect tube sheet, tubes (OD), baffles, tie rods, spacers",
+        "Measure tube wall thickness (UT from OD) on sample tubes",
+        "Clean tubes if reusing (hydroblasting, mechanical cleaning)"
+      ],
+      "clearance": "Need clear space equal to tube length on the pull end. Verify before starting — nothing worse than pulling a bundle halfway out and hitting a pipe rack column.",
+      "weight": "Large bundles can weigh 5-20 tons. Crane or forklift for handling. Support bundle full length — do not let it sag.",
+      "bundle_extractor": "Hydraulic ram that pushes or pulls bundle through shell. Rated capacity must exceed bundle weight plus friction."
+    },
+    "tube_sheet": {
+      "inspection": "Check for corrosion, erosion, cracking around tube holes. Measure ligament (web between holes). Measure tube hole diameter — enlarged holes cannot grip tube properly during rolling.",
+      "resurfacing": "If tube sheet face is damaged, it can be machined in place (portable lathe) to restore gasket seating surface. Remove minimum material — tube sheet thickness is code-required."
+    }
+  },
+  "refractory": {
+    "castable": {
+      "description": "Hydraulic-setting refractory concrete. Mixed with water, poured or pumped into forms.",
+      "installation": [
+        "Install anchor system (Y-anchors, V-anchors, hex mesh — welded to shell)",
+        "Build forms — steel or wood, coated with release agent",
+        "Mix castable per manufacturer — controlled water ratio is critical (too much water = weak refractory)",
+        "Pour and vibrate to remove air voids. Do not over-vibrate (causes segregation).",
+        "Cure for minimum 24 hours. Keep moist (cover with plastic or wet burlap).",
+        "Dry out per controlled schedule — typically: ambient to 250F at 25F/hour, hold 24 hours at 250F, then 25F/hour to 600F, hold 24 hours, then 50F/hour to operating temperature.",
+        "CRITICAL: Do not rush dry-out. Trapped moisture flashes to steam and can explosively spall the refractory."
+      ],
+      "types": "Insulating castable (low density, low thermal conductivity), dense castable (high density, abrasion resistant), low-cement castable (LCC — better hot strength)"
+    },
+    "brick": {
+      "firebrick": "Dense, hard, direct flame exposure. ASTM C155. Mortared joints (air-setting or heat-setting mortar).",
+      "insulating_brick": "Lightweight, high insulation value. Backs up firebrick. ASTM C155 Group 23-26.",
+      "laying_pattern": "Alternate header and stretcher courses. Stagger joints. Tight mortar joints — no voids."
+    },
+    "anchor_failure": "Most common refractory failure. Anchors corrode (austenitic SS anchors in reducing atmosphere), overheat, or fatigue from thermal cycling. When anchors fail, refractory falls. Inspect anchor tips at every turnaround.",
+    "ceramic_fiber": {
+      "description": "Lightweight blanket or module insulation. Used in furnaces, heaters, ducts.",
+      "installation": "Modules impaled on studs welded to shell. Or blanket layered and pinned with stainless steel pins.",
+      "temperature": "Up to 2300F depending on grade.",
+      "health_hazard": "Ceramic fiber is a suspected carcinogen (IARC Group 2B). Respirator required during installation and removal. Minimize airborne fiber."
+    }
+  },
+  "NBIC_repairs": {
+    "description": "National Board Inspection Code governs repairs and alterations to boilers and pressure vessels.",
+    "R_stamp_holder": "Only organizations with NBIC R-stamp authorization can perform code repairs. R-stamp requires quality system, authorized inspector access, and National Board registration.",
+    "R_1_form": "Report of repair — documents what was repaired, materials used, welding procedures, NDE, and pressure test. Signed by repair organization and Authorized Inspector.",
+    "R_2_form": "Report of alteration — for changes to original design. Requires engineering review.",
+    "authorized_inspector": "All boiler and pressure vessel repairs must be inspected by an Authorized Inspector (AI) commissioned by the National Board. The AI verifies code compliance and signs the R-form.",
+    "jurisdictional_requirements": "Each state/province has its own boiler and pressure vessel laws. Some require notification before repair. Some require permits. Know your jurisdiction's requirements before starting work."
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "trade": "Pipe Fitting",
+  "category": "specialty",
+  "description": "Advanced pipe fitting knowledge — orbital welding, socket weld vs butt weld criteria, steam tracing, small bore piping, expansion joints, spring hangers, hot tapping, flange management, underground piping, stainless steel handling, chrome-moly piping, hydrostatic testing, valve installation, and steam systems. The deep knowledge that separates a good pipefitter from a great one.",
+  "orbital_welding": {
+    "description": "Automatic GTAW welding using a machine that orbits around the pipe or tube. Produces consistent, repeatable welds.",
+    "use": "High-purity systems (pharma, semiconductor), instrument tubing, boiler tubes, sanitary piping, any application requiring repeatable weld quality.",
+    "equipment": "Swagelok M200, Arc Machines AMI, Liburdi LAWS. Power supply + weld head + inert gas.",
+    "advantages": "Consistent quality, faster than manual on repetitive joints, reduced welder fatigue, full documentation of weld parameters.",
+    "limitations": "Equipment cost, setup time for first weld, limited to specific joint configurations, cannot handle poor fit-up.",
+    "practical_note": "Orbital is only as good as the fit-up. Perfect fit-up = perfect weld. Bad fit-up = orbital cannot compensate like a skilled manual welder can. Prep is everything."
+  },
+  "socket_weld_vs_butt_weld": {
+    "socket_weld": {
+      "use": "Small bore (2 inch and under) piping in Class 3000 and 6000 fittings.",
+      "procedure": "Insert pipe into fitting until it bottoms out, then pull back 1/16 inch (gap) before welding. This gap prevents the pipe from bottoming and cracking the weld during thermal expansion.",
+      "fillet_weld": "Minimum 2 passes. Leg size = 1.09 x pipe wall thickness minimum (ASME B31.3).",
+      "NDE": "Visual inspection standard. PT (dye penetrant) if spec requires. Cannot be radiographed effectively.",
+      "NOT_for": "Severe cyclic service (fatigue cracking at root), corrosive services where crevice corrosion is concern (the gap creates a crevice).",
+      "common_mistake": "Not pulling pipe back 1/16 inch. If pipe is bottomed in fitting, thermal expansion causes the pipe to push against the weld root and crack it."
+    },
+    "butt_weld": {
+      "use": "All sizes. Required for severe cyclic, corrosive, high-temperature, and high-pressure service.",
+      "advantage": "Full penetration weld, smooth internal bore (no crevice), radiographable, strongest joint.",
+      "fit_up": "Bevel per WPS (typically 37.5 degree bevel, 1/16 inch root face, 1/16 to 3/32 inch root gap).",
+      "hi_lo": "Internal misalignment (hi-lo) must be within tolerance — typically 1/32 inch max for ASME B31.3."
+    },
+    "decision": "If in doubt, butt weld. Socket weld is faster but butt weld is stronger, more inspectable, and suitable for all services."
+  },
+  "small_bore_piping": {
+    "definition": "2 inch NPS and under. Sometimes defined as 1-1/2 inch and under.",
+    "challenges": "Easier to damage, vibration-sensitive, harder to support properly, fit-up is more critical (small errors are proportionally larger).",
+    "support_spacing": {"half_inch": "5 feet max", "three_quarter_inch": "5 feet", "one_inch": "7 feet", "one_and_half_inch": "9 feet", "two_inch": "10 feet"},
+    "vibration": "Small bore piping connected to rotating equipment (pump drain, gauge connection) is prone to fatigue failure from vibration. Use bracing or gusseted supports. Route to minimize unsupported length.",
+    "common_mistake": "Unsupported small bore piping attached to vibrating equipment. This is the #1 cause of small bore piping failures in plants. A  support prevents a ,000 leak."
+  },
+  "flange_management": {
+    "gasket_selection": {
+      "spiral_wound": {"use": "Most common industrial gasket. 304SS or 316SS windings with flexible filler (graphite or PTFE). For raised face flanges.", "classes": "Class 150 through 2500. Inner ring prevents spiral blowout. Outer centering ring centers gasket on flange."},
+      "ring_joint": {"use": "High-pressure and high-temperature service. Metal ring sits in machined groove in flange face (RTJ flange).", "materials": "Soft iron, 304SS, 316SS, Inconel 625. Ring must be softer than flange groove.", "rule": "NEVER reuse a ring joint gasket. Always new ring for each assembly."},
+      "sheet_gasket": {"use": "Low-pressure utility services. PTFE, compressed non-asbestos fiber, rubber.", "limitation": "Lower pressure and temperature rating than spiral wound. Not for hydrocarbon service in most specs."},
+      "kammprofile": {"use": "Alternative to spiral wound. Metal core with serrated grooves and soft facing. Good for heat exchanger joints and large diameter flanges."}
+    },
+    "bolt_torquing": {
+      "pattern": "Star pattern (cross pattern). 4 passes minimum: 30%, 60%, 100%, 100% (verification pass).",
+      "lubrication": "Bolt lubricant affects torque-tension relationship. Spec must state: dry, oiled, or specific lubricant (Fel-Pro, Molykote). Using wrong lube means wrong tension at the specified torque.",
+      "hydraulic_tensioning": "For large flanges (24 inch and above) and critical joints. Stud tensioners apply direct tension — more accurate than torque. Simultaneously tension all studs (or 50% alternate pattern).",
+      "common_mistake": "Tightening bolts in a circular pattern instead of star pattern. This causes uneven gasket compression — one side tight, other side loose = leak."
+    },
+    "flange_face_inspection": {
+      "raised_face": "Check for scratches, gouges, corrosion across sealing surface. Radial scratch across full face = likely leak. Can resurface (machine) in place or replace flange.",
+      "RTJ_groove": "Check groove for damage, corrosion, improper ring fit. Groove must be clean and smooth. Any damage = new ring will not seal.",
+      "flange_flatness": "Check with straightedge across face. Warped flange will not seal regardless of gasket or torque."
+    }
+  },
+  "spring_hangers": {
+    "variable_spring": {
+      "description": "Spring-loaded support that allows vertical pipe movement while maintaining support. Load changes with deflection.",
+      "use": "Hot piping that moves vertically due to thermal expansion. Common on steam lines, hot process lines.",
+      "travel_range": "Typically 1 to 6 inches of travel. Selected by pipe stress engineer.",
+      "installation": "Install with travel stop pin IN PLACE. Set at cold position per drawing. Remove pin only after hydrotest and before startup. If pin is removed during hydrotest, spring will bottom out under test water weight.",
+      "common_mistake": "Removing travel stop pin before hydrotest. Test water is much heavier than the gas or steam the pipe normally carries. Spring was designed for operating load, not test load. Pin keeps spring locked during test."
+    },
+    "constant_support": {
+      "description": "Constant-force support using calibrated spring mechanism. Maintains constant support load regardless of pipe movement.",
+      "use": "Where load variation must be minimized — turbine connections, critical equipment nozzles, large thermal movements.",
+      "cost": "3-5x more expensive than variable spring. Only used where pipe stress analysis requires it.",
+      "installation": "Same rule — install with travel stop, remove after hydrotest before startup."
+    }
+  },
+  "hot_tapping": {
+    "description": "Drilling into a live (pressurized, in-service) pipeline to make a new connection without shutting down.",
+    "equipment": "Hot tap machine + tapping valve + fitting (weldolet or reinforced branch connection) + completion plug.",
+    "procedure": [
+      "Weld fitting (weldolet or tee) onto live pipe — requires qualified hot tap welding procedure",
+      "Install full-bore valve on fitting",
+      "Attach hot tap machine to valve",
+      "Open valve, advance cutter through valve into pipe",
+      "Cut coupon (the circular piece cut from pipe wall)",
+      "Retract cutter with coupon, close valve, remove machine",
+      "New connection is live and available"
+    ],
+    "safety": "Hot tap welding on live lines requires: pipe stress analysis (minimum wall thickness), hot work permit, fire watch, hazardous materials assessment (what is in the pipe), and qualified hot tap welder.",
+    "NEVER": "Never hot tap on a line carrying hydrogen, acetylene, or oxygen. Never hot tap corroded pipe (minimum wall thickness not assured). Never hot tap without engineering approval."
+  },
+  "hydrostatic_testing": {
+    "procedure": [
+      "Complete test pack documentation — identify test boundaries, blinds, vents, drains, gauges",
+      "Install test blinds at all open ends and equipment connections",
+      "Install calibrated test gauge (range: 1.5x to 4x test pressure for accuracy)",
+      "Fill system with test medium (clean water, treated if stainless steel). Fill from low point, vent from high point.",
+      "Vent ALL air — trapped air is compressible and dangerous. Air pocket at test pressure stores explosive energy.",
+      "Pressurize slowly to test pressure (typically 1.5x design pressure per ASME B31.3)",
+      "Hold for minimum 10 minutes at test pressure",
+      "Examine all joints, welds, flanges for leaks during hold",
+      "If leak found — depressurize, repair, re-test",
+      "After successful hold — depressurize slowly, drain, remove blinds, document results"
+    ],
+    "test_pressure": {"ASME_B31_3": "1.5 x design pressure x (stress ratio at test temp / stress ratio at design temp). Usually 1.5x for ambient test.", "ASME_B31_1": "1.5 x MAWP for piping. 1.5 x design pressure for vessels (ASME VIII)."},
+    "stainless_steel": "Use demineralized water or water with less than 50 ppm chlorides. Chlorides cause stress corrosion cracking in austenitic stainless. Drain and dry promptly after test.",
+    "cold_weather": "Do not test below 40F without freeze protection. Frozen water in piping can rupture pipe. Use glycol mix if necessary (with owner approval).",
+    "common_mistake": "Not venting all air before pressurizing. An air pocket at 1500 psi has the energy of a bomb. If the pipe fails, the air pocket causes a violent explosion. Water alone will leak, not explode. ALWAYS vent ALL air."
+  },
+  "valve_installation": {
+    "gate_valve": {"flow": "Full bore, low pressure drop. For on-off service only — not for throttling.", "installation": "Install with stem vertical or horizontal. Do NOT install stem down — debris collects in bonnet and jams gate.", "orientation": "Bi-directional — either direction is acceptable."},
+    "globe_valve": {"flow": "Tortuous path, higher pressure drop. For throttling service.", "installation": "Install so flow enters under the disc (arrow on body shows direction). This keeps disc lifted by line pressure when valve is open.", "orientation": "Uni-directional — check flow arrow."},
+    "check_valve": {"types": "Swing check (low pressure drop), lift check (for vertical up-flow), dual plate (wafer style, compact)", "installation": "Flow direction must match arrow on body. Swing check must be installed horizontally or in vertical line with flow UP.", "common_mistake": "Installing check valve backwards — allows reverse flow and defeats the purpose."},
+    "ball_valve": {"flow": "Full bore, very low pressure drop. Quarter-turn operation.", "use": "On-off service. Some designs suitable for throttling (V-port, characterized).", "installation": "Support body, not actuator. Heavy actuators can stress valve body and piping."},
+    "butterfly_valve": {"use": "Large diameter, low to moderate pressure. Quick operation.", "installation": "Check disc clearance — some butterfly valves need clearance downstream for disc to open fully. Verify with adjacent flanges."}
+  },
+  "steam_systems": {
+    "steam_traps": {
+      "types": {
+        "inverted_bucket": "Mechanical trap. Reliable, handles dirt, long life. Armstrong, Spirax Sarco.",
+        "float_and_thermostatic": "F&T trap. Handles heavy condensate loads. Good for heat exchangers, drip legs.",
+        "thermostatic": "Bellows or bimetallic. For tracing, small loads. Compact.",
+        "thermodynamic": "Disc trap. Simple, compact, handles superheat. But wears out faster."
+      },
+      "installation": "Trap must be below the equipment being drained. Condensate flows by gravity to trap. Install dirt leg (strainer) before trap. Install test valve or sight glass after trap for testing.",
+      "testing": "Ultrasonic testing or temperature testing. Operating trap: hot inlet, cooler outlet (subcooled condensate). Failed open: hot on both sides (passing live steam). Failed closed: cool on both sides (condensate backing up).",
+      "common_mistake": "Installing steam trap above the equipment it is draining. Condensate cannot flow uphill to the trap. Trap must always be at the low point."
+    },
+    "drip_legs": {
+      "description": "Pocket at low point of steam main to collect condensate. Drip leg pipe is same size or larger than steam main.",
+      "sizing": "Full size of steam main for runs up to 200 feet. Minimum 2/3 of steam main diameter.",
+      "location": "At every low point, before every rise, before every valve, at end of steam main, every 150-300 feet on long horizontal runs.",
+      "practical_note": "Water hammer in steam systems is caused by condensate slugs hitting valves, fittings, or equipment at steam velocity. Proper drip legs and trapping prevent water hammer. Water hammer can rupture piping and kill people."
+    },
+    "steam_tracing": {
+      "description": "Small bore (1/2 inch or 3/4 inch) steam tubing routed alongside process piping to maintain temperature.",
+      "installation": "Trace tube runs along bottom of pipe (where heat transfer is most effective). Secured with wire ties or bands every 3 feet. Covered by insulation.",
+      "supply_and_return": "Steam supply at high point, condensate return at low point. Trap at end of each trace circuit. Typical: 150 psi saturated steam.",
+      "practical_note": "Steam tracing is being replaced by electric heat tracing on many new projects. But millions of feet of steam tracing exist in operating plants. A pipefitter must know both."
+    }
+  },
+  "stainless_steel_handling": {
+    "contamination": "Carbon steel tools, grinding wheels, wire brushes, and steel wool will embed carbon steel particles in stainless steel surface. These particles corrode (rust) and create pitting corrosion in the stainless.",
+    "dedicated_tools": "Use stainless steel wire brushes, aluminum oxide grinding wheels (marked for stainless), stainless steel flap wheels. NEVER use tools that were used on carbon steel.",
+    "storage": "Store stainless pipe and fittings on wood or stainless racks — not on carbon steel supports. Cover to prevent contamination from carbon steel grinding dust.",
+    "marking": "Use low-chloride markers or paint sticks. Regular markers may contain chlorides that cause stress corrosion cracking.",
+    "welding": "Use dedicated stainless filler metals (ER308L, ER316L). Purge with argon on back side to prevent sugaring (oxidation). Sugar = weak, porous root = rejection.",
+    "pickling_and_passivation": "After welding, heat-tinted areas should be pickled (acid cleaned) and passivated to restore corrosion resistance. Citric acid or nitric acid per ASTM A380."
+  },
+  "chrome_moly_piping": {
+    "materials": {
+      "P11_1_25Cr_0_5Mo": {"pipe": "A335 P11", "fittings": "A234 WP11", "flanges": "A182 F11", "use": "Steam service up to 1050F"},
+      "P22_2_25Cr_1Mo": {"pipe": "A335 P22", "fittings": "A234 WP22", "flanges": "A182 F22", "use": "Steam and hydrogen service up to 1100F"},
+      "P91_9Cr_1Mo_V": {"pipe": "A335 P91", "fittings": "A234 WP91", "flanges": "A182 F91", "use": "High-temperature steam (power plants). Very high strength at elevated temperature.", "CRITICAL": "P91 requires strict preheat (400-500F), interpass (700F max), and PWHT (1350-1425F). Incorrect heat treatment creates brittle Type IV cracking in HAZ. P91 welding is SPECIALIST work."}
+    },
+    "preheat": "ALWAYS required. P11: 300F minimum. P22: 350F minimum. P91: 400F minimum. Measure with contact pyrometer or tempilstik at 3 inches from weld.",
+    "PWHT": "ALWAYS required. P11: 1100-1350F. P22: 1250-1375F. P91: 1350-1425F (VERY tight range — over 1425F destroys creep strength). Hold time typically 1 hour per inch of thickness, 1 hour minimum.",
+    "hardness_testing": "After PWHT, test hardness of weld and HAZ. P11/P22: 225 HBW maximum. P91: 250 HBW maximum but also check for minimum hardness (soft spots indicate over-tempering).",
+    "common_mistake": "Welding chrome-moly without preheat. Hydrogen cracking WILL occur in the HAZ. By the time you see the crack, it may have propagated through the wall. Preheat is not optional."
+  }
+}

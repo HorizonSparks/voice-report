@@ -629,6 +629,30 @@ function loadRefineKnowledge(trade, allText) {
     }
   }
 
+
+  // ═══════════════════════════════════════════════════════════
+  // 15. BOILERMAKER SPECIALTY (pipefitting trade, boilermaker role)
+  // ═══════════════════════════════════════════════════════════
+  const boilerKeywords = ['boiler', 'tube', 'drum', 'steam drum', 'mud drum', 'waterwall', 'economizer', 'superheater', 'reheater', 'refractory', 'castable', 'firebrick', 'tube sheet', 'tube bundle', 'tube rolling', 'tube plug', 'vessel', 'pressure vessel', 'manway', 'ASME Section I', 'ASME Section VIII', 'NBIC', 'R stamp'];
+  if (trade === 'pipefitting' && boilerKeywords.some(kw => textLower.includes(kw))) {
+    const boilerData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'pipefitting_boilermaker.json'));
+    if (boilerData) {
+      if (textLower.includes('tube') && (textLower.includes('roll') || textLower.includes('expand'))) knowledge += '\nBoilermaker tube rolling knowledge available — torque control, wall reduction, tube projection.';
+      if (textLower.includes('refractory')) knowledge += '\nRefractory knowledge available — castable, brick, anchors, dry-out procedures.';
+      if (textLower.includes('vessel') || textLower.includes('drum')) knowledge += '\nPressure vessel and boiler drum knowledge available — ASME code, nozzle replacement, internals.';
+      if (textLower.includes('bundle')) knowledge += '\nHeat exchanger bundle pulling knowledge available — procedures, clearance, tube sheet inspection.';
+      if (textLower.includes('nbic') || textLower.includes('r stamp') || textLower.includes('repair')) knowledge += '\nNBIC repair code knowledge available — R-stamp requirements, R-1 forms, authorized inspector.';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 16. MILLWRIGHT — RIGGING AND EQUIPMENT SETTING
+  // ═══════════════════════════════════════════════════════════
+  if (trade === 'millwright' && (textLower.includes('rig') || textLower.includes('crane') || textLower.includes('lift') || textLower.includes('set') || textLower.includes('exchanger') || textLower.includes('vessel'))) {
+    const riggingData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'rigging_crane_operations.json'));
+    if (riggingData) knowledge += '\nRigging and crane operations knowledge available for equipment setting.';
+  }
+
   return knowledge;
 }
 

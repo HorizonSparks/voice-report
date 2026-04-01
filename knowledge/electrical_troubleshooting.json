@@ -1,0 +1,144 @@
+{
+  "trade": "Electrical",
+  "category": "troubleshooting",
+  "description": "Electrical troubleshooting knowledge for industrial construction and maintenance — motor issues, power quality, ground faults, breaker trips, transformer problems, VFD faults, lighting, cable testing, and thermal imaging interpretation. The diagnostic approach a journeyman electrician uses in refineries and industrial plants.",
+  "motor_troubleshooting": {
+    "motor_wont_start": {
+      "check_sequence": [
+        "Verify LOTO is cleared and disconnect is ON",
+        "Check incoming voltage at disconnect — all three phases within 2% of each other",
+        "Check starter — contactor pulled in? Overload tripped? Reset overload and try again.",
+        "If overload trips immediately — megger motor windings (phase-to-phase and phase-to-ground)",
+        "Check motor leads for loose connections at terminal box",
+        "Check rotation — bump motor and verify correct rotation before coupling to load",
+        "If VFD controlled — check VFD display for fault codes"
+      ],
+      "common_causes": "Tripped overload (50%), blown fuse (15%), loose connection (15%), bad contactor (10%), motor winding failure (5%), mechanical bind (5%)"
+    },
+    "motor_overheating": {
+      "causes": {
+        "overloaded": "Motor drawing more than nameplate FLA. Check load — coupling alignment, bearing condition, driven equipment binding.",
+        "voltage_imbalance": "Greater than 2% voltage imbalance between phases causes current imbalance up to 6-10x the voltage imbalance. Motor heats unevenly.",
+        "single_phasing": "One phase lost — motor runs on two phases, draws excessive current on remaining phases. Will burn out quickly.",
+        "poor_ventilation": "Fan cover blocked, motor in enclosed space without ventilation, ambient temperature too high.",
+        "high_ambient": "Motor temperature rise + ambient cannot exceed insulation class rating. Class B=130C, Class F=155C, Class H=180C.",
+        "frequent_starts": "Each start draws 6-8x FLA. Frequent starting heats motor excessively. Check minimum restart time."
+      },
+      "diagnostic": "Use IR thermometer or thermal camera. Hot bearing = bearing failure. Hot stator = electrical issue. Even heat all around = overloaded. Uneven heat = voltage imbalance or winding problem."
+    },
+    "megger_testing": {
+      "description": "Insulation resistance test using DC voltage to check winding insulation health.",
+      "test_voltage": {
+        "up_to_1000V_equipment": "500V DC or 1000V DC megger",
+        "1001V_to_5000V": "2500V DC megger",
+        "above_5000V": "5000V DC or 10000V DC megger"
+      },
+      "minimum_acceptable": {
+        "rule_of_thumb": "1 megohm per 1000V of operating voltage + 1 megohm. So 480V motor minimum = 1.48 megohms, round up to 2 megohms.",
+        "IEEE_43": "Minimum 5 megohms for rotating machines (IEEE 43 recommendation)",
+        "new_motor": "Should read 100+ megohms. Anything below 50 megohms on a new motor is suspect.",
+        "in_service_motor": "Below 5 megohms = investigate. Below 2 megohms = remove from service. Below 1 megohm = failed."
+      },
+      "polarization_index": {
+        "description": "Ratio of 10-minute reading to 1-minute reading. Indicates moisture or contamination.",
+        "good": "PI > 2.0",
+        "investigate": "PI 1.0 to 2.0",
+        "failed": "PI < 1.0 — insulation is contaminated or saturated with moisture"
+      },
+      "practical_note": "Always disconnect surge protectors, VFDs, and capacitors before meggering. The DC test voltage will damage electronic components. Discharge windings to ground after test — stored charge can shock.",
+      "common_mistake": "Meggering a motor that is still warm and wet from washdown. Let it dry and cool. Moisture gives false low readings."
+    },
+    "vibration_electrical": {
+      "2x_line_frequency": "120Hz vibration (on 60Hz system) = electrical problem. Voltage imbalance, broken rotor bars, eccentric air gap.",
+      "disappears_when_power_off": "If vibration stops instantly when power is cut (not coast-down), it is electrically caused.",
+      "rotor_bars": "Broken rotor bars cause 120Hz sidebands around running speed in vibration spectrum. Motor current analysis (MCSA) can confirm."
+    }
+  },
+  "breaker_troubleshooting": {
+    "nuisance_tripping": {
+      "thermal_trip": "Overload condition. Verify load amps vs breaker rating. Check for loose connection causing heat. Check for harmonic loading.",
+      "magnetic_trip": "Instantaneous trip = short circuit or very high inrush. Motor starting inrush can trip undersized breaker. Use motor-rated breaker or MCP.",
+      "ground_fault_trip": "GFCI or GFP device tripping. Check for insulation damage, moisture in junction box, shared neutral with another circuit.",
+      "arc_fault_trip": "AFCI tripping. Loose connection, damaged insulation, nail through wire. Required in dwelling units, increasingly in commercial.",
+      "common_mistake": "Replacing breaker with larger size to stop tripping. The wire is sized for the original breaker. Larger breaker = fire hazard. Find the root cause."
+    },
+    "breaker_wont_reset": {
+      "causes": [
+        "Fault still present on circuit — megger the circuit before resetting",
+        "Breaker mechanism damaged — replace breaker",
+        "Breaker must be turned fully OFF before resetting to ON (trip-free mechanism)",
+        "Internal trip unit failed — replace breaker"
+      ]
+    },
+    "contact_resistance": "High resistance at breaker connections causes heating. Torque all connections to manufacturer spec. Use thermal imaging to find hot connections. A 10-degree C rise above ambient at a connection = investigate. 40-degree C rise = immediate repair."
+  },
+  "ground_fault_locating": {
+    "method": {
+      "step_1": "Identify which circuit has the ground fault — megger each circuit from the panel",
+      "step_2": "On the faulted circuit, disconnect loads one at a time and re-megger. When reading jumps up, you found the faulted section.",
+      "step_3": "Physically inspect the faulted section — look for damaged insulation, water in J-box, pinched wire, rodent damage.",
+      "step_4": "For underground or inaccessible faults, use a cable fault locator (thumper + TDR for distance-to-fault)."
+    },
+    "common_locations": "Junction boxes (moisture), conduit bends (wire pulled too hard), equipment terminals (loose and arcing), underground (water infiltration), outdoor (UV degradation of insulation)."
+  },
+  "VFD_fault_codes": {
+    "common_faults": {
+      "overcurrent": "Motor drawing too much current. Check motor, coupling, driven equipment for mechanical bind. Check motor leads for short.",
+      "overvoltage": "DC bus voltage too high. Usually during deceleration — motor regenerating energy back to drive. Add dynamic braking resistor or increase decel time.",
+      "undervoltage": "Input power sag or loss. Check incoming power, fuses, contactors. May need ride-through settings adjusted.",
+      "ground_fault": "Insulation failure between motor winding and ground. Megger motor and cable. Check for moisture.",
+      "overtemperature": "Drive heatsink too hot. Check fans, air filters, ambient temperature. Clean fins. Check ventilation.",
+      "communication_fault": "Lost communication with PLC or BMS. Check network cable, termination resistors, node address."
+    },
+    "practical_note": "Most VFD faults log in the drive memory with timestamp and conditions. Read the fault log before resetting — it tells you exactly what happened."
+  },
+  "power_quality": {
+    "voltage_imbalance": {
+      "measurement": "Measure all three phase-to-phase voltages: AB, BC, CA. Max deviation from average divided by average = percent imbalance.",
+      "limit": "NEMA MG1: max 1% voltage imbalance. Above 1%, motor current imbalance amplified 6-10x. Above 5%, do not run motors.",
+      "causes": "Single-phase loads unevenly distributed, blown fuse on capacitor bank, loose connection on one phase, utility problem.",
+      "effect_on_motors": "2% voltage imbalance = approximately 8% current imbalance = motor runs hot. Significantly shortens motor life."
+    },
+    "harmonics": {
+      "sources": "VFDs, UPS systems, electronic lighting, rectifiers — any non-linear load",
+      "effects": "Transformer overheating, neutral conductor overloading (triplen harmonics), breaker nuisance tripping, motor overheating",
+      "measurement": "Use power quality analyzer (Fluke 1760, Dranetz) to measure THD (total harmonic distortion). IEEE 519 limits THD to 5% at PCC.",
+      "mitigation": "Line reactors, harmonic filters, multi-pulse drives (12-pulse, 18-pulse), active front end drives"
+    },
+    "neutral_overloading": {
+      "cause": "Triplen harmonics (3rd, 9th, 15th) add on neutral instead of canceling. Common with LED lighting and computer loads.",
+      "danger": "Neutral conductor can carry MORE current than phase conductors. No breaker on neutral to protect it.",
+      "fix": "Oversize neutral conductor (200% of phase conductor), use K-rated transformer, add harmonic filters."
+    }
+  },
+  "cable_testing": {
+    "continuity": "Low-resistance ohmmeter (DLRO) for verifying connections. Compare phase-to-phase readings — should be within 5% of each other.",
+    "insulation_resistance": "Megger test — see motor megger testing section. Same applies to cable.",
+    "hi_pot": {
+      "DC_hi_pot": "Apply DC voltage = 2x rated voltage + 1000V for 1 minute. For 5kV cable, test at 11kV DC.",
+      "VLF_hi_pot": "Very Low Frequency (0.01-0.1 Hz) AC test. Better for XLPE cable than DC. Less likely to damage good cable.",
+      "acceptance": "No breakdown, no significant increase in leakage current during test. Record all readings."
+    },
+    "TDR": {
+      "description": "Time Domain Reflectometer — sends pulse down cable and measures reflection to find faults, splices, or cable end.",
+      "use": "Locating cable faults (distance to fault), verifying cable length, finding splices",
+      "practical_note": "TDR accuracy depends on correct velocity factor for the cable type. Check cable manufacturer data."
+    }
+  },
+  "thermal_imaging": {
+    "what_to_look_for": {
+      "connections": "Hot connections indicate high resistance — loose lug, corroded terminal, insufficient torque. Compare similar connections — one hot = problem.",
+      "breakers": "Hot breaker = overloaded or failing mechanism. Compare to adjacent breakers at similar load.",
+      "motors": "Hot bearing = bearing failure. Hot stator = electrical overload or insulation breakdown. Compare end bells — both should be similar temperature.",
+      "transformers": "Hot spot on tank = internal fault or overload. Compare to ambient and to similar transformers.",
+      "cable_tray": "Hot cable in tray = overloaded conductor or damaged insulation."
+    },
+    "delta_T_guidelines": {
+      "1_to_10C_above_similar": "Monitor — schedule repair at next maintenance window",
+      "11_to_20C_above_similar": "Serious — repair soon, within 1-2 weeks",
+      "21_to_40C_above_similar": "Critical — repair as soon as possible",
+      "over_40C_above_similar": "Emergency — immediate repair required"
+    },
+    "practical_note": "Scan under load — problems only show up when current is flowing. Minimum 40% of rated load for meaningful thermal scan. Schedule scans during peak production."
+  }
+}

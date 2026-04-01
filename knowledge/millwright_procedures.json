@@ -1,0 +1,147 @@
+{
+  "trade": "Millwright",
+  "category": "procedures",
+  "description": "Core millwright procedures — equipment setting, baseplate leveling, grouting, precision alignment, bearing installation, coupling installation, mechanical seal installation, pump assembly, and equipment commissioning. Step-by-step field procedures.",
+  "equipment_setting": {
+    "receiving_inspection": [
+      "Check shipping damage — dents, broken mounting feet, bent shafts",
+      "Verify nameplate data matches spec and purchase order",
+      "Check rotation arrow matches system design",
+      "Spin shaft by hand — should turn freely, no binding or rubbing",
+      "Check oil levels if shipped with oil",
+      "Photograph any damage for warranty claim"
+    ],
+    "foundation_preparation": {
+      "concrete": "Chip concrete to rough surface (remove laitance). Clean all oil, grease, dirt. Saturated surface dry before grouting.",
+      "anchor_bolts": {
+        "J_bolt": "Cast in concrete during pour. Verify location and projection before concrete sets. Template from equipment drawing.",
+        "sleeve_anchor": "Drilled after concrete cures. Verify edge distance and embedment depth per engineering.",
+        "epoxy_anchor": "Drilled hole, filled with epoxy, anchor inserted. Follow cure time — do not load until cured."
+      },
+      "elevation": "Check foundation elevation against equipment drawing. Foundation should be 1-2 inches below finish elevation to allow for grout.",
+      "level": "Foundation must be level within 1/8 inch across full baseplate footprint. Chip high spots, do not fill low spots with grout — grout fills from bottom up."
+    },
+    "baseplate_setting": {
+      "leveling": "Use precision level (0.0005 inch per foot sensitivity). Level in two directions — lengthwise and crosswise.",
+      "methods": {
+        "jacking_bolts": "Preferred method. Jacking bolts in baseplate feet allow fine adjustment. Level to within 0.001 inch per foot.",
+        "shim_packs": "Stainless steel shims under mounting feet. Minimum 3 shims per pack for stability. Full-area contact on foundation.",
+        "wedges": "Temporary during setting. Replace with shims before grouting."
+      },
+      "CRITICAL": "Do NOT tighten anchor bolts until baseplate is level. Tightening on an unlevel base warps the baseplate and stresses equipment."
+    },
+    "grouting": [
+      "Build forms — leak-proof, waxed plywood. Grout head (height above baseplate bottom) per manufacturer spec.",
+      "Mix grout per manufacturer instructions — do not add extra water or aggregate.",
+      "Pour from one side only — push grout under baseplate to avoid air pockets.",
+      "Do not vibrate epoxy grout (unlike concrete) — it is self-leveling.",
+      "Fill until grout comes up through all vent holes on opposite side.",
+      "Cure per manufacturer requirements — do not load equipment until fully cured.",
+      "After cure: tighten anchor bolts to spec. Re-check level."
+    ]
+  },
+  "precision_alignment": {
+    "overview": "Alignment is the process of making the centerlines of two shafts collinear (same line). Misalignment causes vibration, seal failure, bearing failure, coupling failure.",
+    "pre_alignment_checks": {
+      "soft_foot": {
+        "description": "When all four feet are not on the same plane — one or more feet spring when tightened.",
+        "check": "Tighten all hold-down bolts. Loosen one at a time and check gap with feeler gauge. If gap exceeds 0.002 inch, correct before alignment.",
+        "correction": "Shim under the high foot to eliminate the gap. Re-check all feet after correction.",
+        "why_critical": "Soft foot distorts the machine frame, stresses bearings, and makes alignment readings unreliable. ALWAYS correct soft foot first."
+      },
+      "pipe_strain": "Disconnect piping before alignment. If shaft position changes when piping is disconnected, there is pipe strain. Piping must be re-routed or supported to eliminate strain.",
+      "bolt_bound": "Verify anchor bolts are not binding in baseplate holes. Bolt should have 1/8 inch clearance around it for lateral movement during alignment."
+    },
+    "dial_indicator_method": {
+      "reverse_dial": {
+        "description": "Two dial indicators, one on each hub, reading the opposite hub. Both indicators rotate together.",
+        "readings": "Take readings at 12, 3, 6, 9 o'clock positions. Calculate offset and angularity from readings.",
+        "formula": "Offset = (Top - Bottom) / 2. Angularity = (Top - Bottom) / (2 x distance between indicators).",
+        "advantage": "More accurate than rim-and-face. Accounts for bracket sag.",
+        "bracket_sag": "Measure sag by clamping bracket, rotating to 6 o'clock, noting reading change. Apply sag correction to all vertical readings."
+      }
+    },
+    "laser_alignment": {
+      "procedure": [
+        "Mount laser heads on coupling hubs or shaft — rigid mounting, no wobble",
+        "Enter machine dimensions in laser tool (coupling-to-sensor distance, sensor-to-front-foot, front-foot-to-back-foot)",
+        "Rotate both shafts together to collect data (minimum 3 points over 180+ degrees)",
+        "Laser calculates offset and angularity at coupling, displays shim corrections at feet",
+        "Correct vertical first (shimming), then horizontal (sliding machine)",
+        "Re-measure to verify — tolerance depends on RPM"
+      ],
+      "thermal_growth": "Many laser systems can input thermal growth values. Motor and pump grow differently when hot. Alignment must be set COLD to end up correct when HOT. Use manufacturer thermal growth data or measure with hot alignment checks.",
+      "tolerances_by_speed": {
+        "below_1800_RPM": {"offset": "0.004 inch", "angularity": "0.0006 inch/inch"},
+        "1800_RPM": {"offset": "0.003 inch", "angularity": "0.0005 inch/inch"},
+        "3600_RPM": {"offset": "0.002 inch", "angularity": "0.0003 inch/inch"},
+        "above_3600_RPM": {"offset": "0.001 inch", "angularity": "0.0002 inch/inch"}
+      }
+    },
+    "common_mistake": "Aligning with anchor bolts loose. Machine will shift when bolts are tightened. Always snug anchor bolts during alignment. Then tighten fully and re-verify."
+  },
+  "bearing_installation": {
+    "interference_fit": {
+      "description": "Bearing inner race bore is smaller than shaft diameter. Must be pressed or heated onto shaft.",
+      "press_fit": {"method": "Hydraulic or arbor press. Apply force to inner race ONLY through a sleeve or tube that contacts inner race.", "NEVER": "Never press on outer race to push bearing onto shaft — this forces load through rolling elements and damages them."},
+      "heat_fit": {"method": "Heat bearing to 200-250F in induction heater or oil bath. Bearing expands and slides onto shaft.", "induction_heater": "SKF TIH, Timken — fast, clean, controlled temperature.", "oil_bath": "Clean mineral oil, temperature controlled. Old method but still works.", "NEVER": "Never use open flame torch — uneven heating distorts bearing and can draw temper from raceway steel."},
+      "hydraulic_mounting": {"method": "Oil injection through shaft hole expands inner race. Hydraulic nut pushes bearing onto tapered seat. For large bearings on tapered shafts."}
+    },
+    "clearance_verification": {
+      "internal_clearance": "Measure with feeler gauge before and after mounting. Press fit reduces internal clearance. Verify remaining clearance meets bearing manufacturer specification.",
+      "endplay": "For tapered roller bearings — set endplay with lock nut. Too tight = overheating. Too loose = vibration. Typical endplay 0.001-0.003 inch.",
+      "preload": "Some applications require preload (negative endplay) — angular contact bearings, precision spindles. Preload eliminates internal clearance for rigidity."
+    },
+    "lubrication_at_installation": "Pack bearing 30-50% full with correct grease. Do NOT pack 100% full — grease has nowhere to go, causes churning and overheating.",
+    "common_mistake": "Reusing a bearing that was removed. Once a bearing is pulled from an interference fit, the inner race is slightly expanded and will be loose on reinstallation. Always install new bearings."
+  },
+  "mechanical_seal_installation": {
+    "cartridge_seal": [
+      "Verify seal model matches equipment spec sheet",
+      "Clean shaft and seal chamber thoroughly — no burrs, no nicks, no residue",
+      "Measure shaft OD at seal location — must be within seal tolerance",
+      "Measure seal chamber bore — must be within spec",
+      "Slide cartridge assembly onto shaft — do NOT remove setting clips yet",
+      "Install gland bolts and tighten evenly in star pattern",
+      "Connect flush piping per API plan",
+      "Remove setting clips LAST — after gland is bolted and piping connected",
+      "Rotate shaft by hand — should turn freely with slight drag from seal faces"
+    ],
+    "component_seal": [
+      "Set seal face compression height per manufacturer dimension drawing",
+      "Mark shaft at correct position using depth micrometer from stuffing box face",
+      "Install stationary seat in gland — O-ring seated, no damage to lapped face",
+      "Install rotating assembly on shaft to the mark",
+      "Tighten set screws on drive collar — verify collar is not cocked on shaft",
+      "Install gland and tighten evenly",
+      "This process is error-prone — cartridge seals eliminate most of these steps"
+    ],
+    "flush_plans": {
+      "Plan_11": "Recirculation from pump discharge through orifice to seal chamber. Most common.",
+      "Plan_13": "Recirculation from seal chamber back to pump suction. For fluids that degrade with heat.",
+      "Plan_32": "External flush from clean source. For dirty or abrasive process fluids.",
+      "Plan_53A": "Pressurized barrier fluid with bladder accumulator. For double seals on hazardous service.",
+      "Plan_54": "External pressurized barrier fluid system. For critical double seal applications."
+    },
+    "common_mistake": "Not checking shaft runout before installing seal. Excessive runout (above 0.002 inch TIR) causes seal faces to separate on each revolution, allowing leakage. Fix runout first."
+  },
+  "pump_procedures": {
+    "disassembly": [
+      "Lock out, tag out, try. Verify zero energy.",
+      "Drain pump casing. Flush if hazardous process fluid.",
+      "Disconnect coupling — remove spacer or flex element.",
+      "Remove bearing housing end cover and bearings (record shim packs and clearances).",
+      "Remove impeller — may need puller if corroded on shaft.",
+      "Remove mechanical seal (note setting position before removing).",
+      "Remove shaft from casing.",
+      "Inspect all wear surfaces — wear rings, shaft sleeve, bearing fits, seal chamber."
+    ],
+    "wear_ring_clearance": {
+      "API_610": "Diametral clearance for new: 0.010-0.020 inch depending on ring diameter and material.",
+      "replace_when": "Clearance exceeds 2x new clearance. Excessive clearance reduces pump efficiency and can cause vibration.",
+      "measurement": "Measure ring ID and impeller OD. Difference = diametral clearance."
+    },
+    "reassembly": "Reverse of disassembly with new gaskets, O-rings, bearings, and seal. Torque all fasteners to spec. Rotate shaft by hand before coupling — must turn freely.",
+    "rotation_check": "ALWAYS bump motor uncoupled first to verify rotation direction. Wrong rotation on a pump can destroy it in seconds (impeller unscrews)."
+  }
+}

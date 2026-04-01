@@ -1,0 +1,283 @@
+{
+  "trade": "Electrical",
+  "category": "materials",
+  "description": "Comprehensive materials knowledge for electricians — wire and cable types, conduit systems, fittings, junction boxes, disconnects, breakers, motor starters, VFDs, transformers, cable tray, and grounding materials. Covers specifications, sizing, NEC requirements, and the common field mistakes that cause rework on industrial construction sites.",
+  "wire_and_cable": {
+    "overview": "Wire selection depends on ampacity, temperature rating, voltage, environment (wet/dry/hazardous), and conduit fill. Wrong wire type means NEC violation, inspection failure, or fire hazard.",
+    "THHN": {
+      "description": "Thermoplastic High Heat-resistant Nylon-coated. THE most common building wire.",
+      "temperature_rating": "90C dry, 75C wet",
+      "voltage_rating": "600V",
+      "insulation": "PVC with nylon jacket",
+      "use": "General purpose in conduit — dry and damp locations. NOT for direct burial or wet locations without additional jacket.",
+      "sizes_available": "14 AWG through 1000 kcmil",
+      "colors": "Black, red, blue, white, green, brown, orange, yellow, gray, purple",
+      "common_mistake": "Using THHN in wet location without checking — THHN alone is only rated 75C wet. Need THHN/THWN-2 dual-rated for wet locations."
+    },
+    "THWN_2": {
+      "description": "Thermoplastic Heat and Water resistant Nylon. Wet location rated.",
+      "temperature_rating": "90C dry AND 90C wet",
+      "voltage_rating": "600V",
+      "use": "Wet locations, conduit exposed to weather, underground in conduit",
+      "practical_note": "Most modern wire is dual-rated THHN/THWN-2. Check the print on the jacket — if it says both, you are good for wet or dry."
+    },
+    "XHHW_2": {
+      "description": "Cross-linked polyethylene High Heat and Water resistant.",
+      "temperature_rating": "90C dry and wet",
+      "voltage_rating": "600V",
+      "insulation": "Cross-linked polyethylene (XLPE) — tougher than PVC",
+      "use": "Where more rugged insulation is needed. Common in cable tray, industrial feeders. Better chemical resistance than THHN.",
+      "advantage": "XLPE insulation resists crushing, chemicals, and heat better than PVC. Preferred for large feeders in industrial settings."
+    },
+    "USE_2": {
+      "description": "Underground Service Entrance cable.",
+      "temperature_rating": "90C wet",
+      "use": "Direct burial underground without conduit",
+      "NOT_for": "Inside buildings — USE is not listed for interior wiring"
+    },
+    "MC_cable": {
+      "description": "Metal Clad cable — conductors inside interlocked armor.",
+      "types": {
+        "standard_MC": "Aluminum interlocked armor. NEC 330. Dry locations, not classified areas.",
+        "MC_HL": "MC cable listed for hazardous locations (gas-tight). Can be used in Class I Div 2.",
+        "MC_continuous_corrugated": "Smooth or corrugated aluminum or steel. Better EMI shielding."
+      },
+      "support_spacing": "Every 6 feet and within 12 inches of box/fitting (NEC 330.30)",
+      "connector": "Use listed MC cable connectors — snap-in or setscrew type. Anti-short bushing (red head) required.",
+      "common_mistake": "Forgetting the anti-short bushing. Inspector will fail it every time."
+    },
+    "MI_cable": {
+      "description": "Mineral Insulated cable (Pyrotenax). Copper conductors in magnesium oxide insulation, copper sheath.",
+      "temperature_rating": "250C (482F) — highest rated cable",
+      "use": "Class I Div 1 hazardous areas, fire-rated circuits, extreme environments",
+      "termination": "Special MI termination fittings required — seal against moisture. MgO insulation is hygroscopic (absorbs water).",
+      "bending": "Minimum bend radius 6x cable OD. Use MI bending tool — do NOT kink.",
+      "practical_note": "MI cable is expensive and hard to work with. But in Div 1 or fire circuits, it may be the only option. Plan your runs carefully — you cannot splice MI cable easily."
+    },
+    "TC_cable": {
+      "description": "Tray Cable — multi-conductor for cable tray installation.",
+      "voltage_rating": "600V",
+      "use": "Cable tray, direct burial (if rated), industrial power and control",
+      "types": "TC-ER (exposed run — can be used outside tray for short distances), TC (tray only)",
+      "practical_note": "TC-ER is very popular in industrial plants — eliminates conduit runs to equipment. Check with inspector on max exposed length."
+    },
+    "welding_cable": {
+      "description": "Extra flexible cable for welding machines and temporary power.",
+      "insulation": "EPDM or neoprene rubber, highly flexible",
+      "sizes": "6 AWG through 4/0",
+      "NOT_for": "Permanent wiring — welding cable is not NEC listed for fixed installation"
+    },
+    "medium_voltage_cable": {
+      "description": "5kV, 8kV, 15kV, 25kV, 35kV rated cable for primary distribution.",
+      "construction": "Conductor + conductor shield + insulation (XLPE or EPR) + insulation shield + metallic shield + jacket",
+      "insulation_types": {
+        "XLPE": "Cross-linked polyethylene. Most common. 90C rating. Dry cure (TR-XLPE) preferred.",
+        "EPR": "Ethylene Propylene Rubber. More flexible than XLPE, better for tight bends. 90C or 105C rating."
+      },
+      "shield": "Copper tape or wire shield MUST be grounded at termination points. Ungrounded shield = electrocution hazard.",
+      "termination": "Stress cone or premolded termination required to manage voltage stress at cable end. Indoor (elbow/deadbreak) vs outdoor (porcelain/polymer bushing).",
+      "splicing": "Cold shrink or heat shrink splice kits. Follow manufacturer instructions EXACTLY — a bad MV splice will fail explosively.",
+      "testing": "DC hi-pot or VLF (very low frequency) AC test after installation. Record all readings.",
+      "practical_note": "MV cable work is specialized. One bad termination can cause an arc flash explosion. If you are not qualified, do not attempt MV terminations."
+    }
+  },
+  "conduit_systems": {
+    "RMC": {
+      "full_name": "Rigid Metal Conduit (galvanized steel)",
+      "NEC_article": "344",
+      "use": "Heavy duty, hazardous areas (Class I Div 1 and 2), outdoor exposed, physical protection",
+      "thread": "NPT tapered thread. Joints must be wrench-tight — not just hand-tight.",
+      "support_spacing": "Every 10 feet max, within 3 feet of box/fitting",
+      "bending": "Max 360 degrees total bends between pull points. Use hydraulic bender for 2 inch and above.",
+      "cutting": "Use pipe cutter or bandsaw. Ream inside edge to remove burr — burr will damage wire insulation during pull.",
+      "practical_note": "RMC is heavy and expensive but required in Div 1 classified areas. Budget extra labor for RMC runs."
+    },
+    "IMC": {
+      "full_name": "Intermediate Metal Conduit",
+      "NEC_article": "342",
+      "use": "Same uses as RMC but lighter weight. Accepted in most hazardous locations.",
+      "wall_thickness": "Thinner than RMC, thicker than EMT",
+      "practical_note": "IMC is a good compromise — lighter than RMC, stronger than EMT, threaded connections. Many specs allow IMC where RMC is shown."
+    },
+    "EMT": {
+      "full_name": "Electrical Metallic Tubing",
+      "NEC_article": "358",
+      "use": "Indoor dry locations, commercial and light industrial. NOT for hazardous classified areas (except limited Div 2).",
+      "connections": "Setscrew or compression fittings — NOT threaded. Compression is preferred for outdoor/damp.",
+      "support_spacing": "Every 10 feet max, within 3 feet of fitting",
+      "sizes": "1/2 inch through 4 inch",
+      "NOT_for": "Severe physical damage, cinder fill, direct burial, classified Div 1 areas",
+      "common_mistake": "Using setscrew fittings in damp location. Must use compression type for damp/wet."
+    },
+    "PVC_conduit": {
+      "full_name": "PVC Schedule 40 or Schedule 80",
+      "NEC_article": "352",
+      "use": "Underground, corrosive environments, wet locations",
+      "schedule_40": "Standard duty. Gray. Most common for underground.",
+      "schedule_80": "Heavy duty. Gray, thicker wall. Required where subject to physical damage and where emerging from underground.",
+      "expansion": "PVC expands with temperature — use expansion fittings on long exposed runs (1 inch per 100 feet per 10F change).",
+      "solvent_cement": "Use proper PVC cement — let joints cure before pulling wire. 2 hours minimum, 24 hours ideal.",
+      "temperature": "Not for locations above 50C. Gets brittle in extreme cold — handle carefully in winter.",
+      "common_mistake": "Not using expansion fittings on long exposed PVC runs. The conduit will bow and pull out of fittings in summer."
+    },
+    "LFMC": {
+      "full_name": "Liquidtight Flexible Metal Conduit",
+      "NEC_article": "350",
+      "use": "Final connection to motors, vibrating equipment, equipment that moves. Wet locations.",
+      "max_length": "6 feet for equipment grounding path (NEC 350.60). Beyond 6 feet, add separate bonding jumper.",
+      "connectors": "Use liquidtight connectors — straight or 90 degree. Insulated throat.",
+      "practical_note": "Every motor connection should have LFMC for the last 2-3 feet. Protects against vibration damage to rigid conduit."
+    }
+  },
+  "fittings_and_hardware": {
+    "Myers_hub": {
+      "description": "Watertight hub for conduit entry into NEMA 4 or 4X enclosures",
+      "use": "Any outdoor panel, JB, or enclosure entry. Provides watertight seal.",
+      "installation": "Tighten locknut inside, then tighten hub body from outside. Gasket must seat flat.",
+      "practical_note": "Every outdoor conduit entry needs a Myers hub or equivalent. Standard locknuts and bushings are NOT watertight."
+    },
+    "conduit_bodies": {
+      "types": {
+        "LB": "90-degree back — conduit enters from each end, opening faces away from wall",
+        "LL": "90-degree left — opening faces left",
+        "LR": "90-degree right — opening faces right",
+        "T": "Tee — three conduit entries",
+        "C": "Straight-through — access for pulling"
+      },
+      "rule": "Count as one bend (90 degrees) in the conduit run. Cover must be accessible — do not bury behind walls.",
+      "fill": "Same fill rules as conduit. Must be large enough for the conductors."
+    },
+    "Unistrut": {
+      "description": "Channel strut system for mounting conduit, cable tray, equipment",
+      "sizes": "1-5/8 x 1-5/8 (standard P1000), 1-5/8 x 3-1/4 (deep P1001), back-to-back for heavy loads",
+      "material": "Galvanized steel, stainless steel, fiberglass",
+      "fittings": "Spring nuts, flat plate fittings, angle fittings, pipe clamps, beam clamps",
+      "support_capacity": "P1000 at 10ft span: approximately 450 lbs uniform load (check manufacturer tables for exact)",
+      "practical_note": "Use spring nuts — regular nuts back off with vibration. In corrosive areas, use stainless or fiberglass."
+    },
+    "beam_clamps": {
+      "types": "C-clamp, purlin clamp, flange clamp, I-beam clamp",
+      "rule": "Must be rated for the load. NEVER weld to structural steel without engineer approval.",
+      "practical_note": "Use beam clamps for supports from structural steel. Drilling or welding to structural members requires field engineer approval and hot work permit."
+    }
+  },
+  "junction_boxes": {
+    "NEMA_ratings": {
+      "NEMA_1": "Indoor, general purpose. No special protection.",
+      "NEMA_3R": "Outdoor, rain-tight. Most common outdoor box.",
+      "NEMA_4": "Watertight, dust-tight. For hosedown areas, outdoor splash.",
+      "NEMA_4X": "Same as 4 plus corrosion resistant (stainless or fiberglass). For chemical plants, coastal.",
+      "NEMA_7": "Explosion-proof, Class I (gas). Cast aluminum or iron, machined flanges.",
+      "NEMA_9": "Dust-ignition-proof, Class II (combustible dust)."
+    },
+    "explosion_proof": {
+      "requirements": "Threaded conduit entries, 5 full engaged threads minimum, sealing fittings within 18 inches",
+      "cover_bolts": "All cover bolts must be installed — missing bolts violate the explosion-proof rating",
+      "sealing_fittings": "Chico compound (sealing putty) packed to minimum 5/8 inch depth. Dam with fiber first, then pour compound.",
+      "common_mistake": "Not sealing conduit within 18 inches of explosion-proof box. Inspector will red-tag it immediately."
+    },
+    "sizing_NEC": "Box fill calculation per NEC 314.16. Count conductors, grounds, clamps, devices. Each 14AWG = 2 cu in, 12AWG = 2.25, 10AWG = 2.5, 8AWG = 3, 6AWG = 5."
+  },
+  "switchgear_and_breakers": {
+    "molded_case_breakers": {
+      "types": "Thermal-magnetic (standard), electronic trip (adjustable), motor circuit protector (MCP)",
+      "frame_sizes": "100A, 225A, 400A, 600A, 800A, 1200A, 2000A, 3000A, 4000A",
+      "interrupting_rating": "Check AIC (ampere interrupting capacity) matches available fault current. 10kAIC, 14kAIC, 25kAIC, 42kAIC, 65kAIC common.",
+      "common_mistake": "Installing a 10kAIC breaker where fault current is 25kA. Breaker will explode on a fault. ALWAYS verify AIC."
+    },
+    "motor_starters": {
+      "NEMA_sizes": {
+        "size_0": "Up to 5 HP at 480V",
+        "size_1": "Up to 10 HP at 480V",
+        "size_2": "Up to 25 HP at 480V",
+        "size_3": "Up to 50 HP at 480V",
+        "size_4": "Up to 100 HP at 480V",
+        "size_5": "Up to 200 HP at 480V"
+      },
+      "overload_setting": "Set overload to motor FLA (full load amps) on nameplate. NOT breaker size, NOT wire ampacity — motor FLA.",
+      "common_mistake": "Setting overload too high because motor trips. The motor may have a real problem — bearing, coupling, overloaded. Investigate before adjusting overload."
+    },
+    "VFD": {
+      "description": "Variable Frequency Drive — controls motor speed by varying frequency and voltage",
+      "installation": {
+        "input_side": "3-phase power. Line reactor or drive isolation transformer recommended to reduce harmonics.",
+        "output_side": "Shielded cable (VFD cable) to motor. Ground shield at both ends. Max cable length depends on carrier frequency.",
+        "grounding": "CRITICAL — VFD generates common-mode voltage. Ground motor frame, conduit, and drive frame. Use shaft grounding ring on motor to prevent bearing damage.",
+        "cable_length": "Over 100 feet, reflected wave voltage can damage motor insulation. Use output reactor or inverter-duty motor.",
+        "EMI": "VFDs generate electrical noise. Keep VFD cables separate from signal cables. Use shielded VFD cable."
+      },
+      "brands": "ABB (ACS series), Allen-Bradley (PowerFlex), Siemens (SINAMICS), Eaton, Yaskawa, Danfoss",
+      "common_mistake": "Running standard motor on VFD without checking insulation rating. Standard motors need inverter-duty insulation (NEMA MG1 Part 31) for VFD operation above 600V peak."
+    }
+  },
+  "transformers": {
+    "types": {
+      "dry_type": "Air-cooled, indoor use. 480V to 208/120V most common. AA (self-cooled) or FA (fan-cooled).",
+      "oil_filled": "Outdoor, pad-mounted or pole-mounted. Better cooling, higher capacity. Requires containment for oil spill.",
+      "cast_coil": "Epoxy-encapsulated windings. For harsh environments, classified areas. Very rugged."
+    },
+    "connections": {
+      "delta_wye": "Most common industrial. Primary 480V delta, secondary 208Y/120V. Provides 120V for lighting and receptacles.",
+      "delta_delta": "No neutral. Used for motor loads only.",
+      "wye_wye": "Less common. Can have harmonic problems. Needs careful grounding."
+    },
+    "sizing": "kVA = (Volts x Amps x 1.732) / 1000 for 3-phase. Common sizes: 15, 30, 45, 75, 112.5, 150, 225, 300, 500, 750, 1000, 1500, 2000, 2500 kVA.",
+    "impedance": "Typical 5.75% for distribution transformers. Higher impedance = lower fault current but higher voltage drop.",
+    "installation": {
+      "clearances": "NEC 450.21 — separation from combustibles. Dry type less than 112.5kVA = 12 inches from combustibles. Over 112.5kVA = fire-resistant room or vault.",
+      "ventilation": "Dry type needs ventilation — do not block air openings. Temperature rise rating must match ambient conditions.",
+      "grounding": "Secondary neutral must be grounded (bonded) at transformer per NEC 250.30. This is the separately derived system ground."
+    },
+    "testing": {
+      "turns_ratio": "Verify tap setting matches design. Turns ratio test confirms correct transformation ratio.",
+      "insulation_resistance": "Megger at 1000V DC (for 480V class) or 2500V DC (for 5kV class). Record readings — compare to manufacturer minimum.",
+      "winding_resistance": "DC resistance measurement detects loose connections, broken strands, tap changer contact problems."
+    }
+  },
+  "cable_tray": {
+    "types": {
+      "ladder": "Two side rails with rungs. Best ventilation, best for large cables. Most common in industrial.",
+      "solid_bottom": "Continuous bottom — better support for small cables, but less ventilation.",
+      "wire_mesh": "Basket style (Cablofil). Lightweight, fast installation. Good for data and small power cables.",
+      "channel": "Small, solid trough for single cables or small groups. For branch circuits."
+    },
+    "sizing_NEC_392": {
+      "fill_rule": "Single layer for cables over 4/0 in ladder tray. Smaller cables can stack — max fill depends on tray width and cable type.",
+      "width": "6, 12, 18, 24, 30, 36 inches common",
+      "loading": "Check tray load rating (lbs/ft) vs cable weight. Include weight of cables, ice loading if outdoor."
+    },
+    "support_spacing": {
+      "steel": "Every 12 feet for straight runs, 8 feet maximum. Closer for heavy loads.",
+      "aluminum": "Every 8-10 feet maximum.",
+      "at_fittings": "Support within 12-24 inches of horizontal tees, crosses, elbows."
+    },
+    "grounding": "Cable tray must be grounded as equipment grounding conductor if used as such. Bonding jumpers at all joints — bolted splice plates alone are not sufficient for ground path per NEC 392.60.",
+    "firestop": "Where tray penetrates fire-rated wall or floor, firestop with listed system. Pillow, putty, or intumescent wrap.",
+    "practical_note": "Label cable tray covers — installers will lay cables on wrong tray if not clearly marked. Use color-coded tags for different voltage levels."
+  },
+  "grounding_and_bonding": {
+    "ground_rods": {
+      "specification": "5/8 inch diameter minimum, 8 feet long, copper-clad steel (UL listed)",
+      "installation": "Drive full depth. If rock prevents, can be buried in 30-inch trench at 45 degrees minimum.",
+      "resistance": "25 ohms maximum (NEC 250.56). If over 25 ohms, add second rod minimum 6 feet apart.",
+      "testing": "Fall-of-potential method with ground resistance tester (Megger DET series, Fluke 1625). Three-point test.",
+      "connection": "Exothermic weld (Cadweld) or listed compression connector. NO wire nuts, NO split bolts for grounding connections."
+    },
+    "grounding_electrode_conductor": {
+      "sizing": "NEC Table 250.66. Based on largest service conductor. 2 AWG copper minimum for most services.",
+      "routing": "Must be continuous — no splices except irreversible compression or exothermic weld. Can be exposed but protected from physical damage.",
+      "material": "Copper or aluminum. Copper preferred — aluminum cannot contact earth or concrete."
+    },
+    "equipment_bonding": {
+      "purpose": "Ensure low-impedance fault current path back to source. Clears faults quickly by tripping breaker.",
+      "bonding_bushings": "Required on service entrance conduit. Provides positive ground connection through concentric knockouts.",
+      "bonding_jumpers": "Required at water pipes, gas pipes, structural steel. Per NEC 250.104."
+    },
+    "Cadweld": {
+      "description": "Exothermic weld — copper thermite reaction creates molecular bond. Best ground connection available.",
+      "procedure": "Clean conductor and ground rod. Place in mold. Load weld metal and ignition disk. Fire with flint igniter. Let cool 30 seconds minimum.",
+      "inspection": "Weld should completely fill mold. No voids, no cold joints. Conductor should be fused into weld mass.",
+      "common_mistake": "Wet conditions — moisture in mold causes weld to blow out. Preheat mold with propane torch if damp. NEVER weld in rain."
+    }
+  }
+}

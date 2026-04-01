@@ -1,0 +1,63 @@
+{
+  "trade": "Industrial Erection",
+  "category": "troubleshooting",
+  "description": "Erection troubleshooting — fit-up problems, bolt tension issues, weld defects, column plumbness correction, equipment setting problems, and crane issues during picks.",
+  "fit_up_problems": {
+    "holes_dont_align": {
+      "causes": "Fabrication tolerance stack-up, field measurement error, foundation anchor bolt pattern wrong, steel distorted during shipping.",
+      "solutions": {
+        "drift_pin": "Use drift pin (spud wrench) to align holes. Acceptable for minor misalignment (up to 1/16 inch).",
+        "reaming": "If holes are close but not aligned, ream to next larger bolt size. Must be approved by engineer. Document reamed holes.",
+        "slotted_holes": "If designed with slotted holes, use the slot for adjustment. That is their purpose.",
+        "field_modification": "If misalignment exceeds acceptable limits, notify engineer. May require field-drilled holes, gusset plates, or splice plates. NEVER cut or enlarge holes without engineer approval."
+      }
+    },
+    "member_length_wrong": {
+      "too_long": "Member does not fit between connections. May need to be trimmed (if connection allows) or returned to shop. Engineer approval required for any field cutting of primary members.",
+      "too_short": "Gap at connection. May need fill plates or shim plates. Engineer approval required. Document all field modifications.",
+      "tolerance": "AISC Code of Standard Practice: member length tolerance is +/- 1/16 inch for members up to 30 feet, +/- 1/8 inch for longer members."
+    },
+    "camber": "Beams are intentionally cambered (curved upward) to counteract deflection under load. Camber must be UP. If installed upside down (camber down), beam will deflect excessively. Check camber direction before setting."
+  },
+  "bolt_tension_issues": {
+    "TC_spline_wont_shear": "Inner socket slipping on spline. Clean spline, try again. If socket is worn, replace. If spline still won't shear, bolt may be from a lot with higher tensile — run calibration test.",
+    "cant_achieve_turn": "Bolt binding in hole — check for paint in hole, burrs, cross-threading. Excessive bolt stack grip length — bolt may be too short.",
+    "DTI_gap_wont_close": "Not enough tension. Check that DTI is correct type for bolt size. Verify washer is right side up (bumps face bolt head or nut). May need larger wrench or impact.",
+    "bolts_loosening": "Vibration, thermal cycling, or insufficient initial tension. Verify pretension method is achieving specification. For critical connections in vibrating equipment, consider lock nuts or thread-locking compound."
+  },
+  "weld_defects": {
+    "porosity": {"cause": "Gas trapped in weld — wind blowing shielding gas away, contamination (oil, moisture, paint on base metal), gas flow too high or too low.", "fix": "Shield from wind. Clean base metal. Adjust gas flow (35-45 CFH for FCAW-GS)."},
+    "lack_of_fusion": {"cause": "Insufficient heat, wrong angle, travel speed too fast, arc wandering to one side of joint.", "fix": "Increase amperage, correct gun angle, slow down, ensure arc is on the leading edge of the puddle."},
+    "undercut": {"cause": "Excessive amperage, gun angle too steep, travel speed too fast on fillet welds.", "fix": "Reduce amperage, flatten gun angle, slow down. Minor undercut (1/32 inch) may be acceptable per AWS D1.1."},
+    "cracks": {"cause": "Hydrogen cracking (insufficient preheat, wet electrodes), restraint cracking (too much joint restraint), lamellar tearing (through-thickness loading of plate).", "severity": "Cracks are NEVER acceptable in structural welds. Must be gouged out and rewelded. Investigate root cause before rewelding."},
+    "incomplete_penetration": {"cause": "Root opening too small, root face too large, insufficient amperage, improper technique.", "fix": "Back-gouge root if accessible and reweld. For CJP welds, incomplete penetration fails UT inspection."}
+  },
+  "column_plumbness": {
+    "out_of_plumb": {
+      "check_method": "Transit or total station sighting two perpendicular faces. Or plumb bob for short columns.",
+      "correction": {
+        "base_plate_shimming": "Add or remove shims under base plate to tilt column back to plumb. Only works for small corrections.",
+        "turnbuckle_bracing": "Temporary cable bracing with turnbuckle. Tighten turnbuckle to pull column to plumb. Hold until permanent bracing is installed.",
+        "come_along": "Use come-along between column and adjacent structure to pull into position."
+      },
+      "NEVER": "Never heat column to straighten (unless specifically approved by engineer with heat straightening procedure). Never cut anchor bolts to reposition."
+    }
+  },
+  "equipment_setting": {
+    "foundation_not_level": "Shim under saddles or base plate. Verify with precision level. Do not force equipment onto unlevel foundation — causes stress and misalignment.",
+    "anchor_bolt_pattern_wrong": "If bolts are off, you may need to drill new holes and install post-installed anchors. Engineer approval required. This is a costly field fix — emphasizes importance of checking template before concrete pour.",
+    "vessel_orientation_wrong": "Nozzles facing wrong direction. Must rotate vessel. For large vessels, this requires re-rigging and crane. Very expensive field fix. ALWAYS verify orientation before releasing crane.",
+    "crane_issues": {
+      "load_binding": "Load catches on structure during pick. Stop. Evaluate. May need different rigging configuration or different crane position.",
+      "crane_walking": "Crane on soft ground settles under load. Outrigger pads too small for soil conditions. Need larger pads or crane mats.",
+      "boom_deflection": "At long radius, boom deflects — load swings toward crane. Account for this in rigging plan. Tag lines critical.",
+      "wind": "Wind limit exceeded — stop operations. Secure loads. Do not attempt picks in high wind."
+    }
+  },
+  "weather_delays": {
+    "wind": "Most crane operations limited to 20-30 mph. Bolt torquing unaffected. Welding may need wind screens above 5 mph (gas shielded) or 15 mph (self-shielded FCAW).",
+    "rain": "Do not weld in rain. Steel surfaces must be dry. Bolt installation can continue if workers can safely access connections.",
+    "cold_weather": {"welding": "Preheat required when ambient temperature below 32F. Even for thin material and A36 steel.", "bolting": "TC bolts may not shear correctly below 20F — calibrate with actual lot at ambient temperature.", "concrete": "Grout and concrete require freeze protection below 40F. Blankets, heaters, or heated enclosures."},
+    "hot_weather": {"grouting": "Epoxy grout pot life shortens dramatically above 90F. Pour early morning. Keep materials in shade.", "worker_safety": "Heat stress monitoring. Water, rest, shade per OSHA heat illness prevention."
+  }
+}

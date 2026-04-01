@@ -1,0 +1,146 @@
+{
+  "trade": "Millwright",
+  "category": "troubleshooting",
+  "description": "Millwright troubleshooting knowledge — vibration analysis, pump problems, compressor issues, gearbox failures, bearing diagnostics, seal failures, conveyor problems, and hydraulic system troubleshooting. The diagnostic thinking a journeyman millwright uses in the field.",
+  "vibration_analysis": {
+    "overview": "Vibration is the millwright's stethoscope. Every mechanical problem has a vibration signature. Learn to read it and you can diagnose problems before they become failures.",
+    "imbalance": {
+      "signature": "1x RPM dominant, mostly radial direction. Amplitude proportional to speed squared.",
+      "causes": "Missing balance weight, buildup on impeller/fan (scale, product), erosion of impeller, broken blade/vane, eccentric rotor.",
+      "fix": "Balance in place (single or two-plane) or remove rotor and shop balance. Clean buildup if that is the cause."
+    },
+    "misalignment": {
+      "angular": "1x RPM axial vibration dominant. High axial reading at coupling.",
+      "offset": "2x RPM radial vibration dominant. Both machines show elevated readings.",
+      "combination": "Most real misalignment is a combination of angular and offset. 1x and 2x RPM both elevated.",
+      "fix": "Re-align. But first check: soft foot, pipe strain, thermal growth. Aligning without fixing these root causes means re-aligning again next month."
+    },
+    "bearing_defects": {
+      "inner_race": "BPFI frequency (Ball Pass Frequency Inner race). Modulated by 1x RPM. Usually accompanied by harmonics.",
+      "outer_race": "BPFO frequency (Ball Pass Frequency Outer race). Steady, non-modulated. Most common bearing defect found by vibration.",
+      "rolling_elements": "BSF (Ball Spin Frequency). Erratic, often intermittent in early stages.",
+      "cage_defect": "FTF (Fundamental Train Frequency). Very low frequency, hard to detect with standard accelerometers. Often appears as sideband modulation of other frequencies.",
+      "stages": {
+        "stage_1": "Ultrasonic range (above 20kHz). Detectable only with ultrasound or envelope analysis. Bearing looks fine visually.",
+        "stage_2": "Bearing defect frequencies appear in vibration spectrum. Bearing has measurable defect but still functional.",
+        "stage_3": "Harmonics of defect frequencies, sidebands, elevated noise floor. Bearing is degrading rapidly. Plan replacement.",
+        "stage_4": "Broadband vibration, random noise, 1x RPM changes. Bearing is failing NOW. Emergency replacement."
+      }
+    },
+    "looseness": {
+      "structural": "1x, 2x, and many harmonics (3x, 4x, 5x...) of RPM. Base not bolted tight, cracked foundation, loose hold-down bolts.",
+      "rotating": "Sub-harmonics (0.5x RPM) and harmonics. Loose bearing on shaft, loose impeller, excessive bearing clearance.",
+      "fix": "Tighten everything. Check foundation, anchor bolts, bearing fits, impeller attachment, coupling set screws."
+    },
+    "resonance": {
+      "description": "When a forcing frequency (usually 1x RPM) matches a structural natural frequency, vibration amplifies dramatically.",
+      "identification": "Bump test (impact test) to find natural frequency. If it matches running speed, you have a resonance problem.",
+      "fix": "Change stiffness (add bracing) or change mass (add or remove weight) to shift natural frequency away from running speed. Cannot fix with alignment or balance."
+    },
+    "tools": {
+      "overall_vibration": "Handheld vibration meter (IRD, Fluke 805). Quick screening — tells you if there IS a problem but not what it is.",
+      "spectrum_analyzer": "CSI 2140 (Emerson), SKF Microlog, Pruftechnik (Fluke). Shows frequency content — tells you WHAT the problem is.",
+      "ultrasound": "SDT, UE Systems. Detects early bearing defects, air/gas leaks, electrical arcing. Frequencies above human hearing."
+    }
+  },
+  "pump_troubleshooting": {
+    "cavitation": {
+      "symptoms": "Crackling/gravel noise from pump, erratic discharge pressure, vibration at high frequencies, pitting on impeller vanes.",
+      "cause": "Insufficient NPSH available. Suction pressure too low — liquid flashes to vapor in impeller eye, vapor bubbles collapse violently on impeller.",
+      "check": "Suction gauge reading, strainer differential pressure (plugged strainer restricts suction), suction valve fully open, liquid temperature (higher temp = lower NPSH available).",
+      "fix": "Open suction valve fully, clean strainer, lower pump speed (if VFD), raise suction vessel level, cool liquid, shorten/straighten suction piping."
+    },
+    "seal_leaking": {
+      "minor_drip": "May be normal break-in for new seal (first 24 hours). Monitor — if it does not stop or gets worse, investigate.",
+      "major_leak": "Seal failed. Common causes: dry running (lost flush), contamination in flush, wrong seal material for process, incorrect setting height, shaft runout.",
+      "troubleshooting": "Check flush system first — is Plan 11 orifice plugged? Is Plan 32 supply valve open? Is barrier fluid level OK (Plan 53)?"
+    },
+    "low_flow_or_pressure": {
+      "check": [
+        "Is pump primed? Check for air in casing — vent through casing vent valve.",
+        "Suction valve open? Discharge valve open?",
+        "Impeller worn — check wear ring clearance (excessive clearance = internal recirculation, low efficiency).",
+        "Running backwards — check rotation. Wrong rotation on centrifugal pump produces about 50% of rated head.",
+        "Speed correct? If VFD controlled, verify speed setting.",
+        "Discharge check valve stuck closed or installed backwards."
+      ]
+    },
+    "bearing_overheating": {
+      "causes": "Over-lubrication (most common!), misalignment, bearing defect, axial thrust overload, wrong bearing type, insufficient cooling.",
+      "max_temperature": "General rule: bearing temperature should not exceed 180F (82C). Above 200F = shutdown and investigate.",
+      "check": "Verify grease quantity is correct (not overfilled). Check alignment. Check coupling for axial binding. Feel both bearings — if one is hot and other is cool, the hot one likely has a defect."
+    },
+    "high_vibration": {
+      "at_1x_RPM": "Imbalance (fouled impeller, lost weight) or misalignment.",
+      "at_vane_pass": "Number of vanes x RPM. Impeller-to-cutwater clearance too small, recirculation at low flow.",
+      "broadband": "Cavitation, recirculation, bearing failure.",
+      "flow_related": "If vibration changes significantly with flow rate — probably hydraulic (recirculation, cavitation). Not mechanical."
+    }
+  },
+  "compressor_troubleshooting": {
+    "reciprocating": {
+      "high_discharge_temp": "Broken valve (leaking past), wrong clearance, high ratio, insufficient cooling.",
+      "low_capacity": "Leaking valves, worn piston rings, wrong clearance setting, partially closed suction valve.",
+      "rod_drop": "Piston rider band worn — piston sagging in cylinder. Measure with proximity probe or dial indicator. Excessive rod drop = piston contacting cylinder wall.",
+      "valve_problems": "Most common recip compressor issue. Broken valve plates, worn springs, seat erosion. Valve temperature monitoring catches failing valves early — hot valve = leaking valve.",
+      "knocking": "Liquid in cylinder (liquid slugging), worn crosshead pin, loose piston nut, excessive rod drop. LIQUID SLUGGING IS EMERGENCY — shut down immediately, liquid is incompressible and will blow out cylinder head."
+    },
+    "centrifugal": {
+      "surge": "Flow too low — compressor stalls and flow reverses momentarily. Repeated surging destroys thrust bearing and seals. Anti-surge control must function.",
+      "high_vibration": "Fouled impeller (imbalance), misalignment, bearing wear, seal rub, surge.",
+      "high_bearing_temp": "Low oil flow, oil cooler fouled, wrong oil viscosity, bearing damage, misalignment, excessive thrust."
+    }
+  },
+  "gearbox_troubleshooting": {
+    "gear_mesh_frequency": "Number of teeth x RPM. Normal gear mesh produces a peak at this frequency. Problem shows as elevated amplitude or sidebands around gear mesh frequency.",
+    "tooth_wear": "Gradual increase in gear mesh amplitude and appearance of harmonics. Oil analysis shows increasing iron content.",
+    "broken_tooth": "Impulse once per revolution of the damaged gear. Time waveform shows impact spike. Vibration may be intermittent.",
+    "misalignment_of_gears": "Elevated 2x gear mesh frequency. Even harmonics of gear mesh. Check shaft alignment and bearing condition.",
+    "oil_analysis": {
+      "normal_wear": "Gradual increase in iron particles over time. Trend it.",
+      "abnormal": "Sudden spike in iron = something broke. Large particles (>25 micron) = fatigue pitting or broken tooth.",
+      "copper": "Indicates bearing cage wear or thrust washer wear.",
+      "silicon": "Dirt ingestion — check breather, seals, oil supply filtration."
+    },
+    "common_mistake": "Running gearbox with low oil level. Oil level must be checked with equipment STOPPED (not running). Running level appears higher due to oil distribution. Low oil = no lubrication on lower gears and bearings."
+  },
+  "conveyor_troubleshooting": {
+    "belt_tracking": {
+      "problem": "Belt drifts to one side — rubs against frame, damages edge, can roll off.",
+      "causes": "Misaligned idlers, misaligned pulleys, uneven loading, belt splice not square, frame not straight.",
+      "rule": "Belt tracks toward the side it contacts first. If belt is running to the right, the right side is being pulled forward — something on the right side is steering it.",
+      "fix": "Adjust idlers — pivot the return idler on the side the belt is tracking toward. Small adjustments. Walk the belt — adjust at the point where tracking starts to go wrong."
+    },
+    "belt_slip": {
+      "symptoms": "Belt slides on drive pulley under load. Burning rubber smell, visible slip, reduced speed.",
+      "causes": "Insufficient belt tension, worn lagging on drive pulley, wet conditions, overloaded conveyor.",
+      "fix": "Increase take-up tension (gravity or screw type). Replace worn lagging. Add ceramic lagging for wet conditions."
+    },
+    "belt_damage": {
+      "rips_tears": "Material trapped between belt and idler, sharp material impact, belt splice failure.",
+      "edge_wear": "Mistracking — belt rubbing on frame. Fix tracking before replacing belt.",
+      "cover_wear": "Skirtboard too tight, material abrasion, return idler seized (acts like sandpaper on belt)."
+    },
+    "roller_failure": "Seized idler roller heats up and can start fire (especially in coal or grain handling). Listen for squealing. Replace seized rollers immediately. Thermal cameras on conveyor routes catch hot rollers before they ignite."
+  },
+  "hydraulic_troubleshooting": {
+    "no_pressure": {
+      "causes": "Low oil level, pump not priming (air in suction), relief valve stuck open or set too low, pump internal failure (worn gears/vanes), broken coupling between motor and pump.",
+      "check": "Oil level first. Then check coupling (motor spinning but pump not?). Then check relief valve setting. Then check pump flow (disconnect line and see if oil comes out)."
+    },
+    "slow_operation": {
+      "causes": "Low flow — pump wear, partially closed valve, internal leakage in cylinder (seals bypassing), restricted line (kinked hose, blocked filter).",
+      "check": "System pressure gauge — if pressure is OK but speed is slow, the cylinder seals are likely bypassing. If pressure is low, problem is upstream (pump or relief valve)."
+    },
+    "overheating": {
+      "max_temp": "Most hydraulic systems should run below 140F (60C). Above 180F = shutdown.",
+      "causes": "Oil cooler fouled, low oil level (less oil cycling = more heat per gallon), relief valve partially cracking (constant bypass), internal leakage (energy becomes heat), wrong viscosity oil.",
+      "fix": "Clean cooler, top up oil, check relief valve, repair internal leaks, verify correct oil grade."
+    },
+    "contamination": {
+      "the_enemy": "Contamination causes 80% of hydraulic failures. Dirt particles between close-tolerance parts cause wear, sticking, and leakage.",
+      "prevention": "Change filters on schedule. Keep reservoir sealed. Clean around fittings before disconnecting. Use clean containers for oil.",
+      "particle_counting": "ISO 4406 cleanliness code. Servo valves need ISO 16/14/11 or cleaner. Standard systems need ISO 19/17/14 or cleaner."
+    }
+  }
+}

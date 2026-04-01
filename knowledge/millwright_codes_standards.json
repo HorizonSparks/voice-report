@@ -1,0 +1,89 @@
+{
+  "trade": "Millwright",
+  "category": "codes_standards",
+  "description": "Codes and standards that govern millwright work — API standards for rotating equipment, ASME standards, ISO vibration and balance standards, AGMA gear standards, alignment tolerances, and OSHA machinery requirements.",
+  "API_standards": {
+    "API_610": {
+      "title": "Centrifugal Pumps for Petroleum, Petrochemical and Natural Gas Industries",
+      "key_requirements": {
+        "minimum_bearing_life": "L10 of 25,000 hours (about 3 years continuous)",
+        "shaft_deflection": "Maximum shaft deflection at seal chamber must not exceed 0.002 inch under worst-case conditions",
+        "baseplate": "Must be rigid enough to maintain alignment. Grouted to foundation.",
+        "nozzle_loads": "Pump must accept piping loads per API 610 Table 4 without exceeding alignment tolerances",
+        "vibration_limits": "Unfiltered vibration: 0.12 in/sec velocity at any bearing housing for acceptance test",
+        "suction_specific_speed": "Below 11,000 (US units) to avoid suction recirculation problems"
+      },
+      "practical_note": "API 610 is THE standard for refinery pumps. If the spec says 'API 610', every requirement in the standard applies. Read it."
+    },
+    "API_686": {
+      "title": "Machinery Installation and Installation Design — THE millwright bible",
+      "covers": "Baseplate and sole plate installation, leveling, grouting, alignment, piping connection, pre-commissioning checks",
+      "key_tables": {
+        "alignment_tolerances": "Table 1 — offset and angularity limits by RPM. Same as what laser alignment tools use.",
+        "soft_foot": "Maximum 0.002 inch (50 microns) per foot",
+        "baseplate_levelness": "0.001 inch per foot maximum",
+        "grout_void": "No voids — tap test with hammer to verify solid fill"
+      },
+      "practical_note": "If you only read one API standard as a millwright, make it API 686. It tells you exactly how to install equipment right the first time."
+    },
+    "API_617": {"title": "Axial and Centrifugal Compressors and Expander-compressors", "vibration_limit": "Direct (unfiltered): 25.4 * sqrt(12000/RPM) microns, maximum 25.4 microns. Tighter than pumps."},
+    "API_611": {"title": "General-Purpose Steam Turbines", "use": "Turbines below about 2000 HP. Single-valve, single-stage or multi-stage."},
+    "API_612": {"title": "Special-Purpose Steam Turbines", "use": "Critical service turbines. Tighter requirements than 611."},
+    "API_616": {"title": "Gas Turbines for the Petroleum, Chemical, and Gas Industry Services"}
+  },
+  "ISO_standards": {
+    "ISO_10816": {
+      "title": "Mechanical vibration — Evaluation of machine vibration by measurements on non-rotating parts",
+      "zones": {
+        "Zone_A": "Good — newly commissioned or overhauled machine should be in this zone",
+        "Zone_B": "Acceptable — machine can operate indefinitely with no restrictions",
+        "Zone_C": "Alert — machine has a problem. Plan corrective action.",
+        "Zone_D": "Danger — machine may be damaged if operation continues. Shut down."
+      },
+      "limits_group_1": {
+        "description": "Large machines over 300 kW on rigid foundations",
+        "Zone_A_max": "2.3 mm/s (0.09 in/s)",
+        "Zone_B_max": "4.5 mm/s (0.18 in/s)",
+        "Zone_C_max": "7.1 mm/s (0.28 in/s)"
+      },
+      "limits_group_2": {
+        "description": "Medium machines 15-300 kW on rigid foundations",
+        "Zone_A_max": "1.4 mm/s (0.06 in/s)",
+        "Zone_B_max": "2.8 mm/s (0.11 in/s)",
+        "Zone_C_max": "4.5 mm/s (0.18 in/s)"
+      }
+    },
+    "ISO_1940": {
+      "title": "Balance quality requirements for rigid rotors",
+      "grades": {
+        "G6_3": "General machinery — fans, pumps, motors, generators",
+        "G2_5": "Precision machinery — turbines, compressors, precision drives",
+        "G1": "High precision — grinding spindles, gyroscopes"
+      },
+      "formula": "Permissible residual unbalance (grams) = (Grade x Weight in kg x 9549) / RPM"
+    }
+  },
+  "AGMA_gear_standards": {
+    "quality_grades": "AGMA 2000: Quality grades 3-15. Higher number = more precise. Industrial gearboxes typically grade 8-10.",
+    "rating": "AGMA 2001 (spur/helical), AGMA 6013 (enclosed drives). Rating considers tooth bending strength and surface durability.",
+    "lubrication": "AGMA 9005: Lubricant selection based on gear type, speed, and operating temperature."
+  },
+  "alignment_tolerances": {
+    "summary_table": {
+      "600_RPM": {"offset_mils": 5.0, "angularity_mils_per_inch": 1.0},
+      "900_RPM": {"offset_mils": 4.0, "angularity_mils_per_inch": 0.8},
+      "1200_RPM": {"offset_mils": 3.5, "angularity_mils_per_inch": 0.7},
+      "1800_RPM": {"offset_mils": 3.0, "angularity_mils_per_inch": 0.5},
+      "3600_RPM": {"offset_mils": 2.0, "angularity_mils_per_inch": 0.3},
+      "7200_RPM": {"offset_mils": 1.0, "angularity_mils_per_inch": 0.15}
+    },
+    "note": "1 mil = 0.001 inch. These are per API 686 Table 1. Tighter is always better — these are MAXIMUM acceptable.",
+    "practical_note": "For 3600 RPM pump-motor: 2 mil offset and 0.3 mil/inch angularity. Most laser systems display this as a tolerance window. If you are within the box, you pass."
+  },
+  "OSHA_machinery": {
+    "guarding": "29 CFR 1910.219 — All belts, pulleys, gears, shafts, couplings, flywheels, and chains must be guarded if exposed and within 7 feet of floor/platform.",
+    "LOTO": "29 CFR 1910.147 — Control of hazardous energy. Written procedures required for each machine. Annual inspection of LOTO procedures.",
+    "confined_space": "29 CFR 1910.146 — Permit-required confined spaces. Applies to vessels, tanks, and enclosed equipment.",
+    "crane_signals": "29 CFR 1926.1431 — Standard hand signals for crane operations. Signal person must be qualified."
+  }
+}

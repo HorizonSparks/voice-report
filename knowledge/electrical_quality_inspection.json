@@ -1,0 +1,151 @@
+{
+  "trade": "Electrical",
+  "category": "quality_inspection",
+  "description": "Electrical quality and inspection knowledge for industrial construction — torque verification, megger testing, hi-pot procedures, ground resistance testing, conduit inspection, cable tray inspection, motor testing, transformer testing, and visual inspection checklists. What the QC inspector and foreman check before sign-off.",
+  "torque_verification": {
+    "why": "Loose electrical connections cause arcing, fire, and equipment failure. Torque verification is the single most important QC check in electrical work.",
+    "general_guidelines_inch_lbs": {
+      "14_10_AWG": {"torque": "20-25 in-lb", "note": "Small wire — easy to overtorque and break conductor"},
+      "8_6_AWG": {"torque": "35-45 in-lb"},
+      "4_3_AWG": {"torque": "45-50 in-lb"},
+      "2_1_AWG": {"torque": "50-70 in-lb"},
+      "1_0_to_4_0": {"torque": "200-300 in-lb", "note": "Use ft-lb torque wrench for these sizes"},
+      "250_to_500_kcmil": {"torque": "300-500 in-lb"},
+      "over_500_kcmil": {"torque": "Per manufacturer — typically 500-650 in-lb"}
+    },
+    "critical_rule": "ALWAYS use manufacturer torque spec on the equipment label. General guidelines are fallback only. Every breaker, lug, bus connection, and terminal has a specific torque value.",
+    "procedure": "Use calibrated torque wrench. Apply torque smoothly — no impact wrench. After torquing, mark with torque-seal paint or verification marker. Re-torque after 24 hours on critical connections (thermal cycling loosens initial torque).",
+    "bus_connections": {
+      "switchgear_bus": "Typically 30-40 ft-lbs for 1/2 inch hardware. Belleville washers where specified — they maintain spring tension.",
+      "MCC_bus_splice": "Per manufacturer — typically 20-30 ft-lbs. Sequence: center bolt first, then alternate outward.",
+      "transformer_bushings": "Follow manufacturer spec exactly. Over-torque cracks porcelain bushing = catastrophic failure."
+    },
+    "common_mistake": "Using an impact wrench on electrical connections. Impact wrenches cannot be calibrated for torque. Always use hand torque wrench."
+  },
+  "megger_testing_procedures": {
+    "cable_testing": {
+      "test_voltage": {"600V_cable": "1000V DC", "5kV_cable": "2500V DC", "15kV_cable": "5000V DC"},
+      "procedure": [
+        "Disconnect cable from all equipment at both ends",
+        "Disconnect surge protectors, VFDs, capacitors, electronic controls",
+        "Verify cable is de-energized and grounded",
+        "Remove ground connection from cable under test",
+        "Connect megger: LINE to conductor under test, EARTH to ground/shield",
+        "Apply test voltage for 1 minute — record reading at 1 minute",
+        "For PI test: continue to 10 minutes — record at 1 and 10 minutes",
+        "After test: ground conductor for at least 4x the test duration to discharge",
+        "Test each conductor to ground, then each conductor to each other conductor"
+      ],
+      "acceptance_600V": {"new_cable": "100 megohms minimum", "in_service": "2 megohms minimum", "investigate": "Below 50 megohms on new cable"},
+      "temperature_correction": "Insulation resistance halves for every 10C rise in temperature. Correct all readings to 40C (104F) for comparison. Use IEEE 43 temperature correction table.",
+      "record_keeping": "Log date, cable ID, test voltage, temperature, humidity, 1-minute reading, 10-minute reading (if PI), PI ratio. Compare to previous tests — trending downward indicates deteriorating insulation."
+    },
+    "motor_testing": {
+      "preparation": "Disconnect motor leads from starter/VFD. Test at motor terminal box.",
+      "tests": {
+        "phase_to_ground": "Each phase (T1, T2, T3) to motor frame. All three should be similar.",
+        "phase_to_phase": "T1-T2, T2-T3, T1-T3. All three should be within 5% of each other. Low reading between two phases = shorted turns."
+      },
+      "acceptance": "Minimum 5 megohms per IEEE 43. New motor should be 100+ megohms. Below 5 megohms = do not energize.",
+      "practical_note": "If motor has been sitting idle in humid conditions, readings may be low due to moisture absorption. Megger readings below 5 megohms on idle motor — try space heater or running motor uncoupled for several hours, then re-test."
+    }
+  },
+  "hi_pot_testing": {
+    "DC_hi_pot": {
+      "purpose": "Overvoltage withstand test — proves insulation can handle voltage stress above normal operating conditions.",
+      "test_voltage_new_cable": "For 5kV cable: 25.2kV DC (80% of factory test). For 15kV cable: 52kV DC.",
+      "test_voltage_maintenance": "60% of new cable test voltage for maintenance tests.",
+      "hold_time": "5 minutes for acceptance, 15 minutes for maintenance per IEEE 400.",
+      "leakage_current": "Record leakage at each voltage step and during hold. Increasing leakage during hold = insulation problem.",
+      "CAUTION": "DC hi-pot can damage XLPE insulation (water treeing). VLF (Very Low Frequency) AC testing preferred for XLPE cable."
+    },
+    "VLF_testing": {
+      "purpose": "AC withstand test at 0.01-0.1 Hz. Better for XLPE cable than DC.",
+      "test_voltage": "3x rated voltage (phase to ground) for 60 minutes per IEEE 400.2.",
+      "advantage": "Finds defects that DC misses in XLPE. Does not promote water tree growth like DC testing.",
+      "equipment": "VLF test set — specialized equipment. Brands: HV Diagnostics, BAUR, Megger, b2 electronic."
+    }
+  },
+  "ground_resistance_testing": {
+    "fall_of_potential_method": {
+      "description": "THE standard method for measuring ground rod or ground grid resistance.",
+      "equipment": "Ground resistance tester (Megger DET series, Fluke 1625, AEMC)",
+      "setup": [
+        "Disconnect ground rod from system (IMPORTANT — test isolated rod only)",
+        "Drive current stake (C2) at least 5x the diagonal of the ground system away from the electrode under test",
+        "Drive potential stake (P2) at 62% of the distance from ground rod to current stake",
+        "Connect instrument leads: C1 to ground rod, P2 to potential stake, C2 to current stake",
+        "Take reading — this is the ground resistance"
+      ],
+      "verification": "Move P2 stake to 52% and 72% of distance. All three readings should be within 10% — if not, move C2 further away and repeat.",
+      "acceptance": "NEC requires maximum 25 ohms for single rod. Most industrial specs require 5 ohms or less for ground grid. Substations typically require 1 ohm or less."
+    },
+    "soil_resistivity": {
+      "method": "Wenner 4-pin method — measures soil resistivity to design ground grid.",
+      "high_resistivity": "Sandy or rocky soil = hard to get low resistance. May need longer rods, more rods, ground enhancement material (bentonite, chemical ground rods).",
+      "low_resistivity": "Clay soil, high moisture = easy to get low resistance."
+    }
+  },
+  "conduit_inspection": {
+    "visual_checklist": [
+      "Correct conduit type for the area classification and environment",
+      "Support spacing per NEC (10 ft max for EMT and RMC, within 3 ft of box)",
+      "All fittings tight — wrench-tight for threaded, compression for EMT in wet locations",
+      "Maximum 360 degrees of bends between pull points",
+      "Bushings on all conduit terminations (protect wire from sharp edges)",
+      "Expansion fittings on PVC runs over 25 feet exposed",
+      "Sealing fittings within 18 inches of explosion-proof equipment (Chico compound filled)",
+      "Conduit bodies accessible (not buried behind walls)",
+      "No conduit crushing, kinking, or deformation at bends",
+      "Drain fittings at low points in outdoor conduit runs",
+      "Fire-stop at all penetrations through fire-rated walls and floors"
+    ],
+    "threading_inspection": "Minimum 5 full threads engaged in fitting. Thread compound (anti-seize) on threads. For explosion-proof: verify thread engagement by measuring gap at fitting — max 1/4 inch gap per UL.",
+    "practical_note": "Walk every conduit run before wire pull. Finding a problem after pulling wire means pulling it all back out. Inspect first, pull second."
+  },
+  "cable_tray_inspection": {
+    "checklist": [
+      "Correct tray type and size per design",
+      "Support spacing per NEC 392 and engineering (typically 8-12 ft)",
+      "Splice plates with bonding jumper at every section joint",
+      "Tray grounding per NEC 392.60 — bonding conductor sized per largest cable",
+      "Cable fill within NEC limits",
+      "Cable ties or straps securing cables (not damaging jacket)",
+      "Fire-stop at penetrations",
+      "Covers installed where specified (above walkways, near heat sources)",
+      "Tray not used as walkway or storage (common abuse — enforce it)",
+      "Labels on cables identifying circuit number"
+    ]
+  },
+  "transformer_testing": {
+    "turns_ratio": {
+      "purpose": "Verify winding ratio matches nameplate. Detects shorted turns, wrong tap setting.",
+      "method": "Apply low voltage to one winding, measure induced voltage on other winding. Ratio should match nameplate within 0.5%.",
+      "equipment": "TTR (transformer turns ratio) test set"
+    },
+    "insulation_resistance": {
+      "tests": {
+        "HV_to_LV": "High voltage winding to low voltage winding — tests inter-winding insulation",
+        "HV_to_ground": "High voltage winding to tank/ground",
+        "LV_to_ground": "Low voltage winding to tank/ground"
+      },
+      "test_voltage": "2500V DC for distribution transformers. 5000V DC for substation transformers.",
+      "acceptance": "Compare to manufacturer data. Trending is more important than absolute value — 25% decrease from previous test = investigate."
+    },
+    "winding_resistance": {
+      "purpose": "Detects loose connections, broken strands, bad tap changer contacts.",
+      "method": "DC resistance measurement of each winding. All phases should be within 2% of each other.",
+      "equipment": "Micro-ohmmeter or winding resistance test set (Megger MTO, AEMC)"
+    },
+    "oil_analysis": {
+      "for_oil_filled_only": true,
+      "tests": {
+        "dielectric_strength": "D877 or D1816. Minimum 30kV for in-service oil. Below 26kV = recondition or replace oil.",
+        "dissolved_gas_analysis": "DGA detects internal faults by analyzing gases dissolved in oil. Key gases: hydrogen (arcing), acetylene (severe arcing), ethylene (hot metal), CO/CO2 (cellulose degradation).",
+        "moisture": "Maximum 35 ppm for in-service oil up to 69kV. Moisture reduces dielectric strength.",
+        "power_factor": "Measures dielectric loss. Below 0.5% good. Above 1% = contaminated oil."
+      },
+      "frequency": "Annual for critical transformers. Every 3 years for distribution transformers."
+    }
+  }
+}

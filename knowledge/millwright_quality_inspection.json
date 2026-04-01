@@ -1,0 +1,81 @@
+{
+  "trade": "Millwright",
+  "category": "quality_inspection",
+  "description": "Millwright quality and inspection knowledge — alignment documentation, bearing clearance measurement, runout checks, surface finish requirements, bolt torque verification, grout inspection, vibration acceptance, oil analysis interpretation, and equipment performance testing.",
+  "alignment_documentation": {
+    "as_found": "Record alignment BEFORE making any corrections. This documents the starting condition and helps identify recurring problems (pipe strain, thermal growth errors, foundation settling).",
+    "as_left": "Record final alignment after all corrections. This is the acceptance record. Must meet tolerances per API 686 or project specification.",
+    "required_data": "Date, equipment tag, coupling type and size, RPM, ambient temperature, laser/dial method used, technician name, as-found readings, corrections made, as-left readings, thermal growth values applied.",
+    "acceptance": "Offset and angularity both within tolerance for the RPM. Both horizontal and vertical planes must meet tolerance independently."
+  },
+  "bearing_clearance": {
+    "internal_clearance": {
+      "method": "Feeler gauge between rolling elements and outer race at 12 o'clock (unloaded zone).",
+      "when": "Before mounting (verify new bearing spec) and after mounting (verify remaining clearance after interference fit).",
+      "reduction": "Pressing inner race onto shaft reduces internal clearance. Typical reduction: 0.001 inch per 0.001 inch of interference fit.",
+      "example": "New bearing clearance: 0.005 inch. Shaft interference: 0.001 inch. Expected mounted clearance: 0.004 inch. If actual is less than 0.002 inch, bearing may be too tight."
+    },
+    "housing_bore": "Measure with bore gauge or inside micrometer. Compare to bearing OD. Housing fit is typically 0.0000 to 0.0005 inch loose (slip fit). Tight housing squeezes outer race and reduces internal clearance.",
+    "shaft_diameter": "Measure with outside micrometer at bearing journal. Compare to bearing bore. Shaft fit is typically 0.0003 to 0.0010 inch tight (interference) depending on bearing size and speed."
+  },
+  "runout_measurement": {
+    "shaft_runout": {
+      "where": "At bearing journals, coupling hub seat, seal chamber bore, impeller fit area.",
+      "how": "Dial indicator on fixed base, rotate shaft slowly by hand. TIR (Total Indicator Reading) = max minus min.",
+      "limits": {"bearing_journal": "0.001 inch TIR max", "coupling_hub_seat": "0.002 inch TIR max", "seal_chamber": "0.002 inch TIR max"},
+      "if_out": "Shaft may be bent — check between centers on a lathe. Straighten or replace shaft."
+    },
+    "coupling_hub_runout": {
+      "where": "Measure rim and face runout of mounted coupling hub.",
+      "rim_TIR": "0.002 inch max for 3600 RPM. 0.004 inch max for 1800 RPM.",
+      "face_TIR": "0.001 inch max for 3600 RPM. 0.002 inch max for 1800 RPM.",
+      "if_out": "Hub bore may be eccentric or hub not fully seated on shaft. Remove and re-mount. Check key and keyway for burrs."
+    }
+  },
+  "surface_finish": {
+    "bearing_fits": {"shaft_journal": "16-32 micro-inch Ra", "housing_bore": "32-63 micro-inch Ra"},
+    "seal_faces": "Lapped flat to 1-2 light bands (helium light). This is factory finish — do NOT touch with anything. Handle with clean gloves only.",
+    "shaft_under_seal": "32 micro-inch Ra maximum. Scratches or grooves will damage seal elastomers and cause leakage.",
+    "measurement": "Surface comparator (visual) for field checks. Profilometer for precise measurement."
+  },
+  "bolt_torque": {
+    "equipment_hold_down": {
+      "procedure": "Star pattern (cross pattern). Bring all bolts to 50%, then 75%, then 100% in sequence. Final pass with torque wrench.",
+      "re_torque": "After 24 hours of operation (thermal cycling), re-torque all hold-down bolts.",
+      "values": "Per equipment manufacturer. If not available, use standard bolt torque charts for the bolt grade and size. Lubricated vs dry makes 25% difference — know which condition the torque spec assumes."
+    },
+    "coupling_bolts": "Gear coupling bolts: per coupling manufacturer. Typically 60-75% of bolt proof load.",
+    "bearing_housing": "End cover bolts, housing cap bolts — per manufacturer. Usually not critical torque but must be uniform."
+  },
+  "grout_inspection": {
+    "before_pour": "Forms sealed, concrete surface prepared (roughened, clean, SSD), anchor bolts protected, leveling devices in place.",
+    "during_pour": "Continuous pour — no cold joints. Grout flowing from one side, filling completely. Vent holes showing grout = full fill.",
+    "after_cure": {
+      "tap_test": "Tap grout surface and baseplate with hammer. Solid sound = good bond. Hollow sound = void underneath. Mark voids for repair.",
+      "shrinkage_cracks": "Hairline cracks on surface of cementitious grout are normal (not structural). Cracks in epoxy grout are NOT normal — investigate.",
+      "void_repair": "Drill and inject epoxy or re-pour if void is significant. Voids under equipment allow vibration and misalignment."
+    }
+  },
+  "vibration_acceptance": {
+    "new_equipment": {
+      "API_610_pump": "0.12 in/sec unfiltered at any bearing housing. 0.15 in/sec at any point on bearing housing.",
+      "general_machinery": "ISO 10816 Zone A for newly commissioned equipment.",
+      "API_617_compressor": "Direct vibration per formula: 25.4 * sqrt(12000/RPM) microns, max 25.4 microns.",
+      "fans_and_blowers": "AMCA 204: typically 0.15-0.20 in/sec velocity."
+    },
+    "after_maintenance": "Should be in ISO 10816 Zone A or B. Compare to historical baseline — should be equal to or better than pre-maintenance readings.",
+    "baseline": "Take baseline vibration readings within first week of commissioning. This is your reference for all future monitoring. Store data."
+  },
+  "oil_analysis": {
+    "sampling": "Take sample from live zone (not dead leg or bottom drain). Use clean sample bottle. Label with equipment tag, date, oil hours, oil type.",
+    "key_results": {
+      "viscosity": "Within +/- 10% of new oil spec. Higher = oxidation. Lower = contamination or wrong oil added.",
+      "water": "Below 200 ppm for most gearboxes. Below 100 ppm for hydraulics. Above 500 ppm = change oil immediately.",
+      "iron": "Trend is more important than absolute number. Sudden spike = something broke. Gradual rise = normal wear.",
+      "copper": "Bearing cage wear, thrust washer, cooler tube (if copper).",
+      "silicon": "Dirt ingestion. Check breathers, seals, and oil supply system.",
+      "particle_count": "ISO 4406 code. Lower is cleaner. Servo systems need 16/14/11 or better."
+    },
+    "frequency": "Monthly for critical equipment. Quarterly for general equipment. After every oil change (verify clean fill)."
+  }
+}

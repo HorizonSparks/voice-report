@@ -1,0 +1,145 @@
+{
+  "trade": "Electrical",
+  "category": "specialty",
+  "description": "Specialty electrical knowledge for industrial construction — medium voltage systems, switchgear, motor control centers, heat tracing, UPS and battery systems, cathodic protection, arc flash, emergency power, and substation work. The advanced knowledge beyond basic wiring that industrial electricians need.",
+  "medium_voltage": {
+    "overview": "Medium voltage (MV) is 1kV to 35kV. Common in industrial: 4160V for large motors, 13.8kV for main distribution. MV work requires specialized training and PPE.",
+    "cable_installation": {
+      "pulling_tension": "Max tension = cable area x 8 lbs/cmil (copper) or 4 lbs/cmil (aluminum). Use dynamometer during pull.",
+      "bend_radius": "Minimum 12x cable OD for shielded MV cable. Tighter bends damage shield and stress insulation.",
+      "sidewall_bearing_pressure": "Max 500 lbs/ft for XLPE, 750 lbs/ft for EPR. Critical on bends in conduit pulls.",
+      "pulling_lubricant": "Required for all MV pulls. Use manufacturer-approved lubricant — wrong type can attack insulation.",
+      "testing_after_pull": "Shield continuity test, insulation resistance (megger at 2500V DC minimum), then hi-pot or VLF test per specification."
+    },
+    "terminations": {
+      "stress_control": "Voltage stress concentrates where insulation shield is removed. Stress cone (geometric or capacitive) required to grade the voltage stress.",
+      "indoor_elbow": "200A or 600A loadbreak elbow for 5kV or 15kV. Connects to bushing on transformer or switchgear. Deadfront — no exposed energized parts.",
+      "outdoor_termination": "Porcelain or polymer bushing with skirts for creepage distance. Silicone or EPDM stress cone inside.",
+      "heat_shrink_vs_cold_shrink": "Heat shrink = propane torch to shrink. Cold shrink = remove spiral core, tube contracts. Cold shrink is faster and eliminates torch hazard.",
+      "common_mistake": "Not removing enough insulation shield — leaving conductive material too close to termination point causes tracking and eventual failure."
+    },
+    "switchgear": {
+      "types": {
+        "metal_clad": "ANSI C37.20.2. Drawout breakers, grounded metal barriers between compartments. 5kV and 15kV.",
+        "metal_enclosed": "ANSI C37.20.3. Less compartmentalization than metal-clad. Lower cost.",
+        "pad_mounted": "Outdoor, oil or vacuum switching. Used in unit substations."
+      },
+      "breaker_types": {
+        "vacuum": "Most common for new installations. 5kV and 15kV. Low maintenance, long contact life.",
+        "SF6": "Sulfur hexafluoride gas insulated. Higher voltage ratings. SF6 is a potent greenhouse gas — handle per EPA regulations.",
+        "oil": "Older technology. Still in service in many plants. Oil must be tested annually (dielectric, dissolved gas analysis)."
+      },
+      "racking": "Drawout breaker racking: DISCONNECT position → TEST position → CONNECTED position. Use racking handle slowly and steadily. Never force.",
+      "protective_relays": {
+        "overcurrent_50_51": "50 = instantaneous, 51 = time-overcurrent. Primary protection for feeders and motors.",
+        "differential_87": "Compares current in vs current out. Difference = internal fault. Used on transformers, generators, buses.",
+        "ground_fault_51G": "Detects ground faults. CT on neutral or residual connection of phase CTs.",
+        "distance_21": "Measures impedance to fault. Used on transmission lines.",
+        "under_voltage_27": "Trips on low voltage. Protects motors from damage during voltage sag.",
+        "recloser_79": "Automatic reclose after trip. Used on overhead distribution — NOT on underground or indoor."
+      },
+      "common_mistake": "Racking a breaker with the springs charged and close signal present. Breaker can close into a fault during racking. Always verify trip-free before racking."
+    },
+    "MCC": {
+      "description": "Motor Control Center — standardized enclosure with plug-in motor starter units.",
+      "bus_rating": "600A or 800A horizontal bus. Vertical bus 300A per section.",
+      "unit_types": "FVNR (full voltage non-reversing), FVR (full voltage reversing), reduced voltage (autotransformer, soft start, VFD), feeder, lighting",
+      "installation": {
+        "level": "MCC must be level front-to-back and side-to-side. Shim as needed.",
+        "bus_splice": "Line up sections carefully. Bus splice bolts torqued to manufacturer spec with calibrated torque wrench. Belleville washers where specified.",
+        "grounding": "Ground bus continuous through all sections. Bond to building ground system.",
+        "arc_flash_labels": "REQUIRED on every unit per NFPA 70E. Label must show incident energy, flash boundary, required PPE level."
+      }
+    }
+  },
+  "heat_tracing": {
+    "overview": "Electric heat tracing maintains pipe and vessel temperature — freeze protection, process temperature maintenance, viscosity control.",
+    "types": {
+      "self_regulating": {
+        "description": "Conductive polymer core between two bus wires. Resistance changes with temperature — automatic output adjustment.",
+        "brands": "Raychem (nVent), Thermon, Chromalox, Nelson, Bartec",
+        "max_temperature": "Maintain temperature typically 150F to 300F depending on grade",
+        "advantage": "Can be overlapped without burnout. Cuts to any length. Simple.",
+        "limitation": "High inrush current at cold startup (up to 3-5x steady state). Size breaker for inrush.",
+        "circuit_length": "Max 200-500 feet per circuit depending on voltage and cable type. Check manufacturer design tools."
+      },
+      "constant_wattage": {
+        "description": "Fixed wattage per foot regardless of temperature. Zone-type or series-type.",
+        "use": "Higher temperature maintenance (up to 1000F+), longer circuits",
+        "CAUTION": "Cannot be overlapped — will overheat and burn out at overlap. Cannot be cut to length (series type) — must order exact length.",
+        "zone_type": "Can be cut at zone markers (typically every 1-3 feet). Easier than series for field installation."
+      },
+      "impedance": {
+        "description": "Uses the pipe itself as the heating element. AC current through pipe wall.",
+        "use": "Very long pipelines, high temperature (up to 900F), large diameter pipe",
+        "complexity": "Requires isolation flanges, power connection points. Specialist design required."
+      }
+    },
+    "installation": {
+      "pipe_contact": "Cable must contact pipe surface — use fiberglass tape or aluminum tape to secure every 12 inches. DO NOT use metal banding directly on cable.",
+      "insulation": "Install heat trace BEFORE insulating pipe. Cable goes under insulation, against pipe.",
+      "power_connection": "Use manufacturer power connection kit. Seal waterproof. Junction box accessible outside insulation.",
+      "end_seal": "Cut end must be sealed with manufacturer end termination kit. Moisture will destroy the cable if end is not sealed.",
+      "thermostat": "Line-sensing thermostat or ambient-sensing. Mount sensing bulb on pipe under insulation. Control panel at accessible location.",
+      "testing": "Before energizing: insulation resistance test (megger at 2500V DC). After energizing: verify amperage per circuit matches design. Check pipe temperature rise over time."
+    },
+    "common_mistake": "Running heat trace cable through insulation support rings without slack. Pipe thermal expansion crushes cable at support points. Leave 6-inch slack loop at each support."
+  },
+  "UPS_and_batteries": {
+    "UPS_types": {
+      "online_double_conversion": "Input AC → rectifier → DC → inverter → output AC. Constant conditioning. Best protection. Most common for critical loads.",
+      "line_interactive": "Uses transformer to regulate voltage. Switches to battery on outage. Faster than offline, cheaper than online.",
+      "offline_standby": "Passes utility power through normally. Switches to inverter on outage. Cheapest but slowest transfer."
+    },
+    "battery_types": {
+      "VRLA": "Valve Regulated Lead Acid (sealed). Maintenance-free. 3-5 year life (float service). AGM or gel.",
+      "flooded_lead_acid": "Wet cell. Requires watering, equalizing charges, specific gravity checks. 15-20 year life. Higher capacity.",
+      "lithium_ion": "Newest technology for UPS. 2-3x the life of VRLA, smaller footprint, lighter. Higher initial cost."
+    },
+    "installation": {
+      "battery_room": "Ventilation required — hydrogen gas from charging. No open flames. Eye wash station required. Spill containment.",
+      "connections": "Torque all battery connections to manufacturer spec. Loose connection = arc = explosion risk. Use insulated tools.",
+      "testing": "Acceptance test: capacity discharge test to IEEE 450/484/485. Annual impedance/conductance testing. Replace batteries when capacity drops below 80%."
+    }
+  },
+  "arc_flash": {
+    "NFPA_70E": "Standard for Electrical Safety in the Workplace. Defines PPE categories and work practices.",
+    "PPE_categories": {
+      "category_1": "4 cal/cm2. Arc-rated shirt and pants, safety glasses, hard hat, leather gloves.",
+      "category_2": "8 cal/cm2. Arc-rated shirt and pants, arc-rated face shield, hard hat, leather gloves.",
+      "category_3": "25 cal/cm2. Arc flash suit (hood, jacket, pants), arc-rated hard hat, arc-rated gloves.",
+      "category_4": "40 cal/cm2. Arc flash suit with hood, multi-layer. Maximum PPE level — above 40 cal/cm2 is PROHIBITED for energized work."
+    },
+    "boundaries": {
+      "flash_protection_boundary": "Distance where incident energy = 1.2 cal/cm2. Anyone inside needs arc-rated PPE.",
+      "limited_approach": "Qualified persons only beyond this point.",
+      "restricted_approach": "Qualified person with PPE and energized work permit required.",
+      "prohibited_approach": "Same as direct contact — must be treated as making contact."
+    },
+    "labels": "Every piece of equipment must have arc flash label showing: nominal voltage, arc flash boundary, available incident energy (cal/cm2), required PPE category, date of analysis.",
+    "practical_note": "If equipment does not have an arc flash label, assume Category 2 minimum. Many companies require arc flash study before any energized work. De-energize whenever possible — working energized is always more dangerous."
+  },
+  "cathodic_protection": {
+    "description": "Prevents corrosion of buried metallic structures (underground pipe, tanks, foundations) by making the structure a cathode.",
+    "types": {
+      "sacrificial_anode": "Zinc or magnesium anodes buried near structure. They corrode instead of the structure. Simple, no power required.",
+      "impressed_current": "Rectifier applies DC current to anodes (graphite, mixed metal oxide, silicon iron). More powerful, for larger structures."
+    },
+    "electrician_role": "Install rectifier, wire anodes, install test stations, measure pipe-to-soil potential with reference electrode. Target: -0.85V (Cu/CuSO4 reference) for steel.",
+    "common_mistake": "Electrically bonding a cathodically protected pipe to an unprotected structure. This drains the protection current to the larger structure. Use isolation flanges and gaskets."
+  },
+  "emergency_power": {
+    "generator": {
+      "sizing": "Must handle starting inrush of largest motor plus running load of all other connected loads. Use generator sizing software.",
+      "transfer_switch": "Automatic Transfer Switch (ATS) monitors utility power and switches to generator on outage. Open transition (break-before-make) or closed transition (make-before-break for momentary parallel).",
+      "testing": "Monthly no-load test (30 minutes). Annual full-load test (2+ hours). Record all readings.",
+      "paralleling": "Synchronize frequency, voltage, and phase angle before closing paralleling breaker. Automatic synchronizer required. Out-of-phase paralleling = catastrophic equipment damage."
+    },
+    "NEC_requirements": {
+      "NEC_700": "Emergency systems — life safety. Must have power within 10 seconds of utility loss.",
+      "NEC_701": "Legally required standby — not life safety but required by code. Must have power within 60 seconds.",
+      "NEC_702": "Optional standby — convenience loads. No time requirement.",
+      "wiring": "Emergency circuits must be kept entirely separate from normal wiring. Separate raceways, separate panels. Red colored or marked."
+    }
+  }
+}

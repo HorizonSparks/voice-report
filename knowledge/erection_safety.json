@@ -1,0 +1,59 @@
+{
+  "trade": "Industrial Erection",
+  "category": "safety",
+  "description": "Ironworker and erection safety — fall protection, steel erection OSHA requirements, crane safety, rigging safety, structural collapse prevention, and the hazards specific to working at height with heavy steel.",
+  "fall_protection": {
+    "OSHA_requirement": "100% fall protection required at 6 feet above lower level in steel erection (OSHA 1926 Subpart R). No exceptions.",
+    "systems": {
+      "personal_fall_arrest": {"components": "Full body harness + lanyard or SRL + anchor point rated for 5000 lbs per person.", "free_fall": "Maximum 6 feet free fall distance. Deceleration distance adds another 3.5 feet. Need 18.5 feet of fall clearance below anchor.", "inspection": "Inspect harness and lanyard before each use. Reject if: frayed webbing, damaged stitching, deformed D-ring, cracked buckle, cut lanyard."},
+      "SRL": {"description": "Self-Retracting Lifeline. Automatically retracts slack, limits free fall to inches.", "advantage": "Less free fall than standard lanyard. Better for work at lower heights where clearance is limited.", "classes": "Class A (personal fall arrest), Class B (personal fall arrest + leading edge)"},
+      "guardrail": {"requirements": "42 inch top rail, 21 inch mid-rail, toe board. Can be cable rail with 200 lb test."},
+      "safety_nets": {"placement": "Within 30 feet of walking/working surface. Used when other systems are impractical."}
+    },
+    "connectors": {"description": "Ironworkers engaged in connecting steel (bolting beams to columns) at heights up to 30 feet.", "special_rule": "OSHA allows connectors to be protected by personal fall arrest OR positioning device system while making initial connection. Must have fall protection available at all times."},
+    "leading_edge": {"description": "Work at an unprotected edge where steel is being erected.", "requirement": "Fall arrest system with Class B SRL, or safety net, or controlled access zone (for specified activities only)."},
+    "controlled_access_zone": {"use": "Leading edge work only. Area between leading edge and 6 feet back. Controlled by competent person. Workers must use personal fall arrest."},
+    "practical_note": "On steel erection, 100% tie-off means ALWAYS connected. Moving between anchor points requires double lanyard (maintain 100% connection during transfer). No exceptions, no matter how experienced you are."
+  },
+  "steel_erection_OSHA": {
+    "subpart_R": "OSHA 1926.750-761. Specific rules for steel erection.",
+    "site_layout": "Erection area must be controlled — barricade the area below steel erection. No non-essential personnel under active erection.",
+    "column_stability": "Columns must have minimum 4 anchor bolts. Column cannot be released from crane until 4 bolts are installed and tightened snug-tight minimum.",
+    "beam_connection": "Beams must have minimum 2 bolts installed at each connection before crane releases load. Bolts must be wrench-tight minimum.",
+    "double_connections": "Where a beam is field-bolted on both ends and one end is on column web: the beam seat (clip angle, plate) on the double-connection side must be shop-installed. Worker must not be in position where loss of support on one end can cause fall.",
+    "plumbing_up": "Columns must be plumbed and braced before loading with beams. Temporary bracing per erection plan. Do not remove bracing until permanent bracing or decking is in place.",
+    "decking": {"requirement": "Metal decking must be installed as close behind erection as possible. Max 8 floors between erection and decking.", "bundle_placement": "Deck bundles placed on structural members rated for the load. Do not overload any single member.", "edge_protection": "Perimeter safety cable at column lines where decking is not yet installed."},
+    "hoisting_and_rigging": "All hoisting must follow crane manufacturer load chart. Rigging must be inspected by competent person. Tag lines on all loads."
+  },
+  "crane_safety": {
+    "signal_person": {"requirement": "Qualified signal person required when operator cannot see the load or landing area. Signal person must be in clear view of operator OR use radio communication.", "qualifications": "Qualified by third-party evaluator or employer's program. Must know ASME B30.5 standard hand signals."},
+    "critical_lifts": {"definition": "Lift over 75% of crane capacity, over occupied areas, near power lines, blind picks, tandem lifts, lifts with more than one crane.", "requirements": "Written lift plan. Engineer review. Pre-lift meeting with all involved personnel. Designated signal person and rigger."},
+    "load_chart": {"rule": "Operator must verify every lift against the load chart BEFORE lifting. Load + rigging weight + block weight must not exceed chart capacity at the working radius.", "factors": "Radius, boom length, boom angle, on outriggers or rubber, ground conditions, wind speed."},
+    "outriggers": "Fully extend outriggers for all lifts unless manufacturer allows partial extension. Pads under outrigger floats — minimum 3x the float area. Check ground bearing capacity.",
+    "swing_radius": "Barricade the swing radius of the crane tail/counterweight. Workers crushed between counterweight and fixed objects is a leading cause of crane fatalities.",
+    "power_lines": {"minimum_clearance": "20 feet for lines up to 350 kV. 50 feet for lines above 350 kV. Or de-energize and ground lines.", "rule": "If you can see power lines from the crane, you need a spotter and a plan."},
+    "wind": "Most cranes must cease operations at 20-30 mph sustained wind. Check manufacturer limit. Lattice boom cranes have lower wind limits for boom erection/disassembly."
+  },
+  "rigging_safety": {
+    "sling_types": {
+      "wire_rope": {"inspection": "6 randomly broken wires in one rope lay, or 3 in one strand. Kinking, bird-caging, core protrusion, corrosion. Reject if found.", "capacity": "Depends on diameter, hitch type, and angle. Vertical hitch is 100%. Choker is 75%. Basket at 60 degrees is 86%."},
+      "synthetic_web": {"inspection": "Cuts, tears, snags, burns, chemical damage, exposed core yarns, damaged fittings. Reject if found.", "NOT_for": "Temperatures above 180F or around sharp edges without protection."},
+      "alloy_chain": {"grade": "Grade 80 or Grade 100 only for overhead lifting. NEVER use Grade 30 or Grade 70 (binding chain) for lifting.", "inspection": "Stretched links, bent/cracked links, gouges, wear exceeding 10% of link diameter. Reject if found."}
+    },
+    "sling_angles": {
+      "90_degrees": "100% of rated capacity",
+      "60_degrees": "86% of rated capacity",
+      "45_degrees": "70% of rated capacity",
+      "30_degrees": "50% of rated capacity — MINIMUM safe angle",
+      "rule": "NEVER rig with sling angle less than 30 degrees from horizontal. The horizontal force component becomes extreme and can break the sling or pull the load apart."
+    },
+    "shackle_rules": "Load rated on body. Never exceed WLL. Pin must be fully threaded and secured (cotter pin type) or hand-tight (screw pin type). Never shock-load a shackle. Never side-load a shackle.",
+    "tag_lines": "Required on every suspended load to control swing and rotation. Minimum 3/8 inch manila or polypropylene rope. NEVER wrap around hand or body."
+  },
+  "structural_collapse": {
+    "temporary_bracing": "Bracing plan must be designed by engineer and followed exactly. Temporary bracing prevents structural collapse during erection before permanent connections are complete.",
+    "load_path": "Every piece of steel must have a load path to the foundation. If the load path is not complete (missing bracing, missing connections), the structure can collapse.",
+    "wind_during_erection": "Partially erected steel is more vulnerable to wind than completed structure. Temporary bracing must account for wind loads during erection.",
+    "competent_person": "OSHA requires a competent person for steel erection who can identify hazards and has authority to take corrective action."
+  }
+}

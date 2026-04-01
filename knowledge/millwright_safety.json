@@ -1,0 +1,62 @@
+{
+  "trade": "Millwright",
+  "category": "safety",
+  "description": "Millwright-specific safety knowledge — LOTO for rotating equipment with multiple energy sources, confined space for vessels, crane and rigging safety for equipment setting, rotating equipment hazards, chemical hazards from lubricants and solvents, and high-pressure hydraulic safety.",
+  "LOTO_rotating_equipment": {
+    "overview": "Rotating equipment often has MULTIPLE energy sources. Missing one can be fatal. A pump may have: electrical (motor), pneumatic (instrument air to control valve), hydraulic (pressurized process fluid), gravitational (elevated piping can drain back), thermal (hot process fluid), and stored energy (pressurized casing, spring-loaded valves).",
+    "multi_energy_isolation": {
+      "electrical": "Lock out motor disconnect. Verify zero voltage with meter. Try start button.",
+      "pneumatic": "Close and lock instrument air supply valve. Bleed downstream air to zero.",
+      "hydraulic": "Close and lock suction and discharge valves. Open drain or vent to depressurize casing. Verify zero pressure on gauge.",
+      "gravity": "If piping above equipment, close and lock block valves to prevent backflow through pump.",
+      "thermal": "If process fluid is hot — let equipment cool or use thermal protective PPE. Verify temperature before opening.",
+      "stored_energy": "Casing may be pressurized even with valves closed (thermal expansion of trapped fluid). Open vent or drain slowly. Accumulators in hydraulic systems store energy — bleed down before work."
+    },
+    "common_mistake": "Locking out only the electrical disconnect and assuming the equipment is safe. The pump casing may still be pressurized with hot, toxic, or flammable fluid. ALWAYS verify zero energy on ALL energy sources.",
+    "try_procedure": "After lockout — attempt to start from every start point (local start button, DCS, PLC). Failure to start confirms electrical isolation. Then verify zero pressure, zero flow, zero temperature."
+  },
+  "confined_space": {
+    "vessels_and_tanks": "Vessels, tanks, columns, drums, heat exchanger shells and channels are confined spaces. Permit required.",
+    "requirements": [
+      "Confined space permit signed by authorized entrant, attendant, and entry supervisor",
+      "Atmospheric testing: O2 (19.5-23.5%), LEL (<10%), H2S (<10 ppm), CO (<25 ppm)",
+      "Continuous atmospheric monitoring during entry",
+      "Attendant at entry point at all times — never leaves",
+      "Rescue plan and equipment immediately available",
+      "Ventilation — forced air, never oxygen enrichment",
+      "Communication between entrant and attendant",
+      "All energy sources locked out (blinds in process piping, not just closed valves)"
+    ],
+    "blinds": "For confined space in process equipment, closed valves are NOT sufficient isolation. Install blinds (spectacle blinds or paddle blinds) in all process connections. This physically prevents fluid from entering the vessel.",
+    "practical_note": "Vessel entry is the most dangerous activity in industrial work. More workers die in confined spaces than almost any other scenario. Follow every step of the permit — no shortcuts, ever."
+  },
+  "crane_and_rigging": {
+    "equipment_setting": "Most millwright equipment (pumps, compressors, exchangers) requires crane for setting on foundation.",
+    "lift_plan": {
+      "weight": "Know the EXACT weight of equipment. Nameplate weight, shipping weight (includes skid and preservation), or bare weight. When in doubt, weigh it.",
+      "center_of_gravity": "Manufacturer provides CG location. Rigging must be arranged so load hangs level. Unbalanced pick = dangerous swing.",
+      "load_chart": "Crane operator must verify: load weight + rigging weight < crane capacity at the working radius. Account for boom length, angle, and ground conditions.",
+      "critical_lift": "Any lift over 75% of crane capacity, or over personnel, or near power lines, or blind pick = Critical Lift. Requires written lift plan approved by engineer."
+    },
+    "rigging_safety": {
+      "sling_inspection": "Inspect before every use. Reject: cut strands (wire rope), burns/cuts/abrasion (synthetic), stretched links (chain), any deformation or damage.",
+      "sling_angles": "As sling angle decreases from 90 degrees, tension INCREASES. At 30 degrees from horizontal, sling tension is 2x the load weight. Never rig below 30 degrees.",
+      "shackle_rating": "Working load limit (WLL) stamped on shackle. Never exceed WLL. Never side-load a shackle — it reduces capacity by 50%+.",
+      "tag_lines": "Use tag lines on every pick to control load swing. NEVER wrap tag line around hand or body."
+    }
+  },
+  "rotating_equipment_hazards": {
+    "pinch_points": "Coupling guards, belt guards, fan guards, flywheel guards must be in place before starting equipment. NEVER reach into rotating equipment.",
+    "coupling_guards": "OSHA requires guarding on all exposed rotating coupling, belt, chain, and gear drives. Equipment cannot operate without guards installed.",
+    "entanglement": "Loose clothing, long hair, jewelry, lanyards can be caught by rotating equipment. Roll up sleeves, secure hair, remove jewelry near rotating equipment.",
+    "startup_communication": "Before starting any equipment: verify all guards installed, all personnel clear, all tools removed from equipment. Announce startup. Wait for acknowledgment from all crew.",
+    "bump_test": "First start after maintenance: bump motor (start and immediately stop) to verify rotation direction and check for mechanical binding. Do NOT run at full speed on first start."
+  },
+  "chemical_hazards": {
+    "solvents": "Brake cleaner, acetone, MEK, mineral spirits used for cleaning parts. Use in ventilated area, wear nitrile gloves, avoid skin contact and inhalation.",
+    "epoxy_grout": "Hardener component is a skin sensitizer — causes allergic reaction with repeated exposure. Wear chemical-resistant gloves. Eye protection mandatory — epoxy in eyes causes severe damage.",
+    "lubricants": "Used oil may contain heavy metals and carcinogens. Avoid prolonged skin contact. Wash hands after handling. Dispose per environmental regulations.",
+    "hydraulic_fluid": "High-pressure injection injury — hydraulic fluid under pressure can penetrate skin through a pinhole leak. This is a MEDICAL EMERGENCY. Go to hospital immediately — fluid must be surgically removed or tissue dies. NEVER run hand along a hydraulic hose to check for leaks — use cardboard.",
+    "process_fluids": "When opening process equipment (pumps, compressors, vessels), residual process fluid may be present. Know the SDS for the process fluid. Wear appropriate PPE."
+  }
+}
