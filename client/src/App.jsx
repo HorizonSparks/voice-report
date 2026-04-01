@@ -533,8 +533,8 @@ export default function App() {
           </Box>
         )}
 
-        {/* Menu links — hide in Control Center */}
-        {view !== "control-center" && (<>
+        {/* Menu links */}
+        <>
         <Divider />
         <List sx={{ px: 1 }}>
           {user.is_admin && (
@@ -549,7 +549,7 @@ export default function App() {
             <ListItemText primary="🛠️ Tech Support" />
           </ListItemButton>
         </List>
-        </>)}
+        </>
 
         {/* Language toggle */}
         <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
@@ -632,7 +632,7 @@ export default function App() {
         {view === 'taskdetail' && <TaskDetailView readOnly={readOnly} user={user} taskId={selectedTaskId} goBack={goBack} onNavigate={navigateTo} activeTrade={activeTrade} />}
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
-        {view === "control-center" && <SparksCommandCenter user={user} onEnterCompany={enterSimulation} navigateTo={navigateTo} goHome={goHome} readOnly={readOnly} simulatingCompany={simulatingCompany} setSimulatingCompany={setSimulatingCompany} setSimulationMode={setSimulationMode} editModeEnabled={editModeEnabled} setEditModeEnabled={setEditModeEnabled} editModeExpiry={editModeExpiry} setEditModeExpiry={setEditModeExpiry} showPinModal={showPinModal} setShowPinModal={setShowPinModal} showAlert={showAlert} showConfirm={showConfirm} />}
+        {view === "control-center" && <SparksCommandCenter ref={viewRef} user={user} onEnterCompany={enterSimulation} navigateTo={navigateTo} goHome={goHome} readOnly={readOnly} simulatingCompany={simulatingCompany} setSimulatingCompany={setSimulatingCompany} setSimulationMode={setSimulationMode} editModeEnabled={editModeEnabled} setEditModeEnabled={setEditModeEnabled} editModeExpiry={editModeExpiry} setEditModeExpiry={setEditModeExpiry} showPinModal={showPinModal} setShowPinModal={setShowPinModal} showAlert={showAlert} showConfirm={showConfirm} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>
