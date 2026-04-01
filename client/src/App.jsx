@@ -204,7 +204,8 @@ export default function App() {
       setViewHistory(h => h.slice(0, -1));
       setView(prev);
     } else {
-      setView('home');
+      const fallbackView = (user?.sparks_role === 'admin' || user?.sparks_role === 'support') ? 'control-center' : 'home';
+      setView(fallbackView);
     }
   };
 
@@ -314,7 +315,7 @@ export default function App() {
   if (!user) return <LoginView onLogin={handleLogin} />;
 
   const openReport = (id) => { setSelectedReport(id); navigateTo('detail'); };
-  const goHome = () => { if (viewRef.current?.tryGoHome?.()) return; setView('home'); setViewHistory([]); setMenuOpen(false); setPeopleViewingId(null); setReportsPersonId(null); setSelectedReport(null); };
+  const goHome = () => { if (viewRef.current?.tryGoHome?.()) return; const homeView = (user?.sparks_role === 'admin' || user?.sparks_role === 'support') ? 'control-center' : 'home'; setView(homeView); setViewHistory([]); setMenuOpen(false); setPeopleViewingId(null); setReportsPersonId(null); setSelectedReport(null); };
 
   // Simulation mode — Sparks user enters a company's view
 
