@@ -219,6 +219,10 @@ export default function App() {
         setUser(userData);
         setAuthStatus('authenticated');
         AnalyticsTracker.personId = userData.person_id || userData.id || null;
+        // Auto-route: Sparks admin/support land on Control Center on session restore
+        if (userData.sparks_role === 'admin' || userData.sparks_role === 'support') {
+          setView('control-center');
+        }
       })
       .catch(() => {
         setAuthStatus('anonymous');
