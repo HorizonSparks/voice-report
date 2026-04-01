@@ -5,7 +5,7 @@
  * AI features (Whisper, Claude, TTS) always require internet.
  */
 
-const CACHE_NAME = 'voice-report-v3';
+const CACHE_NAME = 'voice-report-v4';
 
 // App shell — pre-cached on install for offline fallback
 const APP_SHELL = [
@@ -54,6 +54,10 @@ self.addEventListener('message', (event) => {
 
 // Fetch — network first, cache fallback
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   const url = new URL(event.request.url);
 
   // API calls — always network, never cache
@@ -61,16 +65,41 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Everything else — try network first, fall back to cache
+  // Navigation requests: always fetch fresh HTML first.
+  // If offline, fall back to cached app shell.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then((response) => {
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/'))
+    );
+    return;
+  }
+
+  // Never cache JS/CSS bundles in the service worker.
+  // Always go to network so deploys are visible immediately.
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
+  // Other static files — network first, cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         // Got a fresh response — update the cache for offline use
         if (response.ok && (
-          url.pathname.endsWith('.js') ||
-          url.pathname.endsWith('.css') ||
           url.pathname.endsWith('.png') ||
           url.pathname.endsWith('.ico') ||
+          url.pathname.endsWith('.svg') ||
+          url.pathname.endsWith('.webp') ||
+          url.pathname.endsWith('.json') ||
           url.pathname === '/'
         )) {
           const clone = response.clone();
