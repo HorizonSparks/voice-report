@@ -245,6 +245,22 @@ CREATE INDEX idx_ai_conv_person ON ai_conversations(person_id, created_at DESC);
 CREATE INDEX idx_ai_conv_session ON ai_conversations(session_id);
 
 -- ============================================
+-- TABLE 8: agent_insights — RD2 memory of patterns and connections
+-- ============================================
+CREATE TABLE IF NOT EXISTS agent_insights (
+  id TEXT PRIMARY KEY DEFAULT ('insight_' || substr(md5(random()::text), 1, 12)),
+  person_id TEXT REFERENCES people(id) ON DELETE CASCADE,
+  insight_type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  context TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  expires_at TIMESTAMP
+);
+
+CREATE INDEX idx_agent_insights_person ON agent_insights(person_id, created_at DESC);
+CREATE INDEX idx_agent_insights_type ON agent_insights(insight_type, created_at DESC);
+
+-- ============================================
 -- TABLE 8: daily_instructions — Flowing down the chain
 -- ============================================
 CREATE TABLE IF NOT EXISTS daily_instructions (

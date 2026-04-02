@@ -267,6 +267,18 @@ const AGENT_TOOLS = [
     },
   },
   {
+    name: 'relate_data',
+    description: 'Trace how any two entities relate across Voice Report and LoopFolders. Use for questions like "how does Tommy relate to Summit Electrical" or "how does PI-2246 connect to Summit".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        entity_a: { type: 'string', description: 'First entity reference: person, company, project, instrument tag, or report subject' },
+        entity_b: { type: 'string', description: 'Second entity reference: person, company, project, instrument tag, or report subject' },
+      },
+      required: ['entity_a', 'entity_b'],
+    },
+  },
+  {
     name: 'save_insight',
     description: 'Save an insight or pattern you noticed about a user, company, instrument, or system behavior. This builds your long-term memory. Use when you notice something worth remembering for future conversations.',
     input_schema: {
@@ -285,6 +297,162 @@ const AGENT_TOOLS = [
 const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus:9090';
 const LOKI_URL = process.env.LOKI_URL || 'http://loki:3100';
 const GLITCHTIP_URL = process.env.GLITCHTIP_URL || 'http://glitchtip-web:8080';
+
+function safeParseJson(value) {
+  if (!value) return null;
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function summarizeExcelMatches(folderValues) {
+  const parsed = safeParseJson(folderValues);
+  const excelMatches = parsed?._excelMatches;
+  if (!excelMatches) return null;
+  return {
+    count: excelMatches.count || 0,
+    files: (excelMatches.files || []).map(file => file.fileName).filter(Boolean),
+  };
+}
+
+async function findLoopfoldersByTag(tag, limit = 10) {
+  const { rows } = await DB.db.query(
+    `SELECT lf.id, lf.loop_number, lf.status, lf.folder_values, lf.created_at,
+      p.id as project_id, p.name as project_name, p.company as project_company,
+      f.id as file_id, f.name as file_name, f.folder as file_folder,
+      (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
+     FROM horizonsparks.loopfolder lf
+     JOIN horizonsparks.projects p ON p.id = lf.project_id
+     LEFT JOIN horizonsparks.files f ON f.id = lf.file_id
+     WHERE lf.loop_number ILIKE $1 OR lf.folder_values::text ILIKE $1
+     ORDER BY lf.updated_at DESC NULLS LAST, lf.created_at DESC
+     LIMIT $2`,
+    [`%${tag}%`, limit]
+  );
+
+  return rows.map(row => ({
+    id: row.id,
+    loop_number: row.loop_number,
+    status: row.status,
+    project_id: row.project_id,
+    project_name: row.project_name,
+    project_company: row.project_company,
+    file_id: row.file_id,
+    file_name: row.file_name,
+    file_folder: row.file_folder,
+    associated_files: row.associated_files,
+    excel_matches: summarizeExcelMatches(row.folder_values),
+  }));
+}
+
+async function resolveEntity(reference) {
+  const value = (reference || '').trim();
+  if (!value) return null;
+
+  const { rows: companyRows } = await DB.db.query(
+    `SELECT c.id, c.name, c.status, c.tier
+     FROM companies c
+     WHERE c.name ILIKE $1
+     ORDER BY CASE WHEN lower(c.name) = lower($2) THEN 0 ELSE 1 END, c.name
+     LIMIT 1`,
+    [`%${value}%`, value]
+  );
+  if (companyRows[0]) {
+    return { type: 'company', reference: value, ...companyRows[0] };
+  }
+
+  const { rows: personRows } = await DB.db.query(
+    `SELECT p.id, p.name, p.role_title, p.trade, p.company_id, c.name as company_name
+     FROM people p
+     LEFT JOIN companies c ON c.id = p.company_id
+     WHERE p.name ILIKE $1
+     ORDER BY CASE WHEN lower(p.name) = lower($2) THEN 0 ELSE 1 END, p.role_level DESC, p.name
+     LIMIT 1`,
+    [`%${value}%`, value]
+  );
+  if (personRows[0]) {
+    return { type: 'person', reference: value, ...personRows[0] };
+  }
+
+  const instrumentRows = await findLoopfoldersByTag(value, 3);
+  if (instrumentRows[0]) {
+    return { type: 'instrument', reference: value, instrument: instrumentRows[0] };
+  }
+
+  const { rows: projectRows } = await DB.db.query(
+    `SELECT p.id, p.name, p.company, p.company_id
+     FROM horizonsparks.projects p
+     WHERE p.name ILIKE $1 OR p.company ILIKE $1
+     ORDER BY CASE WHEN lower(p.name) = lower($2) THEN 0 ELSE 1 END, p.created_at DESC
+     LIMIT 1`,
+    [`%${value}%`, value]
+  );
+  if (projectRows[0]) {
+    return { type: 'project', reference: value, ...projectRows[0] };
+  }
+
+  return { type: 'unknown', reference: value };
+}
+
+function buildRelationshipPath(entityA, entityB) {
+  if (!entityA || !entityB) return [];
+
+  if (entityA.type === 'person' && entityB.type === 'company') {
+    if (entityA.company_id === entityB.id || (entityA.company_name && entityA.company_name.toLowerCase() === entityB.name.toLowerCase())) {
+      return [`${entityA.name} -> works for -> ${entityB.name}`];
+    }
+  }
+
+  if (entityA.type === 'company' && entityB.type === 'person') {
+    return buildRelationshipPath(entityB, entityA).reverse();
+  }
+
+  if (entityA.type === 'instrument' && entityB.type === 'company') {
+    const instrument = entityA.instrument;
+    if (instrument.project_company && instrument.project_company.toLowerCase().includes(entityB.name.toLowerCase())) {
+      return [
+        `${entityA.reference} -> tracked in loop folder -> ${instrument.loop_number}`,
+        `${instrument.loop_number} -> belongs to LoopFolders project -> ${instrument.project_name}`,
+        `${instrument.project_name} -> company match -> ${entityB.name}`,
+      ];
+    }
+  }
+
+  if (entityA.type === 'company' && entityB.type === 'instrument') {
+    return buildRelationshipPath(entityB, entityA).reverse();
+  }
+
+  if (entityA.type === 'person' && entityB.type === 'instrument') {
+    const instrument = entityB.instrument;
+    const path = [];
+    if (entityA.company_name && instrument.project_company && instrument.project_company.toLowerCase().includes(entityA.company_name.toLowerCase())) {
+      path.push(`${entityA.name} -> works for -> ${entityA.company_name}`);
+      path.push(`${entityA.company_name} -> has LoopFolders project -> ${instrument.project_name}`);
+      path.push(`${instrument.project_name} -> contains loop folder -> ${instrument.loop_number}`);
+      path.push(`${instrument.loop_number} -> relates to instrument -> ${entityB.reference}`);
+    }
+    return path;
+  }
+
+  if (entityA.type === 'instrument' && entityB.type === 'person') {
+    return buildRelationshipPath(entityB, entityA).reverse();
+  }
+
+  if (entityA.type === 'project' && entityB.type === 'company') {
+    if (entityA.company_id === entityB.id || (entityA.company && entityA.company.toLowerCase().includes(entityB.name.toLowerCase()))) {
+      return [`${entityA.name} -> project company -> ${entityB.name}`];
+    }
+  }
+
+  if (entityA.type === 'company' && entityB.type === 'project') {
+    return buildRelationshipPath(entityB, entityA).reverse();
+  }
+
+  return [];
+}
 
 // ---- TOOL EXECUTORS ----
 async function executeTool(toolName, toolInput) {
@@ -391,11 +559,13 @@ async function executeTool(toolName, toolInput) {
       }
       case 'get_loopfolders_status': {
         const { rows: folders } = await DB.db.query(`
-          SELECT lf.id, lf.name, lf.tag_number, lf.status, lf.created_at,
+          SELECT lf.id, lf.loop_number, lf.status, lf.created_at,
+            f.name as file_name,
             (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
           FROM horizonsparks.loopfolder lf
+          LEFT JOIN horizonsparks.files f ON f.id = lf.file_id
           WHERE lf.project_id = $1
-          ORDER BY lf.name
+          ORDER BY lf.loop_number
         `, [toolInput.project_id]);
         const { rows: [summary] } = await DB.db.query(`
           SELECT COUNT(*)::int as total,
@@ -465,30 +635,17 @@ async function executeTool(toolName, toolInput) {
         return JSON.stringify({ total_files: rows.length, results: parsed });
       }
       case 'get_instrument_details': {
-        const { rows } = await DB.db.query(`
-          SELECT lf.loop_number, lf.status, lf.folder_values, p.name as project_name,
-            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
-          FROM horizonsparks.loopfolder lf
-          JOIN horizonsparks.projects p ON p.id = lf.project_id
-          WHERE lf.loop_number ILIKE $1
-          LIMIT 10
-        `, [`%${toolInput.tag_number}%`]);
-        if (rows.length === 0) return `No instrument found matching "${toolInput.tag_number}"`;
-        const results = rows.map(r => {
-          let excelMatches = null;
-          try {
-            const vals = typeof r.folder_values === 'string' ? JSON.parse(r.folder_values) : r.folder_values;
-            excelMatches = vals?._excelMatches;
-          } catch(e) {}
-          return {
-            loop_number: r.loop_number,
-            status: r.status,
-            project: r.project_name,
-            associated_files: r.associated_files,
-            excel_matches: excelMatches ? { count: excelMatches.count, files: (excelMatches.files || []).map(f => f.fileName) } : null,
-          };
-        });
-        return JSON.stringify(results);
+        const matches = await findLoopfoldersByTag(toolInput.tag_number, 10);
+        if (matches.length === 0) return `No instrument found matching "${toolInput.tag_number}"`;
+        return JSON.stringify(matches.map(match => ({
+          loop_number: match.loop_number,
+          status: match.status,
+          project: match.project_name,
+          company: match.project_company,
+          file_name: match.file_name,
+          associated_files: match.associated_files,
+          excel_matches: match.excel_matches,
+        })));
       }
       case 'get_cropped_instruments': {
         let sql = `SELECT COUNT(*)::int as total_crops FROM horizonsparks.box_crop_images WHERE 1=1`;
@@ -699,48 +856,42 @@ async function executeTool(toolName, toolInput) {
         const tag = toolInput.tag_number;
         const result = { loopfolders: {}, voice_report: {} };
 
-        // LoopFolders: find loop folder
-        const { rows: folders } = await DB.db.query(`
-          SELECT lf.id, lf.loop_number, lf.tag_number, lf.status, lf.folder_values,
-            p.name as project_name, p.company as project_company,
-            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
-          FROM horizonsparks.loopfolder lf
-          JOIN horizonsparks.projects p ON p.id = lf.project_id
-          WHERE lf.loop_number ILIKE $1 OR lf.tag_number ILIKE $1
-          LIMIT 10`, [`%${tag}%`]
-        );
-        result.loopfolders.folders = folders.map(f => {
-          let excelMatches = null;
-          try { const v = typeof f.folder_values === 'string' ? JSON.parse(f.folder_values) : f.folder_values; excelMatches = v?._excelMatches; } catch {}
-          return { loop_number: f.loop_number, tag_number: f.tag_number, status: f.status, project: f.project_name, company: f.project_company, associated_files: f.associated_files, excel_matches: excelMatches ? { count: excelMatches.count } : null };
-        });
+        const folders = await findLoopfoldersByTag(tag, 10);
+        result.loopfolders.folders = folders.map(folder => ({
+          loop_number: folder.loop_number,
+          status: folder.status,
+          project: folder.project_name,
+          company: folder.project_company,
+          file_name: folder.file_name,
+          associated_files: folder.associated_files,
+          excel_matches: folder.excel_matches,
+        }));
 
-        // Voice Report: search reports mentioning this tag
-        const { rows: reportMentions } = await DB.db.query(`
-          SELECT r.id, r.created_at, p.name as person_name, p.trade,
-            substring(r.transcript_raw, 1, 200) as transcript_preview
-          FROM reports r JOIN people p ON p.id = r.person_id
-          WHERE r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1
-          ORDER BY r.created_at DESC LIMIT 10`, [`%${tag}%`]
+        const { rows: reportMentions } = await DB.db.query(
+          `SELECT r.id, r.created_at, p.name as person_name, p.trade,
+            substring(COALESCE(r.transcript_raw, r.markdown_structured, ''), 1, 240) as transcript_preview
+           FROM reports r
+           JOIN people p ON p.id = r.person_id
+           WHERE r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1
+           ORDER BY r.created_at DESC LIMIT 10`,
+          [`%${tag}%`]
         );
         result.voice_report.report_mentions = reportMentions;
 
-        // Voice Report: search form submissions via form_loops
-        const { rows: formMentions } = await DB.db.query(`
-          SELECT fs.id, fs.submitted_at, p.name as person_name, ft.name as form_name,
-            fl.tag_number, fl.loop_type, fl.service
-          FROM form_submissions fs
-          JOIN form_loops fl ON fl.id = fs.loop_id
-          JOIN people p ON p.id = fs.person_id
-          LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
-          WHERE fl.tag_number ILIKE $1
-          ORDER BY fs.submitted_at DESC LIMIT 10`, [`%${tag}%`]
+        const { rows: formMentions } = await DB.db.query(
+          `SELECT fs.id, fs.submitted_at, p.name as person_name, ft.name as form_name,
+            COALESCE(fs.tag_number, fl.tag_number) as tag_number, fl.loop_type, fl.service
+           FROM form_submissions fs
+           LEFT JOIN form_loops fl ON fl.id = fs.loop_id
+           LEFT JOIN people p ON p.id = fs.person_id
+           LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
+           WHERE fs.tag_number ILIKE $1 OR fl.tag_number ILIKE $1
+           ORDER BY fs.submitted_at DESC LIMIT 10`,
+          [`%${tag}%`]
         ).catch(() => ({ rows: [] }));
         result.voice_report.form_submissions = formMentions;
 
-        const totalActivity = reportMentions.length + formMentions.length + folders.length;
-        result.summary = `Found ${folders.length} loop folder(s), ${reportMentions.length} report mention(s), ${formMentions.length} form submission(s) for "${tag}"`;
-
+        result.summary = `Found ${folders.length} loop folder match(es), ${reportMentions.length} report mention(s), ${formMentions.length} form submission(s) for "${tag}".`;
         return JSON.stringify(result);
       }
       case 'get_person_work_summary': {
@@ -818,8 +969,49 @@ async function executeTool(toolName, toolInput) {
         result.summary = `${person.name}: ${reports.length} reports, ${tasks.length} active tasks, ${jsas.length} JSAs, ${forms.length} forms in last ${days} days. ${mentionedTags.size} instrument tags found.`;
         return JSON.stringify(result);
       }
+      case 'relate_data': {
+        const entityA = await resolveEntity(toolInput.entity_a);
+        const entityB = await resolveEntity(toolInput.entity_b);
+        const path = buildRelationshipPath(entityA, entityB);
+        const direct_matches = [];
+
+        if (entityA?.type === 'person' && entityB?.type === 'company' && entityA.company_id === entityB.id) {
+          const { rows: personReports } = await DB.db.query(
+            `SELECT COUNT(*)::int as report_count FROM reports WHERE person_id = $1`,
+            [entityA.id]
+          );
+          direct_matches.push({ kind: 'voice_report_person_company', report_count: personReports[0]?.report_count || 0 });
+        }
+
+        if (entityA?.type === 'company' && entityB?.type === 'instrument') {
+          const instrument = entityB.instrument;
+          if (instrument?.project_company?.toLowerCase().includes(entityA.name.toLowerCase())) {
+            direct_matches.push({ kind: 'loopfolders_company_instrument', project: instrument.project_name, loop_number: instrument.loop_number });
+          }
+        }
+
+        if (entityA?.type === 'person' && entityB?.type === 'instrument') {
+          const { rows: reportMentions } = await DB.db.query(
+            `SELECT COUNT(*)::int as mention_count
+             FROM reports
+             WHERE person_id = $1 AND (transcript_raw ILIKE $2 OR markdown_structured ILIKE $2)`,
+            [entityA.id, `%${toolInput.entity_b}%`]
+          );
+          if ((reportMentions[0]?.mention_count || 0) > 0) {
+            direct_matches.push({ kind: 'voice_report_report_mentions', mention_count: reportMentions[0].mention_count });
+          }
+        }
+
+        return JSON.stringify({
+          entity_a: entityA,
+          entity_b: entityB,
+          shortest_path: path,
+          direct_matches,
+          summary: path.length > 0 ? path.join(' | ') : `No direct relationship path found yet between "${toolInput.entity_a}" and "${toolInput.entity_b}".`,
+        });
+      }
       case 'save_insight': {
-        const personId = toolInput._personId || 'system';
+        const personId = toolInput._personId || null;
         await DB.db.query(
           `INSERT INTO agent_insights (person_id, insight_type, content, context) VALUES ($1, $2, $3, $4)`,
           [personId, toolInput.insight_type, toolInput.content, toolInput.context || null]
@@ -935,6 +1127,7 @@ RELATION DATA TOOLS (your most powerful tools):
 - trace_company_everything: Full cross-platform company view (Voice Report + LoopFolders)
 - trace_instrument_history: Everything about an instrument across both systems
 - get_person_work_summary: Complete picture of someone's work (reports, tasks, instruments, forms)
+- relate_data: Find the shortest relationship path between two entities
 - save_insight: Remember patterns and connections you discover
 
 COMMISSIONING — THE LOOP FOLDER IS THE BOSS:
@@ -953,7 +1146,7 @@ MEMORY — YOU REMEMBER AND LEARN:
 - save_insight: Save patterns you notice for future conversations
 - Build on previous context — don't make them repeat themselves
 
-ALL TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation, trace_company_everything, trace_instrument_history, get_person_work_summary, save_insight
+ALL TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation, trace_company_everything, trace_instrument_history, get_person_work_summary, relate_data, save_insight
 
 ${memoryContext ? `\nPREVIOUS CONVERSATION WITH ${userName.toUpperCase()}:\n${memoryContext}\n` : ''}
 CONTEXT:

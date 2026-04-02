@@ -471,7 +471,7 @@ export default function App() {
               '&:hover': { background: globalAgentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.35)' },
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-              Sparks AI
+              RD2
             </Button>
           </Box>
         </Toolbar>
@@ -760,7 +760,7 @@ export default function App() {
         </>
       )}
 
-      {/* RD2 Agent Sidebar — Claude/ChatGPT style, full viewport height */}
+      {/* RD2 Sidebar — Claude/ChatGPT style, full viewport height */}
       {globalAgentOpen && (
         <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#1a1a1a', boxShadow: '-4px 0 30px rgba(0,0,0,0.3)', zIndex: 1300, display: 'flex', flexDirection: 'column' }}>
           {/* RD2 header */}
@@ -769,7 +769,7 @@ export default function App() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'white', letterSpacing: 0.5 }}>Sparks AI Agent</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'white', letterSpacing: 0.5 }}>RD2</Typography>
               <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Relation Data Intelligence</Typography>
             </Box>
             <Chip label="Opus" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 700, fontSize: 10, height: 22 }} />
@@ -785,7 +785,7 @@ export default function App() {
                 <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F99440" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                 </Box>
-                <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#fff', mb: 0.5 }}>Sparks AI Agent</Typography>
+                <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#fff', mb: 0.5 }}>RD2</Typography>
                 <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 1.6, maxWidth: 300 }}>
                   Powered by Relation Data Intelligence. I trace relationships across Voice Report and LoopFolders. Ask me about companies, people, instruments, system health — I see the whole picture.
                 </Typography>
@@ -835,7 +835,7 @@ export default function App() {
           <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: 'rgba(255,255,255,0.06)', borderRadius: '24px', px: 2, py: 0.75 }}>
               <TextField
-                multiline placeholder="Ask Sparks AI anything..." value={globalAgentInput}
+                multiline placeholder="Ask RD2 anything..." value={globalAgentInput}
                 onChange={e => setGlobalAgentInput(e.target.value)}
                 onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGlobalAgent(); } }}
                 variant="standard" size="small" maxRows={4}
