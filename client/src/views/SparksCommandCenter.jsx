@@ -433,7 +433,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
                   { label: 'Companies', icon: '\uD83C\uDFE2', action: loadCompanies, show: ['admin', 'support'].includes(user.sparks_role) },
                   { label: 'Team', icon: '\uD83D\uDC65', action: loadTeam, show: true },
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
-                  { label: 'Messages', icon: '\uD83D\uDCAC', action: () => {}, show: true, disabled: true },
+                  { label: 'Messages', icon: '\uD83D\uDCAC', action: loadTeam, show: true },
                 ].filter(t => t.show).map((tile, i) => (
                   <Button key={i} onClick={tile.action} disabled={tile.disabled}
                     variant="outlined"
