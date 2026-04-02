@@ -341,6 +341,20 @@ export default function App() {
       });
       const data = await res.json();
       setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: data.response || data.error || 'No response', model: data.model, error: !data.response }]);
+      // Handle navigation instructions from the Agent
+      if (data.navigation) {
+        // Make sure we're in sparks view first
+        if (view !== 'sparks') {
+          setView('sparks');
+          setViewHistory([]);
+        }
+        // Give React a moment to render, then navigate
+        setTimeout(() => {
+          if (viewRef.current?.navigateTo) {
+            viewRef.current.navigateTo(data.navigation);
+          }
+        }, 300);
+      }
     } catch (err) {
       setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'Connection error: ' + err.message, error: true }]);
     }

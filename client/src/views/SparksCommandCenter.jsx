@@ -293,6 +293,31 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
     tryGoHome() {
       if (screen !== 'dashboard') { setScreen('dashboard'); return true; }
       return false;
+    },
+    navigateTo(nav) {
+      if (!nav || !nav.screen) return false;
+      switch (nav.screen) {
+        case 'dashboard': setScreen('dashboard'); return true;
+        case 'team': loadTeam(); return true;
+        case 'messages': loadMessages(); return true;
+        case 'companies': loadCompanies(); return true;
+        case 'analytics': setScreen('analytics'); return true;
+        case 'audit': loadAudit(); return true;
+        case 'ai-spending': loadAiSpending(); return true;
+        case 'folders': loadTeam(); setTimeout(() => { /* folders tab handled by TeamChatPanel */ }, 500); return true;
+        case 'company-detail':
+          if (nav.company_id) { loadCompanyDetail(nav.company_id); return true; }
+          if (nav.company_name) {
+            // Find company by name and navigate
+            fetch('/api/sparks/companies').then(r => r.json()).then(companies => {
+              const match = companies.find(c => c.name.toLowerCase().includes(nav.company_name.toLowerCase()));
+              if (match) loadCompanyDetail(match.id);
+            });
+            return true;
+          }
+          return false;
+        default: return false;
+      }
     }
   }));
 

@@ -157,6 +157,29 @@ const AGENT_TOOLS = [
       },
     },
   },
+  {
+    name: 'list_project_files',
+    description: 'List all files in a LoopFolders project. Returns filenames, folders (P&ID, EXCELs, Schematics, etc.), and file paths.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string', description: 'Project UUID' },
+        folder: { type: 'string', description: 'Filter by folder type: P&ID, EXCELs, Schematics, Location_Drawings, Tests_Reports' },
+        filename: { type: 'string', description: 'Search by filename (partial match)' },
+      },
+    },
+  },
+  {
+    name: 'read_shared_file',
+    description: 'Read a file from shared folders. Returns file metadata and content (for text files) or confirms existence (for binary files like PDFs/images).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        file_id: { type: 'string', description: 'Shared file ID from the shared_files table' },
+        folder_id: { type: 'string', description: 'Shared folder ID to list files from' },
+      },
+    },
+  },
 ];
 
 // ---- TOOL EXECUTORS ----
@@ -375,6 +398,46 @@ async function executeTool(toolName, toolInput) {
         const { rows: samples } = await DB.db.query(sampleSql);
         return JSON.stringify({ total_cropped_images: count.total_crops, samples });
       }
+      case 'list_project_files': {
+        let sql = `SELECT f.id, f.name, f.folder, f.file_path, f.status, f.created_at
+                   FROM horizonsparks.files f WHERE 1=1`;
+        const params = [];
+        if (toolInput.project_id) { params.push(toolInput.project_id); sql += ` AND f.project_id = $${params.length}`; }
+        if (toolInput.folder) { params.push(toolInput.folder); sql += ` AND f.folder = $${params.length}`; }
+        if (toolInput.filename) { params.push(`%${toolInput.filename}%`); sql += ` AND f.name ILIKE $${params.length}`; }
+        sql += ' ORDER BY f.folder, f.name LIMIT 30';
+        const { rows } = await DB.db.query(sql, params);
+        return rows.length > 0 ? JSON.stringify(rows) : 'No files found';
+      }
+      case 'read_shared_file': {
+        if (toolInput.folder_id) {
+          // List files in a shared folder
+          const { rows } = await DB.db.query(
+            `SELECT sf.id, sf.name, sf.type, sf.filename, sf.original_name, sf.url, sf.size_bytes, sf.mime_type, p.name as uploaded_by
+             FROM shared_files sf LEFT JOIN people p ON p.id = sf.uploaded_by
+             WHERE sf.folder_id = $1 ORDER BY sf.created_at DESC`,
+            [toolInput.folder_id]
+          );
+          return rows.length > 0 ? JSON.stringify(rows) : 'No files in this folder';
+        }
+        if (toolInput.file_id) {
+          const { rows } = await DB.db.query(
+            `SELECT sf.*, p.name as uploaded_by_name, shf.name as folder_name
+             FROM shared_files sf LEFT JOIN people p ON p.id = sf.uploaded_by
+             LEFT JOIN shared_folders shf ON shf.id = sf.folder_id
+             WHERE sf.id = $1`,
+            [toolInput.file_id]
+          );
+          if (rows.length === 0) return 'File not found';
+          const file = rows[0];
+          if (file.type === 'link') return JSON.stringify({ ...file, access_url: file.url });
+          // For actual files, check if readable
+          const filePath = path.join(ROOT, 'shared-files', file.filename);
+          const exists = fs.existsSync(filePath);
+          return JSON.stringify({ ...file, exists, download_url: `/api/folders/download/${file.filename}` });
+        }
+        return 'Provide either folder_id or file_id';
+      }
       case 'navigate_to': {
         // Navigation is handled client-side — just return the instruction
         return JSON.stringify({ action: 'navigate', ...toolInput, message: `Navigating to ${toolInput.screen}${toolInput.company_name ? ' → ' + toolInput.company_name : ''}${toolInput.person_name ? ' → ' + toolInput.person_name : ''}` });
@@ -475,6 +538,7 @@ RULES:
     let finalText = '';
     let totalUsage = { input_tokens: 0, output_tokens: 0 };
     let loops = 0;
+    let navigation = null; // Track navigation instructions
 
     while (loops < 5) {
       loops++;
@@ -498,6 +562,10 @@ RULES:
       if (result.stop_reason === 'tool_use') {
         const toolUseBlock = result.content.find(b => b.type === 'tool_use');
         if (toolUseBlock) {
+          // Capture navigation instructions
+          if (toolUseBlock.name === 'navigate_to') {
+            navigation = toolUseBlock.input;
+          }
           // Execute the tool
           const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
           // Add assistant response + tool result to messages for next round
@@ -512,12 +580,14 @@ RULES:
       break;
     }
 
-    res.json({
+    const response = {
       response: finalText,
       model: model.includes('opus') ? 'Opus' : 'Sonnet',
       usage: totalUsage,
       tool_calls: loops - 1,
-    });
+    };
+    if (navigation) response.navigation = navigation;
+    res.json(response);
   } catch (err) {
     console.error('Agent error:', err);
     res.status(500).json({ error: err.message });
