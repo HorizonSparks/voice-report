@@ -833,7 +833,7 @@ export default function App() {
       {globalAgentOpen && (
         <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#FFF8F0', boxShadow: '-4px 0 20px rgba(0,0,0,0.1)', zIndex: 1300, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #E0E0E0' }}>
           {/* Sparks AI header — dark charcoal matching main app header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#3C3C3C', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#3C3C3C', borderBottom: '3px solid #F99440', flexShrink: 0 }}>
             <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F99440" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
             </Box>
