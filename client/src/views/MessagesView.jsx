@@ -501,21 +501,44 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
         {/* Agent side panel — slides in from right */}
         {showAiAssist && agentOpen && (
           <Box sx={{
-            width: 320, flexShrink: 0, bgcolor: 'background.paper',
+            width: 340, flexShrink: 0, bgcolor: 'background.paper',
             borderLeft: '2px solid var(--primary)',
             display: 'flex', flexDirection: 'column',
           }}>
-            {/* Agent header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5, bgcolor: 'var(--charcoal)', flexShrink: 0 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F99440" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-              <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 800, color: 'var(--primary)' }}>AI Agent</Typography>
-              <IconButton size="small" onClick={() => setAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)', p: 0.5 }}>
+            {/* Agent header — orange */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, background: 'linear-gradient(135deg, #F99440, #E8822A)', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              <Typography sx={{ flex: 1, fontSize: 15, fontWeight: 800, color: 'white' }}>AI Agent</Typography>
+              <IconButton size="small" onClick={() => setAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.7)', p: 0.5, '&:hover': { color: 'white' } }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </IconButton>
             </Box>
-            {/* Agent recommendations */}
+            {/* Agent content — recommendations + chat */}
             <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
               <AgentPanel messages={chatMessages} contactName={activeChatName} contactRole={chatRole} />
+            </Box>
+            {/* Agent input bar */}
+            <Box sx={{ px: 1.5, py: 1, borderTop: '1px solid rgba(72,72,74,0.1)', display: 'flex', gap: 1, alignItems: 'flex-end', flexShrink: 0, bgcolor: 'background.paper' }}>
+              <TextField
+                multiline
+                placeholder="Ask the agent..."
+                variant="standard"
+                size="small"
+                rows={1}
+                slotProps={{ input: { disableUnderline: true } }}
+                sx={{
+                  flex: 1,
+                  bgcolor: 'rgba(72,72,74,0.06)', borderRadius: '20px',
+                  '& .MuiInputBase-root': { px: 1.5, py: 0.75, fontSize: 13 },
+                  '& .MuiInputBase-input': { resize: 'none', maxHeight: 60, overflow: 'auto' },
+                }}
+              />
+              <IconButton size="small" sx={{
+                width: 36, height: 36, bgcolor: 'var(--primary)', color: 'white',
+                '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 },
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+              </IconButton>
             </Box>
           </Box>
         )}
