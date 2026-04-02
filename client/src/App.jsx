@@ -346,7 +346,14 @@ export default function App() {
     try {
       const res = await fetch('/api/agent/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg }),
+        body: JSON.stringify({
+          message: msg,
+          contactName: simulatingCompany?.name || '',
+          companyName: simulatingCompany?.name || '',
+          conversationContext: globalAgentMessages.slice(-6).map(m => m.role + ': ' + m.content.substring(0, 200)).join('\n'),
+          currentScreen: view,
+          currentWorld: currentWorld || 'voice-report',
+        }),
       });
       const data = await res.json();
       setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: data.response || data.error || 'No response', model: data.model, tools: data.tool_calls, error: !data.response }]);
@@ -838,6 +845,15 @@ export default function App() {
             <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.7)', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
               <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
+          </Box>
+
+          {/* Live context bar — shows what user is currently doing */}
+          <Box sx={{ px: 2, py: 0.75, bgcolor: 'rgba(249,148,64,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
+            <Typography sx={{ fontSize: 11, color: '#E8822A', fontWeight: 600 }}>
+              {currentWorld === 'control-center' ? 'Control Center' : 'Voice Report'}
+              {simulatingCompany ? (' → ' + simulatingCompany.name) : ''}
+              {view !== 'home' && view !== 'sparks' ? (' → ' + view.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())) : ''}
+            </Typography>
           </Box>
 
           {/* Messages area — cream theme matching app */}

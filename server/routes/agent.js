@@ -1511,7 +1511,7 @@ function loadRelevantKnowledge(query) {
 router.post('/chat', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
-    const { message, conversationContext, contactName, contactRole, companyName } = req.body;
+    const { message, conversationContext, contactName, contactRole, companyName, currentScreen, currentWorld: clientWorld } = req.body;
     if (!message) return res.status(400).json({ error: 'message required' });
     const isAdmin = actor.is_admin || actor.role_level >= 5;
     const model = isAdmin ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
@@ -1614,10 +1614,13 @@ MEMORY — YOU REMEMBER AND LEARN:
 - Build on previous context — don't make them repeat themselves
 ALL TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation, trace_company_everything, trace_instrument_history, get_person_work_summary, relate_data, save_insight
 ${memoryContext ? `\nPREVIOUS CONVERSATION WITH ${userName.toUpperCase()}:\n${memoryContext}\n` : ''}
-CONTEXT:
+REAL-TIME CONTEXT — YOU KNOW WHAT THE USER IS DOING RIGHT NOW:
+${clientWorld ? `- Platform: ${clientWorld === 'control-center' ? 'Control Center (admin view)' : 'Voice Report (field operations)'}` : ''}
+${currentScreen ? `- Current screen: ${currentScreen}` : ''}
 ${contactName ? `- Currently viewing: ${contactName} (${contactRole || ''})` : ''}
 ${companyName ? `- Company: ${companyName}` : ''}
-${conversationContext ? `- Recent chat:\n${conversationContext}` : ''}
+${conversationContext ? `- Recent chat context:\n${conversationContext}` : ''}
+Use this context to give relevant answers. If they are messaging someone, you know who. If they are in a company view, you know which company. Tailor your responses to what they are doing RIGHT NOW.
 ${knowledge ? `\nTRADE KNOWLEDGE:\n${knowledge}` : ''}
 P&ID VIEWER KNOWLEDGE — YOU KNOW EVERY BUTTON:
 When users ask about the P&ID viewer, how to do things, or what buttons do, use this:
