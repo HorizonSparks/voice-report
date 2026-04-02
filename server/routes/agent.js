@@ -348,6 +348,95 @@ const AGENT_TOOLS = [
       },
     },
   },
+  // ---- VOICE REPORT DEEP ACCESS TOOLS ----
+  {
+    name: 'get_jsa_details',
+    description: 'Get JSA (Job Safety Analysis) records with hazards, PPE, task descriptions, status, and crew acknowledgments. Use when asked about safety, JSAs, hazards, or safety compliance.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        person_name: { type: 'string', description: 'Filter by person name (optional)' },
+        company_id: { type: 'string', description: 'Filter by company ID (optional)' },
+        status: { type: 'string', description: 'Filter by status: active, completed, all (default: all)' },
+        days: { type: 'number', description: 'Look back N days (default: 30)' },
+      },
+    },
+  },
+  {
+    name: 'get_daily_plans',
+    description: 'Get daily plans with tasks, crew assignments, hours worked, and progress. Use when asked about daily plans, task assignments, crew schedules, or work progress.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        person_name: { type: 'string', description: 'Filter by person who created the plan (optional)' },
+        trade: { type: 'string', description: 'Filter by trade (optional)' },
+        date: { type: 'string', description: 'Filter by date YYYY-MM-DD (optional)' },
+        days: { type: 'number', description: 'Look back N days (default: 14)' },
+      },
+    },
+  },
+  {
+    name: 'get_punch_items',
+    description: 'Get punch list items — open deficiencies, assigned corrections, priorities, and resolution status. Use when asked about punch items, deficiencies, open issues, or corrections needed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        company_id: { type: 'string', description: 'Filter by company (optional)' },
+        status: { type: 'string', description: 'Filter: open, closed, all (default: open)' },
+        assigned_to: { type: 'string', description: 'Filter by person name assigned (optional)' },
+      },
+    },
+  },
+  {
+    name: 'search_reports',
+    description: 'Deep search inside voice report transcripts. Full-text search across all reports. Use when asked to find reports mentioning specific instruments, topics, issues, or keywords.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search text to find in report transcripts' },
+        person_name: { type: 'string', description: 'Filter by person name (optional)' },
+        company_id: { type: 'string', description: 'Filter by company (optional)' },
+        trade: { type: 'string', description: 'Filter by trade (optional)' },
+        days: { type: 'number', description: 'Look back N days (default: 30)' },
+        limit: { type: 'number', description: 'Max results (default: 10)' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'get_team_messages',
+    description: 'Get recent team messages and conversations. Use when asked about team communication, what was discussed, or message history.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        person_name: { type: 'string', description: 'Filter by person involved (optional)' },
+        limit: { type: 'number', description: 'Max messages (default: 20)' },
+      },
+    },
+  },
+  {
+    name: 'read_insights',
+    description: 'Read back saved insights and patterns from your memory. Use when asked about what you learned, patterns noticed, or to recall previous observations.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        insight_type: { type: 'string', description: 'Filter by type: preference, pattern, connection, alert (optional)' },
+        search: { type: 'string', description: 'Search text in insights (optional)' },
+        limit: { type: 'number', description: 'Max insights to return (default: 20)' },
+      },
+    },
+  },
+  {
+    name: 'get_form_templates',
+    description: 'Get available form templates — calibration forms, test reports, inspection checklists. Shows what forms exist, which trades they apply to, and their fields. Use when asked about forms, what forms are available, or how to fill out a form.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        trade: { type: 'string', description: 'Filter by trade (optional)' },
+        category: { type: 'string', description: 'Filter by category (optional)' },
+      },
+    },
+  },
   {
     name: 'save_insight',
     description: 'Save an insight or pattern you noticed about a user, company, instrument, or system behavior. This builds your long-term memory. Use when you notice something worth remembering for future conversations.',
@@ -1457,6 +1546,131 @@ async function executeTool(toolName, toolInput) {
         report.sort((a, b) => parseInt(a.quality_score) - parseInt(b.quality_score));
         return JSON.stringify({ files_analyzed: report.length, report });
       }
+      // ---- VOICE REPORT DEEP ACCESS EXECUTORS ----
+      case 'get_jsa_details': {
+        const days = toolInput.days || 30;
+        let sql = `SELECT j.id, j.date, j.trade, j.task_description, j.hazards, j.ppe_required,
+          j.weather_conditions, j.emergency_plan, j.status,
+          p.name as person_name, p.role_title,
+          c.name as company_name,
+          (SELECT COUNT(*)::int FROM jsa_acknowledgments ja WHERE ja.jsa_id = j.id) as acknowledgments
+          FROM jsa_records j
+          JOIN people p ON p.id = j.person_id
+          LEFT JOIN companies c ON c.id = j.company_id
+          WHERE j.date > NOW() - INTERVAL '${days} days'`;
+        const params = [];
+        if (toolInput.person_name) { params.push('%' + toolInput.person_name + '%'); sql += ` AND p.name ILIKE $${params.length}`; }
+        if (toolInput.company_id) { params.push(toolInput.company_id); sql += ` AND j.company_id = $${params.length}`; }
+        sql += ' ORDER BY j.date DESC LIMIT 15';
+        const { rows } = await DB.db.query(sql, params);
+        if (rows.length === 0) return 'No JSA records found for the specified criteria.';
+        return JSON.stringify({ total: rows.length, jsa_records: rows });
+      }
+      case 'get_daily_plans': {
+        const days = toolInput.days || 14;
+        let sql = `SELECT dp.id, dp.date, dp.trade, dp.notes, p.name as created_by,
+          (SELECT COUNT(*)::int FROM daily_plan_tasks dpt WHERE dpt.plan_id = dp.id) as task_count,
+          (SELECT COUNT(*)::int FROM daily_plan_tasks dpt WHERE dpt.plan_id = dp.id AND dpt.status = 'completed') as completed_tasks
+          FROM daily_plans dp
+          JOIN people p ON p.id = dp.created_by
+          WHERE dp.date > NOW() - INTERVAL '${days} days'`;
+        const params = [];
+        if (toolInput.person_name) { params.push('%' + toolInput.person_name + '%'); sql += ` AND p.name ILIKE $${params.length}`; }
+        if (toolInput.trade) { params.push(toolInput.trade); sql += ` AND dp.trade = $${params.length}`; }
+        if (toolInput.date) { params.push(toolInput.date); sql += ` AND dp.date::date = $${params.length}::date`; }
+        sql += ' ORDER BY dp.date DESC LIMIT 10';
+        const { rows: plans } = await DB.db.query(sql, params);
+        // Get tasks for each plan
+        for (const plan of plans) {
+          const { rows: tasks } = await DB.db.query(
+            `SELECT dpt.id, dpt.description, dpt.trade, dpt.status, dpt.location, dpt.start_date, dpt.target_end_date,
+              pa.name as assigned_to_name
+             FROM daily_plan_tasks dpt LEFT JOIN people pa ON pa.id = dpt.assigned_to
+             WHERE dpt.plan_id = $1 ORDER BY dpt.start_date`, [plan.id]
+          );
+          plan.tasks = tasks;
+        }
+        return JSON.stringify({ total_plans: plans.length, plans });
+      }
+      case 'get_punch_items': {
+        const status = toolInput.status || 'open';
+        let sql = `SELECT pi.id, pi.description, pi.status, pi.priority, pi.trade, pi.location, pi.created_at, pi.resolved_at,
+          pc.name as created_by_name, pa.name as assigned_to_name, c.name as company_name
+          FROM punch_items pi
+          LEFT JOIN people pc ON pc.id = pi.created_by
+          LEFT JOIN people pa ON pa.id = pi.assigned_to
+          LEFT JOIN companies c ON c.id = pi.company_id
+          WHERE 1=1`;
+        const params = [];
+        if (status !== 'all') { params.push(status); sql += ` AND pi.status = $${params.length}`; }
+        if (toolInput.company_id) { params.push(toolInput.company_id); sql += ` AND pi.company_id = $${params.length}`; }
+        if (toolInput.assigned_to) { params.push('%' + toolInput.assigned_to + '%'); sql += ` AND pa.name ILIKE $${params.length}`; }
+        sql += ' ORDER BY pi.created_at DESC LIMIT 20';
+        const { rows } = await DB.db.query(sql, params);
+        const summary = { total: rows.length, open: rows.filter(r => r.status === 'open').length, closed: rows.filter(r => r.status !== 'open').length };
+        return JSON.stringify({ summary, punch_items: rows });
+      }
+      case 'search_reports': {
+        const days = toolInput.days || 30;
+        const limit = Math.min(toolInput.limit || 10, 20);
+        let sql = `SELECT r.id, r.created_at, r.trade, p.name as person_name, c.name as company_name,
+          substring(r.transcript_raw, 1, 300) as transcript_preview,
+          ts_rank(r.search_vector, plainto_tsquery($1)) as relevance
+          FROM reports r
+          JOIN people p ON p.id = r.person_id
+          LEFT JOIN companies c ON c.id = r.company_id
+          WHERE r.transcript_raw ILIKE $2
+          AND r.created_at > NOW() - INTERVAL '${days} days'`;
+        const params = [toolInput.query, '%' + toolInput.query + '%'];
+        if (toolInput.person_name) { params.push('%' + toolInput.person_name + '%'); sql += ` AND p.name ILIKE $${params.length}`; }
+        if (toolInput.company_id) { params.push(toolInput.company_id); sql += ` AND r.company_id = $${params.length}`; }
+        if (toolInput.trade) { params.push(toolInput.trade); sql += ` AND r.trade = $${params.length}`; }
+        sql += ` ORDER BY r.created_at DESC LIMIT ${limit}`;
+        const { rows } = await DB.db.query(sql, params);
+        if (rows.length === 0) return `No reports found mentioning "${toolInput.query}" in the last ${days} days.`;
+        return JSON.stringify({ total: rows.length, query: toolInput.query, reports: rows });
+      }
+      case 'get_team_messages': {
+        const limit = Math.min(toolInput.limit || 20, 50);
+        let sql = `SELECT m.id, m.content, m.created_at, m.message_type,
+          pf.name as from_name, pt.name as to_name
+          FROM messages m
+          LEFT JOIN people pf ON pf.id = m.from_id
+          LEFT JOIN people pt ON pt.id = m.to_id
+          WHERE 1=1`;
+        const params = [];
+        if (toolInput.person_name) {
+          params.push('%' + toolInput.person_name + '%');
+          sql += ` AND (pf.name ILIKE $${params.length} OR pt.name ILIKE $${params.length})`;
+        }
+        sql += ` ORDER BY m.created_at DESC LIMIT ${limit}`;
+        const { rows } = await DB.db.query(sql, params);
+        if (rows.length === 0) return 'No team messages found.';
+        return JSON.stringify({ total: rows.length, messages: rows.reverse() });
+      }
+      case 'read_insights': {
+        const limit = Math.min(toolInput.limit || 20, 50);
+        let sql = `SELECT id, person_id, insight_type, content, context, created_at FROM agent_insights WHERE 1=1`;
+        const params = [];
+        if (toolInput.insight_type) { params.push(toolInput.insight_type); sql += ` AND insight_type = $${params.length}`; }
+        if (toolInput.search) { params.push('%' + toolInput.search + '%'); sql += ` AND content ILIKE $${params.length}`; }
+        sql += ` ORDER BY created_at DESC LIMIT ${limit}`;
+        const { rows } = await DB.db.query(sql, params);
+        if (rows.length === 0) return 'No saved insights found.';
+        return JSON.stringify({ total: rows.length, insights: rows });
+      }
+      case 'get_form_templates': {
+        let sql = `SELECT id, name, trade, category, description,
+          (SELECT COUNT(*)::int FROM form_fields_v2 ff WHERE ff.template_id = ft.id) as field_count,
+          (SELECT COUNT(*)::int FROM form_submissions fs WHERE fs.template_id = ft.id) as submission_count
+          FROM form_templates_v2 ft WHERE 1=1`;
+        const params = [];
+        if (toolInput.trade) { params.push(toolInput.trade); sql += ` AND ft.trade = $${params.length}`; }
+        if (toolInput.category) { params.push(toolInput.category); sql += ` AND ft.category = $${params.length}`; }
+        sql += ' ORDER BY ft.trade, ft.name';
+        const { rows } = await DB.db.query(sql, params);
+        return JSON.stringify({ total: rows.length, templates: rows });
+      }
       case 'save_insight': {
         const personId = toolInput._personId || null;
         await DB.db.query(
@@ -1612,7 +1826,14 @@ MEMORY — YOU REMEMBER AND LEARN:
 - recall_conversation: What you discussed before with this user
 - save_insight: Save patterns you notice for future conversations
 - Build on previous context — don't make them repeat themselves
-ALL TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation, trace_company_everything, trace_instrument_history, get_person_work_summary, relate_data, save_insight
+ALL TOOLS (37):
+Platform: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, navigate_to
+LoopFolders: get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file
+Analytics: analyze_extraction_quality, get_pipeline_status, get_box_completeness, get_loop_folder_funnel, get_tag_quality_report, compare_extraction_models, get_extraction_performance
+Observability: query_system_metrics, search_logs, get_error_issues
+Relation Data: trace_company_everything, trace_instrument_history, get_person_work_summary, relate_data
+Voice Report Deep: get_jsa_details, get_daily_plans, get_punch_items, search_reports, get_team_messages, get_form_templates
+Memory: recall_conversation, save_insight, read_insights
 ${memoryContext ? `\nPREVIOUS CONVERSATION WITH ${userName.toUpperCase()}:\n${memoryContext}\n` : ''}
 REAL-TIME CONTEXT — YOU KNOW WHAT THE USER IS DOING RIGHT NOW:
 ${clientWorld ? `- Platform: ${clientWorld === 'control-center' ? 'Control Center (admin view)' : 'Voice Report (field operations)'}` : ''}
