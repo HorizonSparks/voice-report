@@ -8,6 +8,7 @@ import AnalyticsView from './AnalyticsView.jsx';
 import MessagesView from './MessagesView.jsx';
 import TeamChatPanel from '../components/TeamChatPanel.jsx';
 import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
+import MessagesChatPanel from '../components/MessagesChatPanel.jsx';
 
 /**
  * Control Center — the operating system for Horizon Sparks.
@@ -157,6 +158,18 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
     }
   }
 
+  async function loadMessages() {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/sparks/companies');
+      if (!res.ok) throw new Error('Failed to load companies');
+      setCompanies(await res.json());
+      setScreen('messages');
+      setError(null);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  }
+
   async function loadCompanyDetail(companyId) {
     try {
       setLoading(true);
@@ -291,7 +304,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
     <Box className="list-view" sx={{ pb: screen === 'team' ? 0 : 12, pt: 0 }}>
 
       {/* Header — hidden on team chat screen to give full space */}
-      {screen !== 'team' && screen !== 'company-detail' && (
+      {screen !== 'team' && screen !== 'company-detail' && screen !== 'messages' && (
         <Box sx={{ mb: 1, mt: -2.5, textAlign: 'center' }}>
           <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 800, fontSize: 32 }}>
             Control Center
@@ -433,7 +446,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
                   { label: 'Companies', icon: '\uD83C\uDFE2', action: loadCompanies, show: ['admin', 'support'].includes(user.sparks_role) },
                   { label: 'Team', icon: '\uD83D\uDC65', action: loadTeam, show: true },
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
-                  { label: 'Messages', icon: '\uD83D\uDCAC', action: loadTeam, show: true },
+                  { label: 'Messages', icon: '\uD83D\uDCAC', action: loadMessages, show: true },
                 ].filter(t => t.show).map((tile, i) => (
                   <Button key={i} onClick={tile.action} disabled={tile.disabled}
                     variant="outlined"
@@ -857,6 +870,15 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
           user={user}
           team={team}
           teamConversations={teamConversations}
+        />
+      )}
+
+      {/* MESSAGES SCREEN — company communication hub */}
+      {screen === 'messages' && (
+        <MessagesChatPanel
+          user={user}
+          companies={companies}
+          onBack={() => setScreen('dashboard')}
         />
       )}
 
