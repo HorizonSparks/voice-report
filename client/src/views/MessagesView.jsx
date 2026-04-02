@@ -502,7 +502,6 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
         {showAiAssist && agentOpen && (
           <Box sx={{
             width: 340, flexShrink: 0, bgcolor: 'background.paper',
-            borderLeft: '2px solid var(--primary)',
             display: 'flex', flexDirection: 'column',
           }}>
             {/* Agent header — orange */}
