@@ -76,8 +76,9 @@ app.use('/grafana', (req, res, next) => {
   if (!req.auth?.sparks_role || !['admin', 'support'].includes(req.auth.sparks_role)) {
     return res.status(403).json({ error: 'Sparks role required' });
   }
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    return res.status(405).json({ error: 'Only GET allowed' });
+  // Allow GET, HEAD, and POST (Grafana panels use POST for /api/ds/query)
+  if (!['GET', 'HEAD', 'POST'].includes(req.method)) {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
   next();
 }, async (req, res) => {
