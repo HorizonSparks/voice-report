@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   AppBar, Toolbar, IconButton, Typography, Drawer, Box, Button, Avatar, Divider,
   List, ListItemButton, ListItemIcon, ListItemText, Checkbox, FormControlLabel,
-  Alert, Collapse, ToggleButton, ToggleButtonGroup,
+  Alert, Collapse, ToggleButton, ToggleButtonGroup, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -51,6 +51,10 @@ export default function App() {
   const [activeTrade, setActiveTrade] = useState(null); // null = no trade selected, show nothing
   const [peopleViewingId, setPeopleViewingId] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [globalAgentOpen, setGlobalAgentOpen] = useState(false);
+  const [globalAgentMessages, setGlobalAgentMessages] = useState([]);
+  const [globalAgentInput, setGlobalAgentInput] = useState('');
+  const [globalAgentLoading, setGlobalAgentLoading] = useState(false);
   const [safetyPanelOpen, setSafetyPanelOpen] = useState(false);
   const [companySettings, setCompanySettings] = useState(null);
   const [activeRoleLevels, setActiveRoleLevels] = useState({}); // { "Pipe Fitting": [1,2,4,5], ... }
@@ -324,6 +328,25 @@ export default function App() {
   if (!user) return <LoginView onLogin={handleLogin} />;
 
   const openReport = (id) => { setSelectedReport(id); navigateTo('detail'); };
+  const sendGlobalAgent = async () => {
+    const msg = globalAgentInput.trim();
+    if (!msg || globalAgentLoading) return;
+    setGlobalAgentInput('');
+    setGlobalAgentMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setGlobalAgentLoading(true);
+    try {
+      const res = await fetch('/api/agent/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg }),
+      });
+      const data = await res.json();
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: data.response || data.error || 'No response', model: data.model, error: !data.response }]);
+    } catch (err) {
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'Connection error: ' + err.message, error: true }]);
+    }
+    setGlobalAgentLoading(false);
+  };
+
   const goHome = () => { if (viewRef.current?.tryGoHome?.()) return; setView(currentWorld === 'control-center' || (user?.sparks_role && !simulatingCompany && currentWorld !== 'voice-report') ? 'sparks' : 'home'); setViewHistory([]); setMenuOpen(false); setPeopleViewingId(null); setReportsPersonId(null); setSelectedReport(null); };
 
   // Simulation mode — Sparks user enters a company's view
@@ -414,11 +437,23 @@ export default function App() {
               </>
             )}
           </Box>
-          {view !== 'home' && (
-            <Typography sx={{ fontSize: 13, color: 'primary.main', fontWeight: 600, ml: 'auto', whiteSpace: 'nowrap', alignSelf: 'flex-end' }}>
-              {activeTrade}
-            </Typography>
-          )}
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+            {view !== 'home' && (
+              <Typography sx={{ fontSize: 13, color: 'primary.main', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {activeTrade}
+              </Typography>
+            )}
+            <Button onClick={() => setGlobalAgentOpen(!globalAgentOpen)} sx={{
+              background: globalAgentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.2)',
+              color: globalAgentOpen ? 'white' : 'var(--primary)',
+              fontSize: 12, fontWeight: 800, textTransform: 'none',
+              borderRadius: '20px', px: 1.5, py: 0.4, minWidth: 'auto',
+              '&:hover': { background: globalAgentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.35)' },
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              Agent
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -703,6 +738,70 @@ export default function App() {
         />
         {/* SupportChat removed — replaced by Messages panel + Agent sidebar */}
         </>
+      )}
+
+      {/* Global Agent Sidebar — accessible from any screen */}
+      {globalAgentOpen && (
+        <Box sx={{ position: 'fixed', top: 68, right: 0, bottom: 0, width: 360, bgcolor: 'background.paper', boxShadow: '-4px 0 20px rgba(0,0,0,0.1)', zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
+          {/* Agent header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, background: 'linear-gradient(135deg, #F99440, #E8822A)', flexShrink: 0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <Typography sx={{ flex: 1, fontSize: 15, fontWeight: 800, color: 'white' }}>AI Agent</Typography>
+            <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Opus</Typography>
+            <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.7)', p: 0.5 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </IconButton>
+          </Box>
+          {/* Messages */}
+          <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
+            {globalAgentMessages.length === 0 && (
+              <Box sx={{ textAlign: 'center', py: 4, px: 1 }}>
+                <Typography sx={{ fontSize: 36, mb: 1 }}>🤖</Typography>
+                <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'text.primary', mb: 0.5 }}>Horizon Sparks Agent</Typography>
+                <Typography sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
+                  Ask me anything about your companies, people, reports, commissioning status, or trade codes. I have access to all platform data.
+                </Typography>
+              </Box>
+            )}
+            {globalAgentMessages.map((msg, i) => (
+              <Box key={i} sx={{ mb: 1.5, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <Box sx={{
+                  maxWidth: '90%', px: 1.5, py: 1, borderRadius: 2,
+                  bgcolor: msg.role === 'user' ? 'var(--primary)' : msg.error ? '#FEE' : 'rgba(72,72,74,0.06)',
+                  color: msg.role === 'user' ? 'white' : 'text.primary',
+                }}>
+                  <Typography sx={{ fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{msg.content}</Typography>
+                  {msg.model && <Typography sx={{ fontSize: 10, opacity: 0.5, mt: 0.5, textAlign: 'right' }}>{msg.model}</Typography>}
+                </Box>
+              </Box>
+            ))}
+            {globalAgentLoading && (
+              <Box sx={{ display: 'flex', gap: 0.5, px: 1, py: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite' }} />
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite', animationDelay: '0.2s' }} />
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite', animationDelay: '0.4s' }} />
+              </Box>
+            )}
+          </Box>
+          {/* Input */}
+          <Box sx={{ px: 1.5, py: 1, borderTop: '1px solid rgba(72,72,74,0.1)', display: 'flex', gap: 1, alignItems: 'flex-end', flexShrink: 0 }}>
+            <TextField
+              multiline placeholder="Ask the agent..." value={globalAgentInput}
+              onChange={e => setGlobalAgentInput(e.target.value)}
+              onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGlobalAgent(); } }}
+              variant="standard" size="small" rows={1}
+              slotProps={{ input: { disableUnderline: true } }}
+              sx={{ flex: 1, bgcolor: 'rgba(72,72,74,0.06)', borderRadius: '20px', '& .MuiInputBase-root': { px: 1.5, py: 0.75, fontSize: 13 }, '& .MuiInputBase-input': { resize: 'none', maxHeight: 60, overflow: 'auto' } }}
+            />
+            <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading || !globalAgentInput.trim()} sx={{
+              width: 36, height: 36, bgcolor: 'var(--primary)', color: 'white',
+              '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 },
+              '&.Mui-disabled': { bgcolor: 'rgba(249,148,64,0.3)', color: 'white' },
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="white"/></svg>
+            </IconButton>
+          </Box>
+        </Box>
       )}
 
       {/* Reusable Dialog — replaces native alert() / confirm() */}
