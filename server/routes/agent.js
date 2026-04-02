@@ -104,6 +104,55 @@ const AGENT_TOOLS = [
     description: 'Get overall commissioning summary across all projects. Total projects, folders, files, completion rates.',
     input_schema: { type: 'object', properties: {} },
   },
+  {
+    name: 'navigate_to',
+    description: 'Navigate the user to a specific screen in the app. Use this when the user asks to "show me", "take me to", "open", or "go to" something. This controls the actual UI.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        screen: { type: 'string', description: 'Target screen: dashboard, team, messages, companies, analytics, audit, folders' },
+        company_id: { type: 'string', description: 'Company ID to select (for messages/company-detail screens)' },
+        company_name: { type: 'string', description: 'Company name (will be resolved to ID if needed)' },
+        person_id: { type: 'string', description: 'Person ID to select for chat' },
+        person_name: { type: 'string', description: 'Person name (will be resolved to ID if needed)' },
+        tab: { type: 'string', description: 'Sidebar tab to open: chats, info, analytics, folders' },
+      },
+      required: ['screen'],
+    },
+  },
+  {
+    name: 'query_pid_results',
+    description: 'Query P&ID processing results from the LoopFolders AI model. Returns detected instruments, loops, tag numbers, and coordinates from processed P&ID drawings. Can search by filename or project.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        filename: { type: 'string', description: 'P&ID filename to search for (partial match)' },
+        project_id: { type: 'string', description: 'Project UUID to get all P&ID results for' },
+      },
+    },
+  },
+  {
+    name: 'get_instrument_details',
+    description: 'Get details about a specific instrument tag from loop folders. Returns the loop folder data, cross-referenced Excel matches, associated files, and P&ID source.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        tag_number: { type: 'string', description: 'Instrument tag number to search for (e.g. 201A-PI-2246-01, partial match supported)' },
+      },
+      required: ['tag_number'],
+    },
+  },
+  {
+    name: 'get_cropped_instruments',
+    description: 'Get cropped instrument images from P&ID drawings. Returns image metadata and count for a file or project.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        file_id: { type: 'string', description: 'File UUID to get cropped images for' },
+        project_id: { type: 'string', description: 'Project UUID to get all cropped images for' },
+      },
+    },
+  },
 ];
 
 // ---- TOOL EXECUTORS ----
@@ -240,6 +289,87 @@ async function executeTool(toolName, toolInput) {
           ORDER BY p.created_at DESC LIMIT 10
         `);
         return JSON.stringify({ summary, projects });
+      }
+      // ---- P&ID & INSTRUMENT TOOLS ----
+      case 'query_pid_results': {
+        let sql = `SELECT f.id, f.status, LEFT(f.result::text, 5000) as result, m.name as model_name, fi.id as file_id
+                   FROM horizonsparks.file_check_logs_result_ia f
+                   JOIN horizonsparks.model m ON m.id = f.model_id
+                   LEFT JOIN horizonsparks.files fi ON fi.id = f.file_id
+                   WHERE f.status = 'success'`;
+        const params = [];
+        if (toolInput.filename) {
+          params.push(`%${toolInput.filename}%`);
+          sql += ` AND f.result::text ILIKE $${params.length}`;
+        }
+        if (toolInput.project_id) {
+          params.push(toolInput.project_id);
+          sql += ` AND fi.project_id = $${params.length}`;
+        }
+        sql += ' ORDER BY f.checked_at DESC LIMIT 5';
+        const { rows } = await DB.db.query(sql, params);
+        if (rows.length === 0) return 'No P&ID processing results found';
+        // Parse the JSON results to extract key data
+        const parsed = rows.map(r => {
+          try {
+            const data = JSON.parse(r.result);
+            return {
+              filename: data.filename || data.pdf_name,
+              loops_detected: data.loops_detected,
+              models_used: data.models_used,
+              instruments: (data.data || []).slice(0, 20).map(d => ({
+                tag: d.tag || d.fullTag,
+                loop: d.loopNumber,
+                type: d.box_type,
+                coordinates: d.coordinates,
+              })),
+              total_instruments: (data.data || []).length,
+            };
+          } catch(e) { return { raw: r.result?.substring(0, 500) }; }
+        });
+        return JSON.stringify(parsed);
+      }
+      case 'get_instrument_details': {
+        const { rows } = await DB.db.query(`
+          SELECT lf.loop_number, lf.status, lf.folder_values, p.name as project_name,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
+          FROM horizonsparks.loopfolder lf
+          JOIN horizonsparks.projects p ON p.id = lf.project_id
+          WHERE lf.loop_number ILIKE $1
+          LIMIT 10
+        `, [`%${toolInput.tag_number}%`]);
+        if (rows.length === 0) return `No instrument found matching "${toolInput.tag_number}"`;
+        const results = rows.map(r => {
+          let excelMatches = null;
+          try {
+            const vals = typeof r.folder_values === 'string' ? JSON.parse(r.folder_values) : r.folder_values;
+            excelMatches = vals?._excelMatches;
+          } catch(e) {}
+          return {
+            loop_number: r.loop_number,
+            status: r.status,
+            project: r.project_name,
+            associated_files: r.associated_files,
+            excel_matches: excelMatches ? { count: excelMatches.count, files: (excelMatches.files || []).map(f => f.fileName) } : null,
+          };
+        });
+        return JSON.stringify(results);
+      }
+      case 'get_cropped_instruments': {
+        let sql = `SELECT COUNT(*)::int as total_crops FROM horizonsparks.box_crop_images WHERE 1=1`;
+        const params = [];
+        if (toolInput.file_id) { params.push(toolInput.file_id); sql += ` AND file_id = $${params.length}`; }
+        const { rows: [count] } = await DB.db.query(sql, params);
+        // Also get a sample
+        let sampleSql = `SELECT id, file_id, created_at FROM horizonsparks.box_crop_images`;
+        if (toolInput.file_id) { sampleSql += ` WHERE file_id = '${toolInput.file_id}'`; }
+        sampleSql += ' ORDER BY created_at DESC LIMIT 5';
+        const { rows: samples } = await DB.db.query(sampleSql);
+        return JSON.stringify({ total_cropped_images: count.total_crops, samples });
+      }
+      case 'navigate_to': {
+        // Navigation is handled client-side — just return the instruction
+        return JSON.stringify({ action: 'navigate', ...toolInput, message: `Navigating to ${toolInput.screen}${toolInput.company_name ? ' → ' + toolInput.company_name : ''}${toolInput.person_name ? ' → ' + toolInput.person_name : ''}` });
       }
       default:
         return `Unknown tool: ${toolName}`;
