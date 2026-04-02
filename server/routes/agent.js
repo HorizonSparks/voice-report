@@ -183,7 +183,60 @@ const AGENT_TOOLS = [
       },
     },
   },
+  // ---- OBSERVABILITY TOOLS ----
+  {
+    name: 'query_system_metrics',
+    description: 'Query real-time system metrics from Prometheus. Get CPU, memory, disk, error rates, request latency, AI costs, database health, and service status. Use this when asked about system health, performance, or monitoring.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        metric: { type: 'string', description: 'Specific metric to query: cpu, memory, disk, error_rate, request_rate, latency, ai_cost, db_pool, targets, all (default: all)' },
+        time_range: { type: 'string', description: 'Time range: 5m, 15m, 1h, 6h, 24h (default: 5m)' },
+      },
+    },
+  },
+  {
+    name: 'search_logs',
+    description: 'Search application logs via Loki. Find errors, trace requests by correlationId, filter by service/level/container. Use this when asked about errors, failures, what happened, or to investigate issues.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search text (e.g. "error", "timeout", a correlationId, a person name)' },
+        level: { type: 'string', description: 'Log level filter: info, warn, error (default: all)' },
+        container: { type: 'string', description: 'Container filter: voice-report-app-1, pids-web, hasura_horizonsparks, keycloak (default: all)' },
+        time_range: { type: 'string', description: 'Time range: 5m, 15m, 1h, 6h, 24h (default: 1h)' },
+        limit: { type: 'number', description: 'Max log entries to return (default: 20)' },
+      },
+    },
+  },
+  {
+    name: 'get_error_issues',
+    description: 'Get error tracking issues from GlitchTip (Sentry-compatible). Shows recent crashes, unresolved errors, error counts by project. Use this when asked about bugs, crashes, or what broke.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project: { type: 'string', description: 'Filter by project: voice-report-backend, voice-report-frontend, loopfolders-web, pid-ai-model (default: all)' },
+        status: { type: 'string', description: 'Issue status: unresolved, resolved (default: unresolved)' },
+      },
+    },
+  },
+  {
+    name: 'recall_conversation',
+    description: 'Recall previous conversations with this user. Shows what you discussed before, what questions they asked, what insights you gave. Use this to build on past context.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        search: { type: 'string', description: 'Search term to find in past conversations (optional)' },
+        limit: { type: 'number', description: 'Number of recent messages to recall (default: 20)' },
+      },
+    },
+  },
 ];
+
+// ---- OBSERVABILITY CONFIG ----
+const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus:9090';
+const LOKI_URL = process.env.LOKI_URL || 'http://loki:3100';
+const GLITCHTIP_URL = process.env.GLITCHTIP_URL || 'http://glitchtip-web:8080';
 
 // ---- TOOL EXECUTORS ----
 async function executeTool(toolName, toolInput) {
@@ -442,8 +495,105 @@ async function executeTool(toolName, toolInput) {
         return 'Provide either folder_id or file_id';
       }
       case 'navigate_to': {
-        // Navigation is handled client-side — just return the instruction
         return JSON.stringify({ action: 'navigate', ...toolInput, message: `Navigating to ${toolInput.screen}${toolInput.company_name ? ' → ' + toolInput.company_name : ''}${toolInput.person_name ? ' → ' + toolInput.person_name : ''}` });
+      }
+      // ---- OBSERVABILITY TOOLS ----
+      case 'query_system_metrics': {
+        const range = toolInput.time_range || '5m';
+        const queries = {
+          cpu: `1 - avg(rate(node_cpu_seconds_total{mode="idle"}[${range}]))`,
+          memory: '1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)',
+          disk: '1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})',
+          request_rate: `sum(rate(horizon_http_requests_total[${range}]))`,
+          error_rate: `sum(rate(horizon_http_requests_total{status_code=~"5.."}[${range}])) / sum(rate(horizon_http_requests_total[${range}])) or vector(0)`,
+          latency_p95: `histogram_quantile(0.95, sum(rate(horizon_http_request_duration_seconds_bucket[${range}])) by (le)) or vector(0)`,
+          ai_cost_24h: 'sum(increase(horizon_anthropic_cost_usd_total[24h])) or vector(0)',
+          ai_calls_24h: 'sum(increase(horizon_anthropic_requests_total[24h])) or vector(0)',
+          agent_sessions_24h: 'sum(increase(horizon_agent_sessions_total[24h])) or vector(0)',
+          db_pool_total: 'horizon_db_pool_size{state="total"}',
+          db_pool_idle: 'horizon_db_pool_size{state="idle"}',
+          db_pool_waiting: 'horizon_db_pool_size{state="waiting"}',
+          db_size_bytes: 'pg_database_size_bytes{datname="horizon"}',
+          targets_up: 'count(up == 1)',
+          targets_total: 'count(up)',
+        };
+        const selected = toolInput.metric && toolInput.metric !== 'all'
+          ? Object.fromEntries(Object.entries(queries).filter(([k]) => k.includes(toolInput.metric)))
+          : queries;
+        const results = {};
+        await Promise.all(Object.entries(selected).map(async ([key, query]) => {
+          try {
+            const r = await fetch(`${PROMETHEUS_URL}/api/v1/query?query=${encodeURIComponent(query)}`);
+            if (r.ok) { const d = await r.json(); results[key] = d?.data?.result?.[0]?.value?.[1] ?? null; }
+          } catch { results[key] = null; }
+        }));
+        // Also get target health
+        try {
+          const r = await fetch(`${PROMETHEUS_URL}/api/v1/targets`);
+          if (r.ok) {
+            const d = await r.json();
+            results.services = (d?.data?.activeTargets || []).map(t => ({ job: t.labels?.job, health: t.health }));
+          }
+        } catch {}
+        return JSON.stringify(results);
+      }
+      case 'search_logs': {
+        const range = toolInput.time_range || '1h';
+        const limit = Math.min(toolInput.limit || 20, 50);
+        // Build Loki query
+        let logQuery = '{container=~".+"}';
+        if (toolInput.container) logQuery = `{container="${toolInput.container}"}`;
+        if (toolInput.level) logQuery += ` | json | level = "${toolInput.level}"`;
+        else logQuery += ' | json';
+        if (toolInput.query) logQuery += ` |= "${toolInput.query}"`;
+        try {
+          const url = `${LOKI_URL}/loki/api/v1/query_range?query=${encodeURIComponent(logQuery)}&limit=${limit}&start=${new Date(Date.now() - parseRange(range)).toISOString()}&end=${new Date().toISOString()}`;
+          const r = await fetch(url);
+          if (!r.ok) return `Loki query failed: ${r.status}`;
+          const d = await r.json();
+          const entries = [];
+          for (const stream of (d?.data?.result || [])) {
+            for (const [ts, line] of (stream.values || [])) {
+              try { const parsed = JSON.parse(line); entries.push({ time: parsed.time || new Date(Number(ts) / 1e6).toISOString(), level: parsed.level, msg: parsed.msg, path: parsed.path, status: parsed.status, error: parsed.error, correlationId: parsed.correlationId, container: stream.stream?.container }); }
+              catch { entries.push({ time: new Date(Number(ts) / 1e6).toISOString(), line: line.substring(0, 300), container: stream.stream?.container }); }
+            }
+          }
+          entries.sort((a, b) => b.time?.localeCompare(a.time));
+          return entries.length > 0 ? JSON.stringify({ total: entries.length, logs: entries.slice(0, limit) }) : 'No logs found matching your query.';
+        } catch (e) { return `Log search error: ${e.message}`; }
+      }
+      case 'get_error_issues': {
+        try {
+          // Query GlitchTip API for issues
+          const status = toolInput.status || 'unresolved';
+          const url = `${GLITCHTIP_URL}/api/0/organizations/horizon-sparks/issues/?query=is:${status}&limit=20`;
+          const r = await fetch(url);
+          if (!r.ok) {
+            // Fallback: query the database directly for error events
+            const { rows } = await DB.db.query(`
+              SELECT service, COUNT(*)::int as error_count, MAX(created_at) as last_error,
+                substring(error_message, 1, 200) as last_message
+              FROM analytics_api_calls WHERE status_code >= 500
+              AND created_at > NOW() - INTERVAL '24 hours'
+              GROUP BY service, substring(error_message, 1, 200)
+              ORDER BY error_count DESC LIMIT 20
+            `).catch(() => ({ rows: [] }));
+            if (rows.length > 0) return JSON.stringify({ source: 'analytics_db', errors: rows });
+            return 'No recent errors found.';
+          }
+          const issues = await r.json();
+          return JSON.stringify({ source: 'glitchtip', count: issues.length, issues: (issues || []).slice(0, 15).map(i => ({ title: i.title, level: i.level, count: i.count, first_seen: i.firstSeen, last_seen: i.lastSeen, project: i.project?.name })) });
+        } catch (e) { return `Error tracking query failed: ${e.message}`; }
+      }
+      case 'recall_conversation': {
+        const limit = Math.min(toolInput.limit || 20, 50);
+        let sql = `SELECT role, content, created_at FROM ai_conversations WHERE person_id = $1`;
+        const params = [toolInput._personId || 'unknown'];
+        if (toolInput.search) { params.push(`%${toolInput.search}%`); sql += ` AND content ILIKE $${params.length}`; }
+        sql += ` ORDER BY created_at DESC LIMIT ${limit}`;
+        const { rows } = await DB.db.query(sql, params);
+        if (rows.length === 0) return 'No previous conversations found with this user.';
+        return JSON.stringify({ total: rows.length, messages: rows.reverse().map(r => ({ role: r.role, content: r.content.substring(0, 500), time: r.created_at })) });
       }
       default:
         return `Unknown tool: ${toolName}`;
@@ -451,6 +601,17 @@ async function executeTool(toolName, toolInput) {
   } catch (err) {
     return `Tool error: ${err.message}`;
   }
+}
+
+// Parse time range string to milliseconds
+function parseRange(range) {
+  const match = range.match(/^(\d+)(m|h|d)$/);
+  if (!match) return 3600000;
+  const val = parseInt(match[1]);
+  if (match[2] === 'm') return val * 60000;
+  if (match[2] === 'h') return val * 3600000;
+  if (match[2] === 'd') return val * 86400000;
+  return 3600000;
 }
 
 // Load knowledge for system prompt context
@@ -499,45 +660,79 @@ router.post('/chat', requireAuth, async (req, res) => {
     }
 
     const knowledge = loadRelevantKnowledge(message);
-    const systemPrompt = `You are the Horizon Sparks AI Agent — an expert assistant for construction trades (electrical, instrumentation, pipe fitting, millwright, safety).
 
-You have 13 TOOLS to access real platform data. ALWAYS use tools — never guess about data.
+    // ---- MEMORY: Load previous conversation context ----
+    let memoryContext = '';
+    try {
+      const { rows: history } = await DB.db.query(
+        `SELECT role, content, created_at FROM ai_conversations
+         WHERE person_id = $1 ORDER BY created_at DESC LIMIT 10`,
+        [personId]
+      );
+      if (history.length > 0) {
+        memoryContext = history.reverse().map(h =>
+          `[${new Date(h.created_at).toLocaleString()}] ${h.role}: ${h.content.substring(0, 300)}`
+        ).join('\n');
+      }
+    } catch (e) { /* memory table may not exist for all users */ }
 
-COMMISSIONING INTELLIGENCE — THE LOOP FOLDER IS THE BOSS:
-The Loop Folder is the central organized product that RELATES all data together.
-When asked about any instrument, tag, or commissioning question:
-1. FIRST: Use get_instrument_details to find the Loop Folder (this is the source of truth)
-2. The Loop Folder tells you: which P&ID the instrument is on, which Excel files reference it, its status, its project
-3. THEN: Use query_pid_results if you need the P&ID drawing details (coordinates, all instruments on that drawing)
-4. You can trace instruments ACROSS loop folders — from one folder to another, one P&ID to another
-5. You can tell the user exactly WHERE an instrument is: which project, which P&ID, which position on the drawing
+    // Get user's name and role for personalized engagement
+    let userName = 'there';
+    let userRole = '';
+    let userTrade = '';
+    try {
+      const { rows: [person] } = await DB.db.query(
+        'SELECT name, role_title, trade FROM people WHERE id = $1', [personId]
+      );
+      if (person) { userName = person.name?.split(' ')[0] || 'there'; userRole = person.role_title || ''; userTrade = person.trade || ''; }
+    } catch {}
 
-TOOLS AVAILABLE:
-- lookup_person / lookup_company: find people and companies
-- get_company_analytics: AI usage and costs per company
-- get_recent_reports: voice reports by person or company
-- search_knowledge: 40-file trade knowledge base (NEC, ISA, OSHA codes)
-- get_system_status: platform health
-- get_loopfolders_projects / status / summary: commissioning project data
-- query_pid_results: search P&ID processed data (loops, tags, instruments, coordinates)
-- get_instrument_details: THE MAIN TOOL — loop folder lookup with Excel cross-references
-- get_cropped_instruments: cropped instrument images from P&IDs
-- navigate_to: control the app UI (open screens, select companies/people)
+    const systemPrompt = `You are the Horizon Sparks AI Agent — an intelligent partner for construction and commissioning professionals.
 
+You are talking to ${userName}${userRole ? ` (${userRole})` : ''}${userTrade ? `, ${userTrade} trade` : ''}.
+You have ${AGENT_TOOLS.length} TOOLS to access real platform data, system metrics, logs, and error tracking. ALWAYS use tools — never guess.
+
+YOUR CAPABILITIES:
+1. PLATFORM DATA — People, companies, reports, projects, commissioning data
+2. COMMISSIONING INTELLIGENCE — Loop Folders, P&IDs, instruments, Excel cross-references
+3. SYSTEM OBSERVABILITY — Real-time metrics (CPU, memory, errors, latency), log search, error tracking
+4. TRADE KNOWLEDGE — NEC, ISA, OSHA codes across 40 knowledge files
+5. MEMORY — You can recall previous conversations with this user
+6. NAVIGATION — You can control the app UI (open screens, show data)
+
+COMMISSIONING — THE LOOP FOLDER IS THE BOSS:
+1. FIRST: get_instrument_details to find the Loop Folder (source of truth)
+2. Loop Folder tells you: P&ID, Excel files, status, project
+3. THEN: query_pid_results for P&ID drawing details
+4. Trace instruments ACROSS folders and drawings
+
+OBSERVABILITY — YOU SEE EVERYTHING:
+- query_system_metrics: CPU, memory, disk, error rates, AI costs, DB health, service status
+- search_logs: Find errors, trace requests, investigate issues in real time
+- get_error_issues: See what crashed, unresolved bugs, error trends
+- When asked about system health, performance, errors — USE these tools, give specific numbers
+
+MEMORY — YOU REMEMBER:
+- recall_conversation: See what you discussed before with this user
+- Build on previous context — don't make them repeat themselves
+- Connect the dots between past questions and current work
+
+TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation
+
+${memoryContext ? `\nPREVIOUS CONVERSATION WITH ${userName.toUpperCase()}:\n${memoryContext}\n` : ''}
 CONTEXT:
 ${contactName ? `- Currently viewing: ${contactName} (${contactRole || ''})` : ''}
 ${companyName ? `- Company: ${companyName}` : ''}
 ${conversationContext ? `- Recent chat:\n${conversationContext}` : ''}
 ${knowledge ? `\nTRADE KNOWLEDGE:\n${knowledge}` : ''}
 
-RULES:
-- Be concise. Construction workers need quick answers.
+ENGAGEMENT RULES:
+- You MULTIPLY this person's potential. You are their partner, not a chatbot.
+- Be concise but warm. Construction workers need quick, clear answers.
 - ALWAYS use tools for data questions — never guess.
-- For instrument questions: Loop Folder FIRST, then P&ID details.
-- Give specific code references (NEC, OSHA, ISA) when applicable.
-- Don't guess on safety-critical information.
-- You can guide users across folders — "This instrument is also referenced in folder X"
-- Provide P&ID drawing references: "Found on P&ID GI-10-068 at coordinates (x, y)"`;
+- Give specific numbers, code references (NEC, OSHA, ISA), and actionable advice.
+- Anticipate what they need next based on context and memory.
+- When you see a problem in the metrics or logs, proactively mention it.`;
 
     // Tool use loop — Claude may call tools, we execute and send results back
     let messages = [{ role: 'user', content: message }];
@@ -572,6 +767,8 @@ RULES:
           if (toolUseBlock.name === 'navigate_to') {
             navigation = toolUseBlock.input;
           }
+          // Inject personId for recall_conversation tool
+          if (toolUseBlock.name === 'recall_conversation') toolUseBlock.input._personId = personId;
           // Execute the tool + track metrics
           const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
           const toolSuccess = !toolResult.startsWith('Tool error:') && !toolResult.startsWith('Unknown tool:');
@@ -600,6 +797,22 @@ RULES:
       tool_calls: loops - 1,
     };
     if (navigation) response.navigation = navigation;
+
+    // ---- MEMORY: Save conversation to database ----
+    try {
+      const sessionId = req.auth?.sessionId || `agent_${Date.now()}`;
+      await DB.db.query(
+        'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
+        [personId, sessionId, 'user', message.substring(0, 5000)]
+      );
+      if (finalText) {
+        await DB.db.query(
+          'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
+          [personId, sessionId, 'assistant', finalText.substring(0, 5000)]
+        );
+      }
+    } catch (e) { /* memory save failure is non-fatal */ }
+
     res.json(response);
   } catch (err) {
     agentLogger.error({ msg: 'agent_chat_error', error: err.message, correlationId: req.correlationId, personId: req.auth?.person_id });

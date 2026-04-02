@@ -38,6 +38,8 @@ services:
       SENTRY_DSN_BACKEND: http://81de2477f74f468fabf764232a0c119a@glitchtip-web:8080/1
       PROMETHEUS_URL: http://prometheus:9090
       GRAFANA_URL: http://grafana:3000
+      LOKI_URL: http://loki:3100
+      GLITCHTIP_URL: http://glitchtip-web:8080
     volumes:
       - uploads_audio:/app/audio
       - uploads_photos:/app/photos
