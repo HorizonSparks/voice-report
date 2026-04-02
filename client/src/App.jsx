@@ -495,7 +495,7 @@ export default function App() {
   };
 
   return (
-    <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main' }}>
+    <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main', marginRight: globalAgentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, transition: 'margin-right 0.3s ease' }}>
       {/* Header */}
       <AppBar position="sticky" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
         <Toolbar sx={{ gap: 0.5, px: 2, pt: 1 }}>
