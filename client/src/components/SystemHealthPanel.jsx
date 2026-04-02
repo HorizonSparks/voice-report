@@ -188,11 +188,11 @@ export default function SystemHealthPanel({ onBack }) {
         )}
       </Box>
 
-      {/* Grafana iFrame */}
+      {/* Grafana iFrame — proxied through same origin to avoid mixed-content blocking */}
       {health?.grafana_url && (
         <Paper variant="outlined" sx={{ borderRadius: 2.5, overflow: 'hidden', mb: 2 }}>
           <iframe
-            src={`${health.grafana_url}/d/${grafanaDashboards.find(d => d.key === activeTab)?.uid}?orgId=1&kiosk&refresh=10s`}
+            src={`/grafana/d/${grafanaDashboards.find(d => d.key === activeTab)?.uid}?orgId=1&kiosk&refresh=10s`}
             width="100%"
             height="600"
             frameBorder="0"

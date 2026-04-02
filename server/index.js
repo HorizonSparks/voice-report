@@ -63,6 +63,27 @@ app.use('/api', require('./routes/files'));
 app.use('/api/folders', require('./routes/sharedFolders'));
 app.use('/api/agent', require('./routes/agent'));
 
+// Grafana reverse proxy — serves Grafana through same origin to avoid mixed-content blocking
+const GRAFANA_INTERNAL = process.env.GRAFANA_URL || 'http://grafana:3000';
+app.use('/grafana', async (req, res) => {
+  try {
+    const url = GRAFANA_INTERNAL + '/grafana' + req.url;
+    const headers = { ...req.headers, host: 'grafana:3000' };
+    delete headers['connection'];
+    const r = await fetch(url, { headers, redirect: 'follow' });
+    res.status(r.status);
+    r.headers.forEach((v, k) => {
+      if (!['transfer-encoding', 'connection', 'content-encoding'].includes(k.toLowerCase())) {
+        res.setHeader(k, v);
+      }
+    });
+    const body = Buffer.from(await r.arrayBuffer());
+    res.end(body);
+  } catch (e) {
+    res.status(502).json({ error: 'Grafana unavailable' });
+  }
+});
+
 // Error tracking middleware (AFTER all routes — catches unhandled errors)
 app.use(errorTracking.errorHandler);
 
