@@ -317,6 +317,16 @@ const AGENT_TOOLS = [
     },
   },
   {
+    name: 'get_extraction_performance',
+    description: 'Get extraction performance metrics: processing time per file, instrument counts, auto-detected vs manual tags, box type distribution, prefix patterns. Use when asked about extraction speed, accuracy, how many instruments per P&ID, or performance trends.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_name: { type: 'string', description: 'Filter by project name (optional)' },
+      },
+    },
+  },
+  {
     name: 'compare_extraction_models',
     description: 'Compare CV/OCR extraction (YOLO + EasyOCR) vs AutoCAD PDF annotation extraction for a P&ID file. Shows matched instruments, CV-only detections, PDF-only detections, and accuracy. Use when asked about extraction comparison, model accuracy, CV vs PDF, or dual model validation.',
     input_schema: {
@@ -1301,6 +1311,53 @@ async function executeTool(toolName, toolInput) {
           FROM horizonsparks.loopfolder
         `);
         return JSON.stringify({ by_project: statusDist, totals: totals[0], funnel: 'saved → linked → verified → commissioned' });
+      }
+      case 'get_extraction_performance': {
+        // Aggregates timing, instrument counts, and quality from extraction results
+        const params = [];
+        let filter = 'WHERE fcl.status = \'success\'';
+        if (toolInput.project_name) { params.push('%' + toolInput.project_name + '%'); filter += ' AND p.name ILIKE $' + params.length; }
+        const { rows } = await DB.db.query(`
+          SELECT f.name as filename, p.name as project, fcl.result::text as result_text, fcl.checked_at
+          FROM horizonsparks.file_check_logs_result_ia fcl
+          JOIN horizonsparks.files f ON f.id = fcl.file_id
+          JOIN horizonsparks.projects p ON p.id = f.project_id
+          ${filter}
+          ORDER BY fcl.checked_at DESC LIMIT 30
+        `, params);
+        const stats = { files: 0, total_instruments: 0, total_loops: 0, times: [], manual_count: 0, auto_count: 0, box_types: {}, prefixes: {}, avg_per_file: 0 };
+        const fileStats = [];
+        for (const row of rows) {
+          try {
+            const data = JSON.parse(row.result_text);
+            const instruments = data.data || [];
+            const time = data.processing_time || 0;
+            stats.files++;
+            stats.total_instruments += instruments.length;
+            stats.total_loops += data.loops_detected || 0;
+            if (time > 0) stats.times.push(time);
+            let manual = 0, auto = 0;
+            instruments.forEach(inst => {
+              if (inst.isManual) { manual++; stats.manual_count++; } else { auto++; stats.auto_count++; }
+              const bt = inst.box_type || 'unknown';
+              stats.box_types[bt] = (stats.box_types[bt] || 0) + 1;
+              const pf = inst.prefix || 'none';
+              stats.prefixes[pf] = (stats.prefixes[pf] || 0) + 1;
+            });
+            fileStats.push({ filename: data.filename || row.filename, project: row.project, instruments: instruments.length, loops: data.loops_detected || 0, time_sec: time, manual, auto, models: data.models_used || [] });
+          } catch (e) { /* skip */ }
+        }
+        const avgTime = stats.times.length > 0 ? (stats.times.reduce((a, b) => a + b, 0) / stats.times.length).toFixed(2) : 0;
+        const maxTime = stats.times.length > 0 ? Math.max(...stats.times).toFixed(2) : 0;
+        const minTime = stats.times.length > 0 ? Math.min(...stats.times).toFixed(2) : 0;
+        stats.avg_per_file = stats.files > 0 ? Math.round(stats.total_instruments / stats.files) : 0;
+        return JSON.stringify({
+          summary: { files_analyzed: stats.files, total_instruments: stats.total_instruments, total_loops: stats.total_loops, manual_tags: stats.manual_count, auto_detected: stats.auto_count, accuracy_indicator: stats.auto_count > 0 ? Math.round((stats.auto_count / (stats.auto_count + stats.manual_count)) * 100) + '% auto-detected' : 'no data', avg_instruments_per_file: stats.avg_per_file },
+          timing: { avg_seconds: avgTime, min_seconds: minTime, max_seconds: maxTime, total_analyzed: stats.times.length },
+          box_types: stats.box_types,
+          prefixes: stats.prefixes,
+          recent_files: fileStats.slice(0, 10),
+        });
       }
       case 'compare_extraction_models': {
         const params = [];
