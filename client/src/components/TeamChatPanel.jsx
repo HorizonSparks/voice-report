@@ -17,10 +17,15 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
   const [activeFolder, setActiveFolder] = useState(null); // folder detail with files
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [showAddLink, setShowAddLink] = useState(false);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [showCloudLink, setShowCloudLink] = useState(null); // 'gdrive' | 'icloud' | 'dropbox' | 'onedrive' | null
   const [newFolderName, setNewFolderName] = useState('');
   const [newLinkName, setNewLinkName] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [cloudLinkUrl, setCloudLinkUrl] = useState('');
+  const [cloudLinkName, setCloudLinkName] = useState('');
   const fileInputRef = useRef(null);
+  const importFolderRef = useRef(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -96,6 +101,63 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
       await fetch(`/api/folders/${folderId}`, { method: 'DELETE' });
       setActiveFolder(null);
       loadFolders();
+    } catch(e) {}
+  };
+
+  const importFolder = async (files) => {
+    if (!files || files.length === 0) return;
+    // Create a folder named after the first file's path
+    const folderName = files[0].webkitRelativePath?.split('/')[0] || 'Imported Folder';
+    try {
+      const res = await fetch('/api/folders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: folderName }),
+      });
+      if (!res.ok) return;
+      const folder = await res.json();
+      // Upload all files
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        await fetch(`/api/folders/${folder.id}/files`, { method: 'POST', body: fd });
+      }
+      loadFolders();
+      loadFolderDetail(folder.id);
+    } catch(e) {}
+  };
+
+  const cloudServices = {
+    gdrive: { name: 'Google Drive', icon: '🟢', placeholder: 'https://drive.google.com/drive/folders/...' },
+    icloud: { name: 'iCloud', icon: '🔵', placeholder: 'https://www.icloud.com/iclouddrive/...' },
+    dropbox: { name: 'Dropbox', icon: '🔷', placeholder: 'https://www.dropbox.com/sh/...' },
+    onedrive: { name: 'OneDrive', icon: '☁️', placeholder: 'https://onedrive.live.com/...' },
+  };
+
+  const addCloudLink = async () => {
+    if (!cloudLinkUrl.trim() || !showCloudLink) return;
+    const service = cloudServices[showCloudLink];
+    const name = cloudLinkName.trim() || `${service.name} Folder`;
+    // Create a folder for this cloud link if no active folder
+    try {
+      let folderId;
+      if (activeFolder) {
+        folderId = activeFolder.id;
+      } else {
+        const res = await fetch('/api/folders', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        if (!res.ok) return;
+        const folder = await res.json();
+        folderId = folder.id;
+      }
+      await fetch(`/api/folders/${folderId}/links`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url: cloudLinkUrl.trim() }),
+      });
+      setCloudLinkUrl(''); setCloudLinkName(''); setShowCloudLink(null);
+      loadFolders();
+      if (folderId) loadFolderDetail(folderId);
     } catch(e) {}
   };
 
@@ -216,9 +278,26 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
               {activeFolder ? (
                 <Button size="small" onClick={() => setActiveFolder(null)} sx={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', textTransform: 'none', minWidth: 'auto' }}>All Folders</Button>
               ) : (
-                <IconButton size="small" onClick={() => setShowCreateFolder(true)} sx={{ color: 'var(--primary)' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </IconButton>
+                <Box sx={{ position: 'relative' }}>
+                  <IconButton size="small" onClick={() => setShowPlusMenu(!showPlusMenu)} sx={{ color: 'var(--primary)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </IconButton>
+                  {showPlusMenu && (
+                    <>
+                      <Box onClick={() => setShowPlusMenu(false)} sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }} />
+                      <Box sx={{ position: 'absolute', top: '100%', right: 0, mt: 0.5, bgcolor: 'background.paper', borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 100, minWidth: 200, overflow: 'hidden', border: '1px solid rgba(72,72,74,0.1)' }}>
+                        <PlusMenuItem icon="📁" label="Create Folder" onClick={() => { setShowPlusMenu(false); setShowCreateFolder(true); }} />
+                        <PlusMenuItem icon="📂" label="Import Folder" onClick={() => { setShowPlusMenu(false); importFolderRef.current?.click(); }} />
+                        <Box sx={{ height: 1, bgcolor: 'rgba(72,72,74,0.08)', mx: 1 }} />
+                        <PlusMenuItem icon="🟢" label="Link Google Drive" onClick={() => { setShowPlusMenu(false); setShowCloudLink('gdrive'); }} />
+                        <PlusMenuItem icon="🔵" label="Link iCloud" onClick={() => { setShowPlusMenu(false); setShowCloudLink('icloud'); }} />
+                        <PlusMenuItem icon="🔷" label="Link Dropbox" onClick={() => { setShowPlusMenu(false); setShowCloudLink('dropbox'); }} />
+                        <PlusMenuItem icon="☁️" label="Link OneDrive" onClick={() => { setShowPlusMenu(false); setShowCloudLink('onedrive'); }} />
+                      </Box>
+                    </>
+                  )}
+                  <input ref={importFolderRef} type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }} onChange={e => { importFolder(e.target.files); e.target.value = ''; }} />
+                </Box>
               )}
             </Box>
             <Box sx={{ flex: 1, overflowY: 'auto' }}>
@@ -249,9 +328,10 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
               ) : (
                 /* Folder detail — files and links */
                 <>
-                  <Box sx={{ px: 2, py: 1, display: 'flex', gap: 1 }}>
+                  <Box sx={{ px: 2, py: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Button size="small" onClick={() => fileInputRef.current?.click()} sx={{ fontSize: 11, fontWeight: 700, bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', borderRadius: 2, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Upload File</Button>
                     <Button size="small" onClick={() => setShowAddLink(true)} sx={{ fontSize: 11, fontWeight: 700, border: '1px solid var(--primary)', color: 'var(--primary)', textTransform: 'none', borderRadius: 2 }}>Add Link</Button>
+                    <Button size="small" onClick={() => { const url = `${window.location.origin}/shared/${activeFolder.id}`; navigator.clipboard?.writeText(url); alert('Folder link copied!'); }} sx={{ fontSize: 11, fontWeight: 700, border: '1px solid rgba(72,72,74,0.2)', color: 'text.secondary', textTransform: 'none', borderRadius: 2, ml: 'auto' }}>Share</Button>
                     <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={e => { if (e.target.files[0]) uploadFile(e.target.files[0]); e.target.value = ''; }} />
                   </Box>
                   {(!activeFolder.files || activeFolder.files.length === 0) && (
@@ -344,11 +424,49 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
           <Button onClick={addLink} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Save</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Cloud Service Link Dialog */}
+      <Dialog open={!!showCloudLink} onClose={() => setShowCloudLink(null)} PaperProps={{ sx: { borderRadius: 3, minWidth: 360 } }}>
+        {showCloudLink && (
+          <>
+            <DialogTitle sx={{ fontWeight: 800, fontSize: 18, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <span>{cloudServices[showCloudLink]?.icon}</span> Link {cloudServices[showCloudLink]?.name}
+            </DialogTitle>
+            <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+                Paste a {cloudServices[showCloudLink]?.name} folder or file link. Your team will be able to access it directly.
+              </Typography>
+              <TextField autoFocus fullWidth placeholder={cloudServices[showCloudLink]?.placeholder} value={cloudLinkUrl} onChange={e => setCloudLinkUrl(e.target.value)}
+                variant="outlined" size="small" sx={{ mt: 0.5 }} />
+              <TextField fullWidth placeholder="Name (optional)" value={cloudLinkName} onChange={e => setCloudLinkName(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && addCloudLink()}
+                variant="outlined" size="small" />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowCloudLink(null)} sx={{ color: 'text.secondary', textTransform: 'none' }}>Cancel</Button>
+              <Button onClick={addCloudLink} disabled={!cloudLinkUrl.trim()} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Save</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }
 
 // ---- Sub-components ----
+
+function PlusMenuItem({ icon, label, onClick }) {
+  return (
+    <Box onClick={onClick} sx={{
+      display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25,
+      cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'text.primary',
+      '&:hover': { bgcolor: 'rgba(249,148,64,0.06)' },
+    }}>
+      <Typography sx={{ fontSize: 16 }}>{icon}</Typography>
+      <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{label}</Typography>
+    </Box>
+  );
+}
 
 function ChatListItem({ member, conv, selected, onClick, formatConvTime }) {
   const hasUnread = conv && conv.unread_count > 0;
