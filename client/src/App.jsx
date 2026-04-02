@@ -38,7 +38,6 @@ const ALL_TRADES_KEYS = [
   { key: 'Pipe Fitting', icon: '🔩', tradeKey: 'trades.pipeFitting' },
   { key: 'Industrial Erection', icon: '🏗️', tradeKey: 'trades.erection' },
   { key: 'Safety', icon: '⛑️', tradeKey: 'trades.safety' },
-  { key: 'Millwright', icon: '⚙️', tradeKey: 'trades.millwright' },
 ];
 
 export default function App() {
@@ -64,7 +63,7 @@ export default function App() {
   const [pinError, setPinError] = useState('');
   const readOnly = !!simulatingCompany && !editModeEnabled;
   const [supportChatOpen, setSupportChatOpen] = useState(false); // 'customer' or 'support'
-  // Control Center is back inside Voice Report — horizonsparks.com IS Voice Report
+  const [currentWorld, setCurrentWorld] = useState(null); // 'control-center' | 'voice-report' | null
   const [dialogConfig, setDialogConfig] = useState(null); // { title, message, onConfirm, confirmText, cancelText }
 
   const closeDialog = () => setDialogConfig(null);
@@ -86,10 +85,9 @@ export default function App() {
   const ROLE_LEVEL_LABELS = {
     Electrical: { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
     Instrumentation: { 0: 'Junior Techs', 1: 'Instrument Techs', 2: 'Senior Techs', 3: 'Instrument Leads', 4: 'Instrument Supervisors', 5: 'Project Management' },
-    'Pipe Fitting': { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
-    'Industrial Erection': { 0: 'Helpers', 1: 'Journeymen', 2: 'Foremen', 3: 'General Foremen', 4: 'Superintendents', 5: 'Project Management' },
+    'Pipe Fitting': { 0: 'Pipefitter Helpers', 1: 'Journeyman Pipefitters', 2: 'Pipefitter Foremen', 3: 'Pipe General Foremen', 4: 'Pipe Superintendents', 5: 'Project Management' },
+    'Industrial Erection': { 0: 'Ironworker Helpers', 1: 'Journeyman Ironworkers', 2: 'Ironworker Foremen', 3: 'Erection General Foremen', 4: 'Erection Superintendents', 5: 'Project Management' },
     Safety: { 2: 'Safety Coordinators', 3: 'Safety Officers', 4: 'HSE Managers', 5: 'Site Safety Directors' },
-    Millwright: { 0: 'Millwright Helpers', 1: 'Journeyman Millwrights', 2: 'Millwright Foremen', 3: 'Millwright General Foremen', 4: 'Millwright Superintendents', 5: 'Project Management' },
   };
 
   // Toggle a role level for a trade and save to server
@@ -148,12 +146,6 @@ export default function App() {
         setActiveTrade(lastTrade);
       } else if (user.trade) {
         setActiveTrade(user.trade);
-      } else {
-        // Admin/Sparks users have no trade — default to first starred trade
-        const savedStars = localStorage.getItem(`starred_trades_${userKey}`);
-        if (savedStars) {
-          try { const stars = JSON.parse(savedStars); if (stars.length > 0) setActiveTrade(stars[0]); } catch {}
-        }
       }
     }
   }, [user]);
@@ -204,8 +196,7 @@ export default function App() {
       setViewHistory(h => h.slice(0, -1));
       setView(prev);
     } else {
-      const fallbackView = (user?.sparks_role === 'admin' || user?.sparks_role === 'support') ? 'control-center' : 'home';
-      setView(fallbackView);
+      setView(currentWorld === 'control-center' || (user?.sparks_role && !simulatingCompany && currentWorld !== 'voice-report') ? 'sparks' : 'home');
     }
   };
 
@@ -219,16 +210,22 @@ export default function App() {
       .then(userData => {
         setUser(userData);
         setAuthStatus('authenticated');
+        // Sparks users land on Control Center, not home
+        if (userData.sparks_role) { setView('sparks'); setCurrentWorld('control-center'); }
         AnalyticsTracker.personId = userData.person_id || userData.id || null;
-        // Auto-route: Sparks admin/support land on Control Center on session restore
-        if (userData.sparks_role === 'admin' || userData.sparks_role === 'support') {
-          setView('control-center');
-        }
       })
       .catch(() => {
         setAuthStatus('anonymous');
       });
   }, []);
+
+  // Sparks users should never land on 'home' — redirect to Control Center
+  // This is the single source of truth, regardless of caching or load order
+  useEffect(() => {
+    if (user?.sparks_role && !simulatingCompany && currentWorld !== 'voice-report' && view === 'home') {
+      setView('sparks');
+    }
+  }, [user, view, simulatingCompany, currentWorld]);
 
   // Load company settings (only after auth resolves)
   useEffect(() => {
@@ -242,13 +239,10 @@ export default function App() {
 
   const handleLogin = (userData) => {
     setUser(userData);
-    // Auto-route: Sparks admin/support land on Control Center
     setAuthStatus('authenticated');
-    if (userData.sparks_role === 'admin' || userData.sparks_role === 'support') {
-      setView('control-center');
-    } else {
-      setView('home');
-    }
+    // Sparks users go straight to Control Center
+    setView(userData.sparks_role ? 'sparks' : 'home');
+    if (userData.sparks_role) setCurrentWorld('control-center');
     setViewHistory([]);
     AnalyticsTracker.personId = userData.person_id || userData.id || null;
     AnalyticsTracker.track('auth', 'login', { role: userData.role_level, trade: userData.trade });
@@ -261,11 +255,26 @@ export default function App() {
     setView('home');
     setViewHistory([]);
     setMenuOpen(false);
+    setCurrentWorld(null);
     // Then destroy server session
     fetch('/api/logout', { method: 'POST' }).catch(() => {});
   };
 
-  // Control Center view accessible via hamburger menu or home screen
+  // World switching — drop into a product from Control Center
+  const enterWorld = (world) => {
+    setCurrentWorld(world);
+    setView(world === 'voice-report' ? 'home' : 'sparks');
+    setViewHistory([]);
+    setMenuOpen(false);
+    setActiveTrade(null);
+  };
+  const exitToControlCenter = () => {
+    setCurrentWorld('control-center');
+    setView('sparks');
+    setViewHistory([]);
+    setMenuOpen(false);
+    setActiveTrade(null);
+  };
 
   // Auto-expire edit mode after 15 min inactivity
   useEffect(() => {
@@ -307,7 +316,7 @@ export default function App() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
         <h1 style={{ color: 'var(--primary)', fontFamily: 'var(--font-header)', letterSpacing: '3px', fontSize: '28px' }}>Horizon Sparks</h1>
-        <p style={{ color: 'var(--charcoal)', marginTop: '8px', fontSize: '14px' }}>horizonsparks.com</p>
+        <p style={{ color: 'var(--charcoal)', marginTop: '8px', fontSize: '14px' }}>Voice-Report.ai</p>
       </div>
     );
   }
@@ -315,7 +324,7 @@ export default function App() {
   if (!user) return <LoginView onLogin={handleLogin} />;
 
   const openReport = (id) => { setSelectedReport(id); navigateTo('detail'); };
-  const goHome = () => { if (viewRef.current?.tryGoHome?.()) return; const homeView = (user?.sparks_role === 'admin' || user?.sparks_role === 'support') ? 'control-center' : 'home'; setView(homeView); setViewHistory([]); setMenuOpen(false); setPeopleViewingId(null); setReportsPersonId(null); setSelectedReport(null); };
+  const goHome = () => { if (viewRef.current?.tryGoHome?.()) return; setView(currentWorld === 'control-center' || (user?.sparks_role && !simulatingCompany && currentWorld !== 'voice-report') ? 'sparks' : 'home'); setViewHistory([]); setMenuOpen(false); setPeopleViewingId(null); setReportsPersonId(null); setSelectedReport(null); };
 
   // Simulation mode — Sparks user enters a company's view
 
@@ -330,23 +339,9 @@ export default function App() {
     window.__simulatingCompanyId = company?.id || null;
     window.__simulationMode = mode;
     setActiveTrade(null);
+    setCurrentWorld('voice-report');
     setView('home');
     setViewHistory([]);
-    // Scope trades to this company's licensed trades
-    if (company?.id) {
-      fetch('/api/sparks/companies/' + company.id)
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data?.trades) {
-            const activeTrades = data.trades.filter(t => t.status === 'active').map(t => t.trade);
-            if (activeTrades.length > 0) {
-              setStarredTrades(activeTrades);
-              setActiveTrade(activeTrades[0]);
-            }
-          }
-        })
-        .catch(() => {});
-    }
   };
   const exitSimulation = () => {
     if (editModeEnabled) fetch('/api/sparks/edit-mode/disable', { method: 'POST', credentials: 'include' }).catch(() => {});
@@ -358,9 +353,8 @@ export default function App() {
     window.__simulatingCompanyId = null;
     window.__simulationMode = null;
     setActiveTrade(null);
-    // Restore all trades for admin view
-    setStarredTrades(ALL_TRADES_KEYS.map(t => t.key));
-    setView('home');
+    setCurrentWorld('control-center');
+    setView('sparks');
     setViewHistory([]);
   };
   const handleEnableEditing = async (pin) => {
@@ -401,7 +395,7 @@ export default function App() {
               <>
                 <img src={companySettings.logo_data} alt={companySettings.company_name} style={{height: '32px', objectFit: 'contain', maxWidth: '180px'}} />
                 <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                  {t('app.subtitle')}
+                  {currentWorld === 'control-center' ? 'Control Center' : t('app.subtitle')}
                 </Typography>
               </>
             ) : (
@@ -415,7 +409,7 @@ export default function App() {
               </>
             )}
           </Box>
-          {view !== 'home' && view !== 'control-center' && (
+          {view !== 'home' && (
             <Typography sx={{ fontSize: 13, color: 'primary.main', fontWeight: 600, ml: 'auto', whiteSpace: 'nowrap', alignSelf: 'flex-end' }}>
               {activeTrade}
             </Typography>
@@ -437,33 +431,35 @@ export default function App() {
           </Box>
         </Box>
 
-        {/* Navigation buttons for Sparks users */}
-        {user?.sparks_role && view !== 'control-center' && (
+        {/* Control Center World — Product Doors */}
+        {currentWorld === 'control-center' && (
           <Box sx={{ px: 2, pb: 1.5 }}>
-            <Button fullWidth variant="contained" color="secondary"
-              onClick={() => { setView('control-center'); setMenuOpen(false); }}
-              sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13 }}>
-              Control Center
+            <Typography sx={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'text.secondary', mb: 1 }}>Products</Typography>
+            <Button fullWidth variant="contained" color="secondary" onClick={() => enterWorld('voice-report')}
+              sx={{ mb: 1, justifyContent: 'flex-start', borderColor: 'primary.main', border: '2px solid', fontSize: 14 }}>
+              Voice Report
+            </Button>
+            <Button fullWidth disabled sx={{ mb: 1, justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
+              LoopFolders <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>
+            </Button>
+            <Button fullWidth disabled sx={{ justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
+              Sparks <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>
             </Button>
           </Box>
         )}
-        {user?.sparks_role && view === 'control-center' && (
-          <Box sx={{ px: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Button fullWidth variant="contained" color="secondary"
-              onClick={() => { setView('home'); setMenuOpen(false); }}
+
+        {/* Voice Report World — Control Center return button */}
+        {currentWorld === 'voice-report' && user?.sparks_role && !simulatingCompany && (
+          <Box sx={{ px: 2, pb: 1.5 }}>
+            <Button fullWidth variant="contained" color="secondary" onClick={exitToControlCenter}
               sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13 }}>
-              Field Operations
-            </Button>
-            <Button fullWidth variant="outlined" color="secondary"
-              onClick={() => { window.open('https://app.horizonsparks.ai', '_blank'); setMenuOpen(false); }}
-              sx={{ fontSize: 13 }}>
-              LoopFolders
+              {'\u2190'} Control Center
             </Button>
           </Box>
         )}
 
         {/* Trade stars — only for admin and supervisors, NOT in Control Center */}
-        {view !== 'control-center' && (user.is_admin || (user.role_level || 0) >= 4) && (
+        {currentWorld !== 'control-center' && (user.is_admin || (user.role_level || 0) >= 4) && (
           <Box sx={{ px: 2, py: 2 }}>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
               {t('nav.activeTrades')}
@@ -521,7 +517,7 @@ export default function App() {
         )}
 
         {/* Workers see their trade — no switching */}
-        {!user.is_admin && (user.role_level || 0) < 4 && (
+        {currentWorld !== 'control-center' && !user.is_admin && (user.role_level || 0) < 4 && (
           <Box sx={{ px: 2, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
               {t('nav.yourTrade')}
@@ -534,10 +530,9 @@ export default function App() {
         )}
 
         {/* Menu links */}
-        <>
         <Divider />
         <List sx={{ px: 1 }}>
-          {user.is_admin && (
+          {currentWorld !== 'control-center' && user.is_admin && (
             <ListItemButton onClick={() => navigateTo('templates')}>
               <ListItemText primary={'📝 ' + t('nav.templates')} />
             </ListItemButton>
@@ -549,7 +544,6 @@ export default function App() {
             <ListItemText primary="🛠️ Tech Support" />
           </ListItemButton>
         </List>
-        </>
 
         {/* Language toggle */}
         <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
@@ -568,7 +562,7 @@ export default function App() {
       </Drawer>
 
       {/* Sub-header with back button */}
-      {view !== 'home' && view !== 'control-center' && (
+      {view !== 'home' && (
         <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Button startIcon={<ArrowBackIcon />} onClick={goBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
             {t('nav.back')}
@@ -591,10 +585,10 @@ export default function App() {
             '& .MuiAlert-message': { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 1 },
           }}
         >
-          <Typography sx={{ fontWeight: 800, fontSize: 18, flex: 1, textAlign: 'center' }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 13 }}>
             {editModeEnabled
               ? '✏️ EDIT MODE — ' + simulatingCompany.name
-              : simulatingCompany.name}
+              : '👁 Viewing: ' + simulatingCompany.name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             {editModeEnabled ? (
@@ -617,8 +611,12 @@ export default function App() {
       )}
 
       <Box component="main" sx={{ flex: 1 }}>
-        {/* Read-only warning removed — simulation bar already shows company name */}
-        {view === 'home' && <HomeView user={user} setView={navigateTo} logout={logout} activeTrade={activeTrade} setActiveTrade={setActiveTrade} starredTrades={starredTrades} allTrades={ALL_TRADES} onSafetyOpen={() => setSafetyPanelOpen(true)} simulatingCompany={simulatingCompany} onEnterCompany={enterSimulation} onSupportOpen={() => setSupportChatOpen(true)} />}
+        {readOnly && (
+          <Alert severity="warning" variant="standard" sx={{ borderRadius: 0, fontSize: 12, fontWeight: 700, justifyContent: 'center' }}>
+            Read-only mode — viewing as {simulatingCompany?.name}. Enable editing to make changes.
+          </Alert>
+        )}
+        {view === 'home' && <HomeView user={user} setView={navigateTo} logout={logout} activeTrade={activeTrade} setActiveTrade={setActiveTrade} starredTrades={starredTrades} allTrades={ALL_TRADES} onSafetyOpen={() => setSafetyPanelOpen(true)} simulatingCompany={simulatingCompany} currentWorld={currentWorld} onEnterCompany={enterSimulation} onSupportOpen={() => setSupportChatOpen(true)} />}
         {view === 'record' && <RecordView readOnly={readOnly} user={user} onSaved={() => navigateTo('list')} />}
         {view === 'list' && <ListView user={user} onOpen={openReport} />}
         {view === 'detail' && <DetailView id={selectedReport} onBack={goBack} onHome={goHome} />}
@@ -632,14 +630,14 @@ export default function App() {
         {view === 'taskdetail' && <TaskDetailView readOnly={readOnly} user={user} taskId={selectedTaskId} goBack={goBack} onNavigate={navigateTo} activeTrade={activeTrade} />}
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
-        {view === "control-center" && <SparksCommandCenter ref={viewRef} user={user} onEnterCompany={enterSimulation} navigateTo={navigateTo} goHome={goHome} readOnly={readOnly} simulatingCompany={simulatingCompany} setSimulatingCompany={setSimulatingCompany} setSimulationMode={setSimulationMode} editModeEnabled={editModeEnabled} setEditModeEnabled={setEditModeEnabled} editModeExpiry={editModeExpiry} setEditModeExpiry={setEditModeExpiry} showPinModal={showPinModal} setShowPinModal={setShowPinModal} showAlert={showAlert} showConfirm={showConfirm} />}
+        {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>
 
       {/* Safety Quick-Access Panel */}
-      <Dialog open={safetyPanelOpen} onClose={() => setSafetyPanelOpen(false)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { borderRadius: 4, maxHeight: "80vh" } }}>
+      <Drawer anchor="bottom" open={safetyPanelOpen} onClose={() => setSafetyPanelOpen(false)}
+        slotProps={{ paper: { sx: { borderRadius: '20px 20px 0 0', maxHeight: '80vh' } } }}>
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary' }}>⛑️ {t('safety.title')}</Typography>
@@ -687,10 +685,10 @@ export default function App() {
             </Button>
           </Box>
         </Box>
-      </Dialog>
+      </Drawer>
 
       <InstallBanner />
-      {user && user.sparks_role && (
+      {user && currentWorld === 'voice-report' && user.sparks_role && (
         <><PinModal
           visible={showPinModal}
           companyName={simulatingCompany?.name || ''}
@@ -698,7 +696,8 @@ export default function App() {
           onCancel={() => { setShowPinModal(false); setPinError(''); }}
           error={pinError}
         />
-        <SupportChat user={user} simulatingCompany={simulatingCompany} externalOpen={supportChatOpen} onExternalOpenChange={setSupportChatOpen} /></>
+        {/* SupportChat removed — replaced by Messages panel + Agent sidebar */}
+        </>
       )}
 
       {/* Reusable Dialog — replaces native alert() / confirm() */}
