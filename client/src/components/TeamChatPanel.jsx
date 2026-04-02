@@ -9,7 +9,7 @@ import MessagesView from '../views/MessagesView.jsx';
  * Right: active chat or empty state
  * On mobile (<768px): full-screen list → full-screen chat
  */
-export default function TeamChatPanel({ user, team, teamConversations, onRefreshConversations }) {
+export default function TeamChatPanel({ user, team, teamConversations, onRefreshConversations, agentOpen }) {
   const [selectedMember, setSelectedMember] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('chats'); // chats | profile | folders
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -213,7 +213,7 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
 
   // ---- DESKTOP: 3-column split layout ----
   return (
-    <Box sx={{ display: 'flex', overflow: 'hidden', position: 'fixed', top: 68, left: 0, right: 0, bottom: 0, zIndex: 50, bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', overflow: 'hidden', position: 'fixed', top: 68, left: 0, right: agentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, bottom: 0, zIndex: 50, bgcolor: 'background.default', transition: 'right 0.3s ease' }}>
       {/* Column 1: Icon sidebar */}
       <Box sx={{ width: 56, bgcolor: 'var(--charcoal)', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 1.5, gap: 0.5, flexShrink: 0 }}>
         <SidebarIcon icon="chats" active={sidebarTab === 'chats'} onClick={() => setSidebarTab('chats')} />

@@ -15,7 +15,7 @@ import SystemHealthPanel from '../components/SystemHealthPanel.jsx';
  * Control Center — the operating system for Horizon Sparks.
  * Only visible to users with a sparks_role.
  */
-export default forwardRef(function SparksCommandCenter({ user, onEnterCompany }, ref) {
+export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, agentOpen }, ref) {
   const [screen, setScreen] = useState('dashboard');
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -575,6 +575,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
           companyBilling={companyBilling}
           companyAnalytics={companyAnalytics}
           onBack={() => { setSelectedCompany(null); setScreen('dashboard'); }}
+          agentOpen={agentOpen}
         />
       )}
 
@@ -911,6 +912,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
           user={user}
           team={team}
           teamConversations={teamConversations}
+          agentOpen={agentOpen}
         />
       )}
 
@@ -920,6 +922,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
           user={user}
           companies={companies}
           onBack={() => setScreen('dashboard')}
+          agentOpen={agentOpen}
         />
       )}
 

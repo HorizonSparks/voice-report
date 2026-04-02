@@ -8,7 +8,7 @@ import MessagesView from '../views/MessagesView.jsx';
  * Middle panel: company list → people in selected company
  * Right panel: active chat
  */
-export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail, onBack }) {
+export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail, onBack, agentOpen }) {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('companies'); // companies | info | analytics | agent
@@ -114,7 +114,7 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   };
 
   return (
-    <Box sx={{ display: 'flex', overflow: 'hidden', position: 'fixed', top: 68, left: 0, right: 0, bottom: 0, zIndex: 50, bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', overflow: 'hidden', position: 'fixed', top: 68, left: 0, right: agentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, bottom: 0, zIndex: 50, bgcolor: 'background.default', transition: 'right 0.3s ease' }}>
       {/* Column 1: Icon sidebar */}
       <Box sx={{ width: 56, bgcolor: 'var(--charcoal)', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 1.5, gap: 0.5, flexShrink: 0 }}>
         <SidebarIcon icon="companies" active={sidebarTab === 'companies'} onClick={() => setSidebarTab('companies')} />

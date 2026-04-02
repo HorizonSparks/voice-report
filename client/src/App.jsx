@@ -495,7 +495,7 @@ export default function App() {
   };
 
   return (
-    <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main', width: globalAgentOpen ? { xs: '100%', sm: 'calc(100% - 420px)', md: 'calc(100% - 440px)' } : '100%', transition: 'width 0.3s ease' }}>
+    <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main', '--agent-panel-width': globalAgentOpen ? { xs: '0px', sm: '420px', md: '440px' } : '0px', width: globalAgentOpen ? { xs: '100%', sm: 'calc(100% - 420px)', md: 'calc(100% - 440px)' } : '100%', transition: 'width 0.3s ease' }}>
       {/* Header */}
       <AppBar position="sticky" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
         <Toolbar sx={{ gap: 0.5, px: 2, pt: 1 }}>
@@ -761,7 +761,7 @@ export default function App() {
         {view === 'taskdetail' && <TaskDetailView readOnly={readOnly} user={user} taskId={selectedTaskId} goBack={goBack} onNavigate={navigateTo} activeTrade={activeTrade} />}
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
-        {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} />}
+        {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} agentOpen={globalAgentOpen} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>
