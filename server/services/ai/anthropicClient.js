@@ -19,7 +19,7 @@ const API_VERSION = '2023-06-01';
  * @param {object} params.tracking - { requestId, personId, service } for analytics
  * @returns {{ text: string, usage: object, raw: object }}
  */
-async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tracking = {} }) {
+async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tracking = {}, tools }) {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
@@ -32,6 +32,7 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
     messages,
   };
   if (systemPrompt) body.system = systemPrompt;
+  if (tools && tools.length > 0) body.tools = tools;
 
   const res = await fetch(CLAUDE_URL, {
     method: 'POST',
@@ -70,7 +71,7 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
     ...(tracking.extra || {}),
   });
 
-  return { text, usage: data.usage, raw: data };
+  return { text, usage: data.usage, raw: data, content: data.content, stop_reason: data.stop_reason };
 }
 
 /**

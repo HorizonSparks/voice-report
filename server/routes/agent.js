@@ -1,7 +1,7 @@
 /**
- * AI Agent API — powers the Agent sidebar panel.
- * Admin/support get Opus (full power). Workers get Sonnet (cheaper).
- * Loads knowledge base, conversation context, and company data.
+ * AI Agent API — powers the Agent sidebar panel with TOOL USE.
+ * Admin/support get Opus (full power). Workers get Sonnet.
+ * Tools: lookup people, companies, reports, analytics, knowledge.
  */
 const { Router } = require('express');
 const path = require('path');
@@ -14,127 +14,278 @@ const DB = require('../../database/db');
 const router = Router();
 const ROOT = path.join(__dirname, '../..');
 
-// Load knowledge files relevant to a query
+// ---- TOOL DEFINITIONS ----
+const AGENT_TOOLS = [
+  {
+    name: 'lookup_person',
+    description: 'Look up a person by name or ID. Returns their role, trade, company, status, and recent activity.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Person name to search for (partial match)' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'lookup_company',
+    description: 'Look up a company by name. Returns status, tier, people count, report count, products, trades.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Company name to search for' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'get_company_analytics',
+    description: 'Get AI usage analytics for a company. Returns API calls, costs, top users, provider breakdown.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        company_id: { type: 'string', description: 'Company ID' },
+      },
+      required: ['company_id'],
+    },
+  },
+  {
+    name: 'get_recent_reports',
+    description: 'Get recent reports for a person or company. Returns report dates, trades, and summaries.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        person_name: { type: 'string', description: 'Person name to filter by (optional)' },
+        company_id: { type: 'string', description: 'Company ID to filter by (optional)' },
+        limit: { type: 'number', description: 'Number of reports to return (default 10)' },
+      },
+    },
+  },
+  {
+    name: 'search_knowledge',
+    description: 'Search the trade knowledge base (electrical codes, instrumentation, safety, millwright, pipe fitting). Returns relevant technical information.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What to search for (e.g. "NEC conduit fill", "Rosemount 3051 calibration")' },
+        trade: { type: 'string', description: 'Optional trade filter: electrical, instrumentation, millwright, safety' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'get_system_status',
+    description: 'Get current system status: uptime, errors, online users, total people/companies.',
+    input_schema: { type: 'object', properties: {} },
+  },
+];
+
+// ---- TOOL EXECUTORS ----
+async function executeTool(toolName, toolInput) {
+  try {
+    switch (toolName) {
+      case 'lookup_person': {
+        const { rows } = await DB.db.query(
+          `SELECT p.id, p.name, p.role_title, p.role_level, p.trade, p.status, p.company_id, c.name as company_name,
+            (SELECT COUNT(*)::int FROM reports r WHERE r.person_id = p.id) as report_count
+           FROM people p LEFT JOIN companies c ON c.id = p.company_id
+           WHERE p.name ILIKE $1 ORDER BY p.role_level DESC LIMIT 5`,
+          [`%${toolInput.name}%`]
+        );
+        return rows.length > 0 ? JSON.stringify(rows) : `No person found matching "${toolInput.name}"`;
+      }
+      case 'lookup_company': {
+        const { rows } = await DB.db.query(
+          `SELECT c.*,
+            (SELECT COUNT(*)::int FROM people p WHERE p.company_id = c.id AND p.status = 'active') as people_count,
+            (SELECT COUNT(*)::int FROM reports r WHERE r.company_id = c.id) as report_count
+           FROM companies c WHERE c.name ILIKE $1 LIMIT 3`,
+          [`%${toolInput.name}%`]
+        );
+        if (rows.length === 0) return `No company found matching "${toolInput.name}"`;
+        // Also get products and trades
+        for (const co of rows) {
+          const { rows: products } = await DB.db.query("SELECT product, status FROM company_products WHERE company_id = $1", [co.id]);
+          const { rows: trades } = await DB.db.query("SELECT trade, status FROM company_trades WHERE company_id = $1", [co.id]);
+          co.products = products;
+          co.trades = trades;
+        }
+        return JSON.stringify(rows);
+      }
+      case 'get_company_analytics': {
+        const { rows: summary } = await DB.db.query(
+          `SELECT COUNT(*)::int as total_calls, SUM(estimated_cost_cents)::int as total_cost_cents,
+            COUNT(DISTINCT person_id)::int as unique_users
+           FROM ai_usage_log WHERE company_id = $1`,
+          [toolInput.company_id]
+        );
+        const { rows: topUsers } = await DB.db.query(
+          `SELECT p.name, SUM(a.estimated_cost_cents)::int as cost, COUNT(*)::int as calls
+           FROM ai_usage_log a JOIN people p ON p.id = a.person_id
+           WHERE a.company_id = $1 GROUP BY p.name ORDER BY cost DESC LIMIT 5`,
+          [toolInput.company_id]
+        );
+        return JSON.stringify({ summary: summary[0], top_users: topUsers });
+      }
+      case 'get_recent_reports': {
+        let sql = `SELECT r.id, r.report_date, r.created_at, p.name as person_name, p.trade, r.company_id
+                    FROM reports r JOIN people p ON p.id = r.person_id WHERE 1=1`;
+        const params = [];
+        if (toolInput.person_name) {
+          params.push(`%${toolInput.person_name}%`);
+          sql += ` AND p.name ILIKE $${params.length}`;
+        }
+        if (toolInput.company_id) {
+          params.push(toolInput.company_id);
+          sql += ` AND r.company_id = $${params.length}`;
+        }
+        sql += ` ORDER BY r.created_at DESC LIMIT ${toolInput.limit || 10}`;
+        const { rows } = await DB.db.query(sql, params);
+        return rows.length > 0 ? JSON.stringify(rows) : 'No reports found';
+      }
+      case 'search_knowledge': {
+        const knowledgeDir = path.join(ROOT, 'knowledge');
+        if (!fs.existsSync(knowledgeDir)) return 'Knowledge base not available';
+        const q = toolInput.query.toLowerCase();
+        const files = fs.readdirSync(knowledgeDir).filter(f => f.endsWith('.json'));
+        const results = [];
+        for (const file of files) {
+          if (toolInput.trade && !file.includes(toolInput.trade)) continue;
+          try {
+            const data = fs.readFileSync(path.join(knowledgeDir, file), 'utf-8');
+            if (data.toLowerCase().includes(q) || q.split(' ').some(w => data.toLowerCase().includes(w))) {
+              const parsed = JSON.parse(data);
+              results.push({ file: file.replace('.json', ''), content: JSON.stringify(parsed).substring(0, 3000) });
+              if (results.length >= 2) break;
+            }
+          } catch(e) {}
+        }
+        return results.length > 0 ? JSON.stringify(results) : `No knowledge found for "${toolInput.query}"`;
+      }
+      case 'get_system_status': {
+        const { rows: [dashboard] } = await DB.db.query(`
+          SELECT
+            (SELECT COUNT(*)::int FROM companies WHERE status = 'active') as active_companies,
+            (SELECT COUNT(*)::int FROM people WHERE status = 'active') as total_people,
+            (SELECT COUNT(*)::int FROM reports) as total_reports
+        `);
+        return JSON.stringify({ ...dashboard, uptime: process.uptime(), node_version: process.version });
+      }
+      default:
+        return `Unknown tool: ${toolName}`;
+    }
+  } catch (err) {
+    return `Tool error: ${err.message}`;
+  }
+}
+
+// Load knowledge for system prompt context
 function loadRelevantKnowledge(query) {
   const knowledgeDir = path.join(ROOT, 'knowledge');
   if (!fs.existsSync(knowledgeDir)) return '';
-
   const q = query.toLowerCase();
-  const files = fs.readdirSync(knowledgeDir).filter(f => f.endsWith('.json'));
-  const relevant = [];
-
-  // Match knowledge files based on query keywords
   const keywordMap = {
-    'electrical': ['electrical_codes', 'electrical_procedures', 'electrical_safety'],
-    'instrument': ['instrumentation_codes_standards', 'instrumentation_procedures', 'instrumentation_safety', 'instrumentation_troubleshooting', 'instrumentation_materials', 'instrumentation_specialty'],
-    'pipe': ['pipefitting_codes', 'pipefitting_procedures', 'pipefitting_safety'],
-    'millwright': ['millwright_codes_standards', 'millwright_procedures', 'millwright_safety', 'millwright_materials', 'millwright_troubleshooting'],
-    'safety': ['electrical_safety', 'instrumentation_safety', 'jsa_form_structure'],
-    'jsa': ['jsa_form_structure'],
-    'code': ['electrical_codes', 'instrumentation_codes_standards', 'millwright_codes_standards'],
-    'nec': ['electrical_codes'],
-    'cable': ['electrical_procedures', 'materials_specs'],
-    'conduit': ['electrical_procedures', 'electrical_codes'],
-    'calibrat': ['instrumentation_procedures', 'instrumentation_troubleshooting'],
-    'commission': ['commissioning'],
-    'material': ['materials_specs', 'instrumentation_materials', 'millwright_materials'],
-    'crew': ['crew_productivity'],
-    'document': ['documentation_paperwork'],
+    'electrical': ['electrical_codes'], 'instrument': ['instrumentation_codes_standards'],
+    'pipe': ['pipefitting_codes'], 'millwright': ['millwright_codes_standards'],
+    'safety': ['electrical_safety'], 'nec': ['electrical_codes'],
+    'calibrat': ['instrumentation_procedures'],
   };
-
-  const matchedFiles = new Set();
-  for (const [keyword, fileNames] of Object.entries(keywordMap)) {
-    if (q.includes(keyword)) {
-      fileNames.forEach(f => matchedFiles.add(f));
+  const matched = new Set();
+  for (const [kw, files] of Object.entries(keywordMap)) {
+    if (q.includes(kw)) files.forEach(f => matched.add(f));
+  }
+  const results = [];
+  for (const baseName of matched) {
+    const fp = path.join(knowledgeDir, `${baseName}.json`);
+    if (fs.existsSync(fp)) {
+      try { results.push(JSON.stringify(JSON.parse(fs.readFileSync(fp, 'utf-8'))).substring(0, 2000)); } catch(e) {}
     }
+    if (results.length >= 2) break;
   }
-
-  // If no specific match, load general files
-  if (matchedFiles.size === 0) {
-    matchedFiles.add('electrical_codes');
-    matchedFiles.add('instrumentation_codes_standards');
-  }
-
-  // Load matched files (limit to 3 to keep context manageable)
-  let loaded = 0;
-  for (const baseName of matchedFiles) {
-    if (loaded >= 3) break;
-    const filePath = path.join(knowledgeDir, `${baseName}.json`);
-    if (fs.existsSync(filePath)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        const summary = JSON.stringify(data).substring(0, 4000);
-        relevant.push(`[${baseName}]: ${summary}`);
-        loaded++;
-      } catch(e) {}
-    }
-  }
-
-  return relevant.join('\n\n');
+  return results.join('\n');
 }
 
-// POST /api/agent/chat — main agent endpoint
+// POST /api/agent/chat — main agent endpoint with tool use loop
 router.post('/chat', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     const { message, conversationContext, contactName, contactRole, companyName } = req.body;
-
     if (!message) return res.status(400).json({ error: 'message required' });
 
-    // Determine model based on role
     const isAdmin = actor.is_admin || actor.role_level >= 5;
     const model = isAdmin ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
 
-    // Resolve person ID for tracking
     let personId = actor.person_id;
     if (personId === '__admin__') {
       const { rows } = await DB.db.query("SELECT id FROM people WHERE sparks_role = 'admin' LIMIT 1");
       if (rows[0]) personId = rows[0].id;
     }
 
-    // Build system prompt
     const knowledge = loadRelevantKnowledge(message);
-    const systemPrompt = `You are the Horizon Sparks AI Agent — an expert assistant for construction trades (electrical, instrumentation, pipe fitting, millwright, safety).
+    const systemPrompt = `You are the Horizon Sparks AI Agent — an expert assistant for construction trades.
 
-You help Sparks team members with:
-- Technical questions about codes, standards, and procedures (NEC, OSHA, ISA)
-- Troubleshooting equipment and installation issues
-- Understanding reports, analytics, and company data
-- Customer support — analyzing issues and suggesting solutions
+You have TOOLS to look up real data: people, companies, reports, analytics, trade knowledge, system status.
+USE TOOLS when the user asks about specific people, companies, or data. Don't guess — look it up.
 
-CURRENT CONTEXT:
-${contactName ? `- Chatting about: ${contactName} (${contactRole || 'team member'})` : ''}
+CONTEXT:
+${contactName ? `- Currently viewing: ${contactName} (${contactRole || ''})` : ''}
 ${companyName ? `- Company: ${companyName}` : ''}
-${conversationContext ? `- Recent chat messages:\n${conversationContext}` : ''}
-
-${knowledge ? `TRADE KNOWLEDGE BASE:\n${knowledge}` : ''}
+${conversationContext ? `- Recent chat:\n${conversationContext}` : ''}
+${knowledge ? `\nKNOWLEDGE:\n${knowledge}` : ''}
 
 RULES:
-- Be concise and direct. Construction workers don't have time for long explanations.
-- Give specific answers with code references when applicable.
-- If asked about a person or company, use the context provided.
-- If you don't know something, say so — don't guess on safety-critical information.
-- Use trade terminology naturally.`;
+- Be concise. Construction workers need quick answers.
+- Use tools to get real data before answering data questions.
+- Give specific code references (NEC, OSHA, ISA) when applicable.
+- Don't guess on safety-critical information.`;
 
-    // Build messages
-    const messages = [{ role: 'user', content: message }];
+    // Tool use loop — Claude may call tools, we execute and send results back
+    let messages = [{ role: 'user', content: message }];
+    let finalText = '';
+    let totalUsage = { input_tokens: 0, output_tokens: 0 };
+    let loops = 0;
 
-    const result = await callClaude({
-      systemPrompt,
-      messages,
-      maxTokens: 1500,
-      model,
-      tracking: {
-        requestId: 'agent_' + Date.now(),
-        personId,
-        service: 'agent',
-      },
-    });
+    while (loops < 5) {
+      loops++;
+      const result = await callClaude({
+        systemPrompt,
+        messages,
+        maxTokens: 2000,
+        model,
+        tools: AGENT_TOOLS,
+        tracking: {
+          requestId: `agent_${Date.now()}_${loops}`,
+          personId,
+          service: 'agent',
+        },
+      });
+
+      totalUsage.input_tokens += result.usage?.input_tokens || 0;
+      totalUsage.output_tokens += result.usage?.output_tokens || 0;
+
+      // Check if Claude wants to use a tool
+      if (result.stop_reason === 'tool_use') {
+        const toolUseBlock = result.content.find(b => b.type === 'tool_use');
+        if (toolUseBlock) {
+          // Execute the tool
+          const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
+          // Add assistant response + tool result to messages for next round
+          messages.push({ role: 'assistant', content: result.content });
+          messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: toolResult }] });
+          continue;
+        }
+      }
+
+      // No more tool calls — extract final text
+      finalText = result.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || result.text || '';
+      break;
+    }
 
     res.json({
-      response: result.text,
+      response: finalText,
       model: model.includes('opus') ? 'Opus' : 'Sonnet',
-      usage: result.usage,
+      usage: totalUsage,
+      tool_calls: loops - 1,
     });
   } catch (err) {
     console.error('Agent error:', err);
