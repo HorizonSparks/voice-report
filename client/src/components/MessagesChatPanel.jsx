@@ -15,8 +15,20 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   const [people, setPeople] = useState([]);
   const [companyDetail, setCompanyDetail] = useState(null);
 
-  const chatUser = user;
+  const [resolvedUserId, setResolvedUserId] = useState(user.person_id);
   const statusColors = { active: '#4CAF50', trial: 'var(--primary)', suspended: '#F44336', churned: '#9E9E9E' };
+
+  // Resolve __admin__ to real person_id
+  useEffect(() => {
+    if (user.person_id === '__admin__') {
+      fetch('/api/sparks/team').then(r => r.json()).then(team => {
+        const admin = team.find(m => m.sparks_role === 'admin');
+        if (admin) setResolvedUserId(admin.id);
+      }).catch(() => {});
+    }
+  }, [user.person_id]);
+
+  const chatUser = { ...user, person_id: resolvedUserId };
 
   const selectCompany = async (company) => {
     setSelectedCompany(company);

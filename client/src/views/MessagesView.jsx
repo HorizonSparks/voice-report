@@ -64,7 +64,7 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
     try {
       const res = await fetch(`/api/v2/conversations/${personId}`);
       const data = await res.json();
-      setConversations(data);
+      setConversations(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch(e) { setLoading(false); }
   };
@@ -73,7 +73,7 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
     try {
       const res = await fetch(`/api/v2/contacts/${personId}`);
       const data = await res.json();
-      setContacts(data);
+      setContacts(Array.isArray(data) ? data : []);
     } catch(e) {}
   };
 
@@ -82,7 +82,7 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
     try {
       const res = await fetch(`/api/v2/messages/${personId}/${contactId}`);
       const data = await res.json();
-      setChatMessages(data);
+      setChatMessages(Array.isArray(data) ? data : []);
       if (showLoading) setLoading(false);
       // Refresh conversation list to update unread counts
       loadConversations();
