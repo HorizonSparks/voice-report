@@ -495,7 +495,7 @@ export default function App() {
   };
 
   return (
-    <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main', marginRight: globalAgentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, transition: 'margin-right 0.3s ease' }}>
+    <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main', width: globalAgentOpen ? { xs: '100%', sm: 'calc(100% - 420px)', md: 'calc(100% - 440px)' } : '100%', transition: 'width 0.3s ease' }}>
       {/* Header */}
       <AppBar position="sticky" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
         <Toolbar sx={{ gap: 0.5, px: 2, pt: 1 }}>
@@ -532,16 +532,18 @@ export default function App() {
                 {activeTrade}
               </Typography>
             )}
-            <Button onClick={() => setGlobalAgentOpen(!globalAgentOpen)} sx={{
-              background: globalAgentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.2)',
-              color: globalAgentOpen ? 'white' : 'var(--primary)',
+            {!globalAgentOpen && (
+            <Button onClick={() => setGlobalAgentOpen(true)} sx={{
+              background: 'rgba(249,148,64,0.2)',
+              color: 'var(--primary)',
               fontSize: 12, fontWeight: 800, textTransform: 'none',
               borderRadius: '20px', px: 1.5, py: 0.4, minWidth: 'auto',
-              '&:hover': { background: globalAgentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.35)' },
+              '&:hover': { background: 'rgba(249,148,64,0.35)' },
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
               Sparks AI
             </Button>
+            )}
           </Box>
         </Toolbar>
       </AppBar>
