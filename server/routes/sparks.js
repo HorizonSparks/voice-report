@@ -438,4 +438,76 @@ router.get('/edit-mode/status', requireAuth, requireSparksRole('advisor'), async
   });
 });
 
+// ============================================
+// SYSTEM HEALTH (Observability)
+// ============================================
+
+const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus:9090';
+
+// GET /api/sparks/system-health — Query Prometheus for at-a-glance system stats
+router.get('/system-health', requireSparksRole('support'), async (req, res) => {
+  try {
+    const queries = {
+      request_rate: 'sum(rate(horizon_http_requests_total[5m]))',
+      error_rate: 'sum(rate(horizon_http_requests_total{status_code=~"5.."}[5m])) / sum(rate(horizon_http_requests_total[5m])) or vector(0)',
+      p95_latency: 'histogram_quantile(0.95, sum(rate(horizon_http_request_duration_seconds_bucket[5m])) by (le)) or vector(0)',
+      ai_cost_today: 'sum(increase(horizon_anthropic_cost_usd_total[24h])) or vector(0)',
+      agent_sessions_today: 'sum(increase(horizon_agent_sessions_total[24h])) or vector(0)',
+      cpu_percent: '1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))',
+      memory_percent: '1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)',
+      disk_percent: '1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})',
+      targets_up: 'count(up == 1)',
+      targets_total: 'count(up)',
+      db_pool_total: 'horizon_db_pool_size{state="total"}',
+      db_pool_idle: 'horizon_db_pool_size{state="idle"}',
+      db_pool_waiting: 'horizon_db_pool_size{state="waiting"}',
+      pg_db_size: 'pg_database_size_bytes{datname="horizon"}',
+    };
+
+    const results = {};
+    await Promise.all(
+      Object.entries(queries).map(async ([key, query]) => {
+        try {
+          const r = await fetch(`${PROMETHEUS_URL}/api/v1/query?query=${encodeURIComponent(query)}`);
+          if (r.ok) {
+            const data = await r.json();
+            const val = data?.data?.result?.[0]?.value?.[1];
+            results[key] = val !== undefined ? parseFloat(val) : null;
+          } else {
+            results[key] = null;
+          }
+        } catch {
+          results[key] = null;
+        }
+      })
+    );
+
+    // Get target details
+    let targets = [];
+    try {
+      const r = await fetch(`${PROMETHEUS_URL}/api/v1/targets`);
+      if (r.ok) {
+        const data = await r.json();
+        targets = (data?.data?.activeTargets || []).map(t => ({
+          job: t.labels?.job,
+          health: t.health,
+          lastScrape: t.lastScrape,
+          product: t.labels?.product || t.labels?.service || t.labels?.instance || '',
+        }));
+      }
+    } catch {}
+
+    res.json({
+      metrics: results,
+      targets,
+      grafana_url: 'http://192.168.1.117:3000',
+      glitchtip_url: 'http://192.168.1.117:9500',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('System health error:', err);
+    res.status(500).json({ error: 'Failed to fetch system health' });
+  }
+});
+
 module.exports = router;

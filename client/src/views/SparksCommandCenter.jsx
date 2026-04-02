@@ -9,6 +9,7 @@ import MessagesView from './MessagesView.jsx';
 import TeamChatPanel from '../components/TeamChatPanel.jsx';
 import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
 import MessagesChatPanel from '../components/MessagesChatPanel.jsx';
+import SystemHealthPanel from '../components/SystemHealthPanel.jsx';
 
 /**
  * Control Center — the operating system for Horizon Sparks.
@@ -486,6 +487,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
                   { label: 'Messages', icon: '\uD83D\uDCAC', action: loadMessages, show: true },
                   { label: 'AI Spending', icon: '\uD83E\uDDE0', action: loadAiSpending, show: ['admin', 'support'].includes(user.sparks_role) },
+                  { label: 'System Health', icon: '\uD83D\uDCCA', action: () => setScreen('system-health'), show: ['admin', 'support'].includes(user.sparks_role) },
                 ].filter(t => t.show).map((tile, i) => (
                   <Button key={i} onClick={tile.action} disabled={tile.disabled}
                     variant="outlined"
@@ -1012,6 +1014,11 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
             </Box>
           )}
         </Box>
+      )}
+
+      {/* SYSTEM HEALTH SCREEN */}
+      {screen === 'system-health' && (
+        <SystemHealthPanel onBack={() => setScreen('dashboard')} />
       )}
 
       {/* ANALYTICS SCREEN */}
