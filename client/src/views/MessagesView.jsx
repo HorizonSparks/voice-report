@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Dialog, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import VoiceMessagePlayer from '../components/VoiceMessagePlayer.jsx';
 
-export default function MessagesView({ user, readOnly, initialContact, onBack, embedded }) {
+export default function MessagesView({ user, readOnly, initialContact, onBack, embedded, showAiAssist }) {
   const { t } = useTranslation();
   const [contacts, setContacts] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -278,6 +278,11 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
             {chatRole && <Typography sx={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>{chatRole}</Typography>}
           </Box>
         </Box>
+
+        {/* AI Recommendation Bar — agent whisper */}
+        {showAiAssist && (
+          <AiRecommendationBar messages={chatMessages} contactName={activeChatName} />
+        )}
 
         {/* Messages area -- WhatsApp wallpaper style */}
         <Box sx={{ flex: 1, overflowY: 'auto', padding: '12px 16px', paddingBottom: embedded ? '12px' : '80px' }}>
@@ -754,6 +759,106 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
           </Button>
         </DialogActions>
       </Dialog>
+    </Box>
+  );
+}
+
+/**
+ * AI Recommendation Bar — appears at the top of chat during support.
+ * Analyzes conversation and suggests responses/solutions.
+ * For now: smart placeholder that reacts to message count.
+ * Future: real-time Claude API integration with knowledge base.
+ */
+function AiRecommendationBar({ messages, contactName }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Generate contextual recommendation based on conversation state
+  const getRecommendation = () => {
+    if (!messages || messages.length === 0) {
+      return {
+        icon: '🤖',
+        title: 'AI Agent Ready',
+        text: `Start chatting with ${contactName || 'this person'}. The AI agent will analyze the conversation and suggest solutions in real-time.`,
+        confidence: null,
+      };
+    }
+    const lastMsg = messages[messages.length - 1];
+    const allText = messages.map(m => (m.content || '').toLowerCase()).join(' ');
+
+    // Pattern matching for common issues (placeholder — will be replaced by real AI)
+    if (allText.includes('not working') || allText.includes('error') || allText.includes('broken') || allText.includes('fail')) {
+      return {
+        icon: '⚡',
+        title: 'Issue Detected',
+        text: `${contactName} may be reporting a technical issue. Ask for specific error messages, device type, and when it last worked. Check system logs for their recent activity.`,
+        confidence: 'Analyzing...',
+      };
+    }
+    if (allText.includes('upload') || allText.includes('photo') || allText.includes('camera') || allText.includes('scan')) {
+      return {
+        icon: '📷',
+        title: 'Upload/Media Issue',
+        text: 'Possible upload or media issue. Common fixes: check file size limits (10MB photos, 50MB files), verify camera permissions, try a different browser. Check if their storage quota is full.',
+        confidence: 'Pattern match',
+      };
+    }
+    if (allText.includes('p&id') || allText.includes('pid') || allText.includes('loop') || allText.includes('instrument')) {
+      return {
+        icon: '🔧',
+        title: 'Instrumentation Context',
+        text: 'Instrumentation-related conversation. Cross-reference with the knowledge library. Check if they have the correct trade license active. Verify FieldLink form access.',
+        confidence: 'Domain match',
+      };
+    }
+    if (allText.includes('password') || allText.includes('login') || allText.includes('pin') || allText.includes('access')) {
+      return {
+        icon: '🔐',
+        title: 'Access Issue',
+        text: 'Authentication or access problem. Check their session status, verify PIN is correct, check if account is active. For persistent issues, reset their session from the admin panel.',
+        confidence: 'Pattern match',
+      };
+    }
+    return {
+      icon: '💡',
+      title: 'Listening...',
+      text: `Monitoring conversation with ${contactName}. The agent will suggest solutions as the conversation develops. ${messages.length} messages analyzed.`,
+      confidence: `${messages.length} msgs`,
+    };
+  };
+
+  const rec = getRecommendation();
+
+  if (collapsed) {
+    return (
+      <Box onClick={() => setCollapsed(false)} sx={{
+        display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75,
+        bgcolor: 'var(--charcoal)', cursor: 'pointer', flexShrink: 0,
+        '&:hover': { bgcolor: '#3a3a3c' },
+      }}>
+        <Typography sx={{ fontSize: 14 }}>{rec.icon}</Typography>
+        <Typography sx={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700, flex: 1 }}>{rec.title}</Typography>
+        <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>expand</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ bgcolor: 'var(--charcoal)', flexShrink: 0, borderBottom: '2px solid var(--primary)' }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, px: 2, py: 1.25 }}>
+        <Typography sx={{ fontSize: 20, mt: 0.25 }}>{rec.icon}</Typography>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 800, color: 'var(--primary)' }}>{rec.title}</Typography>
+            {rec.confidence && (
+              <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{rec.confidence}</Typography>
+            )}
+          </Box>
+          <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{rec.text}</Typography>
+        </Box>
+        <Box onClick={() => setCollapsed(true)} sx={{ cursor: 'pointer', p: 0.5, '&:hover': { opacity: 0.7 } }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>
+        </Box>
+      </Box>
     </Box>
   );
 }

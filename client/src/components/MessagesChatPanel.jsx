@@ -267,6 +267,7 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
             user={chatUser}
             initialContact={selectedPerson}
             embedded
+            showAiAssist
           />
         ) : (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
