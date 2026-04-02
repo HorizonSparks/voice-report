@@ -8,6 +8,13 @@ const { getActor, canMessage } = require('../auth/authz');
 
 const router = Router();
 
+// Resolve __admin__ sentinel to real person_id for Sparks team messaging
+async function resolveAdminId(actorPersonId, bodyFromId, reqDb) {
+  if (actorPersonId !== '__admin__' || !bodyFromId) return actorPersonId;
+  const { rows } = await (reqDb || DB).db.query("SELECT id FROM people WHERE id = $1 AND sparks_role = 'admin'", [bodyFromId]);
+  return rows.length > 0 ? rows[0].id : actorPersonId;
+}
+
 // Legacy messages — require auth, derive person from session
 router.get('/messages/:person_id', requireAuth, async (req, res) => {
   try {
@@ -96,8 +103,8 @@ router.post('/v2/messages', requireAuth, requireSparksEditMode, async (req, res)
   try {
     const actor = getActor(req);
     const { to_id, content, type } = req.body;
-    // DERIVE actor — ignore client-sent from_id
-    const from_id = actor.person_id;
+    // DERIVE actor — ignore client-sent from_id (resolve __admin__ sentinel for team chat)
+    const from_id = await resolveAdminId(actor.person_id, req.body.from_id, req.db);
 
     if (!from_id || !to_id || !content) return res.status(400).json({ error: 'to_id and content required' });
 
@@ -119,7 +126,7 @@ router.post('/v2/messages', requireAuth, requireSparksEditMode, async (req, res)
 router.post('/v2/messages/group', requireAuth, requireSparksEditMode, requireRoleLevel(2), async (req, res) => {
   try {
     const actor = getActor(req);
-    const from_id = actor.person_id;
+    const from_id = await resolveAdminId(actor.person_id, req.body.from_id, req.db);
     const { content, type } = req.body;
     if (!content) return res.status(400).json({ error: 'content required' });
     const fromPerson = (await (req.db || DB).db.query('SELECT name, role_level FROM people WHERE id = $1', [from_id])).rows[0];
@@ -140,18 +147,14 @@ const msgPhotoDir = path.join(__dirname, '../../message-photos');
 if (!fs.existsSync(msgPhotoDir)) fs.mkdirSync(msgPhotoDir, { recursive: true });
 const msgPhotoStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, msgPhotoDir),
-  filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-      const safeName = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + ext;
-      cb(null, safeName);
-    },
+  filename: (req, file, cb) => cb(null, `msg_${Date.now()}_${file.originalname}`),
 });
 const msgPhotoUpload = multer({ storage: msgPhotoStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 router.post('/v2/messages/photo', requireAuth, requireSparksEditMode, msgPhotoUpload.single('photo'), async (req, res) => {
   try {
     const actor = getActor(req);
-    const from_id = actor.person_id;
+    const from_id = await resolveAdminId(actor.person_id, req.body.from_id, req.db);
     const { to_id } = req.body;
     if (!from_id || !to_id || !req.file) return res.status(400).json({ error: 'to_id and photo required' });
     if (!(await canMessage(actor, to_id, req.db))) return res.status(403).json({ error: "Not authorized to message this person" });
@@ -188,7 +191,7 @@ const msgAudioUpload = multer({ storage: msgAudioStorage, limits: { fileSize: 10
 router.post('/v2/messages/voice', requireAuth, requireSparksEditMode, msgAudioUpload.single('audio'), async (req, res) => {
   try {
     const actor = getActor(req);
-    const from_id = actor.person_id;
+    const from_id = await resolveAdminId(actor.person_id, req.body.from_id, req.db);
     const { to_id } = req.body;
     if (!from_id || !to_id || !req.file) return res.status(400).json({ error: 'to_id and audio required' });
     if (!(await canMessage(actor, to_id, req.db))) return res.status(403).json({ error: "Not authorized to message this person" });
@@ -259,7 +262,7 @@ router.post('/v2/messages/file', requireAuth, requireSparksEditMode, msgFileUplo
   try {
     if (!req.file) return res.status(400).json({ error: 'No file' });
     const actor = getActor(req);
-    const from_id = actor.person_id;
+    const from_id = await resolveAdminId(actor.person_id, req.body.from_id, req.db);
     const { to_id } = req.body;
     if (!from_id || !to_id) return res.status(400).json({ error: 'to_id required' });
     if (!(await canMessage(actor, to_id, req.db))) return res.status(403).json({ error: "Not authorized to message this person" });
@@ -285,7 +288,7 @@ router.post('/v2/messages/file', requireAuth, requireSparksEditMode, msgFileUplo
 
 // Serve message files
 router.get('/message-files/:filename', requireAuth, (req, res) => {
-  const filePath = path.join(__dirname, '../../message-files', path.basename(req.params.filename));
+  const filePath = path.join(__dirname, '../../message-files', req.params.filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
   res.download(filePath);
 });

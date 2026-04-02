@@ -5,27 +5,15 @@ import {
   Grid, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import AnalyticsView from './AnalyticsView.jsx';
+import MessagesView from './MessagesView.jsx';
+import TeamChatPanel from '../components/TeamChatPanel.jsx';
 
 /**
  * Control Center — the operating system for Horizon Sparks.
  * Only visible to users with a sparks_role.
  */
-// Poll support unread count
-function useSupportUnread(setSupportUnread) {
-  useEffect(() => {
-    const check = () => fetch('/api/support/unread-count').then(r => r.ok ? r.json() : { unread: 0 }).then(d => setSupportUnread(d.unread)).catch(() => {});
-    check();
-    const interval = setInterval(check, 15000);
-    return () => clearInterval(interval);
-  }, []);
-}
-
-export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, navigateTo }, ref) {
+export default forwardRef(function SparksCommandCenter({ user, onEnterCompany }, ref) {
   const [screen, setScreen] = useState('dashboard');
-  const [supportInbox, setSupportInbox] = useState([]);
-  const [supportUnread, setSupportUnread] = useState(0);
-  const [activeConvId, setActiveConvId] = useState(null);
-  useSupportUnread(setSupportUnread);
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [dashboard, setDashboard] = useState(null);
@@ -44,6 +32,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, n
   const [newCompany, setNewCompany] = useState({ name: '', tier: 'standard', notes: '' });
   const [creating, setCreating] = useState(false);
   const [dialogConfig, setDialogConfig] = useState(null);
+  const [teamConversations, setTeamConversations] = useState({});
 
   const showConfirm = (message, onConfirm) => setDialogConfig({ message, onConfirm, showCancel: true });
 
@@ -194,6 +183,18 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, n
       setTeam(data);
       setScreen('team');
       setError(null);
+      // Fetch conversations for the team chat list (WhatsApp-style previews)
+      const adminEntry = data.find(m => m.sparks_role === 'admin');
+      const myId = user.person_id === '__admin__' && adminEntry ? adminEntry.id : user.person_id;
+      try {
+        const convRes = await fetch(`/api/v2/conversations/${myId}`);
+        if (convRes.ok) {
+          const convData = await convRes.json();
+          const convMap = {};
+          convData.forEach(c => { convMap[c.contact_id] = c; });
+          setTeamConversations(convMap);
+        }
+      } catch(e) { /* conversations optional */ }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -253,7 +254,6 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, n
 
   function handleBack() {
     if (screen === 'company-detail') { loadCompanies(); return; }
-    if (screen === 'support-inbox') { setScreen('dashboard'); return; }
     if (screen !== 'dashboard') { setScreen('dashboard'); return; }
   }
 
@@ -287,37 +287,17 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, n
   // ============================================
 
   return (
-    <Box className="list-view" sx={{ pb: 12, pt: 0 }}>
+    <Box className="list-view" sx={{ pb: screen === 'team' ? 0 : 12, pt: 0 }}>
 
-      {/* Header */}
-      <Box sx={{ mb: 1, mt: -2.5, textAlign: 'center' }}>
-        <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 800, fontSize: 32 }}>
-          Control Center
-        </Typography>
-        <Typography sx={{ fontSize: 12, color: 'primary.main', fontWeight: 600 }}>
-          {user.sparks_role?.toUpperCase()} ACCESS
-        </Typography>
-        {/* Product launchers */}
-        <Box sx={{ display: 'flex', gap: 1.5, mt: 2, justifyContent: 'center' }}>
-          <Button variant="contained" color="secondary"
-            onClick={() => { if (typeof navigateTo === 'function') navigateTo('home'); }}
-            sx={{ px: 3, py: 1, borderRadius: 3, fontWeight: 700, fontSize: 14, border: '2px solid', borderColor: 'primary.main' }}>
-            Field Operations
-          </Button>
-          <Button variant="outlined" color="secondary"
-            onClick={() => window.open('https://app.horizonsparks.ai', '_blank')}
-            sx={{ px: 3, py: 1, borderRadius: 3, fontWeight: 700, fontSize: 14 }}>
-            LoopFolders
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Back button for internal CC navigation */}
-      {screen !== "dashboard" && (
-        <Box sx={{ px: 2, mb: 1 }}>
-          <Button onClick={handleBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
-            ← Back
-          </Button>
+      {/* Header — hidden on team chat screen to give full space */}
+      {screen !== 'team' && (
+        <Box sx={{ mb: 1, mt: -2.5, textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 800, fontSize: 32 }}>
+            Control Center
+          </Typography>
+          <Typography sx={{ fontSize: 12, color: 'primary.main', fontWeight: 600 }}>
+            {user.sparks_role?.toUpperCase()} ACCESS
+          </Typography>
         </Box>
       )}
 
@@ -452,9 +432,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, n
                   { label: 'Companies', icon: '\uD83C\uDFE2', action: loadCompanies, show: ['admin', 'support'].includes(user.sparks_role) },
                   { label: 'Team', icon: '\uD83D\uDC65', action: loadTeam, show: true },
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
-                  { label: supportUnread > 0 ? 'Support (' + supportUnread + ')' : 'Support Inbox', icon: '\uD83D\uDCAC', action: () => {
-                    fetch('/api/support/inbox').then(r => r.ok ? r.json() : []).then(data => { setSupportInbox(data); setScreen('support-inbox'); }).catch(() => setScreen('support-inbox'));
-                  }, show: true, accent: supportUnread > 0 },
+                  { label: 'Messages', icon: '\uD83D\uDCAC', action: () => {}, show: true, disabled: true },
                 ].filter(t => t.show).map((tile, i) => (
                   <Button key={i} onClick={tile.action} disabled={tile.disabled}
                     variant="outlined"
@@ -860,25 +838,13 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, n
         </>
       )}
 
-      {/* TEAM SCREEN */}
+      {/* TEAM SCREEN — WhatsApp Desktop split-panel layout */}
       {screen === 'team' && (
-        <>
-          <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
-            Sparks Team ({team.length})
-          </Typography>
-          {team.map(member => (
-            <Card key={member.id} variant="outlined" sx={{ mb: 1, borderRadius: 2.5 }}>
-              <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.75, '&:last-child': { pb: 1.75 } }}>
-                <Box>
-                  <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: 15 }}>{member.name}</Typography>
-                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{member.role_title}</Typography>
-                </Box>
-                <Chip label={member.sparks_role} size="small"
-                  sx={{ bgcolor: roleColors[member.sparks_role] || '#ccc', color: 'white', fontWeight: 700, fontSize: 11 }} />
-              </CardContent>
-            </Card>
-          ))}
-        </>
+        <TeamChatPanel
+          user={user}
+          team={team}
+          teamConversations={teamConversations}
+        />
       )}
 
       {/* ANALYTICS SCREEN */}
@@ -911,53 +877,6 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, n
             </Paper>
           ))}
         </>
-      )}
-
-      {/* Support Inbox */}
-      {screen === 'support-inbox' && (
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>Support Inbox</Typography>
-          {supportInbox.length === 0 ? (
-            <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 6 }}>No support conversations yet.</Typography>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {supportInbox.map(conv => (
-                <Paper key={conv.id} elevation={conv.unread_count > 0 ? 3 : 1}
-                  onClick={() => { setActiveConvId(conv.id); }}
-                  sx={{
-                    p: 2, borderRadius: 3, cursor: 'pointer',
-                    border: conv.unread_count > 0 ? '2px solid' : '1px solid',
-                    borderColor: conv.unread_count > 0 ? 'primary.main' : 'divider',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box>
-                      <Typography sx={{ fontWeight: 700, fontSize: 15 }}>{conv.person_name || 'Unknown'}</Typography>
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                        {conv.company_name || 'No company'} — {conv.person_role || 'User'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      {conv.unread_count > 0 && (
-                        <Box sx={{ bgcolor: 'error.main', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, mb: 0.5, ml: 'auto' }}>
-                          {conv.unread_count}
-                        </Box>
-                      )}
-                      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                        {conv.last_message_at ? new Date(conv.last_message_at).toLocaleDateString() : ''}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  {conv.last_message && (
-                    <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.75, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {conv.last_message}
-                    </Typography>
-                  )}
-                </Paper>
-              ))}
-            </Box>
-          )}
-        </Box>
       )}
 
       {loading && screen !== 'dashboard' && (

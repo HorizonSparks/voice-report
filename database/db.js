@@ -588,6 +588,13 @@ const contacts = {
       allBelow.forEach(r => contactIds.add(r.person_id));
     }
 
+    // 5. Sparks team — all members with sparks_role can message each other
+    const { rows: sparksCheck } = await (this._pool || pool).query('SELECT sparks_role FROM people WHERE id = $1', [personId]);
+    if (sparksCheck[0]?.sparks_role) {
+      const { rows: sparksTeam } = await (this._pool || pool).query("SELECT id FROM people WHERE sparks_role IS NOT NULL AND id != $1", [personId]);
+      sparksTeam.forEach(s => contactIds.add(s.id));
+    }
+
     // Remove self
     contactIds.delete(personId);
 
@@ -606,12 +613,14 @@ const contacts = {
 
   // Check if person A is allowed to message person B
   async canMessage(fromId, toId) {
-    const { rows: fromRows } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level FROM people WHERE id = $1', [fromId]);
-    const { rows: toRows } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level FROM people WHERE id = $1', [toId]);
+    const { rows: fromRows } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level, sparks_role FROM people WHERE id = $1', [fromId]);
+    const { rows: toRows } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level, sparks_role FROM people WHERE id = $1', [toId]);
     const from = fromRows[0];
     const to = toRows[0];
     if (!from || !to) return false;
 
+    // Sparks team members can always message each other
+    if (from.sparks_role && to.sparks_role) return true;
     // Direct supervisor
     if (from.supervisor_id === toId) return true;
     // Direct report

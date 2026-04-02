@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Dialog, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import VoiceMessagePlayer from '../components/VoiceMessagePlayer.jsx';
 
-export default function MessagesView({ user, readOnly }) {
+export default function MessagesView({ user, readOnly, initialContact, onBack, embedded }) {
   const { t } = useTranslation();
   const [contacts, setContacts] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -36,6 +36,15 @@ export default function MessagesView({ user, readOnly }) {
     if (!personId) return;
     loadConversations();
   }, [personId]);
+
+  // Auto-open chat when initialContact is provided (from Team screen)
+  const initialOpenedRef = useRef(null);
+  useEffect(() => {
+    if (initialContact && initialContact.id !== initialOpenedRef.current) {
+      initialOpenedRef.current = initialContact.id;
+      openChat(initialContact.id, initialContact.name);
+    }
+  }, [initialContact]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -254,10 +263,13 @@ export default function MessagesView({ user, readOnly }) {
     const chatRole = chatContact?.role_title || '';
 
     return (
-      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#ECE5DD', zIndex: 100 }}>
+      <Box sx={embedded
+        ? { display: 'flex', flexDirection: 'column', background: '#ECE5DD', height: '100%', width: '100%' }
+        : { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#ECE5DD', zIndex: 1200 }
+      }>
         {/* Chat header -- WhatsApp style */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--charcoal)', flexShrink: 0 }}>
-          <Button onClick={() => { setActiveChat(null); setKeyboardOffset(0); loadConversations(); }} sx={{ background: 'none', border: 'none', color: 'primary.main', fontSize: '22px', cursor: 'pointer', padding: '4px 8px', minWidth: 'auto', textTransform: 'none' }}>←</Button>
+          {!embedded && <Button onClick={() => { if (initialContact && onBack) { onBack(); } else { setActiveChat(null); setKeyboardOffset(0); loadConversations(); } }} sx={{ background: 'none', border: 'none', color: 'primary.main', fontSize: '22px', cursor: 'pointer', padding: '4px 8px', minWidth: 'auto', textTransform: 'none' }}>←</Button>}
           <Box sx={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.primary', fontWeight: 700, fontSize: '16px', flexShrink: 0 }}>
             {activeChatName.split(' ').map(n => n[0]).join('').substring(0,2)}
           </Box>
@@ -268,7 +280,7 @@ export default function MessagesView({ user, readOnly }) {
         </Box>
 
         {/* Messages area -- WhatsApp wallpaper style */}
-        <Box sx={{ flex: 1, overflowY: 'auto', padding: '12px 16px', paddingBottom: '80px' }}>
+        <Box sx={{ flex: 1, overflowY: 'auto', padding: '12px 16px', paddingBottom: embedded ? '12px' : '80px' }}>
           {chatMessages.length === 0 && (
             <Box sx={{ textAlign: 'center', marginTop: '40px' }}>
               <Typography component="span" sx={{ background: 'rgba(255,255,255,0.9)', display: 'inline-block', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', color: 'text.primary' }}>{t('messages.noMessages')}</Typography>
@@ -363,13 +375,10 @@ export default function MessagesView({ user, readOnly }) {
         <input ref={chatFileRef} type="file" style={{display: 'none'}} onChange={e => { if (e.target.files[0]) sendFile(e.target.files[0]); e.target.value = ''; }} />
 
         {/* Message input -- WhatsApp style */}
-        <Box ref={inputBarRef} sx={{
-          position: 'fixed', left: 0, right: 0,
-          bottom: keyboardOffset + 'px',
-          padding: '6px 8px', display: 'flex', gap: '6px', alignItems: 'flex-end',
-          background: '#ECE5DD',
-          paddingBottom: Math.max(6, keyboardOffset > 0 ? 6 : 16) + 'px',
-        }}>
+        <Box ref={inputBarRef} sx={embedded
+          ? { padding: '6px 8px', display: 'flex', gap: '6px', alignItems: 'flex-end', background: '#ECE5DD', flexShrink: 0 }
+          : { position: 'fixed', left: 0, right: 0, bottom: keyboardOffset + 'px', padding: '6px 8px', display: 'flex', gap: '6px', alignItems: 'flex-end', background: '#ECE5DD', paddingBottom: Math.max(6, keyboardOffset > 0 ? 6 : 16) + 'px' }
+        }>
           {isRecordingVoice ? (
             /* Voice recording mode */
             <Fragment>
