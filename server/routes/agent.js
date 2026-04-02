@@ -277,6 +277,16 @@ const AGENT_TOOLS = [
     },
   },
   {
+    name: 'analyze_extraction_quality',
+    description: 'Analyze P&ID extraction quality across projects. Compare accuracy, find common mistakes, track which projects perform better. Use when asked about extraction quality, model accuracy, software performance, or data quality.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_name: { type: 'string', description: 'Project name to analyze (optional — analyzes all if not specified)' },
+      },
+    },
+  },
+  {
     name: 'save_insight',
     description: 'Save an insight or pattern you noticed about a user, company, instrument, or system behavior. This builds your long-term memory. Use when you notice something worth remembering for future conversations.',
     input_schema: {
@@ -1090,6 +1100,77 @@ async function executeTool(toolName, toolInput) {
           direct_matches,
           summary: path.length > 0 ? path.join(' | ') : `No direct relationship path found yet between "${toolInput.entity_a}" and "${toolInput.entity_b}".`,
         });
+      }
+      case 'analyze_extraction_quality': {
+        const result = { projects: [], summary: {} };
+
+        // Build project filter
+        let projectFilter = '';
+        const params = [];
+        if (toolInput.project_name) {
+          params.push('%' + toolInput.project_name + '%');
+          projectFilter = ' WHERE p.name ILIKE $1';
+        }
+
+        // Get per-project stats
+        const { rows: projects } = await DB.db.query(`
+          SELECT p.name, p.company, p.company_id,
+            (SELECT COUNT(*)::int FROM horizonsparks.files f WHERE f.project_id = p.id) as total_files,
+            (SELECT COUNT(*)::int FROM horizonsparks.files f WHERE f.project_id = p.id AND f.status = 'processed') as processed_files,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as loop_folders,
+            (SELECT COUNT(*)::int FROM horizonsparks.file_check_logs_result_ia fcl
+              JOIN horizonsparks.files f ON f.id = fcl.file_id
+              WHERE f.project_id = p.id AND fcl.status = 'success') as successful_extractions,
+            (SELECT COUNT(*)::int FROM horizonsparks.box_crop_images bci
+              JOIN horizonsparks.files f ON f.id = bci.file_id
+              WHERE f.project_id = p.id) as cropped_images
+          FROM horizonsparks.projects p${projectFilter}
+          ORDER BY p.name
+        `, params);
+
+        for (const proj of projects) {
+          const processRate = proj.total_files > 0 ? Math.round((proj.processed_files / proj.total_files) * 100) : 0;
+          result.projects.push({
+            name: proj.name,
+            company: proj.company,
+            total_files: proj.total_files,
+            processed_files: proj.processed_files,
+            process_rate: processRate + '%',
+            loop_folders: proj.loop_folders,
+            successful_extractions: proj.successful_extractions,
+            cropped_images: proj.cropped_images,
+          });
+        }
+
+        // Get extraction result details (instrument counts from successful extractions)
+        const { rows: extractionStats } = await DB.db.query(`
+          SELECT COUNT(*)::int as total_extractions,
+            SUM(CASE WHEN fcl.status = 'success' THEN 1 ELSE 0 END)::int as successful,
+            SUM(CASE WHEN fcl.status != 'success' THEN 1 ELSE 0 END)::int as failed
+          FROM horizonsparks.file_check_logs_result_ia fcl
+        `);
+
+        // Get total instruments detected across all extractions
+        const { rows: instrumentStats } = await DB.db.query(`
+          SELECT COUNT(*)::int as total_extractions,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder) as total_loop_folders,
+            (SELECT COUNT(*)::int FROM horizonsparks.box_crop_images) as total_cropped_images,
+            (SELECT COUNT(*)::int FROM horizonsparks.files WHERE status = 'processed') as total_processed_files,
+            (SELECT COUNT(*)::int FROM horizonsparks.files) as total_files
+          FROM horizonsparks.file_check_logs_result_ia
+          WHERE status = 'success'
+        `);
+
+        result.summary = {
+          total_projects: projects.length,
+          extraction_stats: extractionStats[0] || {},
+          instrument_stats: instrumentStats[0] || {},
+          overall_process_rate: instrumentStats[0]?.total_files > 0
+            ? Math.round((instrumentStats[0].total_processed_files / instrumentStats[0].total_files) * 100) + '%'
+            : '0%',
+        };
+
+        return JSON.stringify(result);
       }
       case 'save_insight': {
         const personId = toolInput._personId || null;
