@@ -317,6 +317,17 @@ const AGENT_TOOLS = [
     },
   },
   {
+    name: 'compare_extraction_models',
+    description: 'Compare CV/OCR extraction (YOLO + EasyOCR) vs AutoCAD PDF annotation extraction for a P&ID file. Shows matched instruments, CV-only detections, PDF-only detections, and accuracy. Use when asked about extraction comparison, model accuracy, CV vs PDF, or dual model validation.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        filename: { type: 'string', description: 'P&ID filename to analyze (partial match)' },
+        project_name: { type: 'string', description: 'Project name to filter by (optional)' },
+      },
+    },
+  },
+  {
     name: 'get_tag_quality_report',
     description: 'Analyze tag quality per file — checks for missing prefixes, types, loop numbers, and detects potential OCR errors. Flags files with low quality scores. Use when asked about data quality, tag completeness, or extraction errors.',
     input_schema: {
@@ -1291,6 +1302,58 @@ async function executeTool(toolName, toolInput) {
         `);
         return JSON.stringify({ by_project: statusDist, totals: totals[0], funnel: 'saved → linked → verified → commissioned' });
       }
+      case 'compare_extraction_models': {
+        const params = [];
+        let filter = 'WHERE fcl.status = \'success\'';
+        if (toolInput.filename) { params.push('%' + toolInput.filename + '%'); filter += ' AND f.name ILIKE $' + params.length; }
+        if (toolInput.project_name) { params.push('%' + toolInput.project_name + '%'); filter += ' AND p.name ILIKE $' + params.length; }
+        const { rows } = await DB.db.query(`
+          SELECT f.name as filename, p.name as project, fcl.result::text as result_text, fcl.checked_at
+          FROM horizonsparks.file_check_logs_result_ia fcl
+          JOIN horizonsparks.files f ON f.id = fcl.file_id
+          JOIN horizonsparks.projects p ON p.id = f.project_id
+          ${filter}
+          ORDER BY fcl.checked_at DESC LIMIT 10
+        `, params);
+        const comparisons = [];
+        for (const row of rows) {
+          try {
+            const data = JSON.parse(row.result_text);
+            const cvInstruments = (data.data || []).length;
+            const cvLoops = data.loops_detected || 0;
+            const pdfAnnotations = data.pdf_annotations || {};
+            const crossRef = data.cross_reference || {};
+            comparisons.push({
+              filename: data.filename || row.filename,
+              project: row.project,
+              date: row.checked_at,
+              cv_model: {
+                loops_detected: cvLoops,
+                instruments: cvInstruments,
+              },
+              pdf_annotations: {
+                total_found: pdfAnnotations.total_found || 0,
+                instrument_tags: pdfAnnotations.categories?.instrument_tags || 0,
+                loop_numbers: pdfAnnotations.categories?.loop_numbers || 0,
+                pipe_specs: pdfAnnotations.categories?.pipe_specs || 0,
+                notes: pdfAnnotations.categories?.notes || 0,
+                drawing_refs: pdfAnnotations.categories?.drawing_refs || 0,
+              },
+              cross_reference: {
+                matched_both: crossRef.matched_both || 0,
+                verified: crossRef.verified || 0,
+                cv_only: crossRef.ocr_only || 0,
+                pdf_only: crossRef.pdf_only_count || 0,
+                pdf_only_tags: (crossRef.pdf_only || []).slice(0, 10),
+              },
+              has_pdf_data: (pdfAnnotations.total_found || 0) > 0,
+              agreement: crossRef.matched_both > 0 ? Math.round((crossRef.matched_both / (crossRef.matched_both + (crossRef.ocr_only || 0) + (crossRef.pdf_only_count || 0))) * 100) + '%' : 'no matches yet',
+            });
+          } catch (e) { /* skip */ }
+        }
+        if (comparisons.length === 0) return 'No extraction results found matching your criteria.';
+        return JSON.stringify({ files_compared: comparisons.length, comparisons });
+      }
       case 'get_tag_quality_report': {
         const minInstruments = toolInput.min_instruments || 5;
         const params = [];
@@ -1546,6 +1609,19 @@ PROJECT FOLDER BOXES (each box holds different document types):
 - Schematics: Wiring diagrams and control circuit diagrams
 - Index_Drawing: Drawing index/register listing all drawings
 - OTHER: Miscellaneous documents
+
+DUAL EXTRACTION MODELS — YOUR DEEPEST KNOWLEDGE:
+P&IDs are extracted using TWO independent methods:
+1. CV/OCR Model (Rabia): YOLO v3 detects instrument shapes on the image + EasyOCR reads the text. This is visual — it sees what a human sees.
+2. PDF Annotation Model (Ender): PyMuPDF extracts AutoCAD annotations embedded in the PDF file. This is metadata — it reads what the engineer put into the CAD drawing.
+
+When BOTH methods agree on a tag at the same coordinates = HIGH CONFIDENCE.
+When they disagree = needs human review.
+CV is better for visual position and hand-drawn additions.
+PDF annotations are better for exact tag text (no OCR errors).
+
+Use compare_extraction_models to show the comparison for any P&ID file.
+The cross_reference field in extraction results shows: matched_both, ocr_only, pdf_only.
 
 HOW TO GUIDE USERS:
 - "How do I export?" → "Click the Excel button in the toolbar — it downloads all tags as a spreadsheet"
