@@ -95,13 +95,20 @@ const dbErrorsTotal = new client.Counter({
 // ============================================
 // ROUTE NORMALIZATION (prevent label cardinality explosion)
 // ============================================
-function normalizeRoute(path) {
-  if (!path) return 'unknown';
-  return path
-    .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id')
-    .replace(/\/\d+/g, '/:id')
-    .replace(/\/person_[a-z_]+/g, '/:person_id')
-    .replace(/\?.*/g, '');
+function normalizeRoute(routeTemplate, rawPath) {
+  // Prefer Express route template (bounded cardinality)
+  if (routeTemplate) {
+    return routeTemplate
+      .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id')
+      .replace(/\/\d+/g, '/:id')
+      .replace(/\/person_[a-z_]+/g, '/:person_id')
+      .replace(/\?.*/g, '');
+  }
+  // No route template — collapse to prevent label explosion
+  if (!rawPath || !rawPath.startsWith('/api')) return 'unmatched';
+  const parts = rawPath.replace(/\?.*/, '').split('/').filter(Boolean);
+  if (parts.length <= 2) return '/' + parts.join('/');
+  return '/' + parts.slice(0, 2).join('/') + '/*';
 }
 
 // ============================================
@@ -121,7 +128,7 @@ function metricsMiddleware(req, res, next) {
   const onFinish = () => {
     httpRequestsInFlight.dec();
     const duration = Number(process.hrtime.bigint() - start) / 1e9;
-    const route = normalizeRoute(req.route?.path || req.path);
+    const route = normalizeRoute(req.route?.path, req.path);
     const labels = { method: req.method, route, status_code: res.statusCode };
     httpRequestsTotal.inc(labels);
     httpRequestDuration.observe(labels, duration);

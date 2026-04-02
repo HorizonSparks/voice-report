@@ -21,8 +21,13 @@ const PORT = process.env.PORT || 3000;
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
 
-// Prometheus metrics endpoint (before auth — internal Docker network only)
-app.get('/metrics', metrics.metricsHandler);
+// Prometheus metrics endpoint — restricted to internal Docker network / localhost
+app.get('/metrics', (req, res, next) => {
+  const ip = req.ip || req.socket.remoteAddress || '';
+  const allowed = ip === '127.0.0.1' || ip === '::1' || ip.startsWith('172.') || ip.startsWith('10.') || ip === '::ffff:127.0.0.1';
+  if (!allowed) return res.status(403).json({ error: 'Forbidden' });
+  next();
+}, metrics.metricsHandler);
 
 // Metrics middleware (correlation IDs + request tracking)
 app.use(metrics.metricsMiddleware);
@@ -63,22 +68,33 @@ app.use('/api', require('./routes/files'));
 app.use('/api/folders', require('./routes/sharedFolders'));
 app.use('/api/agent', require('./routes/agent'));
 
-// Grafana reverse proxy — serves Grafana through same origin to avoid mixed-content blocking
+// Grafana reverse proxy — authenticated, Sparks role required, streamed responses
 const GRAFANA_INTERNAL = process.env.GRAFANA_URL || 'http://grafana:3000';
-app.use('/grafana', async (req, res) => {
+const { Readable } = require('stream');
+app.use('/grafana', (req, res, next) => {
+  // Gate: require authenticated Sparks user (admin or support)
+  if (!req.auth?.sparks_role || !['admin', 'support'].includes(req.auth.sparks_role)) {
+    return res.status(403).json({ error: 'Sparks role required' });
+  }
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return res.status(405).json({ error: 'Only GET allowed' });
+  }
+  next();
+}, async (req, res) => {
   try {
     const url = GRAFANA_INTERNAL + '/grafana' + req.url;
-    const headers = { ...req.headers, host: 'grafana:3000' };
-    delete headers['connection'];
-    const r = await fetch(url, { headers, redirect: 'follow' });
+    // Strip sensitive headers before forwarding
+    const fwdHeaders = { host: 'grafana:3000', accept: req.headers.accept || '*/*' };
+    if (req.headers['accept-encoding']) fwdHeaders['accept-encoding'] = req.headers['accept-encoding'];
+    const r = await fetch(url, { headers: fwdHeaders, redirect: 'follow' });
     res.status(r.status);
     r.headers.forEach((v, k) => {
-      if (!['transfer-encoding', 'connection', 'content-encoding'].includes(k.toLowerCase())) {
+      if (!['transfer-encoding', 'connection'].includes(k.toLowerCase())) {
         res.setHeader(k, v);
       }
     });
-    const body = Buffer.from(await r.arrayBuffer());
-    res.end(body);
+    // Stream response instead of buffering
+    Readable.fromWeb(r.body).pipe(res);
   } catch (e) {
     res.status(502).json({ error: 'Grafana unavailable' });
   }

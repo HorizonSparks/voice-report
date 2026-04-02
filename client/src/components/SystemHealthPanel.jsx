@@ -51,10 +51,10 @@ export default function SystemHealthPanel({ onBack }) {
   };
 
   const grafanaDashboards = [
-    { key: 'overview', label: 'Voice Report', uid: 'voice-report-overview' },
-    { key: 'ai', label: 'AI Operations', uid: 'ai-operations' },
-    { key: 'system', label: 'DGX Spark', uid: 'system-health' },
-    { key: 'loopfolders', label: 'LoopFolders', uid: 'loopfolders-overview' },
+    { key: 'overview', label: 'Voice Report', path: 'voice-report-overview/voice-report-overview' },
+    { key: 'ai', label: 'AI Operations', path: 'ai-operations/ai-operations' },
+    { key: 'system', label: 'DGX Spark', path: 'system-health/system-health-dgx-spark' },
+    { key: 'loopfolders', label: 'LoopFolders', path: 'loopfolders-overview/loopfolders-pipeline' },
   ];
 
   if (loading) {
@@ -192,7 +192,7 @@ export default function SystemHealthPanel({ onBack }) {
       {health?.grafana_url && (
         <Paper variant="outlined" sx={{ borderRadius: 2.5, overflow: 'hidden', mb: 2 }}>
           <iframe
-            src={`/grafana/d/${grafanaDashboards.find(d => d.key === activeTab)?.uid}?orgId=1&kiosk&refresh=10s`}
+            src={`/grafana/d/${grafanaDashboards.find(d => d.key === activeTab)?.path}?orgId=1&kiosk&refresh=10s`}
             width="100%"
             height="600"
             frameBorder="0"

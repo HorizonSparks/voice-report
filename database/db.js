@@ -19,18 +19,23 @@ const pool = new Pool({
 // Export pool as `db` for raw queries in routes
 const db = pool;
 
-// Prometheus pool monitoring
-try {
-  const { dbPoolSize, dbErrorsTotal } = require('../server/services/metrics');
-  setInterval(() => {
-    dbPoolSize.set({ state: 'total' }, pool.totalCount);
-    dbPoolSize.set({ state: 'idle' }, pool.idleCount);
-    dbPoolSize.set({ state: 'waiting' }, pool.waitingCount);
-  }, 5000);
-  pool.on('error', () => { dbErrorsTotal.inc(); });
-} catch (e) {
-  // metrics not available yet during initial require — safe to ignore
+// Prometheus pool monitoring — initialized after require cycle resolves
+function initPoolMetrics() {
+  try {
+    const { dbPoolSize, dbErrorsTotal } = require('../server/services/metrics');
+    const interval = setInterval(() => {
+      dbPoolSize.set({ state: 'total' }, pool.totalCount);
+      dbPoolSize.set({ state: 'idle' }, pool.idleCount);
+      dbPoolSize.set({ state: 'waiting' }, pool.waitingCount);
+    }, 5000);
+    interval.unref(); // Don't keep process alive just for metrics
+    pool.on('error', () => { dbErrorsTotal.inc(); });
+  } catch (e) {
+    // metrics module not loaded yet — will be initialized via db.initPoolMetrics()
+  }
 }
+// Try immediate init, server/index.js calls db.initPoolMetrics() as fallback
+initPoolMetrics();
 
 // ============================================
 // TEMPLATES

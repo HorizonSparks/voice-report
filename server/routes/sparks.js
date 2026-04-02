@@ -500,8 +500,8 @@ router.get('/system-health', requireSparksRole('support'), async (req, res) => {
     res.json({
       metrics: results,
       targets,
-      grafana_url: 'http://192.168.1.117:3000',
-      glitchtip_url: 'http://192.168.1.117:9500',
+      grafana_url: '/grafana',
+      glitchtip_url: process.env.GLITCHTIP_PUBLIC_URL || '/glitchtip',
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
