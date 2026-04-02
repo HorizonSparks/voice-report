@@ -7,6 +7,7 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
   const { t } = useTranslation();
   const [contacts, setContacts] = useState([]);
   const [conversations, setConversations] = useState([]);
+  const [agentOpen, setAgentOpen] = useState(false);
   const [activeChat, setActiveChat] = useState(null); // contact_id
   const [activeChatName, setActiveChatName] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
@@ -277,12 +278,25 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
             <Typography sx={{ fontWeight: 700, fontSize: '16px', color: 'primary.main' }}>{activeChatName}</Typography>
             {chatRole && <Typography sx={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>{chatRole}</Typography>}
           </Box>
+          {showAiAssist && (
+            <Button onClick={() => setAgentOpen(!agentOpen)} sx={{
+              background: agentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.2)',
+              color: agentOpen ? 'white' : 'var(--primary)',
+              fontSize: '12px', fontWeight: 800, textTransform: 'none',
+              borderRadius: '20px', px: 2, py: 0.5, minWidth: 'auto',
+              '&:hover': { background: agentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.3)' },
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 5 }}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              Agent
+            </Button>
+          )}
         </Box>
 
-        {/* AI Recommendation Bar — agent whisper */}
-        {showAiAssist && (
-          <AiRecommendationBar messages={chatMessages} contactName={activeChatName} />
-        )}
+        {/* Chat + Agent side panel wrapper */}
+        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* Chat column */}
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
         {/* Messages area -- WhatsApp wallpaper style */}
         <Box sx={{ flex: 1, overflowY: 'auto', padding: '12px 16px', paddingBottom: embedded ? '12px' : '80px' }}>
@@ -482,6 +496,31 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
             </Fragment>
           )}
         </Box>
+        </Box>{/* end chat column */}
+
+        {/* Agent side panel — slides in from right */}
+        {showAiAssist && agentOpen && (
+          <Box sx={{
+            width: 320, flexShrink: 0, bgcolor: 'background.paper',
+            borderLeft: '2px solid var(--primary)',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            {/* Agent header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5, bgcolor: 'var(--charcoal)', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F99440" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 800, color: 'var(--primary)' }}>AI Agent</Typography>
+              <IconButton size="small" onClick={() => setAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)', p: 0.5 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </IconButton>
+            </Box>
+            {/* Agent recommendations */}
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+              <AgentPanel messages={chatMessages} contactName={activeChatName} contactRole={chatRole} />
+            </Box>
+          </Box>
+        )}
+
+        </Box>{/* end chat + agent wrapper */}
         {lightboxPhoto && (
           <Box onClick={() => setLightboxPhoto(null)} sx={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -764,101 +803,58 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
 }
 
 /**
- * AI Recommendation Bar — appears at the top of chat during support.
- * Analyzes conversation and suggests responses/solutions.
- * For now: smart placeholder that reacts to message count.
- * Future: real-time Claude API integration with knowledge base.
+ * Agent Panel — right sidebar for AI-assisted support.
+ * Analyzes conversation and suggests solutions.
+ * Future: real-time Claude API with knowledge base.
  */
-function AiRecommendationBar({ messages, contactName }) {
-  const [collapsed, setCollapsed] = useState(false);
+function AgentPanel({ messages, contactName, contactRole }) {
+  const allText = (messages || []).map(m => (m.content || '').toLowerCase()).join(' ');
+  const msgCount = (messages || []).length;
 
-  // Generate contextual recommendation based on conversation state
-  const getRecommendation = () => {
-    if (!messages || messages.length === 0) {
-      return {
-        icon: '🤖',
-        title: 'AI Agent Ready',
-        text: `Start chatting with ${contactName || 'this person'}. The AI agent will analyze the conversation and suggest solutions in real-time.`,
-        confidence: null,
-      };
-    }
-    const lastMsg = messages[messages.length - 1];
-    const allText = messages.map(m => (m.content || '').toLowerCase()).join(' ');
+  const recommendations = [];
 
-    // Pattern matching for common issues (placeholder — will be replaced by real AI)
+  if (msgCount === 0) {
+    recommendations.push({ icon: '👋', title: 'Ready to assist', text: `Open a conversation with ${contactName || 'this person'}. I'll analyze the chat and suggest solutions.` });
+  } else {
+    // Context card
+    recommendations.push({ icon: '👤', title: contactName, text: contactRole || 'Team member', type: 'context' });
+
+    // Pattern-based suggestions
     if (allText.includes('not working') || allText.includes('error') || allText.includes('broken') || allText.includes('fail')) {
-      return {
-        icon: '⚡',
-        title: 'Issue Detected',
-        text: `${contactName} may be reporting a technical issue. Ask for specific error messages, device type, and when it last worked. Check system logs for their recent activity.`,
-        confidence: 'Analyzing...',
-      };
+      recommendations.push({ icon: '⚡', title: 'Issue Detected', text: 'Ask for: specific error message, device type, when it last worked. Check system logs for recent activity.' });
     }
     if (allText.includes('upload') || allText.includes('photo') || allText.includes('camera') || allText.includes('scan')) {
-      return {
-        icon: '📷',
-        title: 'Upload/Media Issue',
-        text: 'Possible upload or media issue. Common fixes: check file size limits (10MB photos, 50MB files), verify camera permissions, try a different browser. Check if their storage quota is full.',
-        confidence: 'Pattern match',
-      };
+      recommendations.push({ icon: '📷', title: 'Upload/Media Issue', text: 'Check: file size limits (10MB photos, 50MB files), camera permissions, browser compatibility, storage quota.' });
     }
     if (allText.includes('p&id') || allText.includes('pid') || allText.includes('loop') || allText.includes('instrument')) {
-      return {
-        icon: '🔧',
-        title: 'Instrumentation Context',
-        text: 'Instrumentation-related conversation. Cross-reference with the knowledge library. Check if they have the correct trade license active. Verify FieldLink form access.',
-        confidence: 'Domain match',
-      };
+      recommendations.push({ icon: '🔧', title: 'Instrumentation', text: 'Cross-reference knowledge library. Check trade license is active. Verify FieldLink form access for this user.' });
     }
     if (allText.includes('password') || allText.includes('login') || allText.includes('pin') || allText.includes('access')) {
-      return {
-        icon: '🔐',
-        title: 'Access Issue',
-        text: 'Authentication or access problem. Check their session status, verify PIN is correct, check if account is active. For persistent issues, reset their session from the admin panel.',
-        confidence: 'Pattern match',
-      };
+      recommendations.push({ icon: '🔐', title: 'Access Issue', text: 'Check session status, verify PIN, confirm account is active. Reset session from admin panel if needed.' });
     }
-    return {
-      icon: '💡',
-      title: 'Listening...',
-      text: `Monitoring conversation with ${contactName}. The agent will suggest solutions as the conversation develops. ${messages.length} messages analyzed.`,
-      confidence: `${messages.length} msgs`,
-    };
-  };
+    if (allText.includes('report') || allText.includes('voice') || allText.includes('recording')) {
+      recommendations.push({ icon: '🎙️', title: 'Voice/Report', text: 'Check microphone permissions, Whisper API status, report submission logs. Verify template assignment.' });
+    }
 
-  const rec = getRecommendation();
-
-  if (collapsed) {
-    return (
-      <Box onClick={() => setCollapsed(false)} sx={{
-        display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75,
-        bgcolor: 'var(--charcoal)', cursor: 'pointer', flexShrink: 0,
-        '&:hover': { bgcolor: '#3a3a3c' },
-      }}>
-        <Typography sx={{ fontSize: 14 }}>{rec.icon}</Typography>
-        <Typography sx={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700, flex: 1 }}>{rec.title}</Typography>
-        <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>expand</Typography>
-      </Box>
-    );
+    // Always show analysis status
+    recommendations.push({ icon: '💡', title: `${msgCount} messages analyzed`, text: 'Monitoring conversation. Suggestions update as new messages arrive.', type: 'status' });
   }
 
   return (
-    <Box sx={{ bgcolor: 'var(--charcoal)', flexShrink: 0, borderBottom: '2px solid var(--primary)' }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, px: 2, py: 1.25 }}>
-        <Typography sx={{ fontSize: 20, mt: 0.25 }}>{rec.icon}</Typography>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 800, color: 'var(--primary)' }}>{rec.title}</Typography>
-            {rec.confidence && (
-              <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{rec.confidence}</Typography>
-            )}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      {recommendations.map((rec, i) => (
+        <Box key={i} sx={{
+          p: 1.5, borderRadius: 2,
+          bgcolor: rec.type === 'context' ? 'rgba(249,148,64,0.08)' : rec.type === 'status' ? 'rgba(72,72,74,0.04)' : 'background.paper',
+          border: rec.type === 'status' ? 'none' : '1px solid rgba(72,72,74,0.08)',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Typography sx={{ fontSize: 16 }}>{rec.icon}</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 800, color: rec.type === 'status' ? 'text.secondary' : 'text.primary' }}>{rec.title}</Typography>
           </Box>
-          <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{rec.text}</Typography>
+          <Typography sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.5, pl: 3.5 }}>{rec.text}</Typography>
         </Box>
-        <Box onClick={() => setCollapsed(true)} sx={{ cursor: 'pointer', p: 0.5, '&:hover': { opacity: 0.7 } }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>
-        </Box>
-      </Box>
+      ))}
     </Box>
   );
 }
