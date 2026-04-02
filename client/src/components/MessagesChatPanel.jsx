@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Chip } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { Box, Typography, IconButton, Chip, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import MessagesView from '../views/MessagesView.jsx';
 
 /**
@@ -16,6 +16,8 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   const [companyDetail, setCompanyDetail] = useState(null);
   const [companyAnalytics, setCompanyAnalytics] = useState(null);
   const [companyFolders, setCompanyFolders] = useState([]);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
 
   const [resolvedUserId, setResolvedUserId] = useState(user.person_id);
   const statusColors = { active: '#4CAF50', trial: 'var(--primary)', suspended: '#F44336', churned: '#9E9E9E' };
@@ -58,6 +60,20 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
 
   const selectPerson = (p) => {
     setSelectedPerson({ id: p.id, name: p.name });
+  };
+
+  const createFolder = async () => {
+    if (!newFolderName.trim()) return;
+    try {
+      await fetch('/api/folders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName.trim() }),
+      });
+      setNewFolderName(''); setShowCreateFolder(false);
+      // Reload folders
+      const res = await fetch('/api/folders');
+      if (res.ok) { const data = await res.json(); setCompanyFolders(Array.isArray(data) ? data : []); }
+    } catch(e) {}
   };
 
   return (
@@ -230,8 +246,11 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
         {/* FOLDERS TAB */}
         {sidebarTab === 'folders' && selectedCompany && (
           <>
-            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(72,72,74,0.08)' }}>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(72,72,74,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>Folders</Typography>
+              <IconButton size="small" onClick={() => setShowCreateFolder(true)} sx={{ color: 'var(--primary)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </IconButton>
             </Box>
             <Box sx={{ flex: 1, overflowY: 'auto' }}>
               {companyFolders.length > 0 ? companyFolders.map(f => (
@@ -285,6 +304,20 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
           </Box>
         )}
       </Box>
+
+      {/* Create Folder Dialog */}
+      <Dialog open={showCreateFolder} onClose={() => setShowCreateFolder(false)} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>New Folder</DialogTitle>
+        <DialogContent>
+          <TextField autoFocus fullWidth placeholder="Folder name" value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && createFolder()}
+            variant="outlined" size="small" sx={{ mt: 1 }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCreateFolder(false)} sx={{ color: 'text.secondary', textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={createFolder} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Create</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
