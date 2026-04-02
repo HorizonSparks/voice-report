@@ -825,17 +825,17 @@ export default function App() {
       {/* RD2 Sidebar — Claude/ChatGPT style, full viewport height */}
       {globalAgentOpen && (
         <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#FFF8F0', boxShadow: '-4px 0 20px rgba(0,0,0,0.1)', zIndex: 1300, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #E0E0E0' }}>
-          {/* Sparks AI header — gray, clean, matches app */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#F0F0F0', borderBottom: '1px solid #E0E0E0', flexShrink: 0 }}>
-            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8822A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          {/* Sparks AI header — dark charcoal matching main app header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#3C3C3C', flexShrink: 0 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F99440" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#E8822A', letterSpacing: 0.5 }}>Sparks AI Agent</Typography>
-              <Typography sx={{ fontSize: 10, color: '#999', fontWeight: 600 }}>Relation Data Intelligence</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#FFFFFF', letterSpacing: 0.5 }}>Sparks AI Agent</Typography>
+              <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Relation Data Intelligence</Typography>
             </Box>
-            <Chip label="Opus" size="small" sx={{ bgcolor: 'rgba(249,148,64,0.1)', color: '#E8822A', fontWeight: 700, fontSize: 10, height: 22 }} />
-            <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: '#999', p: 0.5, '&:hover': { bgcolor: 'rgba(0,0,0,0.05)' } }}>
+            <Chip label="Opus" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#FFFFFF', fontWeight: 700, fontSize: 10, height: 22 }} />
+            <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.7)', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
               <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
