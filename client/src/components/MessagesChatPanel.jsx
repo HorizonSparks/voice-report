@@ -14,6 +14,8 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   const [sidebarTab, setSidebarTab] = useState('companies'); // companies | info | analytics | agent
   const [people, setPeople] = useState([]);
   const [companyDetail, setCompanyDetail] = useState(null);
+  const [companyAnalytics, setCompanyAnalytics] = useState(null);
+  const [companyFolders, setCompanyFolders] = useState([]);
 
   const [resolvedUserId, setResolvedUserId] = useState(user.person_id);
   const statusColors = { active: '#4CAF50', trial: 'var(--primary)', suspended: '#F44336', churned: '#9E9E9E' };
@@ -39,10 +41,18 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
       const res = await fetch(`/api/people?company_id=${encodeURIComponent(company.id)}`);
       if (res.ok) setPeople(await res.json());
     } catch(e) {}
-    // Load company detail
+    // Load company detail + analytics + folders
     try {
       const res = await fetch(`/api/sparks/companies/${company.id}`);
       if (res.ok) setCompanyDetail(await res.json());
+    } catch(e) {}
+    try {
+      const res = await fetch(`/api/analytics/dashboard?company_id=${encodeURIComponent(company.id)}`);
+      if (res.ok) setCompanyAnalytics(await res.json());
+    } catch(e) {}
+    try {
+      const res = await fetch('/api/folders');
+      if (res.ok) { const data = await res.json(); setCompanyFolders(Array.isArray(data) ? data : []); }
     } catch(e) {}
   };
 
@@ -172,16 +182,74 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
 
         {/* ANALYTICS TAB */}
         {sidebarTab === 'analytics' && selectedCompany && (
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', textAlign: 'center' }}>Analytics for {selectedCompany.name} — coming in next update</Typography>
-          </Box>
+          <>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(72,72,74,0.08)' }}>
+              <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>Analytics</Typography>
+            </Box>
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+              {companyAnalytics ? (
+                <>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+                    <StatCard label="API Calls" value={companyAnalytics.summary?.total_api_calls || 0} />
+                    <StatCard label="AI Cost" value={'$' + ((companyAnalytics.summary?.total_ai_cost_cents || 0) / 100).toFixed(2)} />
+                    <StatCard label="Users" value={companyAnalytics.summary?.unique_users || 0} />
+                    <StatCard label="Reports" value={companyDetail?.total_reports || selectedCompany.report_count || 0} />
+                  </Box>
+                  {(companyAnalytics.costs?.by_provider || []).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1, mb: 0.75 }}>By Provider</Typography>
+                      {companyAnalytics.costs.by_provider.map((p, i) => (
+                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
+                          <Typography sx={{ fontSize: 12, color: 'text.primary', fontWeight: 600 }}>{p.provider} — {p.service}</Typography>
+                          <Typography sx={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700 }}>{'$' + ((p.total_cost_cents || 0) / 100).toFixed(2)}</Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                  {(companyAnalytics.costs?.by_person || []).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1, mb: 0.75 }}>Top Users</Typography>
+                      {companyAnalytics.costs.by_person.slice(0, 5).map((p, i) => (
+                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
+                          <Typography sx={{ fontSize: 12, color: 'text.primary', fontWeight: 600 }}>{p.person_name || 'Unknown'}</Typography>
+                          <Typography sx={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700 }}>{'$' + ((p.total_cost_cents || 0) / 100).toFixed(2)} ({p.call_count})</Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                </>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>No analytics data yet</Typography>
+                </Box>
+              )}
+            </Box>
+          </>
         )}
 
         {/* FOLDERS TAB */}
         {sidebarTab === 'folders' && selectedCompany && (
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', textAlign: 'center' }}>Shared folders for {selectedCompany.name} — coming in next update</Typography>
-          </Box>
+          <>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(72,72,74,0.08)' }}>
+              <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>Folders</Typography>
+            </Box>
+            <Box sx={{ flex: 1, overflowY: 'auto' }}>
+              {companyFolders.length > 0 ? companyFolders.map(f => (
+                <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25, borderBottom: '1px solid rgba(72,72,74,0.06)' }}>
+                  <Typography sx={{ fontSize: 22 }}>📁</Typography>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 13, color: 'text.primary' }}>{f.name}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{f.file_count || 0} items</Typography>
+                  </Box>
+                </Box>
+              )) : (
+                <Box sx={{ textAlign: 'center', py: 4, px: 2 }}>
+                  <Typography sx={{ fontSize: 28, mb: 1 }}>📁</Typography>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>No shared folders yet</Typography>
+                </Box>
+              )}
+            </Box>
+          </>
         )}
 
         {(sidebarTab === 'info' || sidebarTab === 'analytics' || sidebarTab === 'folders') && !selectedCompany && (
@@ -249,6 +317,15 @@ function InfoRow({ label, value }) {
     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, borderBottom: '1px solid rgba(72,72,74,0.06)' }}>
       <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 600 }}>{label}</Typography>
       <Typography sx={{ fontSize: 13, color: 'text.primary', fontWeight: 700 }}>{value}</Typography>
+    </Box>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <Box sx={{ bgcolor: 'rgba(249,148,64,0.06)', borderRadius: 2, p: 1.5, textAlign: 'center' }}>
+      <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>{value}</Typography>
+      <Typography sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 600 }}>{label}</Typography>
     </Box>
   );
 }
