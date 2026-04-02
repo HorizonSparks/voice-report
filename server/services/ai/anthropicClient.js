@@ -1,9 +1,16 @@
 /**
  * Anthropic Claude API Client
- * Wraps all Claude API calls with consistent error handling and cost tracking.
- * Extracted from ai.js for reusability and testability.
+ * Wraps all Claude API calls with consistent error handling, cost tracking,
+ * and Prometheus metrics for observability.
  */
 const analytics = require('../../../database/analytics');
+const { aiLogger } = require('../logger');
+const {
+  anthropicRequestsTotal,
+  anthropicTokensTotal,
+  anthropicCostTotal,
+  anthropicRequestDuration,
+} = require('../metrics');
 
 const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
@@ -25,6 +32,8 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
   }
 
   const useModel = model || DEFAULT_MODEL;
+  const service = tracking.service || 'claude';
+  const startTime = Date.now();
 
   const body = {
     model: useModel,
@@ -34,35 +43,55 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
   if (systemPrompt) body.system = systemPrompt;
   if (tools && tools.length > 0) body.tools = tools;
 
-  const res = await fetch(CLAUDE_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': API_VERSION,
-    },
-    body: JSON.stringify(body),
-  });
+  let res;
+  try {
+    res = await fetch(CLAUDE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': API_VERSION,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (fetchErr) {
+    const duration = (Date.now() - startTime) / 1000;
+    anthropicRequestsTotal.inc({ service, model: useModel, success: 'false' });
+    anthropicRequestDuration.observe({ service, model: useModel }, duration);
+    throw fetchErr;
+  }
 
   if (!res.ok) {
     const err = await res.text();
-    console.error('Claude API error:', err);
-    throw new Error(`Claude API failed: ${res.status}`);
+    const duration = (Date.now() - startTime) / 1000;
+    anthropicRequestsTotal.inc({ service, model: useModel, success: 'false' });
+    anthropicRequestDuration.observe({ service, model: useModel }, duration);
+    aiLogger.error({ msg: 'claude_api_error', status: res.status, error: err.substring(0, 500), model: useModel, service });
+    throw new Error('Claude API failed: ' + res.status);
   }
 
   const data = await res.json();
   const text = data.content?.[0]?.text || '';
+  const duration = (Date.now() - startTime) / 1000;
 
-  // Track cost: input × $3/10K + output × $15/10K
+  // Track cost: input * $3/10K + output * $15/10K
   const inputTokens = data.usage?.input_tokens || 0;
   const outputTokens = data.usage?.output_tokens || 0;
   const costCents = Math.round((inputTokens * 3 + outputTokens * 15) / 10000);
 
+  // Prometheus metrics
+  anthropicRequestsTotal.inc({ service, model: useModel, success: 'true' });
+  anthropicTokensTotal.inc({ model: useModel, direction: 'input' }, inputTokens);
+  anthropicTokensTotal.inc({ model: useModel, direction: 'output' }, outputTokens);
+  anthropicCostTotal.inc({ service }, costCents / 100);
+  anthropicRequestDuration.observe({ service, model: useModel }, duration);
+
+  // Analytics DB tracking (existing)
   analytics.trackAiCost({
     request_id: tracking.requestId,
     person_id: tracking.personId || null,
     provider: 'anthropic',
-    service: tracking.service || 'claude',
+    service,
     model: useModel,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
@@ -85,7 +114,7 @@ async function callClaudeJSON(params) {
     const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : result.text);
     return { ...result, parsed };
   } catch (parseErr) {
-    console.error('Claude JSON parse error:', result.text.substring(0, 200));
+    aiLogger.warn({ msg: 'claude_json_parse_error', preview: result.text.substring(0, 200) });
     return { ...result, parsed: null, parseError: parseErr.message };
   }
 }

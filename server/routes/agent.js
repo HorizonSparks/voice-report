@@ -10,6 +10,9 @@ const { requireAuth } = require('../middleware/sessionAuth');
 const { getActor } = require('../auth/authz');
 const { callClaude } = require('../services/ai/anthropicClient');
 const DB = require('../../database/db');
+const { agentToolCallsTotal, agentSessionsTotal, agentToolLoopsExhausted } = require('../services/metrics');
+const { captureError } = require('../services/errorTracking');
+const { agentLogger } = require('../services/logger');
 
 const router = Router();
 const ROOT = path.join(__dirname, '../..');
@@ -486,6 +489,9 @@ router.post('/chat', requireAuth, async (req, res) => {
     const isAdmin = actor.is_admin || actor.role_level >= 5;
     const model = isAdmin ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
 
+    // Prometheus: track agent session
+    agentSessionsTotal.inc({ model_tier: isAdmin ? 'opus' : 'sonnet' });
+
     let personId = actor.person_id;
     if (personId === '__admin__') {
       const { rows } = await DB.db.query("SELECT id FROM people WHERE sparks_role = 'admin' LIMIT 1");
@@ -566,8 +572,10 @@ RULES:
           if (toolUseBlock.name === 'navigate_to') {
             navigation = toolUseBlock.input;
           }
-          // Execute the tool
+          // Execute the tool + track metrics
           const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
+          const toolSuccess = !toolResult.startsWith('Tool error:') && !toolResult.startsWith('Unknown tool:');
+          agentToolCallsTotal.inc({ tool_name: toolUseBlock.name, success: toolSuccess ? 'true' : 'false' });
           // Add assistant response + tool result to messages for next round
           messages.push({ role: 'assistant', content: result.content });
           messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: toolResult }] });
@@ -580,6 +588,11 @@ RULES:
       break;
     }
 
+    // Track if tool loop was exhausted (hit max iterations without finishing)
+    if (loops >= 5 && !finalText) {
+      agentToolLoopsExhausted.inc();
+    }
+
     const response = {
       response: finalText,
       model: model.includes('opus') ? 'Opus' : 'Sonnet',
@@ -589,7 +602,8 @@ RULES:
     if (navigation) response.navigation = navigation;
     res.json(response);
   } catch (err) {
-    console.error('Agent error:', err);
+    agentLogger.error({ msg: 'agent_chat_error', error: err.message, correlationId: req.correlationId, personId: req.auth?.person_id });
+    captureError(err, { route: '/api/agent/chat', personId: req.auth?.person_id, correlationId: req.correlationId });
     res.status(500).json({ error: err.message });
   }
 });

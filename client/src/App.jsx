@@ -10,6 +10,10 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AnalyticsTracker from './utils/AnalyticsTracker.js';
+import { initErrorTracking, setErrorUser, ErrorBoundary } from './utils/errorTracking.js';
+
+// Initialize error tracking before anything else
+initErrorTracking();
 import LoginView from './views/LoginView.jsx';
 import HomeView from './views/HomeView.jsx';
 import RecordView from './views/RecordView.jsx';
@@ -217,6 +221,7 @@ export default function App() {
         // Sparks users land on Control Center, not home
         if (userData.sparks_role) { setView('sparks'); setCurrentWorld('control-center'); }
         AnalyticsTracker.personId = userData.person_id || userData.id || null;
+        setErrorUser(userData);
       })
       .catch(() => {
         setAuthStatus('anonymous');
@@ -250,6 +255,7 @@ export default function App() {
     setViewHistory([]);
     AnalyticsTracker.personId = userData.person_id || userData.id || null;
     AnalyticsTracker.track('auth', 'login', { role: userData.role_level, trade: userData.trade });
+    setErrorUser(userData);
   };
 
   const logout = () => {

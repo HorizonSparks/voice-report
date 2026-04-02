@@ -19,6 +19,19 @@ const pool = new Pool({
 // Export pool as `db` for raw queries in routes
 const db = pool;
 
+// Prometheus pool monitoring
+try {
+  const { dbPoolSize, dbErrorsTotal } = require('../server/services/metrics');
+  setInterval(() => {
+    dbPoolSize.set({ state: 'total' }, pool.totalCount);
+    dbPoolSize.set({ state: 'idle' }, pool.idleCount);
+    dbPoolSize.set({ state: 'waiting' }, pool.waitingCount);
+  }, 5000);
+  pool.on('error', () => { dbErrorsTotal.inc(); });
+} catch (e) {
+  // metrics not available yet during initial require — safe to ignore
+}
+
 // ============================================
 // TEMPLATES
 // ============================================

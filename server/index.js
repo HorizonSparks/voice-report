@@ -5,6 +5,12 @@ const fs = require('fs');
 const https = require('https');
 const analytics = require('../database/analytics');
 const knowledgeCache = require('./services/ai/knowledgeCache');
+const metrics = require('./services/metrics');
+const errorTracking = require('./services/errorTracking');
+const { requestLogger } = require('./services/logger');
+
+// Initialize error tracking FIRST (before any other code)
+errorTracking.initialize();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,6 +20,15 @@ const PORT = process.env.PORT || 3000;
   const p = path.join(__dirname, '..', dir);
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
+
+// Prometheus metrics endpoint (before auth — internal Docker network only)
+app.get('/metrics', metrics.metricsHandler);
+
+// Metrics middleware (correlation IDs + request tracking)
+app.use(metrics.metricsMiddleware);
+
+// Structured request logging (Pino JSON → Promtail → Loki)
+app.use(requestLogger);
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -48,6 +63,9 @@ app.use('/api', require('./routes/files'));
 app.use('/api/folders', require('./routes/sharedFolders'));
 app.use('/api/agent', require('./routes/agent'));
 
+// Error tracking middleware (AFTER all routes — catches unhandled errors)
+app.use(errorTracking.errorHandler);
+
 // In production, serve built client files
 // In dev mode, Vite handles the client
 const distPath = path.join(__dirname, '..', 'dist');
@@ -80,10 +98,12 @@ knowledgeCache.initialize();
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('===========================================');
-  console.log('  Voice Report v2.0');
+  console.log('  Voice Report v2.0 + Observability');
   console.log('===========================================');
   console.log(`  API Server:  http://localhost:${PORT}`);
+  console.log(`  Metrics:     http://localhost:${PORT}/metrics`);
   console.log(`  Admin PIN:   ${process.env.ADMIN_PIN ? '****' : 'DEFAULT (change ADMIN_PIN env!)'}`);
+  console.log(`  GlitchTip:   ${process.env.SENTRY_DSN_BACKEND ? 'OK' : 'NOT CONFIGURED'}`);
   console.log(`  Anthropic:   ${process.env.ANTHROPIC_API_KEY ? 'OK' : 'MISSING'}`);
   console.log(`  OpenAI:      ${process.env.OPENAI_API_KEY ? 'OK' : 'MISSING'}`);
   console.log('===========================================');

@@ -35,6 +35,8 @@ services:
       PG_DATABASE: horizon
       PG_USER: horizon_spark
       PG_PASSWORD: ${PG_PASSWORD:-8oS4oc2hyYhyq698CPSqXbA1}
+      SENTRY_DSN_BACKEND: http://81de2477f74f468fabf764232a0c119a@glitchtip-web:8080/1
+      PROMETHEUS_URL: http://prometheus:9090
     volumes:
       - uploads_audio:/app/audio
       - uploads_photos:/app/photos
@@ -45,6 +47,7 @@ services:
     networks:
       - app-net
       - hasura-network
+      - observability-network
 
 networks:
   app-net:
@@ -52,6 +55,9 @@ networks:
   hasura-network:
     external: true
     name: hasura_app-network-hasura
+  observability-network:
+    external: true
+    name: observability_observability
 
 volumes:
   pg_data:
