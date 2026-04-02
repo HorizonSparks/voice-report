@@ -78,6 +78,32 @@ const AGENT_TOOLS = [
     description: 'Get current system status: uptime, errors, online users, total people/companies.',
     input_schema: { type: 'object', properties: {} },
   },
+  {
+    name: 'get_loopfolders_projects',
+    description: 'Get commissioning projects from LoopFolders. Returns project names, companies, priorities, deadlines.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        company: { type: 'string', description: 'Filter by company name (optional)' },
+      },
+    },
+  },
+  {
+    name: 'get_loopfolders_status',
+    description: 'Get loop folder commissioning status for a project. Returns total folders, completion count, file count, folder details.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: { type: 'string', description: 'Project UUID to get loop folders for' },
+      },
+      required: ['project_id'],
+    },
+  },
+  {
+    name: 'get_loopfolders_summary',
+    description: 'Get overall commissioning summary across all projects. Total projects, folders, files, completion rates.',
+    input_schema: { type: 'object', properties: {} },
+  },
 ];
 
 // ---- TOOL EXECUTORS ----
@@ -170,6 +196,50 @@ async function executeTool(toolName, toolInput) {
             (SELECT COUNT(*)::int FROM reports) as total_reports
         `);
         return JSON.stringify({ ...dashboard, uptime: process.uptime(), node_version: process.version });
+      }
+      // ---- LOOPFOLDERS TOOLS (cross-schema read from horizonsparks) ----
+      case 'get_loopfolders_projects': {
+        let sql = `SELECT p.id, p.name, p.company, p.description, p.deadline, pr.name as priority,
+                    (SELECT COUNT(*)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as folder_count,
+                    (SELECT COUNT(*)::int FROM horizonsparks.files f WHERE f.project_id = p.id) as file_count
+                   FROM horizonsparks.projects p LEFT JOIN horizonsparks.priority pr ON pr.id = p.priority_id`;
+        const params = [];
+        if (toolInput.company) { params.push(`%${toolInput.company}%`); sql += ` WHERE p.company ILIKE $1`; }
+        sql += ' ORDER BY p.created_at DESC LIMIT 20';
+        const { rows } = await DB.db.query(sql, params);
+        return rows.length > 0 ? JSON.stringify(rows) : 'No projects found';
+      }
+      case 'get_loopfolders_status': {
+        const { rows: folders } = await DB.db.query(`
+          SELECT lf.id, lf.name, lf.tag_number, lf.status, lf.created_at,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
+          FROM horizonsparks.loopfolder lf
+          WHERE lf.project_id = $1
+          ORDER BY lf.name
+        `, [toolInput.project_id]);
+        const { rows: [summary] } = await DB.db.query(`
+          SELECT COUNT(*)::int as total,
+            COUNT(CASE WHEN status = 'completed' OR status = 'done' THEN 1 END)::int as completed,
+            COUNT(CASE WHEN status = 'in_progress' OR status = 'active' THEN 1 END)::int as in_progress
+          FROM horizonsparks.loopfolder WHERE project_id = $1
+        `, [toolInput.project_id]);
+        return JSON.stringify({ summary, folders: folders.slice(0, 20) });
+      }
+      case 'get_loopfolders_summary': {
+        const { rows: [summary] } = await DB.db.query(`
+          SELECT
+            (SELECT COUNT(*)::int FROM horizonsparks.projects) as total_projects,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder) as total_folders,
+            (SELECT COUNT(*)::int FROM horizonsparks.files) as total_files,
+            (SELECT COUNT(*)::int FROM horizonsparks.users) as total_users
+        `);
+        const { rows: projects } = await DB.db.query(`
+          SELECT p.name, p.company, p.deadline, pr.name as priority,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as folders
+          FROM horizonsparks.projects p LEFT JOIN horizonsparks.priority pr ON pr.id = p.priority_id
+          ORDER BY p.created_at DESC LIMIT 10
+        `);
+        return JSON.stringify({ summary, projects });
       }
       default:
         return `Unknown tool: ${toolName}`;
