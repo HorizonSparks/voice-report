@@ -7,6 +7,7 @@ import {
 import AnalyticsView from './AnalyticsView.jsx';
 import MessagesView from './MessagesView.jsx';
 import TeamChatPanel from '../components/TeamChatPanel.jsx';
+import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
 
 /**
  * Control Center — the operating system for Horizon Sparks.
@@ -290,7 +291,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
     <Box className="list-view" sx={{ pb: screen === 'team' ? 0 : 12, pt: 0 }}>
 
       {/* Header — hidden on team chat screen to give full space */}
-      {screen !== 'team' && (
+      {screen !== 'team' && screen !== 'company-detail' && (
         <Box sx={{ mb: 1, mt: -2.5, textAlign: 'center' }}>
           <Typography variant="h4" sx={{ color: 'text.primary', fontWeight: 800, fontSize: 32 }}>
             Control Center
@@ -511,8 +512,20 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
         </>
       )}
 
-      {/* COMPANY DETAIL SCREEN */}
+      {/* COMPANY CHAT PANEL — WhatsApp-style layout for customer companies */}
       {screen === 'company-detail' && selectedCompany && (
+        <CompanyChatPanel
+          user={user}
+          company={selectedCompany}
+          companyDetail={selectedCompany}
+          companyBilling={companyBilling}
+          companyAnalytics={companyAnalytics}
+          onBack={() => { setSelectedCompany(null); setScreen('dashboard'); }}
+        />
+      )}
+
+      {/* OLD COMPANY DETAIL SCREEN — kept for reference, hidden */}
+      {screen === 'company-detail-old' && selectedCompany && (
         <>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <Box sx={{ gridColumn: '1 / -1', mb: 2 }}>
