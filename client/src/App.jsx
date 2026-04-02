@@ -563,7 +563,7 @@ export default function App() {
 
       {/* Sub-header with back button */}
       {view !== 'home' && (
-        <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.default', borderBottom: 'none' }}>
           <Button startIcon={<ArrowBackIcon />} onClick={goBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
             {t('nav.back')}
           </Button>
