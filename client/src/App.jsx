@@ -824,31 +824,31 @@ export default function App() {
 
       {/* RD2 Sidebar — Claude/ChatGPT style, full viewport height */}
       {globalAgentOpen && (
-        <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#2D2B2B', boxShadow: '-4px 0 30px rgba(0,0,0,0.25)', zIndex: 1300, display: 'flex', flexDirection: 'column' }}>
-          {/* RD2 header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, background: 'linear-gradient(135deg, #F99440, #E8822A)', flexShrink: 0 }}>
-            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#FFF8F0', boxShadow: '-4px 0 20px rgba(0,0,0,0.1)', zIndex: 1300, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #E0E0E0' }}>
+          {/* Sparks AI header — gray, clean, matches app */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, bgcolor: '#F0F0F0', borderBottom: '1px solid #E0E0E0', flexShrink: 0 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8822A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'white', letterSpacing: 0.5 }}>Sparks AI Agent</Typography>
-              <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Relation Data Intelligence</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#E8822A', letterSpacing: 0.5 }}>Sparks AI Agent</Typography>
+              <Typography sx={{ fontSize: 10, color: '#999', fontWeight: 600 }}>Relation Data Intelligence</Typography>
             </Box>
-            <Chip label="Opus" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 700, fontSize: 10, height: 22 }} />
-            <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.8)', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+            <Chip label="Opus" size="small" sx={{ bgcolor: 'rgba(249,148,64,0.1)', color: '#E8822A', fontWeight: 700, fontSize: 10, height: 22 }} />
+            <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: '#999', p: 0.5, '&:hover': { bgcolor: 'rgba(0,0,0,0.05)' } }}>
               <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
 
-          {/* Messages area — scrollable, dark theme like Claude */}
-          <Box ref={el => { if (el) el.scrollTop = el.scrollHeight; }} sx={{ flex: 1, overflowY: 'auto', px: 2, py: 2, display: 'flex', flexDirection: 'column', gap: 2, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 3 } }}>
+          {/* Messages area — cream theme matching app */}
+          <Box ref={el => { if (el) el.scrollTop = el.scrollHeight; }} sx={{ flex: 1, overflowY: 'auto', px: 2, py: 2, display: 'flex', flexDirection: 'column', gap: 2, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 3 } }}>
             {globalAgentMessages.length === 0 && (
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 4 }}>
-                <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F99440" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E8822A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                 </Box>
-                <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#fff', mb: 0.5 }}>Sparks AI Agent</Typography>
-                <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 1.6, maxWidth: 300 }}>
+                <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#3C3C3C', mb: 0.5 }}>Sparks AI Agent</Typography>
+                <Typography sx={{ fontSize: 12, color: 'rgba(60,60,60,0.5)', textAlign: 'center', lineHeight: 1.6, maxWidth: 300 }}>
                   Powered by Relation Data Intelligence. I trace relationships across Voice Report and LoopFolders. Ask me about companies, people, instruments, system health — I see the whole picture.
                 </Typography>
               </Box>
@@ -861,11 +861,11 @@ export default function App() {
                   </Box>
                 ) : (
                   <Box sx={{ maxWidth: '95%', width: '100%' }}>
-                    <Box sx={{ px: 0.5, py: 0.5, color: '#e0e0e0' }}>
+                    <Box sx={{ px: 0.5, py: 0.5, color: '#3C3C3C' }}>
                       <Typography component="div" sx={{
                         fontSize: 13.5, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                        '& strong, & b': { color: '#F99440', fontWeight: 700 },
-                        '& h1, & h2, & h3': { color: '#fff', fontWeight: 800, mt: 1.5, mb: 0.5 },
+                        '& strong, & b': { color: '#E8822A', fontWeight: 700 },
+                        '& h1, & h2, & h3': { color: '#3C3C3C', fontWeight: 800, mt: 1.5, mb: 0.5 },
                       }} dangerouslySetInnerHTML={{ __html: msg.content
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                         .replace(/^### (.*$)/gm, '<h3 style="font-size:14px;margin:12px 0 4px">$1</h3>')
@@ -876,7 +876,7 @@ export default function App() {
                       }} />
                     </Box>
                     {msg.model && (
-                      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', mt: 0.5, px: 0.5 }}>
+                      <Typography sx={{ fontSize: 10, color: 'rgba(60,60,60,0.4)', mt: 0.5, px: 0.5 }}>
                         {msg.model} {msg.tools ? `· ${msg.tools} tool calls` : ''}
                       </Typography>
                     )}
@@ -893,16 +893,16 @@ export default function App() {
             )}
           </Box>
 
-          {/* Input area — clean, modern */}
-          <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: 'rgba(255,255,255,0.06)', borderRadius: '24px', px: 2, py: 0.75 }}>
+          {/* Input area — gray strip with white bubble */}
+          <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid #E0E0E0', bgcolor: '#E8E8E8', flexShrink: 0 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: '#FFFFFF', borderRadius: '24px', px: 2, py: 0.75, border: '1px solid #E0E0E0' }}>
               <TextField
                 multiline placeholder="Ask Sparks AI anything..." value={globalAgentInput}
                 onChange={e => setGlobalAgentInput(e.target.value)}
                 onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGlobalAgent(); } }}
                 variant="standard" size="small" maxRows={4}
                 slotProps={{ input: { disableUnderline: true } }}
-                sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#fff' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 } } }}
+                sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#333' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(0,0,0,0.35)', opacity: 1 } } }}
               />
               {/* WhatsApp pattern: mic + camera when empty, send when typing */}
               {globalAgentInput.trim() ? (
@@ -917,7 +917,7 @@ export default function App() {
                   {/* Camera button */}
                   <IconButton size="small" disabled={globalAgentLoading}
                     onClick={() => { /* TODO: camera/image capture */ }}
-                    sx={{ width: 36, height: 36, mb: 0.25, color: 'rgba(255,255,255,0.5)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    sx={{ width: 36, height: 36, mb: 0.25, color: '#888', '&:hover': { bgcolor: 'rgba(0,0,0,0.05)' } }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                   </IconButton>
                   {/* Mic button — hold to record */}
@@ -928,7 +928,7 @@ export default function App() {
                     sx={{
                       width: 36, height: 36, mb: 0.25,
                       bgcolor: agentRecording ? '#ef5350' : 'transparent',
-                      color: agentRecording ? 'white' : 'rgba(255,255,255,0.5)',
+                      color: agentRecording ? 'white' : '#888',
                       animation: agentRecording ? 'pulse 1s infinite' : 'none',
                       '&:hover': { bgcolor: agentRecording ? '#ef5350' : 'rgba(255,255,255,0.1)' },
                     }}>
