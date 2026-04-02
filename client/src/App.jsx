@@ -387,9 +387,14 @@ export default function App() {
       {/* Header */}
       <AppBar position="sticky" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
         <Toolbar sx={{ gap: 0.5, px: 2, pt: 1 }}>
-          <IconButton color="inherit" onClick={() => setMenuOpen(!menuOpen)} sx={{ mr: 1 }}>
+          <IconButton color="inherit" onClick={() => setMenuOpen(!menuOpen)} sx={{ mr: 0.5 }}>
             {menuOpen ? <CloseIcon /> : <MenuIcon />}
           </IconButton>
+          {view === 'sparks' && (
+            <IconButton color="inherit" onClick={goBack} sx={{ mr: 0.5 }}>
+              <ArrowBackIcon sx={{ fontSize: 22 }} />
+            </IconButton>
+          )}
           <Box onClick={goHome} sx={{ cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {companySettings?.logo_data ? (
               <>
