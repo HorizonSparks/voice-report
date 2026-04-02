@@ -8,6 +8,10 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
   const [contacts, setContacts] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [agentOpen, setAgentOpen] = useState(false);
+  const [agentMessages, setAgentMessages] = useState([]);
+  const [agentInput, setAgentInput] = useState('');
+  const [agentLoading, setAgentLoading] = useState(false);
+  const agentEndRef = useRef(null);
   const [activeChat, setActiveChat] = useState(null); // contact_id
   const [activeChatName, setActiveChatName] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
@@ -255,6 +259,39 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
       if (res.ok) loadChat(activeChat, false);
     } catch(e) { showAlert('Failed to send photo'); }
     setSendingPhoto(false);
+  };
+
+  // ---- AGENT FUNCTIONS ----
+  const sendAgentMessage = async () => {
+    const msg = agentInput.trim();
+    if (!msg || agentLoading) return;
+    setAgentInput('');
+    setAgentMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setAgentLoading(true);
+    try {
+      // Build conversation context from recent chat messages
+      const recentChat = chatMessages.slice(-10).map(m => `${m.from_name || 'Unknown'}: ${m.content}`).join('\n');
+      const res = await fetch('/api/agent/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: msg,
+          conversationContext: recentChat,
+          contactName: activeChatName,
+          contactRole: contacts.find(c => c.id === activeChat)?.role_title || '',
+        }),
+      });
+      const data = await res.json();
+      if (data.response) {
+        setAgentMessages(prev => [...prev, { role: 'assistant', content: data.response, model: data.model }]);
+      } else {
+        setAgentMessages(prev => [...prev, { role: 'assistant', content: data.error || 'No response', error: true }]);
+      }
+    } catch (err) {
+      setAgentMessages(prev => [...prev, { role: 'assistant', content: 'Connection error: ' + err.message, error: true }]);
+    }
+    setAgentLoading(false);
+    setTimeout(() => agentEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
   // ---- CHAT VIEW ----
@@ -512,15 +549,40 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </IconButton>
             </Box>
-            {/* Agent content — recommendations + chat */}
-            <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-              <AgentPanel messages={chatMessages} contactName={activeChatName} contactRole={chatRole} />
+            {/* Agent messages */}
+            <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
+              {agentMessages.length === 0 && (
+                <AgentPanel messages={chatMessages} contactName={activeChatName} contactRole={chatRole} />
+              )}
+              {agentMessages.map((msg, i) => (
+                <Box key={i} sx={{ mb: 1.5, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <Box sx={{
+                    maxWidth: '90%', px: 1.5, py: 1, borderRadius: 2,
+                    bgcolor: msg.role === 'user' ? 'var(--primary)' : msg.error ? '#FEE' : 'rgba(72,72,74,0.06)',
+                    color: msg.role === 'user' ? 'white' : 'text.primary',
+                  }}>
+                    <Typography sx={{ fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{msg.content}</Typography>
+                    {msg.model && <Typography sx={{ fontSize: 10, opacity: 0.5, mt: 0.5, textAlign: 'right' }}>{msg.model}</Typography>}
+                  </Box>
+                </Box>
+              ))}
+              {agentLoading && (
+                <Box sx={{ display: 'flex', gap: 0.5, px: 1, py: 0.5 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite' }} />
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite', animationDelay: '0.2s' }} />
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite', animationDelay: '0.4s' }} />
+                </Box>
+              )}
+              <Box ref={agentEndRef} />
             </Box>
             {/* Agent input bar */}
             <Box sx={{ px: 1.5, py: 1, borderTop: '1px solid rgba(72,72,74,0.1)', display: 'flex', gap: 1, alignItems: 'flex-end', flexShrink: 0, bgcolor: 'background.paper' }}>
               <TextField
                 multiline
                 placeholder="Ask the agent..."
+                value={agentInput}
+                onChange={e => setAgentInput(e.target.value)}
+                onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAgentMessage(); } }}
                 variant="standard"
                 size="small"
                 rows={1}
@@ -532,11 +594,12 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
                   '& .MuiInputBase-input': { resize: 'none', maxHeight: 60, overflow: 'auto' },
                 }}
               />
-              <IconButton size="small" sx={{
+              <IconButton size="small" onClick={sendAgentMessage} disabled={agentLoading || !agentInput.trim()} sx={{
                 width: 36, height: 36, bgcolor: 'var(--primary)', color: 'white',
                 '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 },
+                '&.Mui-disabled': { bgcolor: 'rgba(249,148,64,0.3)', color: 'white' },
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="white"/></svg>
               </IconButton>
             </Box>
           </Box>

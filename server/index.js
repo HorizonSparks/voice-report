@@ -46,6 +46,7 @@ app.use('/api/sparks', require('./routes/sparks'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api', require('./routes/files'));
 app.use('/api/folders', require('./routes/sharedFolders'));
+app.use('/api/agent', require('./routes/agent'));
 
 // In production, serve built client files
 // In dev mode, Vite handles the client
