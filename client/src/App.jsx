@@ -762,7 +762,7 @@ export default function App() {
 
       {/* RD2 Sidebar — Claude/ChatGPT style, full viewport height */}
       {globalAgentOpen && (
-        <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#1a1a1a', boxShadow: '-4px 0 30px rgba(0,0,0,0.3)', zIndex: 1300, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: "#2D2B2B", boxShadow: '-4px 0 30px rgba(0,0,0,0.3)', zIndex: 1300, display: 'flex', flexDirection: 'column' }}>
           {/* RD2 header */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, background: 'linear-gradient(135deg, #F99440, #E8822A)', flexShrink: 0 }}>
             <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -833,7 +833,7 @@ export default function App() {
 
           {/* Input area — clean, modern */}
           <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: 'rgba(255,255,255,0.06)', borderRadius: '24px', px: 2, py: 0.75 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: "rgba(255,255,255,0.08)", borderRadius: '24px', px: 2, py: 0.75 }}>
               <TextField
                 multiline placeholder="Ask Sparks AI anything..." value={globalAgentInput}
                 onChange={e => setGlobalAgentInput(e.target.value)}
