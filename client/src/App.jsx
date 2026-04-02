@@ -4,7 +4,7 @@ import {
   AppBar, Toolbar, IconButton, Typography, Drawer, Box, Button, Avatar, Divider,
   List, ListItemButton, ListItemIcon, ListItemText, Checkbox, FormControlLabel,
   Alert, Collapse, ToggleButton, ToggleButtonGroup, TextField,
-  Dialog, DialogTitle, DialogContent, DialogActions, Chip
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
@@ -59,6 +59,9 @@ export default function App() {
   const [globalAgentMessages, setGlobalAgentMessages] = useState([]);
   const [globalAgentInput, setGlobalAgentInput] = useState('');
   const [globalAgentLoading, setGlobalAgentLoading] = useState(false);
+  const [agentRecording, setAgentRecording] = useState(false);
+  const agentMediaRecorder = useRef(null);
+  const agentAudioChunks = useRef([]);
   const [safetyPanelOpen, setSafetyPanelOpen] = useState(false);
   const [companySettings, setCompanySettings] = useState(null);
   const [activeRoleLevels, setActiveRoleLevels] = useState({}); // { "Pipe Fitting": [1,2,4,5], ... }
@@ -365,6 +368,65 @@ export default function App() {
       setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'Connection error: ' + err.message, error: true }]);
     }
     setGlobalAgentLoading(false);
+  };
+
+  // Voice input for Sparks AI — hold mic to record, release to transcribe and send
+  const startAgentRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+      agentAudioChunks.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) agentAudioChunks.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(agentAudioChunks.current, { type: recorder.mimeType });
+        if (blob.size < 1000) return; // Too short, ignore
+        // Transcribe via Whisper
+        setGlobalAgentLoading(true);
+        try {
+          const form = new FormData();
+          form.append('audio', blob, 'agent-voice.' + (recorder.mimeType.includes('webm') ? 'webm' : 'm4a'));
+          const res = await fetch('/api/transcribe', { method: 'POST', body: form });
+          const data = await res.json();
+          if (data.text && data.text.trim()) {
+            setGlobalAgentInput(data.text.trim());
+            // Auto-send after short delay so user sees what was transcribed
+            setTimeout(() => {
+              setGlobalAgentInput('');
+              setGlobalAgentMessages(prev => [...prev, { role: 'user', content: data.text.trim() }]);
+              fetch('/api/agent/chat', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: data.text.trim() }),
+              }).then(r => r.json()).then(d => {
+                setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: d.response || d.error || 'No response', model: d.model, tools: d.tool_calls, error: !d.response }]);
+                if (d.navigation) {
+                  if (view !== 'sparks') { setView('sparks'); setViewHistory([]); }
+                  setTimeout(() => { if (viewRef.current?.navigateTo) viewRef.current.navigateTo(d.navigation); }, 300);
+                }
+                setGlobalAgentLoading(false);
+              }).catch(err => {
+                setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'Error: ' + err.message, error: true }]);
+                setGlobalAgentLoading(false);
+              });
+            }, 500);
+          } else { setGlobalAgentLoading(false); }
+        } catch (err) {
+          setGlobalAgentLoading(false);
+        }
+      };
+      recorder.start();
+      agentMediaRecorder.current = recorder;
+      setAgentRecording(true);
+    } catch (err) {
+      console.error('Mic access denied:', err);
+    }
+  };
+
+  const stopAgentRecording = () => {
+    if (agentMediaRecorder.current && agentMediaRecorder.current.state === 'recording') {
+      agentMediaRecorder.current.stop();
+    }
+    setAgentRecording(false);
   };
 
   const goHome = () => { if (viewRef.current?.tryGoHome?.()) return; setView(currentWorld === 'control-center' || (user?.sparks_role && !simulatingCompany && currentWorld !== 'voice-report') ? 'sparks' : 'home'); setViewHistory([]); setMenuOpen(false); setPeopleViewingId(null); setReportsPersonId(null); setSelectedReport(null); };
@@ -762,7 +824,7 @@ export default function App() {
 
       {/* RD2 Sidebar — Claude/ChatGPT style, full viewport height */}
       {globalAgentOpen && (
-        <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: "#2D2B2B", boxShadow: '-4px 0 30px rgba(0,0,0,0.3)', zIndex: 1300, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#1a1a1a', boxShadow: '-4px 0 30px rgba(0,0,0,0.3)', zIndex: 1300, display: 'flex', flexDirection: 'column' }}>
           {/* RD2 header */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, background: 'linear-gradient(135deg, #F99440, #E8822A)', flexShrink: 0 }}>
             <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -833,7 +895,7 @@ export default function App() {
 
           {/* Input area — clean, modern */}
           <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: "rgba(255,255,255,0.08)", borderRadius: '24px', px: 2, py: 0.75 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: 'rgba(255,255,255,0.06)', borderRadius: '24px', px: 2, py: 0.75 }}>
               <TextField
                 multiline placeholder="Ask Sparks AI anything..." value={globalAgentInput}
                 onChange={e => setGlobalAgentInput(e.target.value)}
@@ -842,6 +904,21 @@ export default function App() {
                 slotProps={{ input: { disableUnderline: true } }}
                 sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#fff' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 } } }}
               />
+              {/* Mic button — hold to record */}
+              <IconButton size="small"
+                onMouseDown={startAgentRecording} onMouseUp={stopAgentRecording} onMouseLeave={stopAgentRecording}
+                onTouchStart={startAgentRecording} onTouchEnd={stopAgentRecording}
+                disabled={globalAgentLoading}
+                sx={{
+                  width: 36, height: 36, mb: 0.25,
+                  bgcolor: agentRecording ? '#ef5350' : 'rgba(255,255,255,0.1)',
+                  color: agentRecording ? 'white' : 'rgba(255,255,255,0.5)',
+                  animation: agentRecording ? 'pulse 1s infinite' : 'none',
+                  '&:hover': { bgcolor: agentRecording ? '#ef5350' : 'rgba(255,255,255,0.15)' },
+                }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </IconButton>
+              {/* Send button */}
               <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading || !globalAgentInput.trim()} sx={{
                 width: 36, height: 36, bgcolor: '#F99440', color: 'white', mb: 0.25,
                 '&:hover': { bgcolor: '#E8822A' },
