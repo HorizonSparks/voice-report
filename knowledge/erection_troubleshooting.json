@@ -58,6 +58,6 @@
     "wind": "Most crane operations limited to 20-30 mph. Bolt torquing unaffected. Welding may need wind screens above 5 mph (gas shielded) or 15 mph (self-shielded FCAW).",
     "rain": "Do not weld in rain. Steel surfaces must be dry. Bolt installation can continue if workers can safely access connections.",
     "cold_weather": {"welding": "Preheat required when ambient temperature below 32F. Even for thin material and A36 steel.", "bolting": "TC bolts may not shear correctly below 20F — calibrate with actual lot at ambient temperature.", "concrete": "Grout and concrete require freeze protection below 40F. Blankets, heaters, or heated enclosures."},
-    "hot_weather": {"grouting": "Epoxy grout pot life shortens dramatically above 90F. Pour early morning. Keep materials in shade.", "worker_safety": "Heat stress monitoring. Water, rest, shade per OSHA heat illness prevention."
+    "hot_weather": {"grouting": "Epoxy grout pot life shortens dramatically above 90F. Pour early morning. Keep materials in shade.", "worker_safety": "Heat stress monitoring. Water, rest, shade per OSHA heat illness prevention."}
   }
 }

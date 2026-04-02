@@ -13,10 +13,8 @@ const DB = require('../../database/db');
 const { agentToolCallsTotal, agentSessionsTotal, agentToolLoopsExhausted } = require('../services/metrics');
 const { captureError } = require('../services/errorTracking');
 const { agentLogger } = require('../services/logger');
-
 const router = Router();
 const ROOT = path.join(__dirname, '../..');
-
 // ---- TOOL DEFINITIONS ----
 const AGENT_TOOLS = [
   {
@@ -292,12 +290,10 @@ const AGENT_TOOLS = [
     },
   },
 ];
-
 // ---- OBSERVABILITY CONFIG ----
 const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus:9090';
 const LOKI_URL = process.env.LOKI_URL || 'http://loki:3100';
 const GLITCHTIP_URL = process.env.GLITCHTIP_URL || 'http://glitchtip-web:8080';
-
 function safeParseJson(value) {
   if (!value) return null;
   if (typeof value === 'object') return value;
@@ -307,7 +303,6 @@ function safeParseJson(value) {
     return null;
   }
 }
-
 function summarizeExcelMatches(folderValues) {
   const parsed = safeParseJson(folderValues);
   const excelMatches = parsed?._excelMatches;
@@ -317,13 +312,12 @@ function summarizeExcelMatches(folderValues) {
     files: (excelMatches.files || []).map(file => file.fileName).filter(Boolean),
   };
 }
-
 async function findLoopfoldersByTag(tag, limit = 10) {
   const { rows } = await DB.db.query(
     `SELECT lf.id, lf.loop_number, lf.status, lf.folder_values, lf.created_at,
       p.id as project_id, p.name as project_name, p.company as project_company,
       f.id as file_id, f.name as file_name, f.folder as file_folder,
-      (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
+      (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.project_id = lf.project_id AND laf.loop_number = lf.loop_number) as associated_files
      FROM horizonsparks.loopfolder lf
      JOIN horizonsparks.projects p ON p.id = lf.project_id
      LEFT JOIN horizonsparks.files f ON f.id = lf.file_id
@@ -332,7 +326,6 @@ async function findLoopfoldersByTag(tag, limit = 10) {
      LIMIT $2`,
     [`%${tag}%`, limit]
   );
-
   return rows.map(row => ({
     id: row.id,
     loop_number: row.loop_number,
@@ -347,11 +340,9 @@ async function findLoopfoldersByTag(tag, limit = 10) {
     excel_matches: summarizeExcelMatches(row.folder_values),
   }));
 }
-
 async function resolveEntity(reference) {
   const value = (reference || '').trim();
   if (!value) return null;
-
   const { rows: companyRows } = await DB.db.query(
     `SELECT c.id, c.name, c.status, c.tier
      FROM companies c
@@ -363,7 +354,6 @@ async function resolveEntity(reference) {
   if (companyRows[0]) {
     return { type: 'company', reference: value, ...companyRows[0] };
   }
-
   const { rows: personRows } = await DB.db.query(
     `SELECT p.id, p.name, p.role_title, p.trade, p.company_id, c.name as company_name
      FROM people p
@@ -376,12 +366,10 @@ async function resolveEntity(reference) {
   if (personRows[0]) {
     return { type: 'person', reference: value, ...personRows[0] };
   }
-
   const instrumentRows = await findLoopfoldersByTag(value, 3);
   if (instrumentRows[0]) {
     return { type: 'instrument', reference: value, instrument: instrumentRows[0] };
   }
-
   const { rows: projectRows } = await DB.db.query(
     `SELECT p.id, p.name, p.company, p.company_id
      FROM horizonsparks.projects p
@@ -393,26 +381,60 @@ async function resolveEntity(reference) {
   if (projectRows[0]) {
     return { type: 'project', reference: value, ...projectRows[0] };
   }
-
   return { type: 'unknown', reference: value };
 }
-
+function normalizeRelValue(value) {
+  return (value || '').toString().trim().toLowerCase();
+}
+function namesMatch(a, b) {
+  const left = normalizeRelValue(a);
+  const right = normalizeRelValue(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+function companiesMatch(entityA, entityB) {
+  const companyIdA = entityA?.company_id || (entityA?.type === 'company' ? entityA.id : null);
+  const companyIdB = entityB?.company_id || (entityB?.type === 'company' ? entityB.id : null);
+  if (companyIdA && companyIdB && companyIdA === companyIdB) return true;
+  const companyNameA = entityA?.company_name || entityA?.company || (entityA?.type === 'company' ? entityA.name : null) || entityA?.instrument?.project_company;
+  const companyNameB = entityB?.company_name || entityB?.company || (entityB?.type === 'company' ? entityB.name : null) || entityB?.instrument?.project_company;
+  return namesMatch(companyNameA, companyNameB);
+}
 function buildRelationshipPath(entityA, entityB) {
   if (!entityA || !entityB) return [];
-
-  if (entityA.type === 'person' && entityB.type === 'company') {
-    if (entityA.company_id === entityB.id || (entityA.company_name && entityA.company_name.toLowerCase() === entityB.name.toLowerCase())) {
-      return [`${entityA.name} -> works for -> ${entityB.name}`];
+  if (entityA.type === 'person' && entityB.type === 'company' && companiesMatch(entityA, entityB)) {
+    return [`${entityA.name} -> works for -> ${entityB.name}`];
+  }
+  if (entityA.type === 'company' && entityB.type === 'person' && companiesMatch(entityA, entityB)) {
+    return [`${entityA.name} -> employs -> ${entityB.name}`];
+  }
+  if (entityA.type === 'project' && entityB.type === 'company' && companiesMatch(entityA, entityB)) {
+    return [`${entityA.name} -> project company -> ${entityB.name}`];
+  }
+  if (entityA.type === 'company' && entityB.type === 'project' && companiesMatch(entityA, entityB)) {
+    return [`${entityA.name} -> has LoopFolders project -> ${entityB.name}`];
+  }
+  if (entityA.type === 'project' && entityB.type === 'instrument') {
+    const instrument = entityB.instrument;
+    if (instrument && (instrument.project_id === entityA.id || namesMatch(instrument.project_name, entityA.name))) {
+      return [
+        `${entityA.name} -> contains loop folder -> ${instrument.loop_number}`,
+        `${instrument.loop_number} -> relates to instrument -> ${entityB.reference}`,
+      ];
     }
   }
-
-  if (entityA.type === 'company' && entityB.type === 'person') {
-    return buildRelationshipPath(entityB, entityA).reverse();
+  if (entityA.type === 'instrument' && entityB.type === 'project') {
+    const instrument = entityA.instrument;
+    if (instrument && (instrument.project_id === entityB.id || namesMatch(instrument.project_name, entityB.name))) {
+      return [
+        `${entityA.reference} -> tracked in loop folder -> ${instrument.loop_number}`,
+        `${instrument.loop_number} -> belongs to LoopFolders project -> ${entityB.name}`,
+      ];
+    }
   }
-
   if (entityA.type === 'instrument' && entityB.type === 'company') {
     const instrument = entityA.instrument;
-    if (instrument.project_company && instrument.project_company.toLowerCase().includes(entityB.name.toLowerCase())) {
+    if (instrument.project_company && namesMatch(instrument.project_company, entityB.name)) {
       return [
         `${entityA.reference} -> tracked in loop folder -> ${instrument.loop_number}`,
         `${instrument.loop_number} -> belongs to LoopFolders project -> ${instrument.project_name}`,
@@ -420,40 +442,93 @@ function buildRelationshipPath(entityA, entityB) {
       ];
     }
   }
-
   if (entityA.type === 'company' && entityB.type === 'instrument') {
-    return buildRelationshipPath(entityB, entityA).reverse();
+    const instrument = entityB.instrument;
+    if (instrument.project_company && namesMatch(instrument.project_company, entityA.name)) {
+      return [
+        `${entityA.name} -> has LoopFolders project -> ${instrument.project_name}`,
+        `${instrument.project_name} -> contains loop folder -> ${instrument.loop_number}`,
+        `${instrument.loop_number} -> relates to instrument -> ${entityB.reference}`,
+      ];
+    }
   }
-
+  if (entityA.type === 'person' && entityB.type === 'project' && companiesMatch(entityA, entityB)) {
+    return [
+      `${entityA.name} -> works for -> ${entityA.company_name}`,
+      `${entityA.company_name} -> is tied to project -> ${entityB.name}`,
+    ];
+  }
+  if (entityA.type === 'project' && entityB.type === 'person' && companiesMatch(entityA, entityB)) {
+    return [
+      `${entityA.name} -> project company -> ${entityA.company || entityB.company_name}`,
+      `${entityA.company || entityB.company_name} -> employs -> ${entityB.name}`,
+    ];
+  }
   if (entityA.type === 'person' && entityB.type === 'instrument') {
     const instrument = entityB.instrument;
-    const path = [];
-    if (entityA.company_name && instrument.project_company && instrument.project_company.toLowerCase().includes(entityA.company_name.toLowerCase())) {
-      path.push(`${entityA.name} -> works for -> ${entityA.company_name}`);
-      path.push(`${entityA.company_name} -> has LoopFolders project -> ${instrument.project_name}`);
-      path.push(`${instrument.project_name} -> contains loop folder -> ${instrument.loop_number}`);
-      path.push(`${instrument.loop_number} -> relates to instrument -> ${entityB.reference}`);
+    if (entityA.company_name && instrument.project_company && namesMatch(instrument.project_company, entityA.company_name)) {
+      return [
+        `${entityA.name} -> works for -> ${entityA.company_name}`,
+        `${entityA.company_name} -> has LoopFolders project -> ${instrument.project_name}`,
+        `${instrument.project_name} -> contains loop folder -> ${instrument.loop_number}`,
+        `${instrument.loop_number} -> relates to instrument -> ${entityB.reference}`,
+      ];
     }
-    return path;
   }
-
   if (entityA.type === 'instrument' && entityB.type === 'person') {
-    return buildRelationshipPath(entityB, entityA).reverse();
-  }
-
-  if (entityA.type === 'project' && entityB.type === 'company') {
-    if (entityA.company_id === entityB.id || (entityA.company && entityA.company.toLowerCase().includes(entityB.name.toLowerCase()))) {
-      return [`${entityA.name} -> project company -> ${entityB.name}`];
+    const instrument = entityA.instrument;
+    if (entityB.company_name && instrument.project_company && namesMatch(instrument.project_company, entityB.company_name)) {
+      return [
+        `${entityA.reference} -> tracked in loop folder -> ${instrument.loop_number}`,
+        `${instrument.loop_number} -> belongs to LoopFolders project -> ${instrument.project_name}`,
+        `${instrument.project_name} -> company match -> ${entityB.company_name}`,
+        `${entityB.company_name} -> employs -> ${entityB.name}`,
+      ];
     }
   }
-
-  if (entityA.type === 'company' && entityB.type === 'project') {
-    return buildRelationshipPath(entityB, entityA).reverse();
+  if (entityA.type === 'person' && entityB.type === 'person' && companiesMatch(entityA, entityB)) {
+    return [
+      `${entityA.name} -> works for -> ${entityA.company_name}`,
+      `${entityA.company_name} -> also employs -> ${entityB.name}`,
+    ];
   }
-
+  if (entityA.type === 'project' && entityB.type === 'project' && companiesMatch(entityA, entityB)) {
+    return [
+      `${entityA.name} -> project company -> ${entityA.company || entityA.company_name}`,
+      `${entityA.company || entityA.company_name} -> also has project -> ${entityB.name}`,
+    ];
+  }
   return [];
 }
-
+function buildToolFallbackText(toolName, toolResult, prompt) {
+  const parsed = safeParseJson(toolResult);
+  if (!parsed) return toolResult || `RD2 completed tool work for "${prompt}" but did not receive a final model summary.`;
+  switch (toolName) {
+    case 'trace_company_everything': {
+      const company = parsed.voice_report?.company?.name || prompt;
+      const peopleCount = parsed.voice_report?.people?.count ?? 0;
+      const reportTotal = parsed.voice_report?.reports?.total ?? 0;
+      const projectCount = parsed.voice_report?.projects?.length ?? 0;
+      const loopProjectCount = parsed.loopfolders?.projects?.length ?? 0;
+      const instruments = parsed.loopfolders?.summary?.total_instruments ?? 0;
+      return `${company}: ${peopleCount} people, ${reportTotal} reports, ${projectCount} Voice Report projects, ${loopProjectCount} LoopFolders projects, ${instruments} commissioning instruments tracked.`;
+    }
+    case 'get_person_work_summary': {
+      const person = parsed.person?.name || prompt;
+      return `${person}: ${parsed.reports?.length || 0} recent reports, ${parsed.tasks?.length || 0} active tasks, ${parsed.jsas?.length || 0} JSAs, ${parsed.forms?.length || 0} forms, ${parsed.instruments_mentioned?.length || 0} linked commissioning instruments.`;
+    }
+    case 'trace_instrument_history':
+      return parsed.summary || `${prompt}: ${parsed.loopfolders?.folders?.length || 0} LoopFolders matches, ${parsed.voice_report?.report_mentions?.length || 0} report mentions, ${parsed.voice_report?.form_submissions?.length || 0} form submissions.`;
+    case 'relate_data':
+      return parsed.summary || `RD2 found relationship data for "${prompt}".`;
+    case 'query_system_metrics': {
+      const m = parsed.metrics || parsed || {};
+      return `System health: CPU ${m.cpu ?? 'n/a'}, memory ${m.memory ?? 'n/a'}, disk ${m.disk ?? 'n/a'}, targets ${m.targets_up ?? 'n/a'}/${m.targets_total ?? 'n/a'}, error rate ${m.error_rate ?? 'n/a'}.`;
+    }
+    default:
+      return typeof parsed === 'object' ? JSON.stringify(parsed, null, 2).slice(0, 2500) : String(parsed);
+  }
+}
 // ---- TOOL EXECUTORS ----
 async function executeTool(toolName, toolInput) {
   try {
@@ -502,7 +577,7 @@ async function executeTool(toolName, toolInput) {
         return JSON.stringify({ summary: summary[0], top_users: topUsers });
       }
       case 'get_recent_reports': {
-        let sql = `SELECT r.id, r.report_date, r.created_at, p.name as person_name, p.trade, r.company_id
+        let sql = `SELECT r.id, r.created_at::date as report_date, r.created_at, p.name as person_name, p.trade, r.company_id
                     FROM reports r JOIN people p ON p.id = r.person_id WHERE 1=1`;
         const params = [];
         if (toolInput.person_name) {
@@ -561,7 +636,7 @@ async function executeTool(toolName, toolInput) {
         const { rows: folders } = await DB.db.query(`
           SELECT lf.id, lf.loop_number, lf.status, lf.created_at,
             f.name as file_name,
-            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.project_id = lf.project_id AND laf.loop_number = lf.loop_number) as associated_files
           FROM horizonsparks.loopfolder lf
           LEFT JOIN horizonsparks.files f ON f.id = lf.file_id
           WHERE lf.project_id = $1
@@ -804,14 +879,12 @@ async function executeTool(toolName, toolInput) {
       case 'trace_company_everything': {
         const name = toolInput.company_name;
         const result = { voice_report: {}, loopfolders: {} };
-
         // Voice Report: find company
         const { rows: [company] } = await DB.db.query(
           "SELECT * FROM companies WHERE name ILIKE $1 LIMIT 1", [`%${name}%`]
         );
         if (!company) return `No company found matching "${name}" in Voice Report.`;
         result.voice_report.company = { id: company.id, name: company.name, status: company.status, tier: company.tier };
-
         // Voice Report: people, reports, projects
         const [people, reports, projects, jsas, punchItems] = await Promise.all([
           DB.db.query("SELECT id, name, role_title, trade, status FROM people WHERE company_id = $1 AND status = 'active' ORDER BY role_level DESC", [company.id]),
@@ -825,7 +898,6 @@ async function executeTool(toolName, toolInput) {
         result.voice_report.projects = projects.rows;
         result.voice_report.jsa_records = jsas.rows[0];
         result.voice_report.punch_items = punchItems.rows[0];
-
         // LoopFolders: find projects by company_id (solid link) or name match (fallback)
         const { rows: lfProjects } = await DB.db.query(
           `SELECT p.id, p.name, p.company, p.company_id, p.deadline, pr.name as priority,
@@ -836,7 +908,6 @@ async function executeTool(toolName, toolInput) {
            WHERE p.company_id = $1 OR p.company ILIKE $2`, [company.id, `%${name}%`]
         );
         result.loopfolders.projects = lfProjects;
-
         // LoopFolders: total instruments and P&IDs
         if (lfProjects.length > 0) {
           const projectIds = lfProjects.map(p => p.id);
@@ -849,13 +920,11 @@ async function executeTool(toolName, toolInput) {
           );
           result.loopfolders.summary = lfSummary;
         }
-
         return JSON.stringify(result);
       }
       case 'trace_instrument_history': {
         const tag = toolInput.tag_number;
         const result = { loopfolders: {}, voice_report: {} };
-
         const folders = await findLoopfoldersByTag(tag, 10);
         result.loopfolders.folders = folders.map(folder => ({
           loop_number: folder.loop_number,
@@ -866,7 +935,6 @@ async function executeTool(toolName, toolInput) {
           associated_files: folder.associated_files,
           excel_matches: folder.excel_matches,
         }));
-
         const { rows: reportMentions } = await DB.db.query(
           `SELECT r.id, r.created_at, p.name as person_name, p.trade,
             substring(COALESCE(r.transcript_raw, r.markdown_structured, ''), 1, 240) as transcript_preview
@@ -877,7 +945,6 @@ async function executeTool(toolName, toolInput) {
           [`%${tag}%`]
         );
         result.voice_report.report_mentions = reportMentions;
-
         const { rows: formMentions } = await DB.db.query(
           `SELECT fs.id, fs.submitted_at, p.name as person_name, ft.name as form_name,
             COALESCE(fs.tag_number, fl.tag_number) as tag_number, fl.loop_type, fl.service
@@ -890,14 +957,12 @@ async function executeTool(toolName, toolInput) {
           [`%${tag}%`]
         ).catch(() => ({ rows: [] }));
         result.voice_report.form_submissions = formMentions;
-
         result.summary = `Found ${folders.length} loop folder match(es), ${reportMentions.length} report mention(s), ${formMentions.length} form submission(s) for "${tag}".`;
         return JSON.stringify(result);
       }
       case 'get_person_work_summary': {
         const days = toolInput.days || 30;
         const result = { person: null, reports: [], tasks: [], jsas: [], forms: [], instruments_mentioned: [] };
-
         // Find person
         const { rows: [person] } = await DB.db.query(
           `SELECT p.id, p.name, p.role_title, p.trade, p.status, c.name as company_name
@@ -906,7 +971,6 @@ async function executeTool(toolName, toolInput) {
         );
         if (!person) return `No person found matching "${toolInput.person_name}".`;
         result.person = person;
-
         // Recent reports
         const { rows: reports } = await DB.db.query(
           `SELECT id, created_at, trade, substring(transcript_raw, 1, 200) as preview
@@ -914,23 +978,20 @@ async function executeTool(toolName, toolInput) {
            ORDER BY created_at DESC LIMIT 15`, [person.id]
         );
         result.reports = reports;
-
         // Active tasks
         const { rows: tasks } = await DB.db.query(
-          `SELECT dpt.id, dpt.description, dpt.trade, dpt.status, dpt.location, dpt.start_date, dpt.target_end_date
+          `SELECT dpt.id, dpt.title, dpt.description, dpt.trade, dpt.status, dpt.location, dpt.start_date, dpt.target_end_date
            FROM daily_plan_tasks dpt WHERE dpt.assigned_to = $1 AND dpt.status != 'completed'
            ORDER BY dpt.start_date DESC LIMIT 10`, [person.id]
         );
         result.tasks = tasks;
-
         // Recent JSAs
         const { rows: jsas } = await DB.db.query(
-          `SELECT id, date, trade, task_description, hazards
-           FROM jsa_records WHERE person_id = $1 AND date > NOW() - INTERVAL '${days} days'
+          `SELECT id, date, trade, form_data
+           FROM jsa_records WHERE person_id = $1 AND NULLIF(date, '')::date > CURRENT_DATE - INTERVAL '${days} days'
            ORDER BY date DESC LIMIT 5`, [person.id]
         );
         result.jsas = jsas;
-
         // Form submissions
         const { rows: forms } = await DB.db.query(
           `SELECT fs.id, fs.submitted_at, ft.name as form_name, fl.tag_number, fl.loop_type
@@ -941,7 +1002,6 @@ async function executeTool(toolName, toolInput) {
            ORDER BY fs.submitted_at DESC LIMIT 10`, [person.id]
         ).catch(() => ({ rows: [] }));
         result.forms = forms;
-
         // Extract instrument tags from reports and match to LoopFolders
         const tagPattern = /\b\d{3}[A-Z]?-[A-Z]{2,4}-\d{3,5}/g;
         const mentionedTags = new Set();
@@ -952,7 +1012,6 @@ async function executeTool(toolName, toolInput) {
         for (const f of forms) {
           if (f.tag_number) mentionedTags.add(f.tag_number);
         }
-
         if (mentionedTags.size > 0) {
           const tags = [...mentionedTags];
           const conditions = tags.map((_, i) => `lf.loop_number ILIKE $${i + 1}`).join(' OR ');
@@ -965,16 +1024,41 @@ async function executeTool(toolName, toolInput) {
           ).catch(() => ({ rows: [] }));
           result.instruments_mentioned = instruments;
         }
-
         result.summary = `${person.name}: ${reports.length} reports, ${tasks.length} active tasks, ${jsas.length} JSAs, ${forms.length} forms in last ${days} days. ${mentionedTags.size} instrument tags found.`;
         return JSON.stringify(result);
       }
       case 'relate_data': {
-        const entityA = await resolveEntity(toolInput.entity_a);
-        const entityB = await resolveEntity(toolInput.entity_b);
+        let entityA = await resolveEntity(toolInput.entity_a);
+        let entityB = await resolveEntity(toolInput.entity_b);
+
+        if ((entityA?.type === 'unknown' || (entityA?.type === 'person' && entityB?.type === 'company' && !companiesMatch(entityA, entityB))) && entityB?.type === 'company') {
+          const { rows: companyPeople } = await DB.db.query(
+            `SELECT p.id, p.name, p.role_title, p.trade, p.company_id, c.name as company_name
+             FROM people p
+             JOIN companies c ON c.id = p.company_id
+             WHERE (p.name ILIKE $1 OR split_part(lower(p.name), ' ', 1) LIKE lower($4)) AND c.name ILIKE $2
+             ORDER BY CASE WHEN lower(p.name) = lower($3) THEN 0 ELSE 1 END, p.role_level DESC
+             LIMIT 1`,
+            [`%${toolInput.entity_a}%`, `%${entityB.name}%`, toolInput.entity_a, `${toolInput.entity_a.slice(0,3)}%`]
+          );
+          if (companyPeople[0]) entityA = { type: 'person', reference: toolInput.entity_a, ...companyPeople[0] };
+        }
+
+        if ((entityB?.type === 'unknown' || (entityB?.type === 'person' && entityA?.type === 'company' && !companiesMatch(entityA, entityB))) && entityA?.type === 'company') {
+          const { rows: companyPeople } = await DB.db.query(
+            `SELECT p.id, p.name, p.role_title, p.trade, p.company_id, c.name as company_name
+             FROM people p
+             JOIN companies c ON c.id = p.company_id
+             WHERE (p.name ILIKE $1 OR split_part(lower(p.name), ' ', 1) LIKE lower($4)) AND c.name ILIKE $2
+             ORDER BY CASE WHEN lower(p.name) = lower($3) THEN 0 ELSE 1 END, p.role_level DESC
+             LIMIT 1`,
+            [`%${toolInput.entity_b}%`, `%${entityA.name}%`, toolInput.entity_b, `${toolInput.entity_b.slice(0,3)}%`]
+          );
+          if (companyPeople[0]) entityB = { type: 'person', reference: toolInput.entity_b, ...companyPeople[0] };
+        }
+
         const path = buildRelationshipPath(entityA, entityB);
         const direct_matches = [];
-
         if (entityA?.type === 'person' && entityB?.type === 'company' && entityA.company_id === entityB.id) {
           const { rows: personReports } = await DB.db.query(
             `SELECT COUNT(*)::int as report_count FROM reports WHERE person_id = $1`,
@@ -982,14 +1066,12 @@ async function executeTool(toolName, toolInput) {
           );
           direct_matches.push({ kind: 'voice_report_person_company', report_count: personReports[0]?.report_count || 0 });
         }
-
         if (entityA?.type === 'company' && entityB?.type === 'instrument') {
           const instrument = entityB.instrument;
           if (instrument?.project_company?.toLowerCase().includes(entityA.name.toLowerCase())) {
             direct_matches.push({ kind: 'loopfolders_company_instrument', project: instrument.project_name, loop_number: instrument.loop_number });
           }
         }
-
         if (entityA?.type === 'person' && entityB?.type === 'instrument') {
           const { rows: reportMentions } = await DB.db.query(
             `SELECT COUNT(*)::int as mention_count
@@ -1001,7 +1083,6 @@ async function executeTool(toolName, toolInput) {
             direct_matches.push({ kind: 'voice_report_report_mentions', mention_count: reportMentions[0].mention_count });
           }
         }
-
         return JSON.stringify({
           entity_a: entityA,
           entity_b: entityB,
@@ -1025,7 +1106,6 @@ async function executeTool(toolName, toolInput) {
     return `Tool error: ${err.message}`;
   }
 }
-
 // Parse time range string to milliseconds
 function parseRange(range) {
   const match = range.match(/^(\d+)(m|h|d)$/);
@@ -1036,7 +1116,6 @@ function parseRange(range) {
   if (match[2] === 'd') return val * 86400000;
   return 3600000;
 }
-
 // Load knowledge for system prompt context
 function loadRelevantKnowledge(query) {
   const knowledgeDir = path.join(ROOT, 'knowledge');
@@ -1062,28 +1141,58 @@ function loadRelevantKnowledge(query) {
   }
   return results.join('\n');
 }
-
 // POST /api/agent/chat — main agent endpoint with tool use loop
 router.post('/chat', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     const { message, conversationContext, contactName, contactRole, companyName } = req.body;
     if (!message) return res.status(400).json({ error: 'message required' });
-
     const isAdmin = actor.is_admin || actor.role_level >= 5;
     const model = isAdmin ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
-
     // Prometheus: track agent session
     agentSessionsTotal.inc({ model_tier: isAdmin ? 'opus' : 'sonnet' });
-
     let personId = actor.person_id;
     if (personId === '__admin__') {
       const { rows } = await DB.db.query("SELECT id FROM people WHERE sparks_role = 'admin' LIMIT 1");
       if (rows[0]) personId = rows[0].id;
     }
-
     const knowledge = loadRelevantKnowledge(message);
 
+    const trimmedMessage = String(message || '').trim();
+    const directPromptMatchers = [
+      { regex: /^show me everything about\s+(.+?)\??$/i, tool: 'trace_company_everything', map: m => ({ company_name: m[1].trim() }) },
+      { regex: /^what has\s+(.+?)\s+been working on\??$/i, tool: 'get_person_work_summary', map: m => ({ person_name: m[1].trim(), days: 30 }) },
+      { regex: /^(?:tell me about|what(?:'s| is) the history of)\s+instrument\s+(.+?)\??$/i, tool: 'trace_instrument_history', map: m => ({ tag_number: m[1].trim() }) },
+      { regex: /^how is the system doing\??$/i, tool: 'query_system_metrics', map: () => ({ metric: 'all', time_range: '5m' }) },
+      { regex: /^how does\s+(.+?)\s+relate to\s+(.+?)\??$/i, tool: 'relate_data', map: m => ({ entity_a: m[1].trim(), entity_b: m[2].trim() }) },
+    ];
+
+    for (const matcher of directPromptMatchers) {
+      const match = trimmedMessage.match(matcher.regex);
+      if (!match) continue;
+      const directToolResult = await executeTool(matcher.tool, matcher.map(match));
+      const directResponse = buildToolFallbackText(matcher.tool, directToolResult, trimmedMessage);
+      const response = {
+        response: directResponse,
+        model: 'Direct',
+        usage: { input_tokens: 0, output_tokens: 0 },
+        tool_calls: 1,
+      };
+
+      try {
+        const sessionId = req.auth?.sessionId || `agent_${Date.now()}`;
+        await DB.db.query(
+          'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
+          [personId, sessionId, 'user', message.substring(0, 5000)]
+        );
+        await DB.db.query(
+          'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
+          [personId, sessionId, 'assistant', directResponse.substring(0, 5000)]
+        );
+      } catch (e) {}
+
+      return res.json(response);
+    }
     // ---- MEMORY: Load previous conversation context ----
     let memoryContext = '';
     try {
@@ -1098,7 +1207,6 @@ router.post('/chat', requireAuth, async (req, res) => {
         ).join('\n');
       }
     } catch (e) { /* memory table may not exist for all users */ }
-
     // Get user's name and role for personalized engagement
     let userName = 'there';
     let userRole = '';
@@ -1109,12 +1217,9 @@ router.post('/chat', requireAuth, async (req, res) => {
       );
       if (person) { userName = person.name?.split(' ')[0] || 'there'; userRole = person.role_title || ''; userTrade = person.trade || ''; }
     } catch {}
-
     const systemPrompt = `You are RD2 — Relation Data Intelligence — the AI brain of Horizon Sparks.
-
 You are talking to ${userName}${userRole ? ` (${userRole})` : ''}${userTrade ? `, ${userTrade} trade` : ''}.
 You have ${AGENT_TOOLS.length} TOOLS. ALWAYS use tools — never guess about data.
-
 YOU ARE RD2 — RELATION DATA INTELLIGENCE:
 You don't just answer questions — you TRACE RELATIONSHIPS across both platforms.
 When someone asks about ANYTHING, think about what it CONNECTS to:
@@ -1122,39 +1227,32 @@ When someone asks about ANYTHING, think about what it CONNECTS to:
 - An instrument → its loop folder, P&ID, project, who worked on it, form submissions
 - A company → its people, reports, Voice Report projects, LoopFolders projects, commissioning status
 - A report → who wrote it, what instruments it mentions, what project it's for
-
 RELATION DATA TOOLS (your most powerful tools):
 - trace_company_everything: Full cross-platform company view (Voice Report + LoopFolders)
 - trace_instrument_history: Everything about an instrument across both systems
 - get_person_work_summary: Complete picture of someone's work (reports, tasks, instruments, forms)
 - relate_data: Find the shortest relationship path between two entities
 - save_insight: Remember patterns and connections you discover
-
 COMMISSIONING — THE LOOP FOLDER IS THE BOSS:
 1. FIRST: get_instrument_details to find the Loop Folder (source of truth)
 2. Loop Folder tells you: P&ID, Excel files, status, project
 3. THEN: query_pid_results for P&ID drawing details
 4. Trace instruments ACROSS folders and drawings
-
 OBSERVABILITY — YOU SEE THE SYSTEM:
 - query_system_metrics: CPU, memory, disk, error rates, AI costs, DB health
 - search_logs: Find errors, trace requests, investigate issues
 - get_error_issues: Crashes, unresolved bugs, error trends
-
 MEMORY — YOU REMEMBER AND LEARN:
 - recall_conversation: What you discussed before with this user
 - save_insight: Save patterns you notice for future conversations
 - Build on previous context — don't make them repeat themselves
-
 ALL TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation, trace_company_everything, trace_instrument_history, get_person_work_summary, relate_data, save_insight
-
 ${memoryContext ? `\nPREVIOUS CONVERSATION WITH ${userName.toUpperCase()}:\n${memoryContext}\n` : ''}
 CONTEXT:
 ${contactName ? `- Currently viewing: ${contactName} (${contactRole || ''})` : ''}
 ${companyName ? `- Company: ${companyName}` : ''}
 ${conversationContext ? `- Recent chat:\n${conversationContext}` : ''}
 ${knowledge ? `\nTRADE KNOWLEDGE:\n${knowledge}` : ''}
-
 ENGAGEMENT RULES:
 - You MULTIPLY this person's potential. You are their partner, not a chatbot.
 - Be concise but warm. Construction workers need quick, clear answers.
@@ -1164,71 +1262,85 @@ ENGAGEMENT RULES:
 - When you see a problem in the metrics or logs, proactively mention it.
 - When you notice a pattern or connection, use save_insight to remember it.
 - Think in RELATIONSHIPS — everything connects to something else. That's your superpower.`;
-
     // Tool use loop — Claude may call tools, we execute and send results back
     let messages = [{ role: 'user', content: message }];
     let finalText = '';
     let totalUsage = { input_tokens: 0, output_tokens: 0 };
     let loops = 0;
     let navigation = null; // Track navigation instructions
-
+    let lastToolName = null;
+    let lastToolResult = '';
+    let activeModel = model;
     while (loops < 5) {
       loops++;
-      const result = await callClaude({
-        systemPrompt,
-        messages,
-        maxTokens: 2000,
-        model,
-        tools: AGENT_TOOLS,
-        tracking: {
-          requestId: `agent_${Date.now()}_${loops}`,
-          personId,
-          service: 'agent',
-        },
-      });
-
+      let result;
+      try {
+        result = await callClaude({
+          systemPrompt,
+          messages,
+          maxTokens: 2000,
+          model: activeModel,
+          tools: AGENT_TOOLS,
+          tracking: {
+            requestId: `agent_${Date.now()}_${loops}`,
+            personId,
+            service: 'agent',
+          },
+        });
+      } catch (err) {
+        if (activeModel.includes('opus') && err.message.includes('429')) {
+          activeModel = 'claude-sonnet-4-20250514';
+          result = await callClaude({
+            systemPrompt,
+            messages,
+            maxTokens: 2000,
+            model: activeModel,
+            tools: AGENT_TOOLS,
+            tracking: {
+              requestId: `agent_${Date.now()}_${loops}_fallback`,
+              personId,
+              service: 'agent',
+            },
+          });
+        } else {
+          throw err;
+        }
+      }
       totalUsage.input_tokens += result.usage?.input_tokens || 0;
       totalUsage.output_tokens += result.usage?.output_tokens || 0;
-
-      // Check if Claude wants to use a tool
       if (result.stop_reason === 'tool_use') {
         const toolUseBlock = result.content.find(b => b.type === 'tool_use');
         if (toolUseBlock) {
-          // Capture navigation instructions
           if (toolUseBlock.name === 'navigate_to') {
             navigation = toolUseBlock.input;
           }
-          // Inject personId for tools that need it
           if (['recall_conversation', 'save_insight'].includes(toolUseBlock.name)) toolUseBlock.input._personId = personId;
-          // Execute the tool + track metrics
           const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
+          lastToolName = toolUseBlock.name;
+          lastToolResult = toolResult;
           const toolSuccess = !toolResult.startsWith('Tool error:') && !toolResult.startsWith('Unknown tool:');
           agentToolCallsTotal.inc({ tool_name: toolUseBlock.name, success: toolSuccess ? 'true' : 'false' });
-          // Add assistant response + tool result to messages for next round
           messages.push({ role: 'assistant', content: result.content });
           messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: toolResult }] });
           continue;
         }
       }
-
-      // No more tool calls — extract final text
       finalText = result.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || result.text || '';
       break;
     }
-
-    // Track if tool loop was exhausted (hit max iterations without finishing)
+    if (!finalText && lastToolResult) {
+      finalText = buildToolFallbackText(lastToolName, lastToolResult, message);
+    }
     if (loops >= 5 && !finalText) {
       agentToolLoopsExhausted.inc();
     }
-
     const response = {
       response: finalText,
-      model: model.includes('opus') ? 'Opus' : 'Sonnet',
+      model: activeModel.includes('opus') ? 'Opus' : 'Sonnet',
       usage: totalUsage,
       tool_calls: loops - 1,
     };
     if (navigation) response.navigation = navigation;
-
     // ---- MEMORY: Save conversation to database ----
     try {
       const sessionId = req.auth?.sessionId || `agent_${Date.now()}`;
@@ -1243,7 +1355,6 @@ ENGAGEMENT RULES:
         );
       }
     } catch (e) { /* memory save failure is non-fatal */ }
-
     res.json(response);
   } catch (err) {
     agentLogger.error({ msg: 'agent_chat_error', error: err.message, correlationId: req.correlationId, personId: req.auth?.person_id });
@@ -1251,5 +1362,4 @@ ENGAGEMENT RULES:
     res.status(500).json({ error: err.message });
   }
 });
-
 module.exports = router;
