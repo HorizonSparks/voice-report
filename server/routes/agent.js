@@ -287,6 +287,47 @@ const AGENT_TOOLS = [
     },
   },
   {
+    name: 'get_pipeline_status',
+    description: 'Get the full extraction pipeline status: files uploaded → queued → processed → loop folders created. Shows the funnel per project. Use when asked about processing progress, backlog, or pipeline status.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_name: { type: 'string', description: 'Filter by project name (optional)' },
+      },
+    },
+  },
+  {
+    name: 'get_box_completeness',
+    description: 'Get the completeness matrix for project folder boxes (P&ID, EXCELs, Schematics, I/O_List, Cable_Schedule, ONE_LINE, Location_Drawings, Tests_Reports, Index_Drawing, OTHER). Shows which boxes have files and which are empty. Use when asked about project completeness, missing documents, or box status.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_name: { type: 'string', description: 'Filter by project name (optional — shows all if not specified)' },
+      },
+    },
+  },
+  {
+    name: 'get_loop_folder_funnel',
+    description: 'Get loop folder status distribution across projects. Shows how many instruments are at each stage: saved, linked, verified, commissioned. Identifies bottlenecks. Use when asked about commissioning progress or loop folder status.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_name: { type: 'string', description: 'Filter by project name (optional)' },
+      },
+    },
+  },
+  {
+    name: 'get_tag_quality_report',
+    description: 'Analyze tag quality per file — checks for missing prefixes, types, loop numbers, and detects potential OCR errors. Flags files with low quality scores. Use when asked about data quality, tag completeness, or extraction errors.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_name: { type: 'string', description: 'Filter by project name (optional)' },
+        min_instruments: { type: 'number', description: 'Minimum instruments per file to include (default: 5)' },
+      },
+    },
+  },
+  {
     name: 'save_insight',
     description: 'Save an insight or pattern you noticed about a user, company, instrument, or system behavior. This builds your long-term memory. Use when you notice something worth remembering for future conversations.',
     input_schema: {
@@ -1171,6 +1212,130 @@ async function executeTool(toolName, toolInput) {
         };
 
         return JSON.stringify(result);
+      }
+      case 'get_pipeline_status': {
+        const params = [];
+        let filter = '';
+        if (toolInput.project_name) { params.push('%' + toolInput.project_name + '%'); filter = ' WHERE p.name ILIKE $1'; }
+        const { rows } = await DB.db.query(`
+          SELECT p.name, p.company, p.company_id,
+            COUNT(DISTINCT f.id)::int as total_files,
+            COUNT(DISTINCT CASE WHEN f.status = 'processed' THEN f.id END)::int as processed,
+            COUNT(DISTINCT CASE WHEN f.status = 'unprocessed' THEN f.id END)::int as queued,
+            COUNT(DISTINCT CASE WHEN f.status = 'error' THEN f.id END)::int as errors,
+            COUNT(DISTINCT CASE WHEN f.status = 'in_progress' THEN f.id END)::int as in_progress,
+            COUNT(DISTINCT fcl.id)::int as extractions,
+            COUNT(DISTINCT lf.id)::int as loop_folders,
+            COUNT(DISTINCT bci.id)::int as cropped_images
+          FROM horizonsparks.projects p
+          LEFT JOIN horizonsparks.files f ON f.project_id = p.id
+          LEFT JOIN horizonsparks.file_check_logs_result_ia fcl ON fcl.file_id = f.id AND fcl.status = 'success'
+          LEFT JOIN horizonsparks.loopfolder lf ON lf.project_id = p.id
+          LEFT JOIN horizonsparks.box_crop_images bci ON bci.file_id = f.id
+          ${filter}
+          GROUP BY p.name, p.company, p.company_id ORDER BY total_files DESC
+        `, params);
+        const pipeline = rows.map(r => ({
+          ...r,
+          process_rate: r.total_files > 0 ? Math.round((r.processed / r.total_files) * 100) + '%' : '0%',
+          funnel: r.total_files + ' uploaded → ' + r.queued + ' queued → ' + r.processed + ' processed → ' + r.loop_folders + ' loop folders',
+        }));
+        const totals = { files: 0, processed: 0, queued: 0, errors: 0, loop_folders: 0, crops: 0 };
+        rows.forEach(r => { totals.files += r.total_files; totals.processed += r.processed; totals.queued += r.queued; totals.errors += r.errors; totals.loop_folders += r.loop_folders; totals.crops += r.cropped_images; });
+        return JSON.stringify({ projects: pipeline, totals: { ...totals, overall_rate: totals.files > 0 ? Math.round((totals.processed / totals.files) * 100) + '%' : '0%' } });
+      }
+      case 'get_box_completeness': {
+        const params = [];
+        let filter = '';
+        if (toolInput.project_name) { params.push('%' + toolInput.project_name + '%'); filter = ' AND p.name ILIKE $1'; }
+        const { rows } = await DB.db.query(`
+          SELECT p.name as project, f.folder, COUNT(f.id)::int as file_count,
+            COUNT(CASE WHEN f.status = 'processed' THEN 1 END)::int as processed
+          FROM horizonsparks.projects p
+          JOIN horizonsparks.files f ON f.project_id = p.id
+          WHERE 1=1 ${filter}
+          GROUP BY p.name, f.folder ORDER BY p.name, file_count DESC
+        `, params);
+        // Organize into matrix
+        const matrix = {};
+        const allBoxes = ['P&ID', 'EXCELs', 'ONE_LINE', 'I/O_List', 'Location_Drawings', 'Tests_Reports', 'Cable_Schedule', 'Schematics', 'Index_Drawing', 'OTHER'];
+        rows.forEach(r => {
+          if (!matrix[r.project]) matrix[r.project] = {};
+          matrix[r.project][r.folder] = { files: r.file_count, processed: r.processed };
+        });
+        // Fill empty boxes with 0
+        Object.keys(matrix).forEach(proj => {
+          allBoxes.forEach(box => { if (!matrix[proj][box]) matrix[proj][box] = { files: 0, processed: 0 }; });
+        });
+        return JSON.stringify({ matrix, box_types: allBoxes });
+      }
+      case 'get_loop_folder_funnel': {
+        const params = [];
+        let filter = '';
+        if (toolInput.project_name) { params.push('%' + toolInput.project_name + '%'); filter = ' AND p.name ILIKE $1'; }
+        const { rows: statusDist } = await DB.db.query(`
+          SELECT p.name as project, lf.status, COUNT(lf.id)::int as count
+          FROM horizonsparks.loopfolder lf
+          JOIN horizonsparks.projects p ON p.id = lf.project_id
+          WHERE 1=1 ${filter}
+          GROUP BY p.name, lf.status ORDER BY p.name, count DESC
+        `, params);
+        const { rows: totals } = await DB.db.query(`
+          SELECT
+            COUNT(*)::int as total_loop_folders,
+            COUNT(CASE WHEN status = 'saved' THEN 1 END)::int as saved,
+            COUNT(CASE WHEN status IN ('linked', 'associated') THEN 1 END)::int as linked,
+            COUNT(CASE WHEN status IN ('verified', 'reviewed') THEN 1 END)::int as verified,
+            COUNT(CASE WHEN status IN ('completed', 'done', 'commissioned') THEN 1 END)::int as commissioned
+          FROM horizonsparks.loopfolder
+        `);
+        return JSON.stringify({ by_project: statusDist, totals: totals[0], funnel: 'saved → linked → verified → commissioned' });
+      }
+      case 'get_tag_quality_report': {
+        const minInstruments = toolInput.min_instruments || 5;
+        const params = [];
+        let filter = '';
+        if (toolInput.project_name) { params.push('%' + toolInput.project_name + '%'); filter = ' AND p.name ILIKE $1'; }
+        const { rows } = await DB.db.query(`
+          SELECT f.name as filename, p.name as project, fcl.result::text as result_text,
+            length(fcl.result::text) as result_size, fcl.checked_at
+          FROM horizonsparks.file_check_logs_result_ia fcl
+          JOIN horizonsparks.files f ON f.id = fcl.file_id
+          JOIN horizonsparks.projects p ON p.id = f.project_id
+          WHERE fcl.status = 'success' ${filter}
+          ORDER BY fcl.checked_at DESC LIMIT 20
+        `, params);
+        const report = [];
+        for (const row of rows) {
+          try {
+            const data = JSON.parse(row.result_text);
+            const instruments = data.data || [];
+            if (instruments.length < minInstruments) continue;
+            let complete = 0, missingPrefix = 0, missingType = 0, missingLoop = 0;
+            instruments.forEach(inst => {
+              const tag = inst.fullTag || inst.tag || '';
+              const parts = tag.split('-');
+              if (parts.length >= 3) complete++;
+              if (!parts[0] || parts[0].length < 2) missingPrefix++;
+              if (!parts[1]) missingType++;
+              if (!parts[2]) missingLoop++;
+            });
+            const quality = instruments.length > 0 ? Math.round((complete / instruments.length) * 100) : 0;
+            report.push({
+              filename: data.filename || row.filename,
+              project: row.project,
+              total_instruments: instruments.length,
+              loops_detected: data.loops_detected || 0,
+              quality_score: quality + '%',
+              missing_prefix: missingPrefix,
+              missing_type: missingType,
+              missing_loop: missingLoop,
+              flag: quality < 80 ? 'NEEDS REVIEW' : 'OK',
+            });
+          } catch (e) { /* skip unparseable */ }
+        }
+        report.sort((a, b) => parseInt(a.quality_score) - parseInt(b.quality_score));
+        return JSON.stringify({ files_analyzed: report.length, report });
       }
       case 'save_insight': {
         const personId = toolInput._personId || null;
