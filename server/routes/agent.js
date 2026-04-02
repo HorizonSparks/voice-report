@@ -122,12 +122,16 @@ const AGENT_TOOLS = [
   },
   {
     name: 'query_pid_results',
-    description: 'Query P&ID processing results from the LoopFolders AI model. Returns detected instruments, loops, tag numbers, and coordinates from processed P&ID drawings. Can search by filename or project.',
+    description: 'Query P&ID processing results. Search by filename, project, loop number, tag number, or instrument type. All filters are optional and support partial matching.',
     input_schema: {
       type: 'object',
       properties: {
-        filename: { type: 'string', description: 'P&ID filename to search for (partial match)' },
-        project_id: { type: 'string', description: 'Project UUID to get all P&ID results for' },
+        filename: { type: 'string', description: 'P&ID filename to search for (partial match, e.g. "GI-10-082")' },
+        project_id: { type: 'string', description: 'Project UUID to filter by' },
+        loop_number: { type: 'string', description: 'Loop number to search for (partial match, e.g. "201A-PI")' },
+        tag_number: { type: 'string', description: 'Tag number to search for (partial match, e.g. "PSV-2131")' },
+        instrument_type: { type: 'string', description: 'Instrument type filter (e.g. "circle_only", "diamond")' },
+        limit: { type: 'number', description: 'Max results to return (default 10)' },
       },
     },
   },
@@ -292,42 +296,46 @@ async function executeTool(toolName, toolInput) {
       }
       // ---- P&ID & INSTRUMENT TOOLS ----
       case 'query_pid_results': {
-        let sql = `SELECT f.id, f.status, LEFT(f.result::text, 5000) as result, m.name as model_name, fi.id as file_id
-                   FROM horizonsparks.file_check_logs_result_ia f
-                   JOIN horizonsparks.model m ON m.id = f.model_id
-                   LEFT JOIN horizonsparks.files fi ON fi.id = f.file_id
-                   WHERE f.status = 'success'`;
-        const params = [];
-        if (toolInput.filename) {
-          params.push(`%${toolInput.filename}%`);
-          sql += ` AND f.result::text ILIKE $${params.length}`;
-        }
-        if (toolInput.project_id) {
-          params.push(toolInput.project_id);
-          sql += ` AND fi.project_id = $${params.length}`;
-        }
-        sql += ' ORDER BY f.checked_at DESC LIMIT 5';
-        const { rows } = await DB.db.query(sql, params);
-        if (rows.length === 0) return 'No P&ID processing results found';
-        // Parse the JSON results to extract key data
+        // Codex-recommended pattern: all filters optional, wildcard matching, structured output
+        const limit = Math.min(toolInput.limit || 10, 20);
+        const { rows } = await DB.db.query(`
+          SELECT f.id, f.status, f.result::text, m.name as model_name, f.checked_at
+          FROM horizonsparks.file_check_logs_result_ia f
+          JOIN horizonsparks.model m ON m.id = f.model_id
+          WHERE f.status = 'success'
+            AND ($1::text IS NULL OR f.result::text ILIKE $1)
+            AND ($2::text IS NULL OR f.file_id::text = $2)
+          ORDER BY f.checked_at DESC LIMIT $3
+        `, [
+          toolInput.filename || toolInput.loop_number || toolInput.tag_number ? `%${toolInput.filename || toolInput.loop_number || toolInput.tag_number}%` : null,
+          toolInput.project_id || null,
+          limit,
+        ]);
+        if (rows.length === 0) return 'No P&ID processing results found matching your query.';
+        // Parse and structure results
         const parsed = rows.map(r => {
           try {
             const data = JSON.parse(r.result);
+            let instruments = (data.data || []);
+            // Apply additional filters on parsed data
+            if (toolInput.loop_number) instruments = instruments.filter(d => (d.loopNumber || '').toLowerCase().includes(toolInput.loop_number.toLowerCase()));
+            if (toolInput.tag_number) instruments = instruments.filter(d => (d.tag || d.fullTag || '').toLowerCase().includes(toolInput.tag_number.toLowerCase()));
+            if (toolInput.instrument_type) instruments = instruments.filter(d => (d.box_type || '').toLowerCase().includes(toolInput.instrument_type.toLowerCase()));
             return {
               filename: data.filename || data.pdf_name,
               loops_detected: data.loops_detected,
-              models_used: data.models_used,
-              instruments: (data.data || []).slice(0, 20).map(d => ({
+              total_instruments: (data.data || []).length,
+              filtered_count: instruments.length,
+              instruments: instruments.slice(0, 15).map(d => ({
                 tag: d.tag || d.fullTag,
-                loop: d.loopNumber,
+                loop_number: d.loopNumber,
                 type: d.box_type,
                 coordinates: d.coordinates,
               })),
-              total_instruments: (data.data || []).length,
             };
-          } catch(e) { return { raw: r.result?.substring(0, 500) }; }
+          } catch(e) { return { parse_error: true, raw_preview: r.result?.substring(0, 300) }; }
         });
-        return JSON.stringify(parsed);
+        return JSON.stringify({ total_files: rows.length, results: parsed });
       }
       case 'get_instrument_details': {
         const { rows } = await DB.db.query(`
