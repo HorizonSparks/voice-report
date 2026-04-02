@@ -844,6 +844,49 @@ CREATE TABLE IF NOT EXISTS sparks_audit_log (
 CREATE INDEX idx_audit_created ON sparks_audit_log(created_at DESC);
 
 -- ============================================
+-- SHARED FOLDERS & FILES
+-- ============================================
+CREATE TABLE IF NOT EXISTS shared_folders (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_by TEXT NOT NULL REFERENCES people(id),
+  context_type TEXT NOT NULL DEFAULT 'team',    -- 'team' or 'company'
+  context_id TEXT,                               -- company_id if context_type='company'
+  description TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS shared_folder_members (
+  folder_id TEXT NOT NULL REFERENCES shared_folders(id) ON DELETE CASCADE,
+  person_id TEXT NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'viewer',           -- 'owner', 'editor', 'viewer'
+  added_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (folder_id, person_id)
+);
+
+CREATE TABLE IF NOT EXISTS shared_files (
+  id TEXT PRIMARY KEY,
+  folder_id TEXT NOT NULL REFERENCES shared_folders(id) ON DELETE CASCADE,
+  type TEXT NOT NULL DEFAULT 'file',             -- 'file', 'link'
+  name TEXT NOT NULL,
+  description TEXT,
+  -- For type='file': stored filename on disk
+  filename TEXT,
+  original_name TEXT,
+  mime_type TEXT,
+  size_bytes INTEGER,
+  -- For type='link': external URL
+  url TEXT,
+  -- Metadata
+  uploaded_by TEXT NOT NULL REFERENCES people(id),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_shared_files_folder ON shared_files(folder_id);
+CREATE INDEX idx_shared_folder_members_person ON shared_folder_members(person_id);
+
+-- ============================================
 -- END OF SCHEMA
 -- ============================================
 -- To search reports:  SELECT * FROM reports WHERE search_vector @@ TO_TSQUERY('english', 'safety & conduit');

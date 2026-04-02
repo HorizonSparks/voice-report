@@ -1291,6 +1291,95 @@ const invoicesMod = {
 // ============================================
 // POOL INJECTION — Database-per-company support
 // ============================================
+// ============================================
+// SHARED FOLDERS
+// ============================================
+const sharedFolders = {
+  async getForPerson(personId) {
+    const { rows } = await (this._pool || pool).query(`
+      SELECT f.*, fm.role as my_role,
+        (SELECT COUNT(*) FROM shared_files sf WHERE sf.folder_id = f.id) as file_count,
+        (SELECT COUNT(*) FROM shared_folder_members sfm WHERE sfm.folder_id = f.id) as member_count
+      FROM shared_folders f
+      JOIN shared_folder_members fm ON fm.folder_id = f.id AND fm.person_id = $1
+      ORDER BY f.updated_at DESC
+    `, [personId]);
+    return rows;
+  },
+
+  async getById(folderId) {
+    const { rows } = await (this._pool || pool).query('SELECT * FROM shared_folders WHERE id = $1', [folderId]);
+    return rows[0] || null;
+  },
+
+  async create(data) {
+    const id = 'folder_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    await (this._pool || pool).query(
+      'INSERT INTO shared_folders (id, name, created_by, context_type, context_id, description) VALUES ($1,$2,$3,$4,$5,$6)',
+      [id, data.name, data.created_by, data.context_type || 'team', data.context_id || null, data.description || null]
+    );
+    // Add creator as owner
+    await (this._pool || pool).query(
+      'INSERT INTO shared_folder_members (folder_id, person_id, role) VALUES ($1,$2,$3)',
+      [id, data.created_by, 'owner']
+    );
+    return { id, ...data };
+  },
+
+  async addMember(folderId, personId, role) {
+    await (this._pool || pool).query(
+      'INSERT INTO shared_folder_members (folder_id, person_id, role) VALUES ($1,$2,$3) ON CONFLICT (folder_id, person_id) DO UPDATE SET role = $3',
+      [folderId, personId, role || 'viewer']
+    );
+  },
+
+  async removeMember(folderId, personId) {
+    await (this._pool || pool).query('DELETE FROM shared_folder_members WHERE folder_id = $1 AND person_id = $2', [folderId, personId]);
+  },
+
+  async getMembers(folderId) {
+    const { rows } = await (this._pool || pool).query(`
+      SELECT p.id, p.name, p.role_title, p.photo, fm.role
+      FROM shared_folder_members fm JOIN people p ON p.id = fm.person_id
+      WHERE fm.folder_id = $1 ORDER BY fm.role, p.name
+    `, [folderId]);
+    return rows;
+  },
+
+  async getFiles(folderId) {
+    const { rows } = await (this._pool || pool).query(`
+      SELECT sf.*, p.name as uploaded_by_name
+      FROM shared_files sf LEFT JOIN people p ON p.id = sf.uploaded_by
+      WHERE sf.folder_id = $1 ORDER BY sf.created_at DESC
+    `, [folderId]);
+    return rows;
+  },
+
+  async addFile(data) {
+    const id = 'sfile_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    await (this._pool || pool).query(
+      'INSERT INTO shared_files (id, folder_id, type, name, description, filename, original_name, mime_type, size_bytes, url, uploaded_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
+      [id, data.folder_id, data.type || 'file', data.name, data.description || null, data.filename || null, data.original_name || null, data.mime_type || null, data.size_bytes || null, data.url || null, data.uploaded_by]
+    );
+    // Touch folder updated_at
+    await (this._pool || pool).query('UPDATE shared_folders SET updated_at = NOW() WHERE id = $1', [data.folder_id]);
+    return { id, ...data };
+  },
+
+  async removeFile(fileId) {
+    await (this._pool || pool).query('DELETE FROM shared_files WHERE id = $1', [fileId]);
+  },
+
+  async deleteFolder(folderId) {
+    await (this._pool || pool).query('DELETE FROM shared_folders WHERE id = $1', [folderId]);
+  },
+
+  async isMember(folderId, personId) {
+    const { rows } = await (this._pool || pool).query('SELECT 1 FROM shared_folder_members WHERE folder_id = $1 AND person_id = $2', [folderId, personId]);
+    return rows.length > 0;
+  },
+};
+
 /**
  * Create a DB interface bound to a specific pool (company database).
  * All namespace methods use this._pool when rebound.
@@ -1326,8 +1415,9 @@ function withPool(targetPool) {
     plans: plans,                                // ALWAYS shared — billing is platform-level
     subscriptions: subscriptions,                // ALWAYS shared
     invoices: invoicesMod,                       // ALWAYS shared
+    sharedFolders: bindNamespace(sharedFolders),
     withPool: withPool,                          // Allow chaining
   };
 }
 
-module.exports = { db, templates, people, reports, messages, contacts, legacyMessages, aiConversations, ppeRequests, safetyObservations, dailyPlans, taskDays, punchList, sessions, webauthnCredentials, plans, subscriptions, invoices: invoicesMod, withPool };
+module.exports = { db, templates, people, reports, messages, contacts, legacyMessages, aiConversations, ppeRequests, safetyObservations, dailyPlans, taskDays, punchList, sessions, webauthnCredentials, plans, subscriptions, invoices: invoicesMod, sharedFolders, withPool };

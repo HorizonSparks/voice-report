@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { Box, Typography, IconButton, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import MessagesView from '../views/MessagesView.jsx';
 
 /**
@@ -13,6 +13,14 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
   const [selectedMember, setSelectedMember] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('chats'); // chats | profile | folders
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [folders, setFolders] = useState([]);
+  const [activeFolder, setActiveFolder] = useState(null); // folder detail with files
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [showAddLink, setShowAddLink] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newLinkName, setNewLinkName] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -24,6 +32,72 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
   const adminEntry = team.find(m => m.sparks_role === 'admin');
   const myId = user.person_id === '__admin__' && adminEntry ? adminEntry.id : user.person_id;
   const chatUser = user.person_id === '__admin__' && adminEntry ? { ...user, person_id: adminEntry.id } : user;
+
+  // Load folders when switching to folders tab
+  useEffect(() => {
+    if (sidebarTab === 'folders') loadFolders();
+  }, [sidebarTab]);
+
+  const loadFolders = async () => {
+    try {
+      const res = await fetch('/api/folders');
+      if (res.ok) setFolders(await res.json());
+    } catch(e) {}
+  };
+
+  const loadFolderDetail = async (folderId) => {
+    try {
+      const res = await fetch(`/api/folders/${folderId}`);
+      if (res.ok) setActiveFolder(await res.json());
+    } catch(e) {}
+  };
+
+  const createFolder = async () => {
+    if (!newFolderName.trim()) return;
+    try {
+      const res = await fetch('/api/folders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName.trim() }),
+      });
+      if (res.ok) { setNewFolderName(''); setShowCreateFolder(false); loadFolders(); }
+    } catch(e) {}
+  };
+
+  const addLink = async () => {
+    if (!newLinkName.trim() || !newLinkUrl.trim() || !activeFolder) return;
+    try {
+      const res = await fetch(`/api/folders/${activeFolder.id}/links`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newLinkName.trim(), url: newLinkUrl.trim() }),
+      });
+      if (res.ok) { setNewLinkName(''); setNewLinkUrl(''); setShowAddLink(false); loadFolderDetail(activeFolder.id); }
+    } catch(e) {}
+  };
+
+  const uploadFile = async (file) => {
+    if (!file || !activeFolder) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      await fetch(`/api/folders/${activeFolder.id}/files`, { method: 'POST', body: fd });
+      loadFolderDetail(activeFolder.id);
+    } catch(e) {}
+  };
+
+  const deleteFile = async (fileId) => {
+    try {
+      await fetch(`/api/folders/files/${fileId}`, { method: 'DELETE' });
+      loadFolderDetail(activeFolder.id);
+    } catch(e) {}
+  };
+
+  const deleteFolder = async (folderId) => {
+    try {
+      await fetch(`/api/folders/${folderId}`, { method: 'DELETE' });
+      setActiveFolder(null);
+      loadFolders();
+    } catch(e) {}
+  };
 
   // Sort: conversations first (by recency), then alphabetical
   const sorted = [...team].filter(m => m.id !== myId).sort((a, b) => {
@@ -82,7 +156,7 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
       <Box sx={{ width: 56, bgcolor: 'var(--charcoal)', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 1.5, gap: 0.5, flexShrink: 0 }}>
         <SidebarIcon icon="chats" active={sidebarTab === 'chats'} onClick={() => setSidebarTab('chats')} />
         <SidebarIcon icon="profile" active={sidebarTab === 'profile'} onClick={() => setSidebarTab('profile')} disabled={!selectedMember} />
-        <SidebarIcon icon="folders" active={sidebarTab === 'folders'} onClick={() => setSidebarTab('folders')} disabled={!selectedMember} />
+        <SidebarIcon icon="folders" active={sidebarTab === 'folders'} onClick={() => setSidebarTab('folders')} />
       </Box>
 
       {/* Column 2: Middle panel (chat list / profile / folders) */}
@@ -133,24 +207,88 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
           );
         })()}
 
-        {sidebarTab === 'folders' && selectedMember && (
+        {sidebarTab === 'folders' && (
           <>
-            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(72,72,74,0.08)' }}>
-              <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>Shared Files</Typography>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(72,72,74,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>
+                {activeFolder ? activeFolder.name : 'Folders'}
+              </Typography>
+              {activeFolder ? (
+                <Button size="small" onClick={() => setActiveFolder(null)} sx={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', textTransform: 'none', minWidth: 'auto' }}>All Folders</Button>
+              ) : (
+                <IconButton size="small" onClick={() => setShowCreateFolder(true)} sx={{ color: 'var(--primary)' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </IconButton>
+              )}
             </Box>
-            <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography sx={{ fontSize: 40, mb: 1 }}>📁</Typography>
-                <Typography sx={{ fontSize: 14, color: 'text.secondary', fontWeight: 600 }}>Shared files with {selectedMember.name}</Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>Photos, documents, and files shared in your conversation will appear here.</Typography>
-              </Box>
+            <Box sx={{ flex: 1, overflowY: 'auto' }}>
+              {!activeFolder ? (
+                /* Folder list */
+                <>
+                  {folders.length === 0 && (
+                    <Box sx={{ textAlign: 'center', py: 4, px: 2 }}>
+                      <Typography sx={{ fontSize: 36, mb: 1 }}>📁</Typography>
+                      <Typography sx={{ fontSize: 14, color: 'text.secondary', fontWeight: 600 }}>No folders yet</Typography>
+                      <Button onClick={() => setShowCreateFolder(true)} sx={{ mt: 1.5, fontSize: 13, fontWeight: 700, color: 'var(--primary)', textTransform: 'none' }}>Create your first folder</Button>
+                    </Box>
+                  )}
+                  {folders.map(f => (
+                    <Box key={f.id} onClick={() => loadFolderDetail(f.id)} sx={{
+                      display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5,
+                      cursor: 'pointer', borderBottom: '1px solid rgba(72,72,74,0.08)',
+                      '&:hover': { bgcolor: 'rgba(249,148,64,0.04)' },
+                    }}>
+                      <Typography sx={{ fontSize: 28 }}>📁</Typography>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: 14, color: 'text.primary' }}>{f.name}</Typography>
+                        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{f.file_count || 0} items</Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </>
+              ) : (
+                /* Folder detail — files and links */
+                <>
+                  <Box sx={{ px: 2, py: 1, display: 'flex', gap: 1 }}>
+                    <Button size="small" onClick={() => fileInputRef.current?.click()} sx={{ fontSize: 11, fontWeight: 700, bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', borderRadius: 2, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Upload File</Button>
+                    <Button size="small" onClick={() => setShowAddLink(true)} sx={{ fontSize: 11, fontWeight: 700, border: '1px solid var(--primary)', color: 'var(--primary)', textTransform: 'none', borderRadius: 2 }}>Add Link</Button>
+                    <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={e => { if (e.target.files[0]) uploadFile(e.target.files[0]); e.target.value = ''; }} />
+                  </Box>
+                  {(!activeFolder.files || activeFolder.files.length === 0) && (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>No files yet. Upload a file or add a link.</Typography>
+                    </Box>
+                  )}
+                  {(activeFolder.files || []).map(f => (
+                    <Box key={f.id} sx={{
+                      display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25,
+                      borderBottom: '1px solid rgba(72,72,74,0.06)',
+                    }}>
+                      <Typography sx={{ fontSize: 22 }}>{f.type === 'link' ? '🔗' : '📄'}</Typography>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        {f.type === 'link' ? (
+                          <Typography component="a" href={f.url} target="_blank" rel="noopener" sx={{ fontWeight: 700, fontSize: 13, color: 'var(--primary)', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '&:hover': { textDecoration: 'underline' } }}>{f.name}</Typography>
+                        ) : (
+                          <Typography component="a" href={`/api/folders/download/${f.filename}`} download={f.original_name} sx={{ fontWeight: 700, fontSize: 13, color: 'text.primary', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '&:hover': { color: 'var(--primary)' } }}>{f.name}</Typography>
+                        )}
+                        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                          {f.uploaded_by_name || 'Unknown'} {f.size_bytes ? `· ${(f.size_bytes / 1024).toFixed(0)} KB` : ''}
+                        </Typography>
+                      </Box>
+                      <IconButton size="small" onClick={() => deleteFile(f.id)} sx={{ opacity: 0.4, '&:hover': { opacity: 1 } }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </IconButton>
+                    </Box>
+                  ))}
+                </>
+              )}
             </Box>
           </>
         )}
 
-        {(sidebarTab === 'profile' || sidebarTab === 'folders') && !selectedMember && (
+        {sidebarTab === 'profile' && !selectedMember && (
           <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-            <Typography sx={{ fontSize: 14, color: 'text.secondary', textAlign: 'center' }}>Select a team member to view their {sidebarTab}</Typography>
+            <Typography sx={{ fontSize: 14, color: 'text.secondary', textAlign: 'center' }}>Select a team member to view their profile</Typography>
           </Box>
         )}
       </Box>
@@ -176,6 +314,36 @@ export default function TeamChatPanel({ user, team, teamConversations, onRefresh
           </Box>
         )}
       </Box>
+
+      {/* Create Folder Dialog */}
+      <Dialog open={showCreateFolder} onClose={() => setShowCreateFolder(false)} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>New Folder</DialogTitle>
+        <DialogContent>
+          <TextField autoFocus fullWidth placeholder="Folder name" value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && createFolder()}
+            variant="outlined" size="small" sx={{ mt: 1 }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCreateFolder(false)} sx={{ color: 'text.secondary', textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={createFolder} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Create</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Link Dialog */}
+      <Dialog open={showAddLink} onClose={() => setShowAddLink(false)} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>Add Link</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <TextField autoFocus fullWidth placeholder="Link name (e.g. Project Docs)" value={newLinkName} onChange={e => setNewLinkName(e.target.value)}
+            variant="outlined" size="small" sx={{ mt: 1 }} />
+          <TextField fullWidth placeholder="URL (e.g. https://drive.google.com/...)" value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && addLink()}
+            variant="outlined" size="small" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAddLink(false)} sx={{ color: 'text.secondary', textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={addLink} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Save</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
