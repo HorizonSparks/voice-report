@@ -231,6 +231,54 @@ const AGENT_TOOLS = [
       },
     },
   },
+  // ---- RD2: RELATION DATA INTELLIGENCE TOOLS ----
+  {
+    name: 'trace_company_everything',
+    description: 'Get EVERYTHING about a company across both platforms. Voice Report: people, reports, projects, JSAs, punch items. LoopFolders: commissioning projects, loop folders, instruments, P&IDs. Use this when asked about a company overview or "show me everything about X".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        company_name: { type: 'string', description: 'Company name to search for (partial match)' },
+      },
+      required: ['company_name'],
+    },
+  },
+  {
+    name: 'trace_instrument_history',
+    description: 'Trace the full history of an instrument across both platforms. LoopFolders: loop folder, P&ID, project, status, Excel matches. Voice Report: reports mentioning this tag, form submissions, calibration data. Use for "tell me about instrument X" or "what happened with tag X".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        tag_number: { type: 'string', description: 'Instrument tag number (e.g. PI-2246, 201A-PI-2246-01, partial match)' },
+      },
+      required: ['tag_number'],
+    },
+  },
+  {
+    name: 'get_person_work_summary',
+    description: 'Get a complete picture of what a person has been working on across both platforms. Reports, tasks, JSAs, form submissions, and any instruments they worked on (traced to LoopFolders). Use for "what has Tommy been doing?" or "show me person X work".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        person_name: { type: 'string', description: 'Person name to search for (partial match)' },
+        days: { type: 'number', description: 'Number of days to look back (default: 30)' },
+      },
+      required: ['person_name'],
+    },
+  },
+  {
+    name: 'save_insight',
+    description: 'Save an insight or pattern you noticed about a user, company, instrument, or system behavior. This builds your long-term memory. Use when you notice something worth remembering for future conversations.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        insight_type: { type: 'string', description: 'Type: preference, pattern, connection, alert' },
+        content: { type: 'string', description: 'The insight to remember' },
+        context: { type: 'string', description: 'What triggered this insight (optional)' },
+      },
+      required: ['insight_type', 'content'],
+    },
+  },
 ];
 
 // ---- OBSERVABILITY CONFIG ----
@@ -595,6 +643,189 @@ async function executeTool(toolName, toolInput) {
         if (rows.length === 0) return 'No previous conversations found with this user.';
         return JSON.stringify({ total: rows.length, messages: rows.reverse().map(r => ({ role: r.role, content: r.content.substring(0, 500), time: r.created_at })) });
       }
+      // ---- RD2: RELATION DATA INTELLIGENCE EXECUTORS ----
+      case 'trace_company_everything': {
+        const name = toolInput.company_name;
+        const result = { voice_report: {}, loopfolders: {} };
+
+        // Voice Report: find company
+        const { rows: [company] } = await DB.db.query(
+          "SELECT * FROM companies WHERE name ILIKE $1 LIMIT 1", [`%${name}%`]
+        );
+        if (!company) return `No company found matching "${name}" in Voice Report.`;
+        result.voice_report.company = { id: company.id, name: company.name, status: company.status, tier: company.tier };
+
+        // Voice Report: people, reports, projects
+        const [people, reports, projects, jsas, punchItems] = await Promise.all([
+          DB.db.query("SELECT id, name, role_title, trade, status FROM people WHERE company_id = $1 AND status = 'active' ORDER BY role_level DESC", [company.id]),
+          DB.db.query("SELECT COUNT(*)::int as total, MAX(created_at) as latest FROM reports WHERE company_id = $1", [company.id]),
+          DB.db.query("SELECT id, name, trade, status FROM projects WHERE company_id = $1", [company.id]),
+          DB.db.query("SELECT COUNT(*)::int as total, MAX(date) as latest FROM jsa_records WHERE company_id = $1", [company.id]),
+          DB.db.query("SELECT COUNT(*)::int as total, COUNT(CASE WHEN status = 'open' THEN 1 END)::int as open FROM punch_items WHERE company_id = $1", [company.id]),
+        ]);
+        result.voice_report.people = { count: people.rows.length, members: people.rows.slice(0, 10) };
+        result.voice_report.reports = reports.rows[0];
+        result.voice_report.projects = projects.rows;
+        result.voice_report.jsa_records = jsas.rows[0];
+        result.voice_report.punch_items = punchItems.rows[0];
+
+        // LoopFolders: find projects by company_id (solid link) or name match (fallback)
+        const { rows: lfProjects } = await DB.db.query(
+          `SELECT p.id, p.name, p.company, p.company_id, p.deadline, pr.name as priority,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as folder_count,
+            (SELECT COUNT(*)::int FROM horizonsparks.files f WHERE f.project_id = p.id) as file_count,
+            (SELECT COUNT(CASE WHEN lf.status IN ('completed','done') THEN 1 END)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as completed_folders
+           FROM horizonsparks.projects p LEFT JOIN horizonsparks.priority pr ON pr.id = p.priority_id
+           WHERE p.company_id = $1 OR p.company ILIKE $2`, [company.id, `%${name}%`]
+        );
+        result.loopfolders.projects = lfProjects;
+
+        // LoopFolders: total instruments and P&IDs
+        if (lfProjects.length > 0) {
+          const projectIds = lfProjects.map(p => p.id);
+          const { rows: [lfSummary] } = await DB.db.query(`
+            SELECT COUNT(DISTINCT lf.id)::int as total_instruments,
+              COUNT(DISTINCT f.id)::int as total_files
+            FROM horizonsparks.loopfolder lf
+            LEFT JOIN horizonsparks.files f ON f.project_id = lf.project_id
+            WHERE lf.project_id = ANY($1)`, [projectIds]
+          );
+          result.loopfolders.summary = lfSummary;
+        }
+
+        return JSON.stringify(result);
+      }
+      case 'trace_instrument_history': {
+        const tag = toolInput.tag_number;
+        const result = { loopfolders: {}, voice_report: {} };
+
+        // LoopFolders: find loop folder
+        const { rows: folders } = await DB.db.query(`
+          SELECT lf.id, lf.loop_number, lf.tag_number, lf.status, lf.folder_values,
+            p.name as project_name, p.company as project_company,
+            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder_associate_files laf WHERE laf.loop_folder_id = lf.id) as associated_files
+          FROM horizonsparks.loopfolder lf
+          JOIN horizonsparks.projects p ON p.id = lf.project_id
+          WHERE lf.loop_number ILIKE $1 OR lf.tag_number ILIKE $1
+          LIMIT 10`, [`%${tag}%`]
+        );
+        result.loopfolders.folders = folders.map(f => {
+          let excelMatches = null;
+          try { const v = typeof f.folder_values === 'string' ? JSON.parse(f.folder_values) : f.folder_values; excelMatches = v?._excelMatches; } catch {}
+          return { loop_number: f.loop_number, tag_number: f.tag_number, status: f.status, project: f.project_name, company: f.project_company, associated_files: f.associated_files, excel_matches: excelMatches ? { count: excelMatches.count } : null };
+        });
+
+        // Voice Report: search reports mentioning this tag
+        const { rows: reportMentions } = await DB.db.query(`
+          SELECT r.id, r.created_at, p.name as person_name, p.trade,
+            substring(r.transcript_raw, 1, 200) as transcript_preview
+          FROM reports r JOIN people p ON p.id = r.person_id
+          WHERE r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1
+          ORDER BY r.created_at DESC LIMIT 10`, [`%${tag}%`]
+        );
+        result.voice_report.report_mentions = reportMentions;
+
+        // Voice Report: search form submissions via form_loops
+        const { rows: formMentions } = await DB.db.query(`
+          SELECT fs.id, fs.submitted_at, p.name as person_name, ft.name as form_name,
+            fl.tag_number, fl.loop_type, fl.service
+          FROM form_submissions fs
+          JOIN form_loops fl ON fl.id = fs.loop_id
+          JOIN people p ON p.id = fs.person_id
+          LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
+          WHERE fl.tag_number ILIKE $1
+          ORDER BY fs.submitted_at DESC LIMIT 10`, [`%${tag}%`]
+        ).catch(() => ({ rows: [] }));
+        result.voice_report.form_submissions = formMentions;
+
+        const totalActivity = reportMentions.length + formMentions.length + folders.length;
+        result.summary = `Found ${folders.length} loop folder(s), ${reportMentions.length} report mention(s), ${formMentions.length} form submission(s) for "${tag}"`;
+
+        return JSON.stringify(result);
+      }
+      case 'get_person_work_summary': {
+        const days = toolInput.days || 30;
+        const result = { person: null, reports: [], tasks: [], jsas: [], forms: [], instruments_mentioned: [] };
+
+        // Find person
+        const { rows: [person] } = await DB.db.query(
+          `SELECT p.id, p.name, p.role_title, p.trade, p.status, c.name as company_name
+           FROM people p LEFT JOIN companies c ON c.id = p.company_id
+           WHERE p.name ILIKE $1 LIMIT 1`, [`%${toolInput.person_name}%`]
+        );
+        if (!person) return `No person found matching "${toolInput.person_name}".`;
+        result.person = person;
+
+        // Recent reports
+        const { rows: reports } = await DB.db.query(
+          `SELECT id, created_at, trade, substring(transcript_raw, 1, 200) as preview
+           FROM reports WHERE person_id = $1 AND created_at > NOW() - INTERVAL '${days} days'
+           ORDER BY created_at DESC LIMIT 15`, [person.id]
+        );
+        result.reports = reports;
+
+        // Active tasks
+        const { rows: tasks } = await DB.db.query(
+          `SELECT dpt.id, dpt.description, dpt.trade, dpt.status, dpt.location, dpt.start_date, dpt.target_end_date
+           FROM daily_plan_tasks dpt WHERE dpt.assigned_to = $1 AND dpt.status != 'completed'
+           ORDER BY dpt.start_date DESC LIMIT 10`, [person.id]
+        );
+        result.tasks = tasks;
+
+        // Recent JSAs
+        const { rows: jsas } = await DB.db.query(
+          `SELECT id, date, trade, task_description, hazards
+           FROM jsa_records WHERE person_id = $1 AND date > NOW() - INTERVAL '${days} days'
+           ORDER BY date DESC LIMIT 5`, [person.id]
+        );
+        result.jsas = jsas;
+
+        // Form submissions
+        const { rows: forms } = await DB.db.query(
+          `SELECT fs.id, fs.submitted_at, ft.name as form_name, fl.tag_number, fl.loop_type
+           FROM form_submissions fs
+           LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
+           LEFT JOIN form_loops fl ON fl.id = fs.loop_id
+           WHERE fs.person_id = $1 AND fs.submitted_at > NOW() - INTERVAL '${days} days'
+           ORDER BY fs.submitted_at DESC LIMIT 10`, [person.id]
+        ).catch(() => ({ rows: [] }));
+        result.forms = forms;
+
+        // Extract instrument tags from reports and match to LoopFolders
+        const tagPattern = /\b\d{3}[A-Z]?-[A-Z]{2,4}-\d{3,5}/g;
+        const mentionedTags = new Set();
+        for (const r of reports) {
+          const matches = (r.preview || '').match(tagPattern);
+          if (matches) matches.forEach(m => mentionedTags.add(m));
+        }
+        for (const f of forms) {
+          if (f.tag_number) mentionedTags.add(f.tag_number);
+        }
+
+        if (mentionedTags.size > 0) {
+          const tags = [...mentionedTags];
+          const conditions = tags.map((_, i) => `lf.loop_number ILIKE $${i + 1}`).join(' OR ');
+          const { rows: instruments } = await DB.db.query(
+            `SELECT lf.loop_number, lf.status, p.name as project_name
+             FROM horizonsparks.loopfolder lf
+             JOIN horizonsparks.projects p ON p.id = lf.project_id
+             WHERE ${conditions} LIMIT 20`,
+            tags.map(t => `%${t}%`)
+          ).catch(() => ({ rows: [] }));
+          result.instruments_mentioned = instruments;
+        }
+
+        result.summary = `${person.name}: ${reports.length} reports, ${tasks.length} active tasks, ${jsas.length} JSAs, ${forms.length} forms in last ${days} days. ${mentionedTags.size} instrument tags found.`;
+        return JSON.stringify(result);
+      }
+      case 'save_insight': {
+        const personId = toolInput._personId || 'system';
+        await DB.db.query(
+          `INSERT INTO agent_insights (person_id, insight_type, content, context) VALUES ($1, $2, $3, $4)`,
+          [personId, toolInput.insight_type, toolInput.content, toolInput.context || null]
+        );
+        return `Insight saved: [${toolInput.insight_type}] ${toolInput.content}`;
+      }
       default:
         return `Unknown tool: ${toolName}`;
     }
@@ -687,18 +918,24 @@ router.post('/chat', requireAuth, async (req, res) => {
       if (person) { userName = person.name?.split(' ')[0] || 'there'; userRole = person.role_title || ''; userTrade = person.trade || ''; }
     } catch {}
 
-    const systemPrompt = `You are the Horizon Sparks AI Agent — an intelligent partner for construction and commissioning professionals.
+    const systemPrompt = `You are RD2 — Relation Data Intelligence — the AI brain of Horizon Sparks.
 
 You are talking to ${userName}${userRole ? ` (${userRole})` : ''}${userTrade ? `, ${userTrade} trade` : ''}.
-You have ${AGENT_TOOLS.length} TOOLS to access real platform data, system metrics, logs, and error tracking. ALWAYS use tools — never guess.
+You have ${AGENT_TOOLS.length} TOOLS. ALWAYS use tools — never guess about data.
 
-YOUR CAPABILITIES:
-1. PLATFORM DATA — People, companies, reports, projects, commissioning data
-2. COMMISSIONING INTELLIGENCE — Loop Folders, P&IDs, instruments, Excel cross-references
-3. SYSTEM OBSERVABILITY — Real-time metrics (CPU, memory, errors, latency), log search, error tracking
-4. TRADE KNOWLEDGE — NEC, ISA, OSHA codes across 40 knowledge files
-5. MEMORY — You can recall previous conversations with this user
-6. NAVIGATION — You can control the app UI (open screens, show data)
+YOU ARE RD2 — RELATION DATA INTELLIGENCE:
+You don't just answer questions — you TRACE RELATIONSHIPS across both platforms.
+When someone asks about ANYTHING, think about what it CONNECTS to:
+- A person → their reports, tasks, instruments, company, projects
+- An instrument → its loop folder, P&ID, project, who worked on it, form submissions
+- A company → its people, reports, Voice Report projects, LoopFolders projects, commissioning status
+- A report → who wrote it, what instruments it mentions, what project it's for
+
+RELATION DATA TOOLS (your most powerful tools):
+- trace_company_everything: Full cross-platform company view (Voice Report + LoopFolders)
+- trace_instrument_history: Everything about an instrument across both systems
+- get_person_work_summary: Complete picture of someone's work (reports, tasks, instruments, forms)
+- save_insight: Remember patterns and connections you discover
 
 COMMISSIONING — THE LOOP FOLDER IS THE BOSS:
 1. FIRST: get_instrument_details to find the Loop Folder (source of truth)
@@ -706,18 +943,17 @@ COMMISSIONING — THE LOOP FOLDER IS THE BOSS:
 3. THEN: query_pid_results for P&ID drawing details
 4. Trace instruments ACROSS folders and drawings
 
-OBSERVABILITY — YOU SEE EVERYTHING:
-- query_system_metrics: CPU, memory, disk, error rates, AI costs, DB health, service status
-- search_logs: Find errors, trace requests, investigate issues in real time
-- get_error_issues: See what crashed, unresolved bugs, error trends
-- When asked about system health, performance, errors — USE these tools, give specific numbers
+OBSERVABILITY — YOU SEE THE SYSTEM:
+- query_system_metrics: CPU, memory, disk, error rates, AI costs, DB health
+- search_logs: Find errors, trace requests, investigate issues
+- get_error_issues: Crashes, unresolved bugs, error trends
 
-MEMORY — YOU REMEMBER:
-- recall_conversation: See what you discussed before with this user
+MEMORY — YOU REMEMBER AND LEARN:
+- recall_conversation: What you discussed before with this user
+- save_insight: Save patterns you notice for future conversations
 - Build on previous context — don't make them repeat themselves
-- Connect the dots between past questions and current work
 
-TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation
+ALL TOOLS: lookup_person, lookup_company, get_company_analytics, get_recent_reports, search_knowledge, get_system_status, get_loopfolders_projects, get_loopfolders_status, get_loopfolders_summary, navigate_to, query_pid_results, get_instrument_details, get_cropped_instruments, list_project_files, read_shared_file, query_system_metrics, search_logs, get_error_issues, recall_conversation, trace_company_everything, trace_instrument_history, get_person_work_summary, save_insight
 
 ${memoryContext ? `\nPREVIOUS CONVERSATION WITH ${userName.toUpperCase()}:\n${memoryContext}\n` : ''}
 CONTEXT:
@@ -732,7 +968,9 @@ ENGAGEMENT RULES:
 - ALWAYS use tools for data questions — never guess.
 - Give specific numbers, code references (NEC, OSHA, ISA), and actionable advice.
 - Anticipate what they need next based on context and memory.
-- When you see a problem in the metrics or logs, proactively mention it.`;
+- When you see a problem in the metrics or logs, proactively mention it.
+- When you notice a pattern or connection, use save_insight to remember it.
+- Think in RELATIONSHIPS — everything connects to something else. That's your superpower.`;
 
     // Tool use loop — Claude may call tools, we execute and send results back
     let messages = [{ role: 'user', content: message }];
@@ -767,8 +1005,8 @@ ENGAGEMENT RULES:
           if (toolUseBlock.name === 'navigate_to') {
             navigation = toolUseBlock.input;
           }
-          // Inject personId for recall_conversation tool
-          if (toolUseBlock.name === 'recall_conversation') toolUseBlock.input._personId = personId;
+          // Inject personId for tools that need it
+          if (['recall_conversation', 'save_insight'].includes(toolUseBlock.name)) toolUseBlock.input._personId = personId;
           // Execute the tool + track metrics
           const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
           const toolSuccess = !toolResult.startsWith('Tool error:') && !toolResult.startsWith('Unknown tool:');
