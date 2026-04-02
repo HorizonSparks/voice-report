@@ -51,7 +51,7 @@ export default function SystemHealthPanel({ onBack }) {
   };
 
   const grafanaDashboards = [
-    { key: 'overview', label: 'Voice Report', uid: 'voice-report-overview', slug: 'voice-report-overview' },
+    { key: 'overview', label: 'Voice Report', uid: 'voice-report-live', slug: 'voice-report-live' },
     { key: 'ai', label: 'AI Operations', uid: 'ai-operations', slug: 'ai-operations' },
     { key: 'system', label: 'DGX Spark', uid: 'system-health', slug: 'system-health-dgx-spark' },
     { key: 'loopfolders', label: 'LoopFolders', uid: 'loopfolders-overview', slug: 'loopfolders-pipeline' },
@@ -180,7 +180,7 @@ export default function SystemHealthPanel({ onBack }) {
         {health?.grafana_url && (
           <Button
             size="small" variant="outlined"
-            onClick={() => window.open(health.grafana_url, '_blank')}
+            onClick={() => { const active = grafanaDashboards.find(d => d.key === activeTab); window.open(active ? `/grafana/d/${active.uid}/${active.slug}?orgId=1` : health.grafana_url, '_blank'); }}
             sx={{ fontSize: 11, fontWeight: 700, borderRadius: 2, textTransform: 'none', ml: 'auto' }}
           >
             Open Grafana
@@ -205,7 +205,7 @@ export default function SystemHealthPanel({ onBack }) {
       {/* Quick Links */}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         {health?.grafana_url && (
-          <Button size="small" variant="outlined" onClick={() => window.open(health.grafana_url, '_blank')}
+          <Button size="small" variant="outlined" onClick={() => { const active = grafanaDashboards.find(d => d.key === activeTab); window.open(active ? `/grafana/d/${active.uid}/${active.slug}?orgId=1` : health.grafana_url, '_blank'); }}
             sx={{ fontSize: 11, borderRadius: 2, textTransform: 'none' }}>
             Grafana Dashboards
           </Button>

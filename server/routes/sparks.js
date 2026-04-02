@@ -500,7 +500,7 @@ router.get('/system-health', requireSparksRole('support'), async (req, res) => {
     res.json({
       metrics: results,
       targets,
-      grafana_url: '/grafana',
+      grafana_url: '/grafana/d/voice-report-live/voice-report-live?orgId=1',
       glitchtip_url: process.env.GLITCHTIP_PUBLIC_URL || '/glitchtip',
       timestamp: new Date().toISOString(),
     });
