@@ -904,28 +904,38 @@ export default function App() {
                 slotProps={{ input: { disableUnderline: true } }}
                 sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#fff' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 } } }}
               />
-              {/* Mic button — hold to record */}
-              <IconButton size="small"
-                onMouseDown={startAgentRecording} onMouseUp={stopAgentRecording} onMouseLeave={stopAgentRecording}
-                onTouchStart={startAgentRecording} onTouchEnd={stopAgentRecording}
-                disabled={globalAgentLoading}
-                sx={{
-                  width: 36, height: 36, mb: 0.25,
-                  bgcolor: agentRecording ? '#ef5350' : 'rgba(255,255,255,0.1)',
-                  color: agentRecording ? 'white' : 'rgba(255,255,255,0.5)',
-                  animation: agentRecording ? 'pulse 1s infinite' : 'none',
-                  '&:hover': { bgcolor: agentRecording ? '#ef5350' : 'rgba(255,255,255,0.15)' },
+              {/* WhatsApp pattern: mic + camera when empty, send when typing */}
+              {globalAgentInput.trim() ? (
+                <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading} sx={{
+                  width: 36, height: 36, bgcolor: '#F99440', color: 'white', mb: 0.25,
+                  '&:hover': { bgcolor: '#E8822A' },
                 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              </IconButton>
-              {/* Send button */}
-              <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading || !globalAgentInput.trim()} sx={{
-                width: 36, height: 36, bgcolor: '#F99440', color: 'white', mb: 0.25,
-                '&:hover': { bgcolor: '#E8822A' },
-                '&.Mui-disabled': { bgcolor: 'rgba(249,148,64,0.2)', color: 'rgba(255,255,255,0.3)' },
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="white"/></svg>
-              </IconButton>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="white"/></svg>
+                </IconButton>
+              ) : (
+                <>
+                  {/* Camera button */}
+                  <IconButton size="small" disabled={globalAgentLoading}
+                    onClick={() => { /* TODO: camera/image capture */ }}
+                    sx={{ width: 36, height: 36, mb: 0.25, color: 'rgba(255,255,255,0.5)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  </IconButton>
+                  {/* Mic button — hold to record */}
+                  <IconButton size="small"
+                    onMouseDown={startAgentRecording} onMouseUp={stopAgentRecording} onMouseLeave={stopAgentRecording}
+                    onTouchStart={startAgentRecording} onTouchEnd={stopAgentRecording}
+                    disabled={globalAgentLoading}
+                    sx={{
+                      width: 36, height: 36, mb: 0.25,
+                      bgcolor: agentRecording ? '#ef5350' : 'transparent',
+                      color: agentRecording ? 'white' : 'rgba(255,255,255,0.5)',
+                      animation: agentRecording ? 'pulse 1s infinite' : 'none',
+                      '&:hover': { bgcolor: agentRecording ? '#ef5350' : 'rgba(255,255,255,0.1)' },
+                    }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  </IconButton>
+                </>
+              )}
             </Box>
           </Box>
         </Box>
