@@ -158,6 +158,19 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
     }
   }
 
+  const [aiSpending, setAiSpending] = useState(null);
+
+  async function loadAiSpending() {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/analytics/ai-spending');
+      if (res.ok) setAiSpending(await res.json());
+      setScreen('ai-spending');
+      setError(null);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  }
+
   async function loadMessages() {
     try {
       setLoading(true);
@@ -447,6 +460,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
                   { label: 'Team', icon: '\uD83D\uDC65', action: loadTeam, show: true },
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
                   { label: 'Messages', icon: '\uD83D\uDCAC', action: loadMessages, show: true },
+                  { label: 'AI Spending', icon: '\uD83E\uDDE0', action: loadAiSpending, show: ['admin', 'support'].includes(user.sparks_role) },
                 ].filter(t => t.show).map((tile, i) => (
                   <Button key={i} onClick={tile.action} disabled={tile.disabled}
                     variant="outlined"
@@ -880,6 +894,99 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany },
           companies={companies}
           onBack={() => setScreen('dashboard')}
         />
+      )}
+
+      {/* AI SPENDING DASHBOARD */}
+      {screen === 'ai-spending' && (
+        <Box>
+          <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 2 }}>
+            AI Spending Dashboard
+          </Typography>
+
+          {aiSpending ? (
+            <>
+              {/* Summary cards */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 3 }}>
+                {[
+                  { label: 'Total Cost', value: '$' + ((aiSpending.total_cost_cents || 0) / 100).toFixed(2), color: 'var(--primary)' },
+                  { label: 'API Calls', value: aiSpending.total_calls || 0, color: 'var(--primary)' },
+                  { label: 'Input Tokens', value: ((aiSpending.total_input || 0) / 1000).toFixed(1) + 'K', color: 'text.primary' },
+                  { label: 'Output Tokens', value: ((aiSpending.total_output || 0) / 1000).toFixed(1) + 'K', color: 'text.primary' },
+                ].map((card, i) => (
+                  <Paper key={i} variant="outlined" sx={{ p: 2, borderRadius: 2.5, textAlign: 'center' }}>
+                    <Typography sx={{ fontSize: 24, fontWeight: 800, color: card.color }}>{card.value}</Typography>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 600 }}>{card.label}</Typography>
+                  </Paper>
+                ))}
+              </Box>
+
+              {/* Cost by Service */}
+              <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>Cost by Service</Typography>
+              <Paper variant="outlined" sx={{ borderRadius: 2.5, mb: 3, overflow: 'hidden' }}>
+                {(aiSpending.by_service || []).map((s, i) => (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1.25, borderBottom: i < (aiSpending.by_service || []).length - 1 ? '1px solid rgba(72,72,74,0.08)' : 'none' }}>
+                    <Box>
+                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>{s.provider} — {s.service}</Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s.calls} calls · {((s.input_tokens || 0) / 1000).toFixed(1)}K in · {((s.output_tokens || 0) / 1000).toFixed(1)}K out</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'var(--primary)' }}>${((s.cost_cents || 0) / 100).toFixed(2)}</Typography>
+                  </Box>
+                ))}
+              </Paper>
+
+              {/* Cost by Day */}
+              <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>Daily Spending (Last 14 Days)</Typography>
+              <Paper variant="outlined" sx={{ borderRadius: 2.5, mb: 3, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, height: 120 }}>
+                  {(aiSpending.by_day || []).map((d, i) => {
+                    const maxCost = Math.max(...(aiSpending.by_day || []).map(x => x.cost_cents || 0), 1);
+                    const height = Math.max(4, ((d.cost_cents || 0) / maxCost) * 100);
+                    return (
+                      <Box key={i} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                        <Typography sx={{ fontSize: 9, color: 'var(--primary)', fontWeight: 700 }}>${((d.cost_cents || 0) / 100).toFixed(2)}</Typography>
+                        <Box sx={{ width: '100%', height: height + '%', bgcolor: 'var(--primary)', borderRadius: '4px 4px 0 0', minHeight: 4 }} />
+                        <Typography sx={{ fontSize: 9, color: 'text.secondary', whiteSpace: 'nowrap' }}>{new Date(d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Paper>
+
+              {/* Top Users */}
+              <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>Top AI Users</Typography>
+              <Paper variant="outlined" sx={{ borderRadius: 2.5, mb: 3, overflow: 'hidden' }}>
+                {(aiSpending.by_user || []).map((u, i) => (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1.25, borderBottom: i < (aiSpending.by_user || []).length - 1 ? '1px solid rgba(72,72,74,0.08)' : 'none' }}>
+                    <Box>
+                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>{u.person_name || 'Unknown'}</Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{u.calls} calls</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'var(--primary)' }}>${((u.cost_cents || 0) / 100).toFixed(2)}</Typography>
+                  </Box>
+                ))}
+              </Paper>
+
+              {/* Monthly Projection */}
+              {aiSpending.by_day && aiSpending.by_day.length > 0 && (() => {
+                const totalDays = aiSpending.by_day.length;
+                const totalCost = (aiSpending.total_cost_cents || 0) / 100;
+                const dailyAvg = totalCost / totalDays;
+                const monthlyProjection = dailyAvg * 30;
+                return (
+                  <Paper variant="outlined" sx={{ borderRadius: 2.5, p: 2, bgcolor: 'rgba(249,148,64,0.06)' }}>
+                    <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'text.primary', mb: 0.5 }}>Monthly Projection</Typography>
+                    <Typography sx={{ fontSize: 28, fontWeight: 800, color: 'var(--primary)' }}>${monthlyProjection.toFixed(2)}/mo</Typography>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Based on ${dailyAvg.toFixed(2)}/day average over {totalDays} days</Typography>
+                  </Paper>
+                );
+              })()}
+            </>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography sx={{ color: 'text.secondary' }}>Loading AI spending data...</Typography>
+            </Box>
+          )}
+        </Box>
       )}
 
       {/* ANALYTICS SCREEN */}
