@@ -346,7 +346,7 @@ export default function App() {
         body: JSON.stringify({ message: msg }),
       });
       const data = await res.json();
-      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: data.response || data.error || 'No response', model: data.model, error: !data.response }]);
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: data.response || data.error || 'No response', model: data.model, tools: data.tool_calls, error: !data.response }]);
       // Handle navigation instructions from the Agent
       if (data.navigation) {
         // Make sure we're in sparks view first
@@ -471,7 +471,7 @@ export default function App() {
               '&:hover': { background: globalAgentOpen ? 'var(--primary)' : 'rgba(249,148,64,0.35)' },
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-              Agent
+              RD2
             </Button>
           </Box>
         </Toolbar>
@@ -760,66 +760,96 @@ export default function App() {
         </>
       )}
 
-      {/* Global Agent Sidebar — accessible from any screen */}
+      {/* RD2 Agent Sidebar — Claude/ChatGPT style, full viewport height */}
       {globalAgentOpen && (
-        <Box sx={{ position: 'fixed', top: 68, right: 0, bottom: 0, width: 360, bgcolor: 'background.paper', boxShadow: '-4px 0 20px rgba(0,0,0,0.1)', zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
-          {/* Agent header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, background: 'linear-gradient(135deg, #F99440, #E8822A)', flexShrink: 0 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            <Typography sx={{ flex: 1, fontSize: 15, fontWeight: 800, color: 'white' }}>AI Agent</Typography>
-            <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Opus</Typography>
-            <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.7)', p: 0.5 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <Box sx={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: { xs: '100%', sm: 420, md: 440 }, bgcolor: '#1a1a1a', boxShadow: '-4px 0 30px rgba(0,0,0,0.3)', zIndex: 1300, display: 'flex', flexDirection: 'column' }}>
+          {/* RD2 header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1.5, background: 'linear-gradient(135deg, #F99440, #E8822A)', flexShrink: 0 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'white', letterSpacing: 0.5 }}>RD2</Typography>
+              <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Relation Data Intelligence</Typography>
+            </Box>
+            <Chip label="Opus" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 700, fontSize: 10, height: 22 }} />
+            <IconButton size="small" onClick={() => setGlobalAgentOpen(false)} sx={{ color: 'rgba(255,255,255,0.8)', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+              <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
-          {/* Messages */}
-          <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
+
+          {/* Messages area — scrollable, dark theme like Claude */}
+          <Box ref={el => { if (el) el.scrollTop = el.scrollHeight; }} sx={{ flex: 1, overflowY: 'auto', px: 2, py: 2, display: 'flex', flexDirection: 'column', gap: 2, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 3 } }}>
             {globalAgentMessages.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 4, px: 1 }}>
-                <Typography sx={{ fontSize: 36, mb: 1 }}>🤖</Typography>
-                <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'text.primary', mb: 0.5 }}>Horizon Sparks Agent</Typography>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
-                  Ask me anything about your companies, people, reports, commissioning status, or trade codes. I have access to all platform data.
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+                <Box sx={{ width: 56, height: 56, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F99440" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                </Box>
+                <Typography sx={{ fontSize: 18, fontWeight: 800, color: '#fff', mb: 0.5 }}>RD2</Typography>
+                <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 1.6, maxWidth: 300 }}>
+                  Relation Data Intelligence. I trace relationships across Voice Report and LoopFolders. Ask me about companies, people, instruments, system health — I see the whole picture.
                 </Typography>
               </Box>
             )}
             {globalAgentMessages.map((msg, i) => (
-              <Box key={i} sx={{ mb: 1.5, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <Box sx={{
-                  maxWidth: '90%', px: 1.5, py: 1, borderRadius: 2,
-                  bgcolor: msg.role === 'user' ? 'var(--primary)' : msg.error ? '#FEE' : 'rgba(72,72,74,0.06)',
-                  color: msg.role === 'user' ? 'white' : 'text.primary',
-                }}>
-                  <Typography sx={{ fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{msg.content}</Typography>
-                  {msg.model && <Typography sx={{ fontSize: 10, opacity: 0.5, mt: 0.5, textAlign: 'right' }}>{msg.model}</Typography>}
-                </Box>
+              <Box key={i} sx={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                {msg.role === 'user' ? (
+                  <Box sx={{ maxWidth: '85%', px: 2, py: 1.25, borderRadius: '18px 18px 4px 18px', bgcolor: '#F99440', color: 'white' }}>
+                    <Typography sx={{ fontSize: 14, lineHeight: 1.6 }}>{msg.content}</Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ maxWidth: '95%', width: '100%' }}>
+                    <Box sx={{ px: 0.5, py: 0.5, color: '#e0e0e0' }}>
+                      <Typography component="div" sx={{
+                        fontSize: 13.5, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        '& strong, & b': { color: '#F99440', fontWeight: 700 },
+                        '& h1, & h2, & h3': { color: '#fff', fontWeight: 800, mt: 1.5, mb: 0.5 },
+                      }} dangerouslySetInnerHTML={{ __html: msg.content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/^### (.*$)/gm, '<h3 style="font-size:14px;margin:12px 0 4px">$1</h3>')
+                        .replace(/^## (.*$)/gm, '<h2 style="font-size:15px;margin:16px 0 6px">$1</h2>')
+                        .replace(/^# (.*$)/gm, '<h1 style="font-size:16px;margin:20px 0 8px">$1</h1>')
+                        .replace(/^- (.*$)/gm, '<div style="padding-left:12px;margin:2px 0">&#8226; $1</div>')
+                        .replace(/\n/g, '<br/>')
+                      }} />
+                    </Box>
+                    {msg.model && (
+                      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', mt: 0.5, px: 0.5 }}>
+                        {msg.model} {msg.tools ? `· ${msg.tools} tool calls` : ''}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Box>
             ))}
             {globalAgentLoading && (
-              <Box sx={{ display: 'flex', gap: 0.5, px: 1, py: 1 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite' }} />
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite', animationDelay: '0.2s' }} />
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'var(--primary)', animation: 'pulse 1s infinite', animationDelay: '0.4s' }} />
+              <Box sx={{ display: 'flex', gap: 1, px: 1, py: 1.5 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F99440', animation: 'pulse 1s infinite' }} />
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F99440', animation: 'pulse 1s infinite', animationDelay: '0.2s' }} />
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F99440', animation: 'pulse 1s infinite', animationDelay: '0.4s' }} />
               </Box>
             )}
           </Box>
-          {/* Input */}
-          <Box sx={{ px: 1.5, py: 1, borderTop: '1px solid rgba(72,72,74,0.1)', display: 'flex', gap: 1, alignItems: 'flex-end', flexShrink: 0 }}>
-            <TextField
-              multiline placeholder="Ask the agent..." value={globalAgentInput}
-              onChange={e => setGlobalAgentInput(e.target.value)}
-              onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGlobalAgent(); } }}
-              variant="standard" size="small" rows={1}
-              slotProps={{ input: { disableUnderline: true } }}
-              sx={{ flex: 1, bgcolor: 'rgba(72,72,74,0.06)', borderRadius: '20px', '& .MuiInputBase-root': { px: 1.5, py: 0.75, fontSize: 13 }, '& .MuiInputBase-input': { resize: 'none', maxHeight: 60, overflow: 'auto' } }}
-            />
-            <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading || !globalAgentInput.trim()} sx={{
-              width: 36, height: 36, bgcolor: 'var(--primary)', color: 'white',
-              '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 },
-              '&.Mui-disabled': { bgcolor: 'rgba(249,148,64,0.3)', color: 'white' },
-            }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="white"/></svg>
-            </IconButton>
+
+          {/* Input area — clean, modern */}
+          <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: 'rgba(255,255,255,0.06)', borderRadius: '24px', px: 2, py: 0.75 }}>
+              <TextField
+                multiline placeholder="Ask RD2 anything..." value={globalAgentInput}
+                onChange={e => setGlobalAgentInput(e.target.value)}
+                onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGlobalAgent(); } }}
+                variant="standard" size="small" maxRows={4}
+                slotProps={{ input: { disableUnderline: true } }}
+                sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#fff' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 } } }}
+              />
+              <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading || !globalAgentInput.trim()} sx={{
+                width: 36, height: 36, bgcolor: '#F99440', color: 'white', mb: 0.25,
+                '&:hover': { bgcolor: '#E8822A' },
+                '&.Mui-disabled': { bgcolor: 'rgba(249,148,64,0.2)', color: 'rgba(255,255,255,0.3)' },
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="white"/></svg>
+              </IconButton>
+            </Box>
           </Box>
         </Box>
       )}
