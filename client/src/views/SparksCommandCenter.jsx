@@ -292,13 +292,13 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   }
 
   function handleBack() {
-    if (screen === 'company-detail') { if (companyScreen !== 'overview') { setCompanyScreen('overview'); return; } setSelectedCompany(null); loadCompanies(); return; }
+    if (screen === 'company-detail') { if (companyScreen === 'support-split') { setCompanyScreen('chat'); return; } if (companyScreen !== 'overview') { setCompanyScreen('overview'); return; } setSelectedCompany(null); loadCompanies(); return; }
     if (screen !== 'dashboard') { setScreen('dashboard'); return; }
   }
 
   useImperativeHandle(ref, () => ({
     tryGoBack() {
-      if (screen === 'company-detail') { if (companyScreen !== 'overview') { setCompanyScreen('overview'); return true; } setSelectedCompany(null); loadCompanies(); return true; }
+      if (screen === 'company-detail') { if (companyScreen === 'support-split') { setCompanyScreen('chat'); return true; } if (companyScreen !== 'overview') { setCompanyScreen('overview'); return true; } setSelectedCompany(null); loadCompanies(); return true; }
       if (screen !== 'dashboard') { setScreen('dashboard'); return true; }
       return false;
     },
@@ -580,17 +580,113 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
       {/* COMPANY CONTROL CENTER — mini dashboard for each company */}
       {screen === 'company-detail' && selectedCompany && (
         <>
-          {/* Sub-screen: Chat */}
+          {/* Sub-screen: Chat (full) */}
           {companyScreen === 'chat' && (
-            <CompanyChatPanel
-              user={user}
-              company={selectedCompany}
-              companyDetail={selectedCompany}
-              companyBilling={companyBilling}
-              companyAnalytics={companyAnalytics}
-              onBack={() => setCompanyScreen('overview')}
-              agentOpen={agentOpen}
-            />
+            <>
+              {/* Floating "View as Customer" button on the chat */}
+              <Box sx={{ position: 'fixed', top: 75, right: agentOpen ? { xs: 8, sm: 428, md: 448 } : 8, zIndex: 60 }}>
+                <Button variant="contained" color="secondary" size="small"
+                  onClick={() => setCompanyScreen('support-split')}
+                  sx={{ fontSize: 11, fontWeight: 700, borderRadius: 2, px: 1.5, boxShadow: 3 }}>
+                  View as Customer →
+                </Button>
+              </Box>
+              <CompanyChatPanel
+                user={user}
+                company={selectedCompany}
+                companyDetail={selectedCompany}
+                companyBilling={companyBilling}
+                companyAnalytics={companyAnalytics}
+                onBack={() => setCompanyScreen('overview')}
+                agentOpen={agentOpen}
+              />
+            </>
+          )}
+
+          {/* Sub-screen: Support Split — chat left, customer view right */}
+          {companyScreen === 'support-split' && (
+            <Box sx={{ display: 'flex', position: 'fixed', top: 68, left: 0, right: agentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, bottom: 0, zIndex: 50, bgcolor: 'background.default' }}>
+              {/* LEFT: Chat panel (40%) */}
+              <Box sx={{ width: '40%', minWidth: 320, borderRight: '2px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* Chat header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'secondary.main', borderBottom: '3px solid', borderColor: 'primary.main', flexShrink: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'white' }}>
+                      {selectedCompany.name}
+                    </Typography>
+                    <Chip label="Customer Service" size="small" sx={{ bgcolor: 'rgba(249,148,64,0.3)', color: 'primary.main', fontWeight: 700, fontSize: 10, height: 20 }} />
+                  </Box>
+                  <Button size="small" onClick={() => setCompanyScreen('chat')}
+                    sx={{ color: 'primary.main', fontSize: 11, fontWeight: 700, textTransform: 'none' }}>
+                    Full Chat
+                  </Button>
+                </Box>
+                {/* Embedded chat — people list + messages */}
+                <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                  <CompanyChatPanel
+                    user={user}
+                    company={selectedCompany}
+                    companyDetail={selectedCompany}
+                    companyBilling={companyBilling}
+                    companyAnalytics={companyAnalytics}
+                    onBack={() => setCompanyScreen('overview')}
+                    agentOpen={false}
+                    embedded={true}
+                  />
+                </Box>
+              </Box>
+
+              {/* RIGHT: Customer view (60%) */}
+              <Box sx={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+                {/* Customer view header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'rgba(249,148,64,0.08)', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
+                      Viewing: {selectedCompany.name}
+                    </Typography>
+                    {companyTrade && (
+                      <Chip label={companyTrade} size="small" sx={{ bgcolor: 'secondary.main', color: 'primary.main', fontWeight: 700, fontSize: 10, height: 20 }} />
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {/* Trade selector in the customer view header */}
+                    {(selectedCompany.trades || []).map(t => {
+                      const tradeName = typeof t === 'object' ? t.trade : t;
+                      if (!tradeName) return null;
+                      return (
+                        <Button key={tradeName} size="small"
+                          variant={companyTrade === tradeName ? 'contained' : 'outlined'}
+                          onClick={() => setCompanyTrade(tradeName)}
+                          sx={{
+                            fontSize: 10, fontWeight: 700, borderRadius: 1.5, textTransform: 'none', px: 1, py: 0.25, minWidth: 'auto',
+                            ...(companyTrade === tradeName ? { bgcolor: 'secondary.main', color: 'primary.main' } : {}),
+                          }}>
+                          {tradeName}
+                        </Button>
+                      );
+                    })}
+                    <Button size="small" onClick={() => setCompanyScreen('overview')}
+                      sx={{ fontSize: 10, fontWeight: 700, textTransform: 'none', color: 'text.secondary' }}>
+                      ✕ Close
+                    </Button>
+                  </Box>
+                </Box>
+                {/* Customer's People view */}
+                <Box sx={{ p: 0 }}>
+                  <PeopleView
+                    user={user}
+                    activeTrade={companyTrade}
+                    activeRoleLevels={{}}
+                    readOnly={true}
+                    onOpenReport={() => {}}
+                    persistedViewingId={null}
+                    setPeopleViewingId={() => {}}
+                    setView={() => {}}
+                    navigateTo={() => {}}
+                  />
+                </Box>
+              </Box>
+            </Box>
           )}
 
           {/* Sub-screen: Overview (Company Control Center) */}
