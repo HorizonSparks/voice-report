@@ -19,6 +19,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [screen, setScreen] = useState('dashboard');
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [companyScreen, setCompanyScreen] = useState("overview"); // overview | chat | people | billing | analytics | reports | licenses
   const [dashboard, setDashboard] = useState(null);
   const [team, setTeam] = useState([]);
   const [audit, setAudit] = useState([]);
@@ -191,6 +192,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
       if (!res.ok) throw new Error('Failed to load company');
       const data = await res.json();
       setSelectedCompany(data);
+      setCompanyScreen('overview');
       setScreen('company-detail');
       setError(null);
       loadCompanyBilling(companyId);
@@ -281,13 +283,13 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   }
 
   function handleBack() {
-    if (screen === 'company-detail') { loadCompanies(); return; }
+    if (screen === 'company-detail') { if (companyScreen !== 'overview') { setCompanyScreen('overview'); return; } setSelectedCompany(null); loadCompanies(); return; }
     if (screen !== 'dashboard') { setScreen('dashboard'); return; }
   }
 
   useImperativeHandle(ref, () => ({
     tryGoBack() {
-      if (screen === 'company-detail') { loadCompanies(); return true; }
+      if (screen === 'company-detail') { if (companyScreen !== 'overview') { setCompanyScreen('overview'); return true; } setSelectedCompany(null); loadCompanies(); return true; }
       if (screen !== 'dashboard') { setScreen('dashboard'); return true; }
       return false;
     },
@@ -566,17 +568,403 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
         </>
       )}
 
-      {/* COMPANY CHAT PANEL — WhatsApp-style layout for customer companies */}
+      {/* COMPANY CONTROL CENTER — mini dashboard for each company */}
       {screen === 'company-detail' && selectedCompany && (
-        <CompanyChatPanel
-          user={user}
-          company={selectedCompany}
-          companyDetail={selectedCompany}
-          companyBilling={companyBilling}
-          companyAnalytics={companyAnalytics}
-          onBack={() => { setSelectedCompany(null); setScreen('dashboard'); }}
-          agentOpen={agentOpen}
-        />
+        <>
+          {/* Sub-screen: Chat */}
+          {companyScreen === 'chat' && (
+            <CompanyChatPanel
+              user={user}
+              company={selectedCompany}
+              companyDetail={selectedCompany}
+              companyBilling={companyBilling}
+              companyAnalytics={companyAnalytics}
+              onBack={() => setCompanyScreen('overview')}
+              agentOpen={agentOpen}
+            />
+          )}
+
+          {/* Sub-screen: Overview (Company Control Center) */}
+          {companyScreen === 'overview' && (
+            <>
+              {/* Header: Company name + status + action buttons */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', fontSize: 20 }}>
+                    {selectedCompany.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mt: 0.5 }}>
+                    <Chip label={selectedCompany.status} size="small" sx={{ bgcolor: statusColors[selectedCompany.status], color: 'white', fontWeight: 700, fontSize: 11 }} />
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Tier: {selectedCompany.tier}</Typography>
+                  </Box>
+                </Box>
+                {onEnterCompany && (
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button variant="contained" color="secondary"
+                      onClick={() => onEnterCompany({ id: selectedCompany.id, name: selectedCompany.name, mode: 'customer' })}
+                      sx={{ borderRadius: 5, fontSize: 12, fontWeight: 700, px: 2 }}>
+                      View as Customer
+                    </Button>
+                    <Button variant="outlined"
+                      onClick={() => onEnterCompany({ id: selectedCompany.id, name: selectedCompany.name, mode: 'support' })}
+                      sx={{ borderRadius: 5, fontSize: 12, fontWeight: 700, px: 2, color: 'primary.main', borderColor: 'primary.main' }}>
+                      Customer Service
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Quick Stats Row */}
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', my: 2, justifyContent: 'flex-start' }}>
+                {[
+                  { label: 'People', value: selectedCompany.total_people || selectedCompany.people_count || 0 },
+                  { label: 'Reports', value: selectedCompany.total_reports || selectedCompany.report_count || 0 },
+                  { label: 'AI Cost', value: companyAnalytics?.summary?.total_ai_cost_cents ? '$' + (companyAnalytics.summary.total_ai_cost_cents / 100).toFixed(0) : '$0' },
+                  { label: 'Trades', value: (selectedCompany.trades || []).filter(t => typeof t === 'object' ? t.status === 'active' : true).length },
+                ].map((stat, i) => (
+                  <Paper key={i} variant="outlined" sx={{
+                    width: 80, height: 80, display: 'flex', flexDirection: 'column',
+                    justifyContent: 'center', alignItems: 'center', textAlign: 'center',
+                    borderRadius: 2.5, border: '2px solid', borderColor: 'secondary.main',
+                  }}>
+                    <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'primary.main', lineHeight: 1 }}>{stat.value}</Typography>
+                    <Typography sx={{ fontSize: 10, fontWeight: 700, mt: 0.5, color: 'text.primary' }}>{stat.label}</Typography>
+                  </Paper>
+                ))}
+              </Box>
+
+              {/* Action Tiles */}
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
+                Company Operations
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.25, mb: 3 }}>
+                {[
+                  { label: 'Chat', icon: '💬', action: () => setCompanyScreen('chat') },
+                  { label: 'People', icon: '👥', action: () => setCompanyScreen('people') },
+                  { label: 'AI Analytics', icon: '🧠', action: () => setCompanyScreen('analytics') },
+                  { label: 'Billing', icon: '💳', action: () => setCompanyScreen('billing'), show: ['admin'].includes(user.sparks_role) },
+                  { label: 'Reports', icon: '📋', action: () => setCompanyScreen('reports') },
+                  { label: 'Licenses', icon: '⚙️', action: () => setCompanyScreen('licenses'), show: ['admin'].includes(user.sparks_role) },
+                ].filter(t => t.show !== false).map((tile, i) => (
+                  <Button key={i} onClick={tile.action}
+                    variant="outlined"
+                    sx={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      p: 2, borderRadius: 3, minHeight: 70,
+                      bgcolor: 'background.paper',
+                      borderColor: 'grey.200', borderWidth: 2,
+                      color: 'text.primary',
+                    }}>
+                    <Typography sx={{ fontSize: 22, mb: 0.5 }}>{tile.icon}</Typography>
+                    <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary' }}>{tile.label}</Typography>
+                  </Button>
+                ))}
+              </Box>
+
+              {/* Quick view: People by Trade + Recent Reports */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+                    People by Trade
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                    {(selectedCompany.people_by_trade || []).map(pt => (
+                      <Paper key={pt.trade} variant="outlined" sx={{ borderRadius: 2, p: 1.25 }}>
+                        <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'primary.main' }}>{pt.count}</Typography>
+                        <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>{pt.trade}</Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+                    Recent Reports
+                  </Typography>
+                  {(selectedCompany.recent_reports || []).slice(0, 5).map(r => (
+                    <Paper key={r.id} variant="outlined" sx={{ borderRadius: 2, p: 1.25, mb: 0.75, fontSize: 13 }}>
+                      <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: 13 }}>{r.person_name}</Typography>
+                      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{r.trade} · {r.report_date}</Typography>
+                    </Paper>
+                  ))}
+                  {(!selectedCompany.recent_reports || selectedCompany.recent_reports.length === 0) && (
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary', p: 1 }}>No recent reports</Typography>
+                  )}
+                </Box>
+              </Box>
+            </>
+          )}
+
+          {/* Sub-screen: People */}
+          {companyScreen === 'people' && (
+            <>
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', mb: 2 }}>
+                {selectedCompany.name} — People
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
+                {(selectedCompany.people_by_trade || []).map(pt => (
+                  <Paper key={pt.trade} variant="outlined" sx={{ borderRadius: 2.5, p: 1.75 }}>
+                    <Typography sx={{ fontSize: 22, fontWeight: 800, color: 'primary.main' }}>{pt.count}</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>{pt.trade}</Typography>
+                  </Paper>
+                ))}
+              </Box>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 2, textAlign: 'center' }}>
+                Use "View as Customer" to see the full people directory for this company
+              </Typography>
+            </>
+          )}
+
+          {/* Sub-screen: Analytics */}
+          {companyScreen === 'analytics' && (
+            <>
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', mb: 2 }}>
+                {selectedCompany.name} — AI Analytics
+              </Typography>
+              {companyAnalytics ? (
+                <>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+                    {[
+                      { label: 'API Calls', value: companyAnalytics.summary?.total_api_calls || 0, color: 'primary.main' },
+                      { label: 'AI Cost', value: '$' + ((companyAnalytics.summary?.total_ai_cost_cents || 0) / 100).toFixed(2), color: 'text.primary' },
+                      { label: 'Unique Users', value: companyAnalytics.summary?.unique_users || 0, color: 'primary.main' },
+                      { label: 'Total Tokens', value: (companyAnalytics.costs?.by_provider || []).reduce((s, p) => s + parseInt(p.total_input_tokens || 0) + parseInt(p.total_output_tokens || 0), 0), color: 'primary.main' },
+                    ].map((card, i) => (
+                      <Paper key={i} variant="outlined" sx={{ borderRadius: 2.5, p: 1.5, textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: 20, fontWeight: 800, color: card.color }}>{card.value}</Typography>
+                        <Typography sx={{ fontSize: 10, fontWeight: 600, color: 'text.primary' }}>{card.label}</Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                  {(companyAnalytics.costs?.by_provider || []).map((p, i) => (
+                    <Paper key={i} variant="outlined" sx={{ p: 1.25, borderRadius: 2.5, mb: 0.75, fontSize: 11 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: 11 }}>
+                          {p.provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} — {p.service}
+                        </Typography>
+                        <Typography sx={{ fontWeight: 800, color: 'primary.main', fontSize: 11 }}>{'$' + ((p.total_cost_cents || 0) / 100).toFixed(2)}</Typography>
+                      </Box>
+                    </Paper>
+                  ))}
+                  {companyAnalytics.costs?.by_person?.length > 0 && (
+                    <Box sx={{ mt: 1.5 }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.primary', mb: 0.75 }}>Top AI Users</Typography>
+                      {companyAnalytics.costs.by_person.slice(0, 5).map((p, i) => (
+                        <Paper key={i} variant="outlined" sx={{
+                          display: 'flex', justifyContent: 'space-between', px: 1.25, py: 0.75,
+                          borderRadius: 2, mb: 0.5, fontSize: 11,
+                        }}>
+                          <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: 11 }}>{p.person_name || 'Unknown'}</Typography>
+                          <Typography sx={{ fontWeight: 700, color: 'primary.main', fontSize: 11 }}>{'$' + ((p.total_cost_cents || 0) / 100).toFixed(2)} ({p.call_count})</Typography>
+                        </Paper>
+                      ))}
+                    </Box>
+                  )}
+                </>
+              ) : (
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', textAlign: 'center', p: 2 }}>Loading analytics...</Typography>
+              )}
+            </>
+          )}
+
+          {/* Sub-screen: Billing */}
+          {companyScreen === 'billing' && (
+            <>
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', mb: 2 }}>
+                {selectedCompany.name} — Billing
+              </Typography>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+                Subscription
+              </Typography>
+              {companyBilling?.subscription ? (() => {
+                const sub = companyBilling.subscription;
+                const subStatusColor = { active: '#2ecc71', trial: '#f39c12', past_due: '#e74c3c', cancelled: '#95a5a6' }[sub.status] || '#ccc';
+                return (
+                  <Card variant="outlined" sx={{ mb: 2, borderRadius: 2.5 }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Box>
+                          <Typography component="span" sx={{ fontWeight: 800, fontSize: 16, color: 'text.primary' }}>{sub.plan_name}</Typography>
+                          <Typography component="span" sx={{ fontSize: 14, color: 'primary.main', fontWeight: 700, ml: 1 }}>
+                            {'$' + (sub.price_cents / 100).toFixed(0) + '/mo'}
+                          </Typography>
+                        </Box>
+                        <Chip label={sub.status} size="small" sx={{ bgcolor: subStatusColor, color: 'white', fontWeight: 700, fontSize: 11 }} />
+                      </Box>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                        Next billing: {sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString() : '—'}
+                      </Typography>
+                      {user.sparks_role === 'admin' && (
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                          <Select value={sub.plan_id} size="small"
+                            onChange={(e) => changePlan(selectedCompany.id, e.target.value)}
+                            sx={{ borderRadius: 2, fontSize: 12, fontWeight: 600, minWidth: 150 }}>
+                            {allPlans.map(p => (
+                              <MenuItem key={p.id} value={p.id}>{p.name + ' — $' + (p.price_cents / 100).toFixed(0) + '/mo'}</MenuItem>
+                            ))}
+                          </Select>
+                          {sub.status !== 'cancelled' && (
+                            <Button variant="outlined" color="error" size="small"
+                              onClick={() => cancelSubscription(selectedCompany.id)}
+                              sx={{ borderRadius: 2, fontSize: 12, fontWeight: 700 }}>
+                              Cancel
+                            </Button>
+                          )}
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })() : (
+                <Card variant="outlined" sx={{ mb: 2, borderRadius: 2.5, textAlign: 'center' }}>
+                  <CardContent>
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>No active subscription</Typography>
+                    {user.sparks_role === 'admin' && allPlans.length > 0 && (
+                      <Select defaultValue="" size="small" displayEmpty
+                        onChange={(e) => e.target.value && changePlan(selectedCompany.id, e.target.value)}
+                        sx={{ borderRadius: 2, fontSize: 12, fontWeight: 600, minWidth: 180 }}>
+                        <MenuItem value="" disabled>Assign a plan...</MenuItem>
+                        {allPlans.map(p => (
+                          <MenuItem key={p.id} value={p.id}>{p.name + ' — $' + (p.price_cents / 100).toFixed(0) + '/mo'}</MenuItem>
+                        ))}
+                      </Select>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+                Invoices
+              </Typography>
+              {user.sparks_role === 'admin' && (
+                <Box sx={{ mb: 1.25 }}>
+                  {!showInvoiceForm ? (
+                    <Button variant="contained" color="secondary" size="small"
+                      onClick={() => setShowInvoiceForm(true)}
+                      sx={{ fontSize: 12 }}>
+                      + Create Invoice
+                    </Button>
+                  ) : (
+                    <Paper variant="outlined" sx={{ p: 1.75, borderRadius: 2.5, borderColor: 'primary.main' }}>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                        <TextField size="small" type="number" inputProps={{ step: '0.01' }} placeholder="Amount ($)"
+                          value={invoiceForm.amount} onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: e.target.value })}
+                          sx={{ width: 100 }} />
+                        <TextField size="small" placeholder="Description" value={invoiceForm.description}
+                          onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
+                          sx={{ flex: 1, minWidth: 120 }} />
+                        <TextField size="small" type="date" value={invoiceForm.due_date}
+                          onChange={(e) => setInvoiceForm({ ...invoiceForm, due_date: e.target.value })} />
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button variant="contained" size="small" onClick={() => createInvoice(selectedCompany.id)} sx={{ fontSize: 12 }}>Save</Button>
+                        <Button variant="outlined" size="small" onClick={() => setShowInvoiceForm(false)} sx={{ fontSize: 12 }}>Cancel</Button>
+                      </Box>
+                    </Paper>
+                  )}
+                </Box>
+              )}
+              {(companyBilling?.invoices || []).map(inv => {
+                const invStatusColor = { paid: '#2ecc71', pending: '#f39c12', overdue: '#e74c3c', void: '#95a5a6' }[inv.status] || '#ccc';
+                return (
+                  <Paper key={inv.id} variant="outlined" sx={{
+                    borderRadius: 2, px: 1.25, py: 1.25, mb: 0.75,
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <Box>
+                      <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: 13 }}>{inv.description}</Typography>
+                      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                        {'Due: ' + new Date(inv.due_date).toLocaleDateString()}{inv.paid_at && (' · Paid: ' + new Date(inv.paid_at).toLocaleDateString())}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: 14 }}>{'$' + (inv.amount_cents / 100).toFixed(2)}</Typography>
+                      <Chip label={inv.status} size="small" sx={{ bgcolor: invStatusColor, color: 'white', fontWeight: 700, fontSize: 10 }} />
+                      {inv.status === 'pending' && user.sparks_role === 'admin' && (
+                        <Button variant="outlined" size="small" color="success"
+                          onClick={() => markInvoicePaid(inv.id, selectedCompany.id)}
+                          sx={{ fontSize: 11, fontWeight: 700, borderRadius: 1.5 }}>
+                          Mark Paid
+                        </Button>
+                      )}
+                    </Box>
+                  </Paper>
+                );
+              })}
+              {(!companyBilling?.invoices || companyBilling.invoices.length === 0) && (
+                <Typography sx={{ fontSize: 13, color: 'text.secondary', textAlign: 'center', p: 1.5 }}>No invoices yet</Typography>
+              )}
+            </>
+          )}
+
+          {/* Sub-screen: Reports */}
+          {companyScreen === 'reports' && (
+            <>
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', mb: 2 }}>
+                {selectedCompany.name} — Recent Reports
+              </Typography>
+              {(selectedCompany.recent_reports || []).map(r => (
+                <Paper key={r.id} variant="outlined" sx={{ borderRadius: 2.5, p: 1.5, mb: 1, fontSize: 13 }}>
+                  <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: 14 }}>{r.person_name}</Typography>
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.trade} · {r.report_date}</Typography>
+                </Paper>
+              ))}
+              {(!selectedCompany.recent_reports || selectedCompany.recent_reports.length === 0) && (
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', textAlign: 'center', p: 2 }}>No reports found</Typography>
+              )}
+            </>
+          )}
+
+          {/* Sub-screen: Licenses */}
+          {companyScreen === 'licenses' && (
+            <>
+              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', mb: 2 }}>
+                {selectedCompany.name} — Licensed Products & Trades
+              </Typography>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+                Products
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+                {['voice_report', 'relation_data'].map(product => {
+                  const licensed = (selectedCompany.products || []).find(p => typeof p === 'object' ? p.product === product : p === product);
+                  const isActive = typeof licensed === 'object' ? licensed && licensed.status === 'active' : !!licensed;
+                  return (
+                    <Button key={product} variant={isActive ? 'contained' : 'outlined'}
+                      color={isActive ? 'secondary' : 'inherit'}
+                      onClick={() => user.sparks_role === 'admin' && toggleProduct(selectedCompany.id, product, isActive ? 'active' : 'inactive')}
+                      sx={{
+                        borderRadius: 2.5, fontWeight: 700, fontSize: 13, px: 2, py: 1.25,
+                        cursor: user.sparks_role === 'admin' ? 'pointer' : 'default',
+                        ...(isActive && { bgcolor: 'secondary.main', color: 'primary.main' }),
+                      }}>
+                      {product === 'voice_report' ? 'Voice Report' : 'Relation Data / LoopFolders'}
+                      {isActive ? ' ✓' : ''}
+                    </Button>
+                  );
+                })}
+              </Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
+                Trades
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {['Electrical', 'Instrumentation', 'Pipe Fitting', 'Industrial Erection', 'Safety'].map(trade => {
+                  const licensed = (selectedCompany.trades || []).find(t => typeof t === 'object' ? t.trade === trade : t === trade);
+                  const isActive = typeof licensed === 'object' ? licensed && licensed.status === 'active' : !!licensed;
+                  return (
+                    <Button key={trade} variant={isActive ? 'contained' : 'outlined'}
+                      color={isActive ? 'secondary' : 'inherit'} size="small"
+                      onClick={() => user.sparks_role === 'admin' && toggleTrade(selectedCompany.id, trade, isActive ? 'active' : 'inactive')}
+                      sx={{
+                        borderRadius: 2.5, fontWeight: 600, fontSize: 12, px: 1.75, py: 1,
+                        cursor: user.sparks_role === 'admin' ? 'pointer' : 'default',
+                        ...(isActive && { bgcolor: 'secondary.main', color: 'primary.main' }),
+                      }}>
+                      {trade} {isActive ? '✓' : ''}
+                    </Button>
+                  );
+                })}
+              </Box>
+            </>
+          )}
+        </>
       )}
 
       {/* OLD COMPANY DETAIL SCREEN — kept for reference, hidden */}
