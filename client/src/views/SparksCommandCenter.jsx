@@ -10,6 +10,10 @@ import TeamChatPanel from '../components/TeamChatPanel.jsx';
 import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
 import MessagesChatPanel from '../components/MessagesChatPanel.jsx';
 import SystemHealthPanel from '../components/SystemHealthPanel.jsx';
+import PeopleView from './PeopleView.jsx';
+import ReportsView from './ReportsView.jsx';
+import DailyPlanView from './DailyPlanView.jsx';
+import PunchListView from './PunchListView.jsx';
 
 /**
  * Control Center — the operating system for Horizon Sparks.
@@ -645,6 +649,8 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                   { label: 'AI Analytics', icon: '🧠', action: () => setCompanyScreen('analytics') },
                   { label: 'Billing', icon: '💳', action: () => setCompanyScreen('billing'), show: ['admin'].includes(user.sparks_role) },
                   { label: 'Reports', icon: '📋', action: () => setCompanyScreen('reports') },
+                  { label: 'Daily Plans', icon: '📌', action: () => setCompanyScreen('dailyplans') },
+                  { label: 'Punch List', icon: '🔨', action: () => setCompanyScreen('punchlist') },
                   { label: 'Licenses', icon: '⚙️', action: () => setCompanyScreen('licenses'), show: ['admin'].includes(user.sparks_role) },
                 ].filter(t => t.show !== false).map((tile, i) => (
                   <Button key={i} onClick={tile.action}
@@ -695,24 +701,19 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
             </>
           )}
 
-          {/* Sub-screen: People */}
+          {/* Sub-screen: People — renders the real PeopleView */}
           {companyScreen === 'people' && (
-            <>
-              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', mb: 2 }}>
-                {selectedCompany.name} — People
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
-                {(selectedCompany.people_by_trade || []).map(pt => (
-                  <Paper key={pt.trade} variant="outlined" sx={{ borderRadius: 2.5, p: 1.75 }}>
-                    <Typography sx={{ fontSize: 22, fontWeight: 800, color: 'primary.main' }}>{pt.count}</Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>{pt.trade}</Typography>
-                  </Paper>
-                ))}
-              </Box>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 2, textAlign: 'center' }}>
-                Use "View as Customer" to see the full people directory for this company
-              </Typography>
-            </>
+            <PeopleView
+              user={user}
+              activeTrade={null}
+              activeRoleLevels={{}}
+              readOnly={true}
+              onOpenReport={() => {}}
+              persistedViewingId={null}
+              setPeopleViewingId={() => {}}
+              setView={() => {}}
+              navigateTo={() => {}}
+            />
           )}
 
           {/* Sub-screen: Analytics */}
@@ -896,22 +897,36 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
             </>
           )}
 
-          {/* Sub-screen: Reports */}
+          {/* Sub-screen: Reports — renders the real ReportsView */}
           {companyScreen === 'reports' && (
-            <>
-              <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', mb: 2 }}>
-                {selectedCompany.name} — Recent Reports
-              </Typography>
-              {(selectedCompany.recent_reports || []).map(r => (
-                <Paper key={r.id} variant="outlined" sx={{ borderRadius: 2.5, p: 1.5, mb: 1, fontSize: 13 }}>
-                  <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: 14 }}>{r.person_name}</Typography>
-                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.trade} · {r.report_date}</Typography>
-                </Paper>
-              ))}
-              {(!selectedCompany.recent_reports || selectedCompany.recent_reports.length === 0) && (
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', textAlign: 'center', p: 2 }}>No reports found</Typography>
-              )}
-            </>
+            <ReportsView
+              user={user}
+              activeTrade={null}
+              onOpenReport={() => {}}
+              reportsPersonId={null}
+              setReportsPersonId={() => {}}
+              onNavigate={() => {}}
+            />
+          )}
+
+          {/* Sub-screen: Daily Plans — renders the real DailyPlanView */}
+          {companyScreen === 'dailyplans' && (
+            <DailyPlanView
+              user={user}
+              readOnly={true}
+              onNavigate={() => {}}
+              goBack={() => setCompanyScreen('overview')}
+            />
+          )}
+
+          {/* Sub-screen: Punch List — renders the real PunchListView */}
+          {companyScreen === 'punchlist' && (
+            <PunchListView
+              user={user}
+              readOnly={true}
+              onNavigate={() => {}}
+              goBack={() => setCompanyScreen('overview')}
+            />
           )}
 
           {/* Sub-screen: Licenses */}
