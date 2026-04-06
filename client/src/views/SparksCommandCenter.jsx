@@ -615,7 +615,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                       View as Customer
                     </Button>
                     <Button variant="outlined"
-                      onClick={() => onEnterCompany({ id: selectedCompany.id, name: selectedCompany.name, mode: 'support', trades: (selectedCompany.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean) })}
+                      onClick={() => setCompanyScreen('chat')}
                       sx={{ borderRadius: 5, fontSize: 12, fontWeight: 700, px: 2, color: 'primary.main', borderColor: 'primary.main' }}>
                       Customer Service
                     </Button>
