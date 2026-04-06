@@ -676,6 +676,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                   <PeopleView
                     user={user}
                     activeTrade={companyTrade}
+                companyId={selectedCompany?.id}
                     activeRoleLevels={{}}
                     readOnly={true}
                     onOpenReport={() => {}}
@@ -828,6 +829,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
             <PeopleView
                 user={user}
                 activeTrade={companyTrade}
+                companyId={selectedCompany?.id}
                 activeRoleLevels={{}}
                 readOnly={true}
                 onOpenReport={() => {}}

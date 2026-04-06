@@ -10,7 +10,7 @@ import MessagesView from '../views/MessagesView.jsx';
  * - Analytics (AI usage, costs)
  * - Agent (disabled — coming soon)
  */
-export default function CompanyChatPanel({ user, company, companyDetail, companyBilling, companyAnalytics, onBack, agentOpen }) {
+export default function CompanyChatPanel({ user, company, companyDetail, companyBilling, companyAnalytics, onBack, agentOpen, embedded = false }) {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('chats'); // chats | info | analytics | agent
   const [people, setPeople] = useState([]);
@@ -40,7 +40,7 @@ export default function CompanyChatPanel({ user, company, companyDetail, company
   const fmtCost = (cents) => cents != null ? '$' + (cents / 100).toFixed(2) : '$0.00';
 
   return (
-    <Box sx={{ display: 'flex', overflow: 'hidden', position: 'fixed', top: 68, left: 0, right: agentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, bottom: 0, zIndex: 50, bgcolor: 'background.default', transition: 'right 0.3s ease' }}>
+    <Box sx={{ display: 'flex', overflow: 'hidden', position: embedded ? 'relative' : 'fixed', ...(embedded ? { width: '100%', height: '100%' } : { top: 68, left: 0, right: agentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, bottom: 0 }), zIndex: embedded ? 1 : 50, bgcolor: 'background.default', transition: embedded ? 'none' : 'right 0.3s ease' }}>
       {/* Column 1: Icon sidebar */}
       <Box sx={{ width: 56, bgcolor: 'var(--charcoal)', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 1.5, gap: 0.5, flexShrink: 0 }}>
         <SidebarIcon icon="chats" active={sidebarTab === 'chats'} onClick={() => setSidebarTab('chats')} />
