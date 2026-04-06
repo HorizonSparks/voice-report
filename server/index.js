@@ -63,7 +63,47 @@ app.use(loadSession);
 app.use(tenantFilter);
 app.use(attachCompanyDb);
 
+
+// ---- AI API COST GUARD ----
+// Global per-user rate limit on ALL AI-calling endpoints
+// 60 AI calls per 10 minutes per user (covers agent, refine, structure, converse)
+const aiCallsMap = new Map(); // personId -> { count, resetAt }
+const AI_CALLS_LIMIT = 60;
+const AI_CALLS_WINDOW = 10 * 60 * 1000; // 10 minutes
+
+function aiCostGuard(req, res, next) {
+  if (!req.auth) return next(); // unauthenticated routes handle their own auth
+  const userId = req.auth.person_id || req.auth.sessionId || 'anon';
+  const now = Date.now();
+  let entry = aiCallsMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + AI_CALLS_WINDOW };
+    aiCallsMap.set(userId, entry);
+  }
+  entry.count++;
+  if (entry.count > AI_CALLS_LIMIT) {
+    const waitMin = Math.ceil((entry.resetAt - now) / 60000);
+    return res.status(429).json({ error: 'AI rate limit reached (' + AI_CALLS_LIMIT + ' calls per 10 min). Try again in ' + waitMin + ' min.' });
+  }
+  next();
+}
+
+// Cleanup every 30 min
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, entry] of aiCallsMap) {
+    if (now > entry.resetAt + AI_CALLS_WINDOW) aiCallsMap.delete(id);
+  }
+}, 30 * 60 * 1000);
+
 // Mount routes
+// AI cost guard on Claude-calling routes
+app.use('/api/agent', aiCostGuard);
+app.use('/api/structure', aiCostGuard);
+app.use('/api/refine', aiCostGuard);
+app.use('/api/converse', aiCostGuard);
+app.use('/api/refine-speak', aiCostGuard);
+
 app.use('/api', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
 app.use('/api/people', require('./routes/people'));
@@ -150,6 +190,25 @@ if (fs.existsSync(distPath)) {
 // Start servers
 // Preload knowledge cache on startup
 knowledgeCache.initialize();
+
+// Periodic session cleanup — purge expired sessions every hour
+const DB_SESSIONS = require('../database/db');
+setInterval(async () => {
+  try {
+    const count = await DB_SESSIONS.sessions.deleteExpired();
+    if (count > 0) console.log('[sessions] Cleaned up ' + count + ' expired sessions');
+  } catch (e) {
+    console.error('[sessions] Cleanup error:', e.message);
+  }
+}, 60 * 60 * 1000); // Every hour
+// Run once on startup after 30 seconds
+setTimeout(async () => {
+  try {
+    const count = await DB_SESSIONS.sessions.deleteExpired();
+    if (count > 0) console.log('[sessions] Startup cleanup: ' + count + ' expired sessions removed');
+  } catch (e) {}
+}, 30 * 1000);
+
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
