@@ -180,7 +180,7 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
                     Switch Company
                   </Typography>
                   {companiesList.map(c => (
-                    <MenuItem key={c.id} onClick={() => { setAnchorEl(null); onEnterCompany({ id: c.id, name: c.name, mode: 'customer' }); }}
+                    <MenuItem key={c.id} onClick={() => { setAnchorEl(null); onEnterCompany({ id: c.id, name: c.name, mode: 'customer', trades: (c.trades || []).filter(Boolean) }); }}
                       sx={{ borderRadius: 1, mx: 1, mb: 0.5 }}>
                       <ListItemText primary={c.name} secondary={`${c.people_count} people`} />
                     </MenuItem>
