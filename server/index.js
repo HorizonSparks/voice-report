@@ -21,6 +21,24 @@ const PORT = process.env.PORT || 3000;
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
 
+// CORS — allow LoopFolders (app.horizonsparks.ai) to call Voice Report APIs
+const ALLOWED_ORIGINS = [
+  'https://app.horizonsparks.ai',
+  'http://localhost:3032',
+  'http://localhost:3033',
+];
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Integration-Key');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 // Prometheus metrics endpoint — restricted to internal Docker network / localhost
 app.get('/metrics', (req, res, next) => {
   const ip = req.ip || req.socket.remoteAddress || '';

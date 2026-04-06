@@ -70,6 +70,22 @@ function clearSessionCookie(res, req) {
 async function loadSession(req, res, next) {
   req.auth = null;
 
+    // Integration key auth — for cross-origin calls from LoopFolders
+    const integrationKey = req.headers['x-integration-key'];
+    if (integrationKey && process.env.INTEGRATION_KEY && integrationKey === process.env.INTEGRATION_KEY) {
+      req.auth = {
+        sessionId: 'integration_' + Date.now(),
+        person_id: 'integration',
+        is_admin: true,
+        role_level: 5,
+        trade: null,
+        company_id: null,
+        sparks_role: 'admin',
+        isIntegration: true,
+      };
+      return next();
+    }
+
   try {
     const cookies = parseCookies(req);
     const sessionId = cookies[COOKIE_NAME];
