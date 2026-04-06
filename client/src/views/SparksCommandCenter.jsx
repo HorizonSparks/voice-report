@@ -583,14 +583,6 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
           {/* Sub-screen: Chat (full) */}
           {companyScreen === 'chat' && (
             <>
-              {/* Floating "View as Customer" button on the chat */}
-              <Box sx={{ position: 'fixed', top: 75, right: agentOpen ? { xs: 8, sm: 428, md: 448 } : 8, zIndex: 60 }}>
-                <Button variant="contained" color="secondary" size="small"
-                  onClick={() => setCompanyScreen('support-split')}
-                  sx={{ fontSize: 11, fontWeight: 700, borderRadius: 2, px: 1.5, boxShadow: 3 }}>
-                  View as Customer →
-                </Button>
-              </Box>
               <CompanyChatPanel
                 user={user}
                 company={selectedCompany}
@@ -600,6 +592,14 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                 onBack={() => setCompanyScreen('overview')}
                 agentOpen={agentOpen}
               />
+              {/* Floating "View as Customer" button — AFTER chat panel so it renders on top */}
+              <Box sx={{ position: 'fixed', top: 75, right: agentOpen ? { xs: 8, sm: 428, md: 448 } : 8, zIndex: 9999 }}>
+                <Button variant="contained" color="secondary" size="small"
+                  onClick={() => setCompanyScreen('support-split')}
+                  sx={{ fontSize: 11, fontWeight: 700, borderRadius: 2, px: 1.5, boxShadow: 3 }}>
+                  View as Customer →
+                </Button>
+              </Box>
             </>
           )}
 

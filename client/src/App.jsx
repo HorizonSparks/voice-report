@@ -450,7 +450,7 @@ export default function App() {
     setPinError('');
     window.__simulatingCompanyId = company?.id || null;
     window.__simulationMode = mode;
-    setActiveTrade(null);
+    setActiveTrade(company?.trades?.[0] || null);
     setCurrentWorld('voice-report');
     setView('home');
     setViewHistory([]);
