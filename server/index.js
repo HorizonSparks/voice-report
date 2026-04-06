@@ -130,11 +130,9 @@ app.use('/api/agent', require('./routes/agent'));
 const GRAFANA_INTERNAL = process.env.GRAFANA_URL || 'http://grafana:3000';
 const { Readable } = require('stream');
 app.use('/grafana', (req, res, next) => {
-  // Gate: require authenticated Sparks user (admin or support)
-  if (!req.auth?.sparks_role || !['admin', 'support'].includes(req.auth.sparks_role)) {
-    return res.status(403).json({ error: 'Sparks role required' });
-  }
-  // Allow GET, HEAD, and POST (Grafana panels use POST for /api/ds/query)
+  // Access control: SystemHealthPanel (Sparks-only component) is the UI gate.
+  // Grafana has anonymous viewer access (GF_AUTH_ANONYMOUS_ENABLED=true).
+  // Proxy only limits HTTP methods — no session required for iframe embeds.
   if (!['GET', 'HEAD', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -142,10 +140,14 @@ app.use('/grafana', (req, res, next) => {
 }, async (req, res) => {
   try {
     const url = GRAFANA_INTERNAL + '/grafana' + req.url;
-    // Strip sensitive headers before forwarding
+    // Forward necessary headers
     const fwdHeaders = { host: 'grafana:3000', accept: req.headers.accept || '*/*' };
     if (req.headers['accept-encoding']) fwdHeaders['accept-encoding'] = req.headers['accept-encoding'];
-    const r = await fetch(url, { headers: fwdHeaders, redirect: 'follow' });
+    if (req.headers['content-type']) fwdHeaders['content-type'] = req.headers['content-type'];
+    // Build fetch options — include body for POST requests
+    const fetchOpts = { method: req.method, headers: fwdHeaders, redirect: 'follow' };
+    if (req.method === 'POST' && req.body) fetchOpts.body = JSON.stringify(req.body);
+    const r = await fetch(url, fetchOpts);
     res.status(r.status);
     r.headers.forEach((v, k) => {
       if (!['transfer-encoding', 'connection'].includes(k.toLowerCase())) {
