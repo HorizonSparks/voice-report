@@ -596,7 +596,7 @@ export default function App() {
               {t('nav.activeTrades')}
             </Typography>
             <List disablePadding>
-              {ALL_TRADES.map(trade => {
+              {ALL_TRADES.filter(t => simulatingCompany?.trades?.length ? simulatingCompany.trades.includes(t.key) : true).map(trade => {
                 const isStarred = starredTrades.includes(trade.key);
                 const isConfigOpen = roleLevelConfigTrade === trade.key;
                 const tradeLevels = ROLE_LEVEL_LABELS[trade.key] || {};

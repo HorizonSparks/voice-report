@@ -42,7 +42,9 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
     }
   };
 
-  const visibleTrades = (allTrades || []).filter(t => (starredTrades || []).includes(t.key));
+  const visibleTrades = simulatingCompany?.trades?.length
+    ? (allTrades || []).filter(t => simulatingCompany.trades.includes(t.key))
+    : (allTrades || []).filter(t => (starredTrades || []).includes(t.key));
 
   const handleTradeSelect = (tradeKey) => {
     setActiveTrade(tradeKey);

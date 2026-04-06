@@ -602,12 +602,12 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                 {onEnterCompany && (
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button variant="contained" color="secondary"
-                      onClick={() => onEnterCompany({ id: selectedCompany.id, name: selectedCompany.name, mode: 'customer' })}
+                      onClick={() => onEnterCompany({ id: selectedCompany.id, name: selectedCompany.name, mode: 'customer', trades: (selectedCompany.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean) })}
                       sx={{ borderRadius: 5, fontSize: 12, fontWeight: 700, px: 2 }}>
                       View as Customer
                     </Button>
                     <Button variant="outlined"
-                      onClick={() => onEnterCompany({ id: selectedCompany.id, name: selectedCompany.name, mode: 'support' })}
+                      onClick={() => onEnterCompany({ id: selectedCompany.id, name: selectedCompany.name, mode: 'support', trades: (selectedCompany.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean) })}
                       sx={{ borderRadius: 5, fontSize: 12, fontWeight: 700, px: 2, color: 'primary.main', borderColor: 'primary.main' }}>
                       Customer Service
                     </Button>
