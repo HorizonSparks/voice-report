@@ -642,6 +642,28 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                 ))}
               </Box>
 
+              {/* Trade Selector */}
+              <Box sx={{ display: 'flex', gap: 1, mb: 2.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mr: 0.5 }}>
+                  Trade:
+                </Typography>
+                {(selectedCompany.trades || []).map(t => {
+                  const tradeName = typeof t === 'object' ? t.trade : t;
+                  if (!tradeName) return null;
+                  return (
+                    <Button key={tradeName} size="small"
+                      variant={companyTrade === tradeName ? 'contained' : 'outlined'}
+                      onClick={() => setCompanyTrade(tradeName)}
+                      sx={{
+                        fontSize: 12, fontWeight: 700, borderRadius: 2, textTransform: 'none', px: 2, py: 0.75,
+                        ...(companyTrade === tradeName ? { bgcolor: 'secondary.main', color: 'primary.main' } : {}),
+                      }}>
+                      {tradeName}
+                    </Button>
+                  );
+                })}
+              </Box>
+
               {/* Action Tiles */}
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
                 Company Operations
@@ -707,29 +729,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
 
           {/* Sub-screen: People — trade selector + real PeopleView */}
           {companyScreen === 'people' && (
-            <>
-              {/* Trade selector bar */}
-              <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mr: 1 }}>
-                  Trade:
-                </Typography>
-                {(selectedCompany.trades || []).map(t => {
-                  const tradeName = typeof t === 'object' ? t.trade : t;
-                  if (!tradeName) return null;
-                  return (
-                    <Button key={tradeName} size="small"
-                      variant={companyTrade === tradeName ? 'contained' : 'outlined'}
-                      onClick={() => setCompanyTrade(tradeName)}
-                      sx={{
-                        fontSize: 12, fontWeight: 700, borderRadius: 2, textTransform: 'none',
-                        ...(companyTrade === tradeName ? { bgcolor: 'secondary.main', color: 'primary.main' } : {}),
-                      }}>
-                      {tradeName}
-                    </Button>
-                  );
-                })}
-              </Box>
-              <PeopleView
+            <PeopleView
                 user={user}
                 activeTrade={companyTrade}
                 activeRoleLevels={{}}
@@ -740,7 +740,6 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                 setView={() => {}}
                 navigateTo={() => {}}
               />
-            </>
           )}
 
           {/* Sub-screen: Analytics */}
@@ -924,31 +923,9 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
             </>
           )}
 
-          {/* Sub-screen: Reports — trade selector + real ReportsView */}
+          {/* Sub-screen: Reports — renders the real ReportsView */}
           {companyScreen === 'reports' && (
-            <>
-              {/* Trade selector bar */}
-              <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mr: 1 }}>
-                  Trade:
-                </Typography>
-                {(selectedCompany.trades || []).map(t => {
-                  const tradeName = typeof t === 'object' ? t.trade : t;
-                  if (!tradeName) return null;
-                  return (
-                    <Button key={tradeName} size="small"
-                      variant={companyTrade === tradeName ? 'contained' : 'outlined'}
-                      onClick={() => setCompanyTrade(tradeName)}
-                      sx={{
-                        fontSize: 12, fontWeight: 700, borderRadius: 2, textTransform: 'none',
-                        ...(companyTrade === tradeName ? { bgcolor: 'secondary.main', color: 'primary.main' } : {}),
-                      }}>
-                      {tradeName}
-                    </Button>
-                  );
-                })}
-              </Box>
-              <ReportsView
+            <ReportsView
               user={user}
               activeTrade={companyTrade}
               onOpenReport={() => {}}
@@ -956,7 +933,6 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
               setReportsPersonId={() => {}}
               onNavigate={() => {}}
             />
-            </>
           )}
 
           {/* Sub-screen: Daily Plans — renders the real DailyPlanView */}
