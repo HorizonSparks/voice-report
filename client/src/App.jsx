@@ -504,8 +504,10 @@ export default function App() {
 
   return (
     <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main', '--agent-panel-width': globalAgentOpen ? { xs: '0px', sm: '420px', md: '440px' } : '0px', width: globalAgentOpen ? { xs: '100%', sm: 'calc(100% - 420px)', md: 'calc(100% - 440px)' } : '100%', transition: 'width 0.3s ease' }}>
+      {/* Sticky top stack — all bars stick together */}
+      <Box sx={{ position: 'sticky', top: 0, zIndex: (theme) => theme.zIndex.appBar + 1 }}>
       {/* Header */}
-      <AppBar position="sticky" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
+      <AppBar position="static" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
         <Toolbar sx={{ gap: 0.5, px: 2, pt: 1, position: "relative" }}>
           <IconButton color="inherit" onClick={() => setMenuOpen(!menuOpen)} sx={{ mr: 0.5 }}>
             {menuOpen ? <CloseIcon /> : <MenuIcon />}
@@ -749,12 +751,14 @@ export default function App() {
         </Alert>
       )}
 
-      <Box component="main" sx={{ flex: 1 }}>
         {readOnly && (
           <Alert severity="warning" variant="standard" sx={{ borderRadius: 0, fontSize: 12, fontWeight: 700, justifyContent: 'center' }}>
             Read-only mode — viewing as {simulatingCompany?.name}. Enable editing to make changes.
           </Alert>
         )}
+      </Box>
+
+      <Box component="main" sx={{ flex: 1 }}>
         {view === 'home' && <HomeView user={user} setView={navigateTo} logout={logout} activeTrade={activeTrade} setActiveTrade={setActiveTrade} starredTrades={starredTrades} allTrades={ALL_TRADES} onSafetyOpen={() => setSafetyPanelOpen(true)} simulatingCompany={simulatingCompany} currentWorld={currentWorld} onEnterCompany={enterSimulation} onSupportOpen={() => setSupportChatOpen(true)} />}
         {view === 'record' && <RecordView readOnly={readOnly} user={user} onSaved={() => navigateTo('list')} />}
         {view === 'list' && <ListView user={user} onOpen={openReport} />}
