@@ -14,6 +14,10 @@ import PeopleView from './PeopleView.jsx';
 import ReportsView from './ReportsView.jsx';
 import DailyPlanView from './DailyPlanView.jsx';
 import PunchListView from './PunchListView.jsx';
+import HomeView from './HomeView.jsx';
+import JSAView from './JSAView.jsx';
+import FormsHub from './FormsHub.jsx';
+import SafetyHub from './SafetyHub.jsx';
 
 /**
  * Control Center — the operating system for Horizon Sparks.
@@ -27,7 +31,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [companyTrade, setCompanyTrade] = useState(null);
   const [splitChatPerson, setSplitChatPerson] = useState(null);
   const [splitPanelWidth, setSplitPanelWidth] = useState(40);
-  const [splitRightView, setSplitRightView] = useState('people'); // active trade within company control center // overview | chat | people | billing | analytics | reports | licenses
+  const [splitRightView, setSplitRightView] = useState('home'); // active trade within company control center // overview | chat | people | billing | analytics | reports | licenses
   const [dashboard, setDashboard] = useState(null);
   const [team, setTeam] = useState([]);
   const [audit, setAudit] = useState([]);
@@ -595,7 +599,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
               agentOpen={agentOpen}
               onEnterSplit={(person) => {
                 setSplitChatPerson(person);
-                setSplitRightView('people');
+                setSplitRightView('home');
                 window.__simulatingCompanyId = selectedCompany?.id || null;
                 setCompanyScreen('support-split');
               }}
@@ -692,10 +696,13 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                 {/* Navigation tabs */}
                 <Box sx={{ display: 'flex', gap: 0.5, px: 2, py: 0.75, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, bgcolor: 'background.paper' }}>
                   {[
+                    { key: 'home', label: 'Home' },
                     { key: 'people', label: 'People' },
                     { key: 'reports', label: 'Reports' },
+                    { key: 'safety', label: 'Safety' },
                     { key: 'dailyplans', label: 'Daily Plans' },
                     { key: 'punchlist', label: 'Punch List' },
+                    { key: 'forms', label: 'Forms' },
                   ].map(tab => (
                     <Button key={tab.key} size="small"
                       variant={splitRightView === tab.key ? 'contained' : 'text'}
@@ -719,10 +726,43 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                       reportsPersonId={null} setReportsPersonId={() => {}} onNavigate={() => {}} />
                   )}
                   {splitRightView === 'dailyplans' && (
-                    <DailyPlanView user={user} readOnly={true} onNavigate={() => {}} goBack={() => setSplitRightView('people')} />
+                    <DailyPlanView user={user} readOnly={true} onNavigate={() => {}} goBack={() => setSplitRightView('home')} />
                   )}
                   {splitRightView === 'punchlist' && (
-                    <PunchListView user={user} readOnly={true} onNavigate={() => {}} goBack={() => setSplitRightView('people')} />
+                    <PunchListView user={user} readOnly={true} onNavigate={() => {}} goBack={() => setSplitRightView('home')} />
+                  )}
+                  {splitRightView === 'home' && (
+                    <HomeView
+                      user={user}
+                      setView={(v) => {
+                        // Map Voice Report navigation to split panel tabs
+                        if (v === 'people') setSplitRightView('people');
+                        else if (v === 'reports') setSplitRightView('reports');
+                        else if (v === 'dailyplan') setSplitRightView('dailyplans');
+                        else if (v === 'punchlist') setSplitRightView('punchlist');
+                        else if (v === 'jsa' || v === 'safety') setSplitRightView('safety');
+                        else if (v === 'forms') setSplitRightView('forms');
+                        else if (v === 'messages') setSplitRightView('home');
+                      }}
+                      logout={() => {}}
+                      activeTrade={companyTrade}
+                      setActiveTrade={setCompanyTrade}
+                      starredTrades={(selectedCompany.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean)}
+                      allTrades={(selectedCompany.trades || []).map(t => {
+                        const name = typeof t === 'object' ? t.trade : t;
+                        return { key: name, label: name, icon: '' };
+                      }).filter(t => t.key)}
+                      simulatingCompany={selectedCompany}
+                      onEnterCompany={() => {}}
+                      onSafetyOpen={() => setSplitRightView('safety')}
+                      onSupportOpen={() => {}}
+                    />
+                  )}
+                  {splitRightView === 'safety' && (
+                    <JSAView user={user} readOnly={true} activeTrade={companyTrade} goHome={() => setSplitRightView('home')} />
+                  )}
+                  {splitRightView === 'forms' && (
+                    <FormsHub user={user} readOnly={true} activeTrade={companyTrade} goHome={() => setSplitRightView('home')} />
                   )}
                 </Box>
               </Box>
