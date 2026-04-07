@@ -98,13 +98,16 @@ async function canApproveJsa(actor, jsa, reqDb) {
   const currentStatus = jsa.status || jsa.approval_status;
 
   // Foreman approval stage
-  if (currentStatus === 'pending_foreman' || currentStatus === 'draft') {
-    if (actor.role_level >= 3) return true;
-    // Check if actor is the creator's supervisor
-    if (jsa.created_by) {
-      const creator = await (reqDb || DB).people.getById(jsa.created_by);
+  if (currentStatus === 'pending_foreman') {
+    // Check if actor is the JSA creator's supervisor (chain-of-command)
+    if (jsa.person_id) {
+      const creator = await (reqDb || DB).people.getById(jsa.person_id);
       if (creator && creator.supervisor_id === actor.person_id) return true;
     }
+    // Also allow if actor is in the creator's supervisor chain (not just direct)
+    if (actor.role_level >= 3 && jsa.supervisor_id === actor.person_id) return true;
+    // Fallback: role_level >= 4 (general foreman+) can approve any in their company
+    if (actor.role_level >= 4) return true;
     return false;
   }
 

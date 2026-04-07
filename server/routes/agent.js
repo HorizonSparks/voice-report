@@ -486,6 +486,68 @@ const AGENT_TOOLS = [
     },
   },
 ];
+
+// ---- TOOL ACCESS LEVELS ----
+// Maps tool name → minimum role_level required (or 'sparks' for platform ops).
+// Tools not listed here are available to ALL authenticated users.
+const TOOL_MIN_LEVEL = {
+  // Sparks admin only — platform operations
+  query_system_metrics: 'sparks',
+  search_logs: 'sparks',
+  get_error_issues: 'sparks',
+  get_system_status: 'sparks',
+  // PM+ (level 5) or admin — company-wide / cross-platform analytics
+  lookup_company: 5,
+  get_company_analytics: 5,
+  trace_company_everything: 5,
+  analyze_extraction_quality: 5,
+  get_pipeline_status: 5,
+  get_box_completeness: 5,
+  get_loop_folder_funnel: 5,
+  get_extraction_performance: 5,
+  compare_extraction_models: 5,
+  get_tag_quality_report: 5,
+  // Foreman+ (level 3) — crew management, cross-person data
+  lookup_person: 3,
+  get_recent_reports: 3,
+  get_person_work_summary: 3,
+  get_daily_plans: 3,
+  get_punch_items: 3,
+  get_jsa_details: 3,
+  search_reports: 3,
+  relate_data: 3,
+  get_team_messages: 3,
+  // All users: search_knowledge, navigate_to, recall_conversation, read_shared_file,
+  //            query_pid_results, get_instrument_details, get_cropped_instruments,
+  //            list_project_files, get_form_templates, save_insight, read_insights
+};
+
+/**
+ * Filter AGENT_TOOLS by the user's role_level.
+ * Returns only tools the user is authorized to use.
+ */
+function getToolsForRole(roleLevel, isAdmin, sparksRole) {
+  if (isAdmin || sparksRole === 'admin') return AGENT_TOOLS;
+  return AGENT_TOOLS.filter(tool => {
+    const minLevel = TOOL_MIN_LEVEL[tool.name];
+    if (minLevel === undefined) return true; // No restriction
+    if (minLevel === 'sparks') return sparksRole === 'admin' || sparksRole === 'support';
+    return roleLevel >= minLevel;
+  });
+}
+
+/**
+ * Check if a specific tool execution is allowed for the user's role.
+ * Belt-and-suspenders: even if Claude tries to call a filtered tool, block it.
+ */
+function isToolAllowed(toolName, roleLevel, isAdmin, sparksRole) {
+  if (isAdmin || sparksRole === 'admin') return true;
+  const minLevel = TOOL_MIN_LEVEL[toolName];
+  if (minLevel === undefined) return true;
+  if (minLevel === 'sparks') return sparksRole === 'admin' || sparksRole === 'support';
+  return roleLevel >= minLevel;
+}
+
 // ---- OBSERVABILITY CONFIG ----
 const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus:9090';
 const LOKI_URL = process.env.LOKI_URL || 'http://loki:3100';
@@ -1970,6 +2032,8 @@ ENGAGEMENT RULES:
 - When you notice a pattern or connection, use save_insight to remember it.
 - Think in RELATIONSHIPS — everything connects to something else. That's your superpower.`;
     // Tool use loop — Claude may call tools, we execute and send results back
+    // Filter tools by user's role level — workers can't access PM/admin tools
+    const userTools = getToolsForRole(actor.role_level || 1, actor.is_admin, req.auth?.sparks_role);
     let messages = [{ role: 'user', content: message }];
     let finalText = '';
     let totalUsage = { input_tokens: 0, output_tokens: 0 };
@@ -1987,7 +2051,7 @@ ENGAGEMENT RULES:
           messages,
           maxTokens: 2000,
           model: activeModel,
-          tools: AGENT_TOOLS,
+          tools: userTools,
           tracking: {
             requestId: `agent_${Date.now()}_${loops}`,
             personId,
@@ -2002,7 +2066,7 @@ ENGAGEMENT RULES:
             messages,
             maxTokens: 2000,
             model: activeModel,
-            tools: AGENT_TOOLS,
+            tools: userTools,
             tracking: {
               requestId: `agent_${Date.now()}_${loops}_fallback`,
               personId,
@@ -2022,6 +2086,13 @@ ENGAGEMENT RULES:
             navigation = toolUseBlock.input;
           }
           if (['recall_conversation', 'save_insight'].includes(toolUseBlock.name)) toolUseBlock.input._personId = personId;
+          // Belt-and-suspenders: block tool execution if role doesn't allow it
+          if (!isToolAllowed(toolUseBlock.name, actor.role_level || 1, actor.is_admin, req.auth?.sparks_role)) {
+            const toolResult = `Access denied: "${toolUseBlock.name}" requires a higher role level.`;
+            messages.push({ role: 'assistant', content: result.content });
+            messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: toolResult, is_error: true }] });
+            continue;
+          }
           const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
           lastToolName = toolUseBlock.name;
           lastToolResult = toolResult;

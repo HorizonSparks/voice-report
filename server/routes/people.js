@@ -39,9 +39,10 @@ const certStorage = multer.diskStorage({
 });
 const certUpload = multer({ storage: certStorage, limits: { fileSize: 20 * 1024 * 1024 } });
 
-// GET all people — auth required, filtered by company_id, optional ?trade= filter
+// GET all people — auth required, filtered by company_id + role-based visibility
 router.get('/', requireAuth, async (req, res) => {
   try {
+    const actor = getActor(req);
     let people = await (req.db || DB).people.getAll(req.companyId);
     // Server-side trade filter — if ?trade= is provided, only return people in that trade
     if (req.query.trade) {
@@ -49,22 +50,68 @@ router.get('/', requireAuth, async (req, res) => {
       const tradeTemplateIds = new Set(allTemplates.filter(t => t.trade === req.query.trade).map(t => t.id));
       people = people.filter(p => tradeTemplateIds.has(p.template_id));
     }
+    // Role-based visibility filter (server-side enforcement)
+    // Admin/Sparks: see everyone. Foreman+ (level 3+): see supervisor chain via report_visibility.
+    // Workers (level 1-2): see self, supervisor, crew (same supervisor), and direct reports only.
+    if (!actor.is_admin) {
+      if (actor.role_level >= 3) {
+        // Foreman+: see everyone in their visibility chain (report_visibility)
+        const { rows: visible } = await (req.db || DB).db.query(
+          'SELECT person_id FROM report_visibility WHERE viewer_id = $1', [actor.person_id]
+        );
+        const visibleIds = new Set(visible.map(r => r.person_id));
+        // Also include own supervisor chain upward
+        visibleIds.add(actor.person_id);
+        let supId = (await (req.db || DB).people.getById(actor.person_id))?.supervisor_id;
+        let depth = 0;
+        while (supId && depth < 10) {
+          visibleIds.add(supId);
+          const sup = await (req.db || DB).people.getById(supId);
+          supId = sup?.supervisor_id;
+          depth++;
+        }
+        people = people.filter(p => visibleIds.has(p.id));
+      } else {
+        // Workers (level 1-2): self + supervisor + crew (same supervisor) + direct reports
+        const visibleIds = new Set([actor.person_id]);
+        const me = await (req.db || DB).people.getById(actor.person_id);
+        if (me?.supervisor_id) {
+          visibleIds.add(me.supervisor_id);
+          // Crew mates (same supervisor)
+          const { rows: crew } = await (req.db || DB).db.query(
+            "SELECT id FROM people WHERE supervisor_id = $1 AND status = 'active'", [me.supervisor_id]
+          );
+          crew.forEach(c => visibleIds.add(c.id));
+        }
+        // Direct reports (if any)
+        const { rows: reports } = await (req.db || DB).db.query(
+          "SELECT id FROM people WHERE supervisor_id = $1 AND status = 'active'", [actor.person_id]
+        );
+        reports.forEach(r => visibleIds.add(r.id));
+        people = people.filter(p => visibleIds.has(p.id));
+      }
+    }
     res.json(people);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET person by ID — auth required, self or supervisor+ or same company
+// GET person by ID — auth required, chain-of-command visibility
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const p = await (req.db || DB).people.getById(req.params.id);
     if (!p) return res.status(404).json({ error: 'Person not found' });
-    // Authorization: self, admin, supervisor+, or same company
-    const isSelf = req.auth.person_id === req.params.id;
-    const isSupervisor = req.auth.is_admin || req.auth.role_level >= 3;
-    const sameCompany = req.companyId && p.company_id === req.companyId;
-    if (!isSelf && !isSupervisor && !sameCompany) {
-      return res.status(403).json({ error: 'Not authorized to view this person' });
+    // Company isolation first
+    if (req.companyId && p.company_id && p.company_id !== req.companyId) {
+      return res.status(404).json({ error: 'Person not found' });
     }
+    const actor = getActor(req);
+    if (actor.is_admin) return res.json(p);
+    // Self always allowed
+    if (actor.person_id === req.params.id) return res.json(p);
+    // Chain-of-command: use canViewPerson from authz
+    const { canViewPerson } = require('../auth/authz');
+    const allowed = await canViewPerson(actor, req.params.id, req.db || DB);
+    if (!allowed) return res.status(403).json({ error: 'Not authorized to view this person' });
     res.json(p);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

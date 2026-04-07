@@ -365,7 +365,7 @@ module.exports = function(db) {
   // ============================================
   // POST — Approve JSA (foreman or safety)
   // ============================================
-  router.post('/:id/approve', requireAuth, requireSparksEditMode, requireRoleLevel(3), async (req, res) => {
+  router.post('/:id/approve', requireAuth, requireSparksEditMode, async (req, res) => {
     const actor = getActor(req);
     const { id } = req.params;
     // DERIVE approver identity from session
@@ -378,15 +378,34 @@ module.exports = function(db) {
     } catch {};
 
     try {
-      const jsa = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE id = $1', [id])).rows[0];
+      // Company isolation — include company_id in lookup
+      let jsaQuery = 'SELECT * FROM jsa_records WHERE id = $1';
+      const jsaParams = [id];
+      if (req.companyId) { jsaParams.push(req.companyId); jsaQuery += ` AND company_id = $${jsaParams.length}`; }
+      const jsa = (await (req.db || DB).db.query(jsaQuery, jsaParams)).rows[0];
       if (!jsa) return res.status(404).json({ error: 'JSA not found' });
 
+      // Use centralized authorization — checks role_level AND chain-of-command
+      const { canApproveJsa } = require('../auth/authz');
+      const allowed = await canApproveJsa(actor, jsa, req.db || DB);
+      if (!allowed) {
+        return res.status(403).json({ error: 'Not authorized to approve this JSA' });
+      }
+
       if (role === 'foreman') {
+        if (jsa.status !== 'pending_foreman') {
+          return res.status(400).json({ error: `Cannot apply foreman approval — JSA status is "${jsa.status}", expected "pending_foreman"` });
+        }
         await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, foreman_id = $2, foreman_name = $3, foreman_approved_at = NOW(), updated_at = NOW() WHERE id = $4",
           ['pending_safety', approver_id, approver_name, id]);
       } else if (role === 'safety') {
+        if (jsa.status !== 'pending_safety') {
+          return res.status(400).json({ error: `Cannot apply safety approval — JSA status is "${jsa.status}"` });
+        }
         await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, safety_id = $2, safety_name = $3, safety_approved_at = NOW(), updated_at = NOW() WHERE id = $4",
           ['active', approver_id, approver_name, id]);
+      } else {
+        return res.status(400).json({ error: 'Invalid approval role — must be "foreman" or "safety"' });
       }
 
       res.json({ success: true });
