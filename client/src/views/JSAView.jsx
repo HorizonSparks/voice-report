@@ -582,7 +582,7 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
       )}
 
       {/* Create new JSA button */}
-      <Button onClick={() => { setCreating(true); setFormData({ jsa_date: new Date().toISOString().split('T')[0], prepared_by: user.name, craft_trade: user.trade }); }}
+      <Button onClick={() => { setCreating(true); setFormData({ date: new Date().toISOString().split('T')[0], prepared_by: user.name, trade_craft: user.trade }); }}
         sx={{
           width: '100%', p: '18px', border: '2px solid', borderColor: 'primary.main', borderRadius: '12px',
           fontSize: '18px', fontWeight: 800, background: 'var(--charcoal)', color: 'primary.main',
