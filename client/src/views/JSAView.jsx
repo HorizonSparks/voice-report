@@ -246,7 +246,7 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
             </legend>
             {/* Progress bar */}
             <Box sx={{ height: '8px', background: '#e0e0e0', borderRadius: '4px', mb: '12px', overflow: 'hidden' }}>
-              <Box sx={{ height: '100%', width: `${acks.length > 0 ? (completed / acks.length * 100) : 0}%`, background: completed === acks.length ? 'success.main' : 'primary.main', borderRadius: '4px', transition: 'width 0.3s' }} />
+              <Box sx={{ height: '100%', width: `${acks.length > 0 ? (completed / acks.length * 100) : 0}%`, bgcolor: completed === acks.length ? 'success.main' : 'primary.main', borderRadius: '4px', transition: 'width 0.3s' }} />
             </Box>
             {acks.map(ack => (
               <Box key={ack.id} sx={{ display: 'flex', alignItems: 'center', gap: '10px', py: '10px', borderBottom: '1px solid #f0f0f0' }}>
@@ -568,7 +568,7 @@ export default function JSAView({ user, goHome, activeTrade, readOnly }) {
                   {t('jsa.viewDetails')}
                 </Button>
                 <Button onClick={() => approveJSA(jsa.id, isSafety ? 'safety' : 'foreman')}
-                  sx={{ flex: 1, p: '10px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, background: 'success.main', color: 'white', cursor: 'pointer', textTransform: 'none' }}>
+                  sx={{ flex: 1, p: '10px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, bgcolor: 'success.main', color: 'white', cursor: 'pointer', textTransform: 'none' }}>
                   {t('jsa.approve')}
                 </Button>
                 <Button onClick={() => rejectJSA(jsa.id, isSafety ? 'safety' : 'foreman')}
