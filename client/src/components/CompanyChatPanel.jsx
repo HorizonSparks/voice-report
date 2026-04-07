@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Chip } from '@mui/material';
+import { Box, Typography, IconButton, Chip, Button } from '@mui/material';
 import MessagesView from '../views/MessagesView.jsx';
 
 /**
@@ -185,12 +185,23 @@ export default function CompanyChatPanel({ user, company, companyDetail, company
       {/* Column 3: Active chat */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#ECE5DD' }}>
         {selectedPerson ? (
-          <MessagesView
-            key={selectedPerson.id}
-            user={chatUser}
-            initialContact={selectedPerson}
-            embedded
-          />
+          <>
+            {/* View as Customer button */}
+            {onEnterSplit && (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 1.5, py: 0.5, bgcolor: 'var(--charcoal)', borderBottom: '2px solid var(--primary)', flexShrink: 0 }}>
+                <Button onClick={() => onEnterSplit(selectedPerson)} size="small"
+                  sx={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', textTransform: 'none', '&:hover': { bgcolor: 'rgba(249,148,64,0.1)' } }}>
+                  View as Customer →
+                </Button>
+              </Box>
+            )}
+            <MessagesView
+              key={selectedPerson.id}
+              user={chatUser}
+              initialContact={selectedPerson}
+              embedded
+            />
+          </>
         ) : (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
             <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(249,148,64,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
