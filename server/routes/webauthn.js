@@ -145,8 +145,8 @@ router.post('/register', requireAuth, async (req, res) => {
 router.post('/login-options', async (req, res) => {
   try {
     // Check if any credentials exist (in new table first, fallback to legacy)
-    const newCreds = (await (req.db || DB).db.query('SELECT credential_id FROM webauthn_credentials')).rows;
-    const legacyCreds = (await (req.db || DB).db.query("SELECT id, webauthn_credential_id FROM people WHERE webauthn_credential_id IS NOT NULL AND status = 'active'")).rows;
+    const newCreds = (await DB.db.query('SELECT credential_id FROM webauthn_credentials')).rows;
+    const legacyCreds = (await DB.db.query("SELECT id, webauthn_credential_id FROM people WHERE webauthn_credential_id IS NOT NULL AND status = 'active'")).rows;
 
     const allCreds = [
       ...newCreds.map(c => ({ id: c.credential_id, type: 'public-key' })),

@@ -103,7 +103,7 @@ router.post('/structure', requireAuth, async (req, res) => {
     let contextPackage = null;
     if (person_id) {
       const person = await (req.db || DB).people.getById(person_id);
-      const template = person ? await (req.db || DB).templates.getById(person.template_id) : null;
+      const template = person ? await DB.templates.getById(person.template_id) : null;
       contextPackage = await buildContextPackage(person, template, req.db);
     }
 
@@ -181,7 +181,7 @@ router.post('/converse', requireAuth, async (req, res) => {
 
     if (person_id) {
       const person = await (req.db || DB).people.getById(person_id);
-      const template = person ? await (req.db || DB).templates.getById(person.template_id) : null;
+      const template = person ? await DB.templates.getById(person.template_id) : null;
       if (person) { personName = person.name; trade = person.trade || ''; }
       if (template) {
         roleTitle = template.role_level_title + ' ' + template.template_name;

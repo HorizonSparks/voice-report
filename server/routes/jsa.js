@@ -190,9 +190,9 @@ module.exports = function(db) {
     try {
       // Auto-generate JSA number
       const year = new Date().getFullYear();
-      await (req.db || DB).db.query('INSERT INTO jsa_sequence (year, last_number) VALUES ($1, 0) ON CONFLICT DO NOTHING', [year]);
-      await (req.db || DB).db.query('UPDATE jsa_sequence SET last_number = last_number + 1 WHERE year = $1', [year]);
-      const seq = (await (req.db || DB).db.query('SELECT last_number FROM jsa_sequence WHERE year = $1', [year])).rows[0];
+      await DB.db.query('INSERT INTO jsa_sequence (year, last_number) VALUES ($1, 0) ON CONFLICT DO NOTHING', [year]);
+      await DB.db.query('UPDATE jsa_sequence SET last_number = last_number + 1 WHERE year = $1', [year]);
+      const seq = (await DB.db.query('SELECT last_number FROM jsa_sequence WHERE year = $1', [year])).rows[0];
       const jsaNumber = `JSA-${year}-${String(seq.last_number).padStart(4, '0')}`;
 
       // Derive company_id from session or from the person record

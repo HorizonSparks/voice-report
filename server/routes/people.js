@@ -45,7 +45,7 @@ router.get('/', requireAuth, async (req, res) => {
     let people = await (req.db || DB).people.getAll(req.companyId);
     // Server-side trade filter — if ?trade= is provided, only return people in that trade
     if (req.query.trade) {
-      const allTemplates = await (req.db || DB).templates.getAll();
+      const allTemplates = await DB.templates.getAll();
       const tradeTemplateIds = new Set(allTemplates.filter(t => t.trade === req.query.trade).map(t => t.id));
       people = people.filter(p => tradeTemplateIds.has(p.template_id));
     }

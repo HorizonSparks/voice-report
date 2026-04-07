@@ -146,8 +146,8 @@ router.post('/submissions', requireAuth, requireSparksEditMode, async (req, res)
 // Reseed endpoint — wipe and reseed all 27 templates
 router.post("/reseed", requireAdmin, requireSparksEditMode, async (req, res) => {
   try {
-    await (req.db || DB).db.query('DELETE FROM form_fields_v2');
-    await (req.db || DB).db.query('DELETE FROM form_templates_v2');
+    await DB.db.query('DELETE FROM form_fields_v2');
+    await DB.db.query('DELETE FROM form_templates_v2');
     // Fall through to seed logic below via redirect
     res.redirect(307, '/api/forms/seed');
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -155,7 +155,7 @@ router.post("/reseed", requireAdmin, requireSparksEditMode, async (req, res) => 
 
 // Seed endpoint — loads form templates from JSON config
 router.post("/seed", requireAdmin, requireSparksEditMode, async (req, res) => {
-  const client = await (req.db || DB).db.connect();
+  const client = await DB.db.connect();
   try {
     const formDefs = require('../config/form-templates.json');
     const existing = (await client.query('SELECT COUNT(*) as cnt FROM form_templates_v2')).rows[0];
