@@ -219,7 +219,7 @@ export default function App() {
         throw new Error('Not authenticated');
       })
       .then(userData => {
-        setUser(userData);
+        userData.is_admin = userData.is_admin || userData.sparks_role === "admin"; setUser(userData);
         setAuthStatus('authenticated');
         // Sparks users land on Control Center, not home
         if (userData.sparks_role) { setView('sparks'); setCurrentWorld('control-center'); }
@@ -250,7 +250,7 @@ export default function App() {
   }, [authStatus]);
 
   const handleLogin = (userData) => {
-    setUser(userData);
+    userData.is_admin = userData.is_admin || userData.sparks_role === "admin"; setUser(userData);
     setAuthStatus('authenticated');
     // Sparks users go straight to Control Center
     setView(userData.sparks_role ? 'sparks' : 'home');

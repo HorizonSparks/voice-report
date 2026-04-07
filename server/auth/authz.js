@@ -21,7 +21,7 @@ function getActor(req) {
   if (!req.auth) return null;
   return {
     person_id: req.auth.person_id,
-    is_admin: req.auth.is_admin,
+    is_admin: req.auth.is_admin || req.auth.sparks_role === 'admin',
     role_level: req.auth.role_level,
     trade: req.auth.trade,
   };
