@@ -10,7 +10,7 @@ import MessagesView from '../views/MessagesView.jsx';
  * - Analytics (AI usage, costs)
  * - Agent (disabled — coming soon)
  */
-export default function CompanyChatPanel({ user, company, companyDetail, companyBilling, companyAnalytics, onBack, agentOpen, embedded = false }) {
+export default function CompanyChatPanel({ user, company, companyDetail, companyBilling, companyAnalytics, onBack, agentOpen, embedded = false, onEnterSplit }) {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('chats'); // chats | info | analytics | agent
   const [people, setPeople] = useState([]);

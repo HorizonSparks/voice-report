@@ -24,7 +24,10 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [companyScreen, setCompanyScreen] = useState("overview");
-  const [companyTrade, setCompanyTrade] = useState(null); // active trade within company control center // overview | chat | people | billing | analytics | reports | licenses
+  const [companyTrade, setCompanyTrade] = useState(null);
+  const [splitChatPerson, setSplitChatPerson] = useState(null);
+  const [splitPanelWidth, setSplitPanelWidth] = useState(40);
+  const [splitRightView, setSplitRightView] = useState('people'); // active trade within company control center // overview | chat | people | billing | analytics | reports | licenses
   const [dashboard, setDashboard] = useState(null);
   const [team, setTeam] = useState([]);
   const [audit, setAudit] = useState([]);
@@ -292,13 +295,13 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   }
 
   function handleBack() {
-    if (screen === 'company-detail') { if (companyScreen === 'support-split') { setCompanyScreen('chat'); return; } if (companyScreen !== 'overview') { setCompanyScreen('overview'); return; } setSelectedCompany(null); loadCompanies(); return; }
+    if (screen === 'company-detail') { if (companyScreen === 'support-split') { window.__simulatingCompanyId = null; setSplitChatPerson(null); setCompanyScreen('chat'); return; } if (companyScreen !== 'overview') { setCompanyScreen('overview'); return; } setSelectedCompany(null); loadCompanies(); return; }
     if (screen !== 'dashboard') { setScreen('dashboard'); return; }
   }
 
   useImperativeHandle(ref, () => ({
     tryGoBack() {
-      if (screen === 'company-detail') { if (companyScreen === 'support-split') { setCompanyScreen('chat'); return true; } if (companyScreen !== 'overview') { setCompanyScreen('overview'); return true; } setSelectedCompany(null); loadCompanies(); return true; }
+      if (screen === 'company-detail') { if (companyScreen === 'support-split') { window.__simulatingCompanyId = null; setSplitChatPerson(null); setCompanyScreen('chat'); return true; } if (companyScreen !== 'overview') { setCompanyScreen('overview'); return true; } setSelectedCompany(null); loadCompanies(); return true; }
       if (screen !== 'dashboard') { setScreen('dashboard'); return true; }
       return false;
     },
@@ -582,74 +585,90 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
         <>
           {/* Sub-screen: Chat (full) */}
           {companyScreen === 'chat' && (
-            <>
-              <CompanyChatPanel
-                user={user}
-                company={selectedCompany}
-                companyDetail={selectedCompany}
-                companyBilling={companyBilling}
-                companyAnalytics={companyAnalytics}
-                onBack={() => setCompanyScreen('overview')}
-                agentOpen={agentOpen}
-              />
-              {/* Floating "View as Customer" button — AFTER chat panel so it renders on top */}
-              <Box sx={{ position: 'fixed', top: 75, right: agentOpen ? { xs: 8, sm: 428, md: 448 } : 8, zIndex: 9999 }}>
-                <Button variant="contained" color="secondary" size="small"
-                  onClick={() => setCompanyScreen('support-split')}
-                  sx={{ fontSize: 11, fontWeight: 700, borderRadius: 2, px: 1.5, boxShadow: 3 }}>
-                  View as Customer →
-                </Button>
-              </Box>
-            </>
+            <CompanyChatPanel
+              user={user}
+              company={selectedCompany}
+              companyDetail={selectedCompany}
+              companyBilling={companyBilling}
+              companyAnalytics={companyAnalytics}
+              onBack={() => setCompanyScreen('overview')}
+              agentOpen={agentOpen}
+              onEnterSplit={(person) => {
+                setSplitChatPerson(person);
+                setSplitRightView('people');
+                window.__simulatingCompanyId = selectedCompany?.id || null;
+                setCompanyScreen('support-split');
+              }}
+            />
           )}
 
-          {/* Sub-screen: Support Split — chat left, customer view right */}
-          {companyScreen === 'support-split' && (
+          {/* Sub-screen: Support Split — customer service workstation */}
+          {companyScreen === 'support-split' && splitChatPerson && (
             <Box sx={{ display: 'flex', position: 'fixed', top: 68, left: 0, right: agentOpen ? { xs: 0, sm: '420px', md: '440px' } : 0, bottom: 0, zIndex: 50, bgcolor: 'background.default' }}>
-              {/* LEFT: Chat panel (40%) */}
-              <Box sx={{ width: '40%', minWidth: 320, borderRight: '2px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+              {/* LEFT: Chat conversation */}
+              <Box sx={{ width: splitPanelWidth + '%', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: '#ECE5DD' }}>
                 {/* Chat header */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'secondary.main', borderBottom: '3px solid', borderColor: 'primary.main', flexShrink: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'var(--charcoal)', borderBottom: '3px solid var(--primary)', flexShrink: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'white' }}>
-                      {selectedCompany.name}
-                    </Typography>
-                    <Chip label="Customer Service" size="small" sx={{ bgcolor: 'rgba(249,148,64,0.3)', color: 'primary.main', fontWeight: 700, fontSize: 10, height: 20 }} />
+                    <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 800, color: 'white' }}>
+                        {(splitChatPerson.name || '?').split(' ').map(n => n[0]).join('').substring(0, 2)}
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'white' }}>{splitChatPerson.name}</Typography>
                   </Box>
-                  <Button size="small" onClick={() => setCompanyScreen('chat')}
-                    sx={{ color: 'primary.main', fontSize: 11, fontWeight: 700, textTransform: 'none' }}>
+                  <Button size="small" onClick={() => { window.__simulatingCompanyId = null; setCompanyScreen('chat'); }}
+                    sx={{ color: 'var(--primary)', fontSize: 11, fontWeight: 700, textTransform: 'none' }}>
                     Full Chat
                   </Button>
                 </Box>
-                {/* Embedded chat — people list + messages */}
+                {/* Message thread */}
                 <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                  <CompanyChatPanel
+                  <MessagesView
+                    key={splitChatPerson.id}
                     user={user}
-                    company={selectedCompany}
-                    companyDetail={selectedCompany}
-                    companyBilling={companyBilling}
-                    companyAnalytics={companyAnalytics}
-                    onBack={() => setCompanyScreen('overview')}
-                    agentOpen={false}
+                    initialContact={splitChatPerson}
                     embedded={true}
                   />
                 </Box>
               </Box>
 
-              {/* RIGHT: Customer view (60%) */}
-              <Box sx={{ flex: 1, overflow: 'auto', position: 'relative' }}>
-                {/* Customer view header */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'rgba(249,148,64,0.08)', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
-                      Viewing: {selectedCompany.name}
-                    </Typography>
-                    {companyTrade && (
-                      <Chip label={companyTrade} size="small" sx={{ bgcolor: 'secondary.main', color: 'primary.main', fontWeight: 700, fontSize: 10, height: 20 }} />
-                    )}
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {/* Trade selector in the customer view header */}
+              {/* DRAGGABLE DIVIDER */}
+              <Box
+                sx={{
+                  width: 6, cursor: 'col-resize', bgcolor: 'grey.300', flexShrink: 0,
+                  '&:hover': { bgcolor: 'primary.main' },
+                  transition: 'background-color 0.15s',
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const containerWidth = window.innerWidth - (agentOpen ? 440 : 0);
+                  const onMouseMove = (moveEvent) => {
+                    const pct = (moveEvent.clientX / containerWidth) * 100;
+                    setSplitPanelWidth(Math.min(75, Math.max(25, pct)));
+                  };
+                  const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    document.body.style.userSelect = '';
+                    document.body.style.cursor = '';
+                  };
+                  document.body.style.userSelect = 'none';
+                  document.body.style.cursor = 'col-resize';
+                  document.addEventListener('mousemove', onMouseMove);
+                  document.addEventListener('mouseup', onMouseUp);
+                }}
+              />
+
+              {/* RIGHT: Customer view — navigable */}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* Right header: company + trade + navigation tabs */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 0.75, bgcolor: 'rgba(249,148,64,0.06)', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, flexWrap: 'wrap', gap: 0.5 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
+                    {selectedCompany.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                     {(selectedCompany.trades || []).map(t => {
                       const tradeName = typeof t === 'object' ? t.trade : t;
                       if (!tradeName) return null;
@@ -657,34 +676,54 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                         <Button key={tradeName} size="small"
                           variant={companyTrade === tradeName ? 'contained' : 'outlined'}
                           onClick={() => setCompanyTrade(tradeName)}
-                          sx={{
-                            fontSize: 10, fontWeight: 700, borderRadius: 1.5, textTransform: 'none', px: 1, py: 0.25, minWidth: 'auto',
+                          sx={{ fontSize: 10, fontWeight: 700, borderRadius: 1.5, textTransform: 'none', px: 1, py: 0.25, minWidth: 'auto',
                             ...(companyTrade === tradeName ? { bgcolor: 'secondary.main', color: 'primary.main' } : {}),
                           }}>
                           {tradeName}
                         </Button>
                       );
                     })}
-                    <Button size="small" onClick={() => setCompanyScreen('overview')}
-                      sx={{ fontSize: 10, fontWeight: 700, textTransform: 'none', color: 'text.secondary' }}>
+                    <Button size="small" onClick={() => { window.__simulatingCompanyId = null; setSplitChatPerson(null); setCompanyScreen('overview'); }}
+                      sx={{ fontSize: 10, fontWeight: 700, textTransform: 'none', color: 'text.secondary', ml: 1 }}>
                       ✕ Close
                     </Button>
                   </Box>
                 </Box>
-                {/* Customer's People view */}
-                <Box sx={{ p: 0 }}>
-                  <PeopleView
-                    user={user}
-                    activeTrade={companyTrade}
-                companyId={selectedCompany?.id}
-                    activeRoleLevels={{}}
-                    readOnly={true}
-                    onOpenReport={() => {}}
-                    persistedViewingId={null}
-                    setPeopleViewingId={() => {}}
-                    setView={() => {}}
-                    navigateTo={() => {}}
-                  />
+                {/* Navigation tabs */}
+                <Box sx={{ display: 'flex', gap: 0.5, px: 2, py: 0.75, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, bgcolor: 'background.paper' }}>
+                  {[
+                    { key: 'people', label: 'People' },
+                    { key: 'reports', label: 'Reports' },
+                    { key: 'dailyplans', label: 'Daily Plans' },
+                    { key: 'punchlist', label: 'Punch List' },
+                  ].map(tab => (
+                    <Button key={tab.key} size="small"
+                      variant={splitRightView === tab.key ? 'contained' : 'text'}
+                      onClick={() => setSplitRightView(tab.key)}
+                      sx={{ fontSize: 11, fontWeight: 700, borderRadius: 1.5, textTransform: 'none', px: 1.5, py: 0.5,
+                        ...(splitRightView === tab.key ? { bgcolor: 'secondary.main', color: 'primary.main' } : { color: 'text.secondary' }),
+                      }}>
+                      {tab.label}
+                    </Button>
+                  ))}
+                </Box>
+                {/* View content */}
+                <Box sx={{ flex: 1, overflow: 'auto' }}>
+                  {splitRightView === 'people' && (
+                    <PeopleView user={user} activeTrade={companyTrade} activeRoleLevels={{}} readOnly={true}
+                      companyId={selectedCompany?.id} onOpenReport={() => {}} persistedViewingId={null}
+                      setPeopleViewingId={() => {}} setView={() => {}} navigateTo={() => {}} />
+                  )}
+                  {splitRightView === 'reports' && (
+                    <ReportsView user={user} activeTrade={companyTrade} onOpenReport={() => {}}
+                      reportsPersonId={null} setReportsPersonId={() => {}} onNavigate={() => {}} />
+                  )}
+                  {splitRightView === 'dailyplans' && (
+                    <DailyPlanView user={user} readOnly={true} onNavigate={() => {}} goBack={() => setSplitRightView('people')} />
+                  )}
+                  {splitRightView === 'punchlist' && (
+                    <PunchListView user={user} readOnly={true} onNavigate={() => {}} goBack={() => setSplitRightView('people')} />
+                  )}
                 </Box>
               </Box>
             </Box>
