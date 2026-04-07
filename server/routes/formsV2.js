@@ -11,16 +11,16 @@ const router = Router();
 // Form templates
 router.get('/templates', requireAuth, async (req, res) => {
   try {
-    const templates = (await (req.db || DB).db.query('SELECT * FROM form_templates_v2 ORDER BY trade, form_code')).rows;
+    const templates = (await DB.db.query('SELECT * FROM form_templates_v2 ORDER BY trade, form_code')).rows;
     res.json(templates);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.get('/templates/:id', requireAuth, async (req, res) => {
   try {
-    const template = (await (req.db || DB).db.query('SELECT * FROM form_templates_v2 WHERE id = $1', [req.params.id])).rows[0];
+    const template = (await DB.db.query('SELECT * FROM form_templates_v2 WHERE id = $1', [req.params.id])).rows[0];
     if (!template) return res.status(404).json({ error: 'Form template not found' });
-    const fields = (await (req.db || DB).db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [req.params.id])).rows;
+    const fields = (await DB.db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [req.params.id])).rows;
     res.json({ ...template, fields });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -86,7 +86,7 @@ router.get('/submissions/:id', requireAuth, async (req, res) => {
 
     const values = (await (req.db || DB).db.query('SELECT * FROM form_submission_values WHERE submission_id = $1', [req.params.id])).rows;
     const calPoints = (await (req.db || DB).db.query('SELECT * FROM form_calibration_points WHERE submission_id = $1 ORDER BY percent_range', [req.params.id])).rows;
-    const fields = (await (req.db || DB).db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [sub.tid])).rows;
+    const fields = (await DB.db.query('SELECT * FROM form_fields_v2 WHERE template_id = $1 ORDER BY display_order', [sub.tid])).rows;
 
     const valuesMap = deserializeValues(values);
 
