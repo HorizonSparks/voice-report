@@ -34,6 +34,11 @@ async function enrichWithJsaStatus(tasks, date, companyId, db) {
 
 router.get('/:person_id', requireAuth, async (req, res) => {
   try {
+    // Company isolation — verify target person exists and is in the same company
+    if (req.companyId) {
+      const target = await (req.db || DB).people.getById(req.params.person_id);
+      if (!target || target.company_id !== req.companyId) return res.status(404).json({ error: 'Not found' });
+    }
     const date = req.query.date || new Date().toISOString().split('T')[0];
     const plan = await (req.db || DB).dailyPlans.getByDate(date, req.params.person_id);
     if (!plan) return res.json({ plan: null, tasks: [] });

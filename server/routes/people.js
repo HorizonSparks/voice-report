@@ -129,6 +129,12 @@ router.post('/', requireAuth, requireSparksEditMode, requireRoleLevel(3), async 
 // SECURITY: Strip privileged fields for self-edits (prevent self-promotion)
 router.put('/:id', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('id', 3), async (req, res) => {
   try {
+    // Company isolation — verify target person is in the same company
+    const target = await (req.db || DB).people.getById(req.params.id);
+    if (!target) return res.status(404).json({ error: 'Person not found' });
+    if (req.companyId && target.company_id && target.company_id !== req.companyId) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
     // SECURITY: Block self-promotion — strip privileged fields for self-edits
     const isSelfEdit = req.params.id === req.auth.person_id;
     const isAdmin = req.auth.is_admin || req.auth.sparks_role === 'admin';
@@ -145,9 +151,17 @@ router.put('/:id', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('i
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Delete person — admin only
+// Delete person — admin only, company-scoped
 router.delete('/:id', requireAuth, requireSparksEditMode, requireRoleLevel(4), async (req, res) => {
-  try { res.json(await (req.db || DB).people.delete(req.params.id)); } catch (err) { res.status(500).json({ error: err.message }); }
+  try {
+    // Company isolation — verify target person exists and is in the same company
+    const target = await (req.db || DB).people.getById(req.params.id);
+    if (!target) return res.status(404).json({ error: 'Person not found' });
+    if (req.companyId && target.company_id !== req.companyId) {
+      return res.status(404).json({ error: 'Person not found' });
+    }
+    res.json(await (req.db || DB).people.delete(req.params.id));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Lead-man — supervisor+

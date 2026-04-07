@@ -99,6 +99,11 @@ router.get('/active/:person_id', requireAuth, requireSelfOrRoleLevel('person_id'
 // GET /api/tasks/all/:person_id — all tasks (with optional filters)
 router.get('/all/:person_id', requireAuth, requireSelfOrRoleLevel('person_id', 3), async (req, res) => {
   try {
+    // Company isolation — verify target person exists and is in the same company
+    if (req.companyId) {
+      const target = await (req.db || DB).people.getById(req.params.person_id);
+      if (!target || target.company_id !== req.companyId) return res.status(404).json({ error: 'Not found' });
+    }
     const filters = {};
     if (req.query.status) filters.status = req.query.status;
     if (req.query.trade) filters.trade = req.query.trade;
