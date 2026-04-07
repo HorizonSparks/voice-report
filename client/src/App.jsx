@@ -136,6 +136,11 @@ export default function App() {
     return ALL_TRADES_KEYS.map(t => t.key);
   });
 
+  // Reset scroll on view/world changes — prevents stale scroll from Control Center carrying into Home
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [view, currentWorld, simulatingCompany?.id]);
+
   // Load starred trades and restore last active trade when user logs in
   useEffect(() => {
     if (user) {
