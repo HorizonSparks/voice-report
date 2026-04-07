@@ -47,7 +47,12 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
     : (allTrades || []).filter(t => (starredTrades || []).includes(t.key));
 
   const handleTradeSelect = (tradeKey) => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setActiveTrade(tradeKey);
+    // Double rAF to ensure scroll reset happens after browser focus/paint cycle
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }));
   };
 
   const getActionTiles = () => {
@@ -210,6 +215,7 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
                     key={trade.key}
                     label={trade.label}
                     onClick={() => handleTradeSelect(trade.key)}
+                    onMouseDown={(e) => e.preventDefault()}
                     color={isActive ? 'primary' : 'default'}
                     variant={isActive ? 'filled' : 'outlined'}
                     sx={{
