@@ -1429,11 +1429,11 @@ function withPool(targetPool) {
     taskDays: bindNamespace(taskDays),
     punchList: bindNamespace(punchList),
     sessions: sessions,                          // ALWAYS shared — login is cross-company
-    webauthnCredentials: bindNamespace(webauthnCredentials),
+    webauthnCredentials: webauthnCredentials,    // ALWAYS shared — credentials are device-bound, not company-bound
     plans: plans,                                // ALWAYS shared — billing is platform-level
     subscriptions: subscriptions,                // ALWAYS shared
     invoices: invoicesMod,                       // ALWAYS shared
-    sharedFolders: bindNamespace(sharedFolders),
+    sharedFolders: sharedFolders,              // ALWAYS shared — tables only in shared DB
     withPool: withPool,                          // Allow chaining
   };
 }

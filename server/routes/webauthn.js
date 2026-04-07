@@ -60,7 +60,7 @@ router.post('/register-options', requireAuth, async (req, res) => {
     if (!person) return res.status(404).json({ error: 'Person not found' });
 
     // Get existing credentials to exclude
-    const existingCreds = await (req.db || DB).webauthnCredentials.getForPerson(personId);
+    const existingCreds = await DB.webauthnCredentials.getForPerson(personId);
 
     const options = await generateRegistrationOptions({
       rpName: 'Voice Report - Horizon Sparks',
@@ -114,7 +114,7 @@ router.post('/register', requireAuth, async (req, res) => {
     const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
 
     // Store in webauthn_credentials table
-    await (req.db || DB).webauthnCredentials.create({
+    await DB.webauthnCredentials.create({
       person_id: personId,
       credential_id: Buffer.from(credential.id).toString('base64url'),
       public_key: Buffer.from(credential.publicKey).toString('base64url'),
@@ -184,7 +184,7 @@ router.post('/login', async (req, res) => {
     if (!expectedChallenge) return res.status(400).json({ error: 'Challenge expired or missing. Please try again.' });
 
     // Look up credential — try new table first, then legacy
-    let storedCred = await (req.db || DB).webauthnCredentials.getByCredentialId(credentialIdFromAssertion);
+    let storedCred = await DB.webauthnCredentials.getByCredentialId(credentialIdFromAssertion);
     let person;
     let isLegacy = false;
 
@@ -223,7 +223,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Update counter for replay protection
-        await (req.db || DB).webauthnCredentials.updateCounter(
+        await DB.webauthnCredentials.updateCounter(
           storedCred.credential_id,
           verification.authenticationInfo.newCounter
         );
