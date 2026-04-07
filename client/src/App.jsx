@@ -139,7 +139,7 @@ export default function App() {
   // Reset scroll on view/world changes — prevents stale scroll from Control Center carrying into Home
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [view, currentWorld, simulatingCompany?.id]);
+  }, [view, currentWorld, simulatingCompany?.id, activeTrade]);
 
   // Load starred trades and restore last active trade when user logs in
   useEffect(() => {
