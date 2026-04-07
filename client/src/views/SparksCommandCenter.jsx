@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   Box, Typography, Button, Paper, Chip, Alert, CircularProgress,
   Card, CardContent, CardActionArea, TextField, Select, MenuItem,
@@ -31,7 +31,15 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [companyTrade, setCompanyTrade] = useState(null);
   const [splitChatPerson, setSplitChatPerson] = useState(null);
   const [splitPanelWidth, setSplitPanelWidth] = useState(40);
-  const [splitRightView, setSplitRightView] = useState('home'); // active trade within company control center // overview | chat | people | billing | analytics | reports | licenses
+  const [splitRightView, setSplitRightView] = useState('home');
+
+  // Reset window scroll for internal Control Center navigation.
+  useLayoutEffect(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [screen, companyScreen, selectedCompany?.id, companyTrade]); // active trade within company control center // overview | chat | people | billing | analytics | reports | licenses
   const [dashboard, setDashboard] = useState(null);
   const [team, setTeam] = useState([]);
   const [audit, setAudit] = useState([]);

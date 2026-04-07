@@ -3,6 +3,12 @@
    Mobile-first, iPad-primary design
    ============================================================ */
 
+/* Disable browser scroll anchoring — prevents re-scroll after view changes */
+html, body, #root {
+  overflow-anchor: none;
+}
+
+
 :root {
   --primary: #F99440;
   --primary-dark: #E07C26;

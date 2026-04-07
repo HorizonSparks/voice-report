@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AppBar, Toolbar, IconButton, Typography, Drawer, Box, Button, Avatar, Divider,
@@ -136,9 +136,12 @@ export default function App() {
     return ALL_TRADES_KEYS.map(t => t.key);
   });
 
-  // Reset scroll on view/world changes — prevents stale scroll from Control Center carrying into Home
-  useEffect(() => {
-    setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0);
+  // Reset top-level page scroll synchronously after layout commit.
+  useLayoutEffect(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur(); // prevent focus-driven re-scroll
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [view, currentWorld, simulatingCompany?.id, activeTrade]);
 
   // Load starred trades and restore last active trade when user logs in
