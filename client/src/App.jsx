@@ -219,7 +219,7 @@ export default function App() {
         throw new Error('Not authenticated');
       })
       .then(userData => {
-        setUser(userData);
+        userData.is_admin = userData.is_admin || userData.sparks_role === "admin"; setUser(userData);
         setAuthStatus('authenticated');
         // Sparks users land on Control Center, not home
         if (userData.sparks_role) { setView('sparks'); setCurrentWorld('control-center'); }
@@ -250,7 +250,7 @@ export default function App() {
   }, [authStatus]);
 
   const handleLogin = (userData) => {
-    setUser(userData);
+    userData.is_admin = userData.is_admin || userData.sparks_role === "admin"; setUser(userData);
     setAuthStatus('authenticated');
     // Sparks users go straight to Control Center
     setView(userData.sparks_role ? 'sparks' : 'home');
@@ -450,7 +450,7 @@ export default function App() {
     setPinError('');
     window.__simulatingCompanyId = company?.id || null;
     window.__simulationMode = mode;
-    setActiveTrade(null);
+    setActiveTrade(company?.trades?.[0] || null);
     setCurrentWorld('voice-report');
     setView('home');
     setViewHistory([]);
@@ -498,7 +498,7 @@ export default function App() {
     <Box className="app" sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', borderBottom: '4px solid', borderColor: 'primary.main', '--agent-panel-width': globalAgentOpen ? { xs: '0px', sm: '420px', md: '440px' } : '0px', width: globalAgentOpen ? { xs: '100%', sm: 'calc(100% - 420px)', md: 'calc(100% - 440px)' } : '100%', transition: 'width 0.3s ease' }}>
       {/* Header */}
       <AppBar position="sticky" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
-        <Toolbar sx={{ gap: 0.5, px: 2, pt: 1 }}>
+        <Toolbar sx={{ gap: 0.5, px: 2, pt: 1, position: "relative" }}>
           <IconButton color="inherit" onClick={() => setMenuOpen(!menuOpen)} sx={{ mr: 0.5 }}>
             {menuOpen ? <CloseIcon /> : <MenuIcon />}
           </IconButton>
@@ -507,7 +507,7 @@ export default function App() {
               <ArrowBackIcon sx={{ fontSize: 22 }} />
             </IconButton>
           )}
-          <Box onClick={goHome} sx={{ cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Box onClick={goHome} sx={{ cursor: 'pointer', position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1 }}>
             {companySettings?.logo_data ? (
               <>
                 <img src={companySettings.logo_data} alt={companySettings.company_name} style={{height: '32px', objectFit: 'contain', maxWidth: '180px'}} />
@@ -526,7 +526,7 @@ export default function App() {
               </>
             )}
           </Box>
-          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1, zIndex: 2 }}>
             {view !== 'home' && (
               <Typography sx={{ fontSize: 13, color: 'primary.main', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 {activeTrade}
@@ -596,7 +596,7 @@ export default function App() {
               {t('nav.activeTrades')}
             </Typography>
             <List disablePadding>
-              {ALL_TRADES.map(trade => {
+              {ALL_TRADES.filter(t => simulatingCompany?.trades?.length ? simulatingCompany.trades.includes(t.key) : true).map(trade => {
                 const isStarred = starredTrades.includes(trade.key);
                 const isConfigOpen = roleLevelConfigTrade === trade.key;
                 const tradeLevels = ROLE_LEVEL_LABELS[trade.key] || {};

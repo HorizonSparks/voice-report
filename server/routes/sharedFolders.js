@@ -28,7 +28,7 @@ async function resolvePersonId(actor, reqDb) {
 router.get('/', requireAuth, async (req, res) => {
   try {
     const personId = await resolvePersonId(getActor(req), req.db);
-    res.json(await (req.db || DB).sharedFolders.getForPerson(personId));
+    res.json(await DB.sharedFolders.getForPerson(personId));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -38,7 +38,7 @@ router.post('/', requireAuth, async (req, res) => {
     const personId = await resolvePersonId(getActor(req), req.db);
     const { name, description, context_type, context_id, members } = req.body;
     if (!name) return res.status(400).json({ error: 'Folder name required' });
-    const folder = await (req.db || DB).sharedFolders.create({
+    const folder = await DB.sharedFolders.create({
       name, description, created_by: personId,
       context_type: context_type || 'team', context_id,
     });
@@ -46,7 +46,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (members && Array.isArray(members)) {
       for (const m of members) {
         if (m.person_id !== personId) {
-          await (req.db || DB).sharedFolders.addMember(folder.id, m.person_id, m.role || 'viewer');
+          await DB.sharedFolders.addMember(folder.id, m.person_id, m.role || 'viewer');
         }
       }
     }
@@ -59,14 +59,14 @@ router.get('/:id', requireAuth, async (req, res) => {
   try {
     const personId = await resolvePersonId(getActor(req), req.db);
     const actor = getActor(req);
-    if (!actor.is_admin && !(await (req.db || DB).sharedFolders.isMember(req.params.id, personId))) {
+    if (!actor.is_admin && !(await DB.sharedFolders.isMember(req.params.id, personId))) {
       return res.status(403).json({ error: 'Not a member of this folder' });
     }
-    const folder = await (req.db || DB).sharedFolders.getById(req.params.id);
+    const folder = await DB.sharedFolders.getById(req.params.id);
     if (!folder) return res.status(404).json({ error: 'Folder not found' });
     const [files, members] = await Promise.all([
-      (req.db || DB).sharedFolders.getFiles(req.params.id),
-      (req.db || DB).sharedFolders.getMembers(req.params.id),
+      DB.sharedFolders.getFiles(req.params.id),
+      DB.sharedFolders.getMembers(req.params.id),
     ]);
     res.json({ ...folder, files, members });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -78,10 +78,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
     const actor = getActor(req);
     if (!actor.is_admin) {
       const personId = await resolvePersonId(actor, req.db);
-      const folder = await (req.db || DB).sharedFolders.getById(req.params.id);
+      const folder = await DB.sharedFolders.getById(req.params.id);
       if (!folder || folder.created_by !== personId) return res.status(403).json({ error: 'Only the owner can delete' });
     }
-    await (req.db || DB).sharedFolders.deleteFolder(req.params.id);
+    await DB.sharedFolders.deleteFolder(req.params.id);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -91,7 +91,7 @@ router.post('/:id/members', requireAuth, async (req, res) => {
   try {
     const { person_id, role } = req.body;
     if (!person_id) return res.status(400).json({ error: 'person_id required' });
-    await (req.db || DB).sharedFolders.addMember(req.params.id, person_id, role || 'viewer');
+    await DB.sharedFolders.addMember(req.params.id, person_id, role || 'viewer');
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -99,7 +99,7 @@ router.post('/:id/members', requireAuth, async (req, res) => {
 // DELETE /folders/:id/members/:personId — remove member
 router.delete('/:id/members/:personId', requireAuth, async (req, res) => {
   try {
-    await (req.db || DB).sharedFolders.removeMember(req.params.id, req.params.personId);
+    await DB.sharedFolders.removeMember(req.params.id, req.params.personId);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -109,7 +109,7 @@ router.post('/:id/files', requireAuth, upload.single('file'), async (req, res) =
   try {
     const personId = await resolvePersonId(getActor(req), req.db);
     if (!req.file) return res.status(400).json({ error: 'No file' });
-    const file = await (req.db || DB).sharedFolders.addFile({
+    const file = await DB.sharedFolders.addFile({
       folder_id: req.params.id,
       type: 'file',
       name: req.file.originalname,
@@ -129,7 +129,7 @@ router.post('/:id/links', requireAuth, async (req, res) => {
     const personId = await resolvePersonId(getActor(req), req.db);
     const { name, url, description } = req.body;
     if (!name || !url) return res.status(400).json({ error: 'name and url required' });
-    const link = await (req.db || DB).sharedFolders.addFile({
+    const link = await DB.sharedFolders.addFile({
       folder_id: req.params.id,
       type: 'link',
       name,
@@ -144,7 +144,7 @@ router.post('/:id/links', requireAuth, async (req, res) => {
 // DELETE /folders/files/:fileId — remove file/link
 router.delete('/files/:fileId', requireAuth, async (req, res) => {
   try {
-    await (req.db || DB).sharedFolders.removeFile(req.params.fileId);
+    await DB.sharedFolders.removeFile(req.params.fileId);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

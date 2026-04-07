@@ -106,6 +106,7 @@ router.get('/companies/:id', requireSparksRole('support'), async (req, res) => {
       ...company,
       products,
       trades,
+      total_people: peopleCounts.reduce((sum, r) => sum + parseInt(r.count || 0, 10), 0),
       people_by_trade: peopleCounts,
       total_reports: reportCount[0].count,
       recent_reports: recentReports,

@@ -15,6 +15,41 @@ const { captureError } = require('../services/errorTracking');
 const { agentLogger } = require('../services/logger');
 const router = Router();
 const ROOT = path.join(__dirname, '../..');
+// ---- AGENT RATE LIMITING & COST GUARD ----
+// Per-user: max 30 requests per 5 minutes, max 200 per hour
+// Single-flight: only 1 concurrent request per user
+const agentRateMap = new Map(); // personId -> { count5m, count1h, reset5m, reset1h }
+const agentInflight = new Set(); // personIds currently processing
+
+const AGENT_RATE_5M = 30;
+const AGENT_RATE_1H = 200;
+
+function checkAgentRate(personId) {
+  const now = Date.now();
+  let entry = agentRateMap.get(personId);
+  if (!entry) {
+    entry = { count5m: 0, count1h: 0, reset5m: now + 5 * 60 * 1000, reset1h: now + 60 * 60 * 1000 };
+    agentRateMap.set(personId, entry);
+  }
+  // Reset windows
+  if (now > entry.reset5m) { entry.count5m = 0; entry.reset5m = now + 5 * 60 * 1000; }
+  if (now > entry.reset1h) { entry.count1h = 0; entry.reset1h = now + 60 * 60 * 1000; }
+  if (entry.count5m >= AGENT_RATE_5M) return { allowed: false, reason: 'Too many AI requests. Wait a few minutes.' };
+  if (entry.count1h >= AGENT_RATE_1H) return { allowed: false, reason: 'Hourly AI limit reached. Try again later.' };
+  entry.count5m++;
+  entry.count1h++;
+  return { allowed: true };
+}
+
+// Cleanup stale rate entries every 30 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, entry] of agentRateMap) {
+    if (now > entry.reset1h + 60 * 60 * 1000) agentRateMap.delete(id);
+  }
+}, 30 * 60 * 1000);
+
+
 // ---- TOOL DEFINITIONS ----
 const AGENT_TOOLS = [
   {
@@ -1725,6 +1760,20 @@ function loadRelevantKnowledge(query) {
 router.post('/chat', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
+
+    // Single-flight guard — one request at a time per user
+    const flightKey = actor.person_id || req.auth?.sessionId || 'anon';
+    if (agentInflight.has(flightKey)) {
+      return res.status(429).json({ error: 'Your previous request is still processing. Please wait.' });
+    }
+
+    // Rate limit check
+    const rateCheck = checkAgentRate(flightKey);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({ error: rateCheck.reason });
+    }
+
+    agentInflight.add(flightKey);
     const { message, conversationContext, contactName, contactRole, companyName, currentScreen, currentWorld: clientWorld } = req.body;
     if (!message) return res.status(400).json({ error: 'message required' });
     const isAdmin = actor.is_admin || actor.role_level >= 5;
@@ -2018,6 +2067,9 @@ ENGAGEMENT RULES:
     agentLogger.error({ msg: 'agent_chat_error', error: err.message, correlationId: req.correlationId, personId: req.auth?.person_id });
     captureError(err, { route: '/api/agent/chat', personId: req.auth?.person_id, correlationId: req.correlationId });
     res.status(500).json({ error: err.message });
+  } finally {
+    const flightKey = req.auth?.person_id || req.auth?.sessionId || 'anon';
+    agentInflight.delete(flightKey);
   }
 });
 module.exports = router;

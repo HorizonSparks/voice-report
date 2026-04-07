@@ -1143,7 +1143,7 @@ const sessions = {
   async getById(sessionId) {
     if (!sessionId) return null;
     const { rows } = await (this._pool || pool).query(`
-      SELECT * FROM app_sessions WHERE id = $1 AND expires_at > NOW()
+      SELECT * FROM app_sessions WHERE id = $1 AND expires_at > NOW() AND (last_seen_at IS NULL OR last_seen_at > NOW() - INTERVAL '4 hours')
     `, [sessionId]);
     if (!rows[0]) return null;
     return {
@@ -1429,11 +1429,11 @@ function withPool(targetPool) {
     taskDays: bindNamespace(taskDays),
     punchList: bindNamespace(punchList),
     sessions: sessions,                          // ALWAYS shared — login is cross-company
-    webauthnCredentials: bindNamespace(webauthnCredentials),
+    webauthnCredentials: webauthnCredentials,    // ALWAYS shared — credentials are device-bound, not company-bound
     plans: plans,                                // ALWAYS shared — billing is platform-level
     subscriptions: subscriptions,                // ALWAYS shared
     invoices: invoicesMod,                       // ALWAYS shared
-    sharedFolders: bindNamespace(sharedFolders),
+    sharedFolders: sharedFolders,              // ALWAYS shared — tables only in shared DB
     withPool: withPool,                          // Allow chaining
   };
 }

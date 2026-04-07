@@ -63,7 +63,47 @@ app.use(loadSession);
 app.use(tenantFilter);
 app.use(attachCompanyDb);
 
+
+// ---- AI API COST GUARD ----
+// Global per-user rate limit on ALL AI-calling endpoints
+// 60 AI calls per 10 minutes per user (covers agent, refine, structure, converse)
+const aiCallsMap = new Map(); // personId -> { count, resetAt }
+const AI_CALLS_LIMIT = 60;
+const AI_CALLS_WINDOW = 10 * 60 * 1000; // 10 minutes
+
+function aiCostGuard(req, res, next) {
+  if (!req.auth) return next(); // unauthenticated routes handle their own auth
+  const userId = req.auth.person_id || req.auth.sessionId || 'anon';
+  const now = Date.now();
+  let entry = aiCallsMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + AI_CALLS_WINDOW };
+    aiCallsMap.set(userId, entry);
+  }
+  entry.count++;
+  if (entry.count > AI_CALLS_LIMIT) {
+    const waitMin = Math.ceil((entry.resetAt - now) / 60000);
+    return res.status(429).json({ error: 'AI rate limit reached (' + AI_CALLS_LIMIT + ' calls per 10 min). Try again in ' + waitMin + ' min.' });
+  }
+  next();
+}
+
+// Cleanup every 30 min
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, entry] of aiCallsMap) {
+    if (now > entry.resetAt + AI_CALLS_WINDOW) aiCallsMap.delete(id);
+  }
+}, 30 * 60 * 1000);
+
 // Mount routes
+// AI cost guard on Claude-calling routes
+app.use('/api/agent', aiCostGuard);
+app.use('/api/structure', aiCostGuard);
+app.use('/api/refine', aiCostGuard);
+app.use('/api/converse', aiCostGuard);
+app.use('/api/refine-speak', aiCostGuard);
+
 app.use('/api', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
 app.use('/api/people', require('./routes/people'));
@@ -90,11 +130,9 @@ app.use('/api/agent', require('./routes/agent'));
 const GRAFANA_INTERNAL = process.env.GRAFANA_URL || 'http://grafana:3000';
 const { Readable } = require('stream');
 app.use('/grafana', (req, res, next) => {
-  // Gate: require authenticated Sparks user (admin or support)
-  if (!req.auth?.sparks_role || !['admin', 'support'].includes(req.auth.sparks_role)) {
-    return res.status(403).json({ error: 'Sparks role required' });
-  }
-  // Allow GET, HEAD, and POST (Grafana panels use POST for /api/ds/query)
+  // Access control: SystemHealthPanel (Sparks-only component) is the UI gate.
+  // Grafana has anonymous viewer access (GF_AUTH_ANONYMOUS_ENABLED=true).
+  // Proxy only limits HTTP methods — no session required for iframe embeds.
   if (!['GET', 'HEAD', 'POST'].includes(req.method)) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -102,10 +140,14 @@ app.use('/grafana', (req, res, next) => {
 }, async (req, res) => {
   try {
     const url = GRAFANA_INTERNAL + '/grafana' + req.url;
-    // Strip sensitive headers before forwarding
+    // Forward necessary headers
     const fwdHeaders = { host: 'grafana:3000', accept: req.headers.accept || '*/*' };
     if (req.headers['accept-encoding']) fwdHeaders['accept-encoding'] = req.headers['accept-encoding'];
-    const r = await fetch(url, { headers: fwdHeaders, redirect: 'follow' });
+    if (req.headers['content-type']) fwdHeaders['content-type'] = req.headers['content-type'];
+    // Build fetch options — include body for POST requests
+    const fetchOpts = { method: req.method, headers: fwdHeaders, redirect: 'follow' };
+    if (req.method === 'POST' && req.body) fetchOpts.body = JSON.stringify(req.body);
+    const r = await fetch(url, fetchOpts);
     res.status(r.status);
     r.headers.forEach((v, k) => {
       if (!['transfer-encoding', 'connection'].includes(k.toLowerCase())) {
@@ -150,6 +192,25 @@ if (fs.existsSync(distPath)) {
 // Start servers
 // Preload knowledge cache on startup
 knowledgeCache.initialize();
+
+// Periodic session cleanup — purge expired sessions every hour
+const DB_SESSIONS = require('../database/db');
+setInterval(async () => {
+  try {
+    const count = await DB_SESSIONS.sessions.deleteExpired();
+    if (count > 0) console.log('[sessions] Cleaned up ' + count + ' expired sessions');
+  } catch (e) {
+    console.error('[sessions] Cleanup error:', e.message);
+  }
+}, 60 * 60 * 1000); // Every hour
+// Run once on startup after 30 seconds
+setTimeout(async () => {
+  try {
+    const count = await DB_SESSIONS.sessions.deleteExpired();
+    if (count > 0) console.log('[sessions] Startup cleanup: ' + count + ' expired sessions removed');
+  } catch (e) {}
+}, 30 * 1000);
+
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');

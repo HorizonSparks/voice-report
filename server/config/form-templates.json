@@ -288,7 +288,7 @@
         "field_group": "checks",
         "display_order": 23,
         "is_required": 0,
-        "unit": "Ω",
+        "unit": "\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -594,7 +594,7 @@
         "field_group": "checks",
         "display_order": 22,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -616,7 +616,7 @@
         "field_group": "checks",
         "display_order": 24,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -627,7 +627,7 @@
         "field_group": "checks",
         "display_order": 25,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -1300,12 +1300,12 @@
       },
       {
         "field_name": "resistance_at_0c",
-        "field_label": "Resistance at 0°C / Ice Point",
+        "field_label": "Resistance at 0\u00b0C / Ice Point",
         "field_type": "number",
         "field_group": "device_info",
         "display_order": 18,
         "is_required": 0,
-        "unit": "Ω",
+        "unit": "\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -1339,7 +1339,7 @@
         "display_order": 21,
         "is_required": 0,
         "unit": null,
-        "select_options": "[\"°F\",\"°C\"]",
+        "select_options": "[\"\u00b0F\",\"\u00b0C\"]",
         "default_value": null
       },
       {
@@ -1371,7 +1371,7 @@
         "field_group": "checks",
         "display_order": 25,
         "is_required": 0,
-        "unit": "Ω",
+        "unit": "\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -1382,7 +1382,7 @@
         "field_group": "checks",
         "display_order": 25.5,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2300,7 +2300,7 @@
         "field_group": "checks",
         "display_order": 24,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -2311,7 +2311,7 @@
         "field_group": "checks",
         "display_order": 25,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -2672,7 +2672,7 @@
         "field_group": "checks",
         "display_order": 31,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2716,7 +2716,7 @@
         "field_group": "megger_matrix",
         "display_order": 34,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2727,7 +2727,7 @@
         "field_group": "megger_matrix",
         "display_order": 35,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2738,7 +2738,7 @@
         "field_group": "megger_matrix",
         "display_order": 36,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2749,7 +2749,7 @@
         "field_group": "megger_matrix",
         "display_order": 37,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2760,7 +2760,7 @@
         "field_group": "megger_matrix",
         "display_order": 38,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2771,7 +2771,7 @@
         "field_group": "megger_matrix",
         "display_order": 39,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2782,7 +2782,7 @@
         "field_group": "megger_matrix",
         "display_order": 40,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -2793,7 +2793,7 @@
         "field_group": "megger_matrix",
         "display_order": 41,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       }
@@ -3132,7 +3132,7 @@
         "field_group": "checks",
         "display_order": 38,
         "is_required": 1,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3143,7 +3143,7 @@
         "field_group": "checks",
         "display_order": 39,
         "is_required": 1,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3154,7 +3154,7 @@
         "field_group": "checks",
         "display_order": 40,
         "is_required": 1,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3165,7 +3165,7 @@
         "field_group": "checks",
         "display_order": 41,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3176,7 +3176,7 @@
         "field_group": "checks",
         "display_order": 42,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3187,7 +3187,7 @@
         "field_group": "checks",
         "display_order": 43,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3504,7 +3504,7 @@
         "field_group": "checks",
         "display_order": 37,
         "is_required": 1,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3515,7 +3515,7 @@
         "field_group": "checks",
         "display_order": 38,
         "is_required": 1,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3526,7 +3526,7 @@
         "field_group": "checks",
         "display_order": 39,
         "is_required": 1,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3537,7 +3537,7 @@
         "field_group": "checks",
         "display_order": 40,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3548,7 +3548,7 @@
         "field_group": "checks",
         "display_order": 41,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3559,7 +3559,7 @@
         "field_group": "checks",
         "display_order": 42,
         "is_required": 0,
-        "unit": "MΩ",
+        "unit": "M\u03a9",
         "select_options": null,
         "default_value": null
       },
@@ -3821,7 +3821,7 @@
         "field_group": "checks",
         "display_order": 29,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -3832,7 +3832,7 @@
         "field_group": "checks",
         "display_order": 30,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -3843,7 +3843,7 @@
         "field_group": "checks",
         "display_order": 31,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -3865,7 +3865,7 @@
         "field_group": "checks",
         "display_order": 32.5,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -4926,7 +4926,7 @@
         "field_group": "checks",
         "display_order": 22.5,
         "is_required": 0,
-        "unit": "°",
+        "unit": "\u00b0",
         "select_options": null,
         "default_value": null
       },
@@ -5047,7 +5047,7 @@
         "field_group": "checks",
         "display_order": 31.5,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -5058,7 +5058,7 @@
         "field_group": "checks",
         "display_order": 31.6,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -5188,7 +5188,7 @@
         "field_group": "header",
         "display_order": 8,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -5276,7 +5276,7 @@
         "field_group": "checks",
         "display_order": 22,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -5287,7 +5287,7 @@
         "field_group": "checks",
         "display_order": 23,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -5463,7 +5463,7 @@
         "field_group": "checks",
         "display_order": 34,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -5474,7 +5474,7 @@
         "field_group": "checks",
         "display_order": 34.5,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -5998,7 +5998,7 @@
         "field_group": "checks",
         "display_order": 20,
         "is_required": 1,
-        "unit": "°F/hr",
+        "unit": "\u00b0F/hr",
         "select_options": null,
         "default_value": null
       },
@@ -6020,7 +6020,7 @@
         "field_group": "tc_data",
         "display_order": 20.2,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6042,7 +6042,7 @@
         "field_group": "tc_data",
         "display_order": 20.4,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6064,7 +6064,7 @@
         "field_group": "tc_data",
         "display_order": 20.6,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6086,7 +6086,7 @@
         "field_group": "tc_data",
         "display_order": 20.8,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6097,7 +6097,7 @@
         "field_group": "checks",
         "display_order": 21,
         "is_required": 1,
-        "unit": "°F/hr",
+        "unit": "\u00b0F/hr",
         "select_options": null,
         "default_value": null
       },
@@ -6108,7 +6108,7 @@
         "field_group": "checks",
         "display_order": 22,
         "is_required": 1,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6119,7 +6119,7 @@
         "field_group": "checks",
         "display_order": 23,
         "is_required": 1,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6130,7 +6130,7 @@
         "field_group": "checks",
         "display_order": 24,
         "is_required": 1,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6163,7 +6163,7 @@
         "field_group": "checks",
         "display_order": 27,
         "is_required": 1,
-        "unit": "°F/hr",
+        "unit": "\u00b0F/hr",
         "select_options": null,
         "default_value": null
       },
@@ -6174,7 +6174,7 @@
         "field_group": "checks",
         "display_order": 28,
         "is_required": 1,
-        "unit": "°F/hr",
+        "unit": "\u00b0F/hr",
         "select_options": null,
         "default_value": null
       },
@@ -6185,7 +6185,7 @@
         "field_group": "checks",
         "display_order": 28.5,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6502,7 +6502,7 @@
         "field_group": "checks",
         "display_order": 29,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -6513,7 +6513,7 @@
         "field_group": "checks",
         "display_order": 30,
         "is_required": 0,
-        "unit": "°F",
+        "unit": "\u00b0F",
         "select_options": null,
         "default_value": null
       },
@@ -7952,7 +7952,7 @@
         "field_name": "project_number",
         "field_label": "Project No.",
         "field_type": "text",
-        "field_group": "header",
+        "field_group": "job_identification",
         "display_order": 1,
         "is_required": 1,
         "unit": null,
@@ -7963,7 +7963,7 @@
         "field_name": "project_name",
         "field_label": "Project Name",
         "field_type": "text",
-        "field_group": "header",
+        "field_group": "job_identification",
         "display_order": 2,
         "is_required": 1,
         "unit": null,
@@ -7974,7 +7974,7 @@
         "field_name": "date",
         "field_label": "Date",
         "field_type": "text",
-        "field_group": "header",
+        "field_group": "job_identification",
         "display_order": 4,
         "is_required": 1,
         "unit": null,
@@ -7985,7 +7985,7 @@
         "field_name": "work_area",
         "field_label": "Work Area / Location",
         "field_type": "text",
-        "field_group": "header",
+        "field_group": "job_identification",
         "display_order": 5,
         "is_required": 1,
         "unit": null,
@@ -7996,7 +7996,7 @@
         "field_name": "trade_craft",
         "field_label": "Trade / Craft",
         "field_type": "select",
-        "field_group": "header",
+        "field_group": "job_identification",
         "display_order": 6,
         "is_required": 1,
         "unit": null,
@@ -8004,10 +8004,18 @@
         "default_value": null
       },
       {
+        "field_name": "prepared_by",
+        "field_label": "Prepared By",
+        "field_type": "text",
+        "field_group": "crew_supervision",
+        "display_order": 7,
+        "is_required": 1
+      },
+      {
         "field_name": "task_description",
         "field_label": "Task / Work Description",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "task_description",
         "display_order": 10,
         "is_required": 1,
         "unit": null,
@@ -8015,10 +8023,10 @@
         "default_value": null
       },
       {
-        "field_name": "step_1",
+        "field_name": "step_1_task",
         "field_label": "Step 1",
         "field_type": "text",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 11,
         "is_required": 0,
         "unit": null,
@@ -8026,10 +8034,10 @@
         "default_value": null
       },
       {
-        "field_name": "hazard_1",
+        "field_name": "step_1_hazards",
         "field_label": "Hazards for Step 1",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 12,
         "is_required": 0,
         "unit": null,
@@ -8037,10 +8045,19 @@
         "default_value": null
       },
       {
-        "field_name": "control_1",
+        "field_name": "step_1_risk",
+        "field_label": "Risk Level",
+        "field_type": "select",
+        "field_group": "hazard_analysis",
+        "display_order": 12.5,
+        "is_required": 0,
+        "select_options": "[\"Low\", \"Medium\", \"High\", \"Critical\"]"
+      },
+      {
+        "field_name": "step_1_controls",
         "field_label": "Controls for Step 1",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 13,
         "is_required": 0,
         "unit": null,
@@ -8048,10 +8065,10 @@
         "default_value": null
       },
       {
-        "field_name": "step_2",
+        "field_name": "step_2_task",
         "field_label": "Step 2",
         "field_type": "text",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 14,
         "is_required": 0,
         "unit": null,
@@ -8059,10 +8076,10 @@
         "default_value": null
       },
       {
-        "field_name": "hazard_2",
+        "field_name": "step_2_hazards",
         "field_label": "Hazards for Step 2",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 15,
         "is_required": 0,
         "unit": null,
@@ -8070,10 +8087,19 @@
         "default_value": null
       },
       {
-        "field_name": "control_2",
+        "field_name": "step_2_risk",
+        "field_label": "Risk Level",
+        "field_type": "select",
+        "field_group": "hazard_analysis",
+        "display_order": 15.5,
+        "is_required": 0,
+        "select_options": "[\"Low\", \"Medium\", \"High\", \"Critical\"]"
+      },
+      {
+        "field_name": "step_2_controls",
         "field_label": "Controls for Step 2",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 16,
         "is_required": 0,
         "unit": null,
@@ -8081,10 +8107,10 @@
         "default_value": null
       },
       {
-        "field_name": "step_3",
+        "field_name": "step_3_task",
         "field_label": "Step 3",
         "field_type": "text",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 17,
         "is_required": 0,
         "unit": null,
@@ -8092,10 +8118,10 @@
         "default_value": null
       },
       {
-        "field_name": "hazard_3",
+        "field_name": "step_3_hazards",
         "field_label": "Hazards for Step 3",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 18,
         "is_required": 0,
         "unit": null,
@@ -8103,10 +8129,19 @@
         "default_value": null
       },
       {
-        "field_name": "control_3",
+        "field_name": "step_3_risk",
+        "field_label": "Risk Level",
+        "field_type": "select",
+        "field_group": "hazard_analysis",
+        "display_order": 18.5,
+        "is_required": 0,
+        "select_options": "[\"Low\", \"Medium\", \"High\", \"Critical\"]"
+      },
+      {
+        "field_name": "step_3_controls",
         "field_label": "Controls for Step 3",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 19,
         "is_required": 0,
         "unit": null,
@@ -8114,10 +8149,10 @@
         "default_value": null
       },
       {
-        "field_name": "step_4",
+        "field_name": "step_4_task",
         "field_label": "Step 4",
         "field_type": "text",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 20,
         "is_required": 0,
         "unit": null,
@@ -8125,10 +8160,10 @@
         "default_value": null
       },
       {
-        "field_name": "hazard_4",
+        "field_name": "step_4_hazards",
         "field_label": "Hazards for Step 4",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 21,
         "is_required": 0,
         "unit": null,
@@ -8136,10 +8171,19 @@
         "default_value": null
       },
       {
-        "field_name": "control_4",
+        "field_name": "step_4_risk",
+        "field_label": "Risk Level",
+        "field_type": "select",
+        "field_group": "hazard_analysis",
+        "display_order": 21.5,
+        "is_required": 0,
+        "select_options": "[\"Low\", \"Medium\", \"High\", \"Critical\"]"
+      },
+      {
+        "field_name": "step_4_controls",
         "field_label": "Controls for Step 4",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 22,
         "is_required": 0,
         "unit": null,
@@ -8147,10 +8191,10 @@
         "default_value": null
       },
       {
-        "field_name": "step_5",
+        "field_name": "step_5_task",
         "field_label": "Step 5",
         "field_type": "text",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 23,
         "is_required": 0,
         "unit": null,
@@ -8158,10 +8202,10 @@
         "default_value": null
       },
       {
-        "field_name": "hazard_5",
+        "field_name": "step_5_hazards",
         "field_label": "Hazards for Step 5",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 24,
         "is_required": 0,
         "unit": null,
@@ -8169,10 +8213,19 @@
         "default_value": null
       },
       {
-        "field_name": "control_5",
+        "field_name": "step_5_risk",
+        "field_label": "Risk Level",
+        "field_type": "select",
+        "field_group": "hazard_analysis",
+        "display_order": 24.5,
+        "is_required": 0,
+        "select_options": "[\"Low\", \"Medium\", \"High\", \"Critical\"]"
+      },
+      {
+        "field_name": "step_5_controls",
         "field_label": "Controls for Step 5",
         "field_type": "textarea",
-        "field_group": "device_info",
+        "field_group": "hazard_analysis",
         "display_order": 25,
         "is_required": 0,
         "unit": null,
@@ -8183,7 +8236,7 @@
         "field_name": "permit_required",
         "field_label": "Permit(s) Required?",
         "field_type": "select",
-        "field_group": "checks",
+        "field_group": "permits_conditions",
         "display_order": 28,
         "is_required": 0,
         "unit": null,
@@ -8194,7 +8247,7 @@
         "field_name": "permit_numbers",
         "field_label": "Permit Number(s)",
         "field_type": "text",
-        "field_group": "checks",
+        "field_group": "permits_conditions",
         "display_order": 29,
         "is_required": 0,
         "unit": null,
@@ -8205,7 +8258,7 @@
         "field_name": "ppe_hard_hat",
         "field_label": "Hard Hat",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 30,
         "is_required": 0,
         "unit": null,
@@ -8216,7 +8269,7 @@
         "field_name": "ppe_safety_glasses",
         "field_label": "Safety Glasses",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 31,
         "is_required": 0,
         "unit": null,
@@ -8227,7 +8280,7 @@
         "field_name": "ppe_face_shield",
         "field_label": "Face Shield",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 32,
         "is_required": 0,
         "unit": null,
@@ -8238,7 +8291,7 @@
         "field_name": "ppe_gloves",
         "field_label": "Gloves (type)",
         "field_type": "text",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 33,
         "is_required": 0,
         "unit": null,
@@ -8249,7 +8302,7 @@
         "field_name": "ppe_fr_clothing",
         "field_label": "FR Clothing",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 34,
         "is_required": 0,
         "unit": null,
@@ -8260,7 +8313,7 @@
         "field_name": "ppe_arc_flash_rating",
         "field_label": "Arc Flash PPE Rating Required",
         "field_type": "select",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 34.5,
         "is_required": 0,
         "unit": null,
@@ -8271,7 +8324,7 @@
         "field_name": "ppe_fall_protection",
         "field_label": "Fall Protection",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 35,
         "is_required": 0,
         "unit": null,
@@ -8282,7 +8335,7 @@
         "field_name": "ppe_safety_harness",
         "field_label": "Full Body Harness (specify tie-off)",
         "field_type": "text",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 35.5,
         "is_required": 0,
         "unit": null,
@@ -8293,7 +8346,7 @@
         "field_name": "ppe_hearing",
         "field_label": "Hearing Protection",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 36,
         "is_required": 0,
         "unit": null,
@@ -8304,7 +8357,7 @@
         "field_name": "ppe_respirator",
         "field_label": "Respirator",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "ppe_required",
         "display_order": 37,
         "is_required": 0,
         "unit": null,
@@ -8315,7 +8368,7 @@
         "field_name": "environmental_conditions",
         "field_label": "Environmental Conditions",
         "field_type": "select",
-        "field_group": "checks",
+        "field_group": "permits_conditions",
         "display_order": 39,
         "is_required": 0,
         "unit": null,
@@ -8326,7 +8379,7 @@
         "field_name": "emergency_plan",
         "field_label": "Emergency Plan Reviewed?",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "emergency_info",
         "display_order": 40,
         "is_required": 1,
         "unit": null,
@@ -8337,7 +8390,7 @@
         "field_name": "msds_sds_reviewed",
         "field_label": "SDS/MSDS Reviewed (if chemicals)?",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "permits_conditions",
         "display_order": 40.5,
         "is_required": 0,
         "unit": null,
@@ -8348,7 +8401,7 @@
         "field_name": "crew_members",
         "field_label": "Crew Members (names)",
         "field_type": "textarea",
-        "field_group": "checks",
+        "field_group": "crew_supervision",
         "display_order": 41,
         "is_required": 1,
         "unit": null,
@@ -8359,7 +8412,7 @@
         "field_name": "exclusion_zone_required",
         "field_label": "Exclusion Zone Required?",
         "field_type": "yesno",
-        "field_group": "checks",
+        "field_group": "permits_conditions",
         "display_order": 41.5,
         "is_required": 0,
         "unit": null,
@@ -8370,7 +8423,7 @@
         "field_name": "first_aid_location",
         "field_label": "Nearest First Aid / AED Location",
         "field_type": "text",
-        "field_group": "checks",
+        "field_group": "emergency_info",
         "display_order": 42,
         "is_required": 0,
         "unit": null,
@@ -8381,7 +8434,7 @@
         "field_name": "emergency_number",
         "field_label": "Emergency Contact Number",
         "field_type": "text",
-        "field_group": "checks",
+        "field_group": "emergency_info",
         "display_order": 43,
         "is_required": 0,
         "unit": null,

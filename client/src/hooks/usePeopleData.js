@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 
-export default function usePeopleData({ user, activeTrade }) {
+export default function usePeopleData({ user, activeTrade, companyId }) {
   const [people, setPeople] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,7 @@ export default function usePeopleData({ user, activeTrade }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    const tradeParam = activeTrade ? `?trade=${encodeURIComponent(activeTrade)}` : '';
+    const params = new URLSearchParams(); if (activeTrade) params.set('trade', activeTrade); if (companyId) params.set('company_id', companyId); const tradeParam = params.toString() ? '?' + params.toString() : '';
     Promise.all([
       fetch(`/api/people${tradeParam}`).then(r => r.json()),
       fetch('/api/templates').then(r => r.json()),
@@ -29,7 +29,7 @@ export default function usePeopleData({ user, activeTrade }) {
       setTemplates(t);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [isAdmin, myPersonId, activeTrade]);
+  }, [isAdmin, myPersonId, activeTrade, companyId]);
 
   useEffect(load, [load]);
 
