@@ -1,48 +1,86 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Button, TextField, Typography, Alert, Dialog, DialogContent,
-  ToggleButton, ToggleButtonGroup, Paper, CircularProgress, Divider
+  Box, Button, TextField, Typography, Alert, Dialog, DialogContent, DialogTitle,
+  ToggleButton, ToggleButtonGroup, CircularProgress
 } from '@mui/material';
+
+// ── Constants (hoisted out of render) ──
+
+const CREAM = '#FAF5EE';
+const ORANGE = '#E8913A';
+const CHARCOAL = '#333';
+const PHONE = '(346) 220-4606';
+const PHONE_HREF = 'tel:3462204606';
+const EMAIL = 'creations@horizonsparks.ai';
+
+const PRODUCT_CARDS = [
+  {
+    title: 'Voice Report',
+    desc: 'Your crew talks, AI structures. Daily reports, safety, punch lists — done by voice.',
+  },
+  {
+    title: 'Loop Folders',
+    desc: 'P&IDs and commissioning documents. AI extracts, organizes, and traces every instrument.',
+  },
+  {
+    title: 'AI Agent',
+    desc: 'An intelligence layer that knows your project, your people, and your chain of command.',
+  },
+];
+
+const ROLES = [
+  {
+    title: 'Field Workers & Journeymen',
+    points: ['Talk instead of type', 'Safety captured automatically', 'Your focus stays on the job'],
+  },
+  {
+    title: 'Foremen & Crew Leaders',
+    points: ['See your whole crew\u2019s work in one view', 'Manage daily plans without chasing people', 'Spot issues before they become problems'],
+  },
+  {
+    title: 'Project Managers & Superintendents',
+    points: ['Real-time visibility into all crews and all projects', 'Data-driven decisions, not guesses', 'Commissioning progress tracked automatically'],
+  },
+  {
+    title: 'CEOs & Company Owners',
+    points: ['Full visibility across projects', 'Billing and utilization in real time', 'Scale your operations without scaling headcount'],
+  },
+];
+
+const WHY_DIFFERENT = [
+  'Built by people who understand industrial projects',
+  'Tested with commissioning professionals before release',
+  'Shaped by feedback from people who manage thousand-loop projects',
+  'Voice-first design works with gloves on, not against them',
+  'AI enhances, never controls \u2014 humans always decide',
+];
 
 // ── Landing page section components ──
 
 function SectionWhatWeDo() {
-  const cards = [
-    {
-      title: 'Voice Report',
-      desc: 'Your crew talks, AI structures. Daily reports, safety, punch lists — done by voice.',
-    },
-    {
-      title: 'Loop Folders',
-      desc: 'P&IDs and commissioning documents. AI extracts, organizes, and traces every instrument.',
-    },
-    {
-      title: 'AI Agent',
-      desc: 'An intelligence layer that knows your project, your people, and your chain of command.',
-    },
-  ];
   return (
     <Box sx={{ py: { xs: 6, md: 10 }, px: { xs: 3, md: 6 }, maxWidth: 1100, mx: 'auto' }}>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center' }}>
-        {cards.map((c) => (
-          <Paper key={c.title} elevation={0} sx={{
+        {PRODUCT_CARDS.map((c) => (
+          <Box key={c.title} sx={{
             flex: '1 1 280px',
             maxWidth: 340,
             p: 4,
             borderRadius: 3,
+            backgroundColor: '#fff',
             border: '1px solid rgba(0,0,0,0.06)',
             textAlign: 'center',
             transition: 'box-shadow 0.3s',
             '&:hover': { boxShadow: '0 8px 30px rgba(0,0,0,0.08)' },
           }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#333', mb: 1.5, letterSpacing: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: CHARCOAL, mb: 1.5, letterSpacing: 1 }}>
               {c.title}
             </Typography>
             <Typography sx={{ color: '#555', fontSize: 15, lineHeight: 1.7 }}>
               {c.desc}
             </Typography>
-          </Paper>
+          </Box>
         ))}
       </Box>
     </Box>
@@ -50,35 +88,17 @@ function SectionWhatWeDo() {
 }
 
 function SectionWhoItsFor() {
-  const roles = [
-    {
-      title: 'Field Workers & Journeymen',
-      points: ['Talk instead of type', 'Safety captured automatically', 'Your focus stays on the job'],
-    },
-    {
-      title: 'Foremen & Crew Leaders',
-      points: ['See your whole crew\u2019s work in one view', 'Manage daily plans without chasing people', 'Spot issues before they become problems'],
-    },
-    {
-      title: 'Project Managers & Superintendents',
-      points: ['Real-time visibility into all crews and all projects', 'Data-driven decisions, not guesses', 'Commissioning progress tracked automatically'],
-    },
-    {
-      title: 'CEOs & Company Owners',
-      points: ['Full visibility across projects', 'Billing and utilization in real time', 'Scale your operations without scaling headcount'],
-    },
-  ];
   return (
-    <Box sx={{ py: { xs: 6, md: 10 }, px: { xs: 3, md: 6 }, backgroundColor: '#FAF5EE' }}>
+    <Box sx={{ py: { xs: 6, md: 10 }, px: { xs: 3, md: 6 }, backgroundColor: CREAM }}>
       <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
-        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: '#333', mb: 1, letterSpacing: 1 }}>
+        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: CHARCOAL, mb: 1, letterSpacing: 1 }}>
           Different Roles. Same Goal.
         </Typography>
         <Typography sx={{ textAlign: 'center', color: '#666', mb: 5, fontSize: 16 }}>
           Smarter work, from the field to the front office.
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
-          {roles.map((r) => (
+          {ROLES.map((r) => (
             <Box key={r.title} sx={{
               flex: '1 1 240px',
               maxWidth: 260,
@@ -87,11 +107,11 @@ function SectionWhoItsFor() {
               backgroundColor: '#fff',
               border: '1px solid rgba(0,0,0,0.06)',
             }}>
-              <Typography sx={{ fontWeight: 700, color: '#E8913A', fontSize: 15, mb: 1.5 }}>
+              <Typography sx={{ fontWeight: 700, color: ORANGE, fontSize: 15, mb: 1.5 }}>
                 {r.title}
               </Typography>
               {r.points.map((pt) => (
-                <Typography key={pt} sx={{ color: '#555', fontSize: 14, lineHeight: 1.8, pl: 1, borderLeft: '2px solid #E8913A', mb: 1 }}>
+                <Typography key={pt} sx={{ color: '#555', fontSize: 14, lineHeight: 1.8, pl: 1, borderLeft: `2px solid ${ORANGE}`, mb: 1 }}>
                   {pt}
                 </Typography>
               ))}
@@ -107,7 +127,7 @@ function SectionCredibility() {
   return (
     <Box sx={{ py: { xs: 6, md: 10 }, px: { xs: 3, md: 6 } }}>
       <Box sx={{ maxWidth: 800, mx: 'auto', textAlign: 'center' }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: '#333', mb: 3, letterSpacing: 1 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: CHARCOAL, mb: 3, letterSpacing: 1 }}>
           Built from Real Commissioning Challenges
         </Typography>
         <Typography sx={{ color: '#555', fontSize: 16, lineHeight: 1.9, mb: 2 }}>
@@ -126,29 +146,22 @@ function SectionCredibility() {
 }
 
 function SectionWhyDifferent() {
-  const bullets = [
-    'Built by people who understand industrial projects',
-    'Tested with commissioning professionals before release',
-    'Shaped by feedback from people who manage thousand-loop projects',
-    'Voice-first design works with gloves on, not against them',
-    'AI enhances, never controls — humans always decide',
-  ];
   return (
-    <Box sx={{ py: { xs: 6, md: 10 }, px: { xs: 3, md: 6 }, backgroundColor: '#FAF5EE' }}>
+    <Box sx={{ py: { xs: 6, md: 10 }, px: { xs: 3, md: 6 }, backgroundColor: CREAM }}>
       <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: '#333', mb: 4, letterSpacing: 1 }}>
+        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: CHARCOAL, mb: 4, letterSpacing: 1 }}>
           Why We Are Different
         </Typography>
         <Box sx={{ mb: 5 }}>
-          {bullets.map((b) => (
+          {WHY_DIFFERENT.map((b) => (
             <Box key={b} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#E8913A', mt: 1, mr: 2, flexShrink: 0 }} />
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: ORANGE, mt: 1, mr: 2, flexShrink: 0 }} />
               <Typography sx={{ color: '#444', fontSize: 16, lineHeight: 1.7 }}>{b}</Typography>
             </Box>
           ))}
         </Box>
-        <Paper elevation={0} sx={{ p: 4, borderRadius: 3, textAlign: 'center', border: '1px solid rgba(232,145,58,0.3)', backgroundColor: '#fff' }}>
-          <Typography sx={{ color: '#333', fontSize: 17, fontWeight: 600, mb: 1 }}>
+        <Box sx={{ p: 4, borderRadius: 3, textAlign: 'center', border: `1px solid rgba(232,145,58,0.3)`, backgroundColor: '#fff' }}>
+          <Typography sx={{ color: CHARCOAL, fontSize: 17, fontWeight: 600, mb: 1 }}>
             Have questions? Call us.
           </Typography>
           <Typography sx={{ color: '#666', fontSize: 15, mb: 2 }}>
@@ -156,108 +169,11 @@ function SectionWhyDifferent() {
           </Typography>
           <Typography
             component="a"
-            href="tel:3462204606"
-            sx={{ color: '#E8913A', fontSize: 22, fontWeight: 700, textDecoration: 'none', letterSpacing: 1 }}
+            href={PHONE_HREF}
+            sx={{ color: ORANGE, fontSize: 22, fontWeight: 700, textDecoration: 'none', letterSpacing: 1 }}
           >
-            (346) 220-4606
+            {PHONE}
           </Typography>
-        </Paper>
-      </Box>
-    </Box>
-  );
-}
-
-function SectionPricing() {
-  const plans = [
-    {
-      name: 'Starter',
-      subtitle: 'Up to 20 people',
-      price: '$200',
-      period: '/person/month',
-      tagline: 'Single crew, daily voice reports',
-      features: ['Voice reporting', 'AI structuring', 'Safety & JSA', 'Daily plans', 'All trades included'],
-      cta: 'Get Started',
-      highlight: false,
-    },
-    {
-      name: 'Professional',
-      subtitle: '20\u201350 people',
-      price: '$180',
-      period: '/person/month',
-      tagline: 'Multi-crew, full oversight',
-      features: ['Everything in Starter', 'Punch list automation', 'Analytics dashboard', 'Loop Folders included', 'Priority support'],
-      cta: 'Get Started',
-      highlight: true,
-    },
-    {
-      name: 'Enterprise',
-      subtitle: '50+ people',
-      price: '$150',
-      period: '/person/month',
-      tagline: 'Large operations, custom integrations',
-      features: ['Everything in Professional', 'Dedicated support', 'Custom integrations', 'Volume Loop Folder pricing', 'Onboarding assistance'],
-      cta: 'Talk to Us',
-      highlight: false,
-    },
-  ];
-  return (
-    <Box sx={{ py: { xs: 6, md: 10 }, px: { xs: 3, md: 6 } }}>
-      <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
-        <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: '#333', mb: 1, letterSpacing: 1 }}>
-          Transparent Pricing for Your Team
-        </Typography>
-        <Typography sx={{ textAlign: 'center', color: '#666', mb: 5, fontSize: 15 }}>
-          All plans include AI, voice reporting, and all trades. Loop Folders: $15/folder ($10 after 1,000).
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
-          {plans.map((p) => (
-            <Paper key={p.name} elevation={p.highlight ? 4 : 0} sx={{
-              flex: '1 1 280px',
-              maxWidth: 340,
-              p: 4,
-              borderRadius: 3,
-              border: p.highlight ? '2px solid #E8913A' : '1px solid rgba(0,0,0,0.08)',
-              textAlign: 'center',
-              position: 'relative',
-              backgroundColor: '#fff',
-            }}>
-              {p.highlight && (
-                <Box sx={{
-                  position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
-                  backgroundColor: '#E8913A', color: '#fff', px: 2.5, py: 0.5, borderRadius: 5,
-                  fontSize: 12, fontWeight: 700, letterSpacing: 1,
-                }}>
-                  MOST POPULAR
-                </Box>
-              )}
-              <Typography sx={{ fontWeight: 700, fontSize: 20, color: '#333', mb: 0.5 }}>{p.name}</Typography>
-              <Typography sx={{ color: '#888', fontSize: 13, mb: 2 }}>{p.subtitle}</Typography>
-              <Typography sx={{ fontSize: 36, fontWeight: 800, color: '#333' }}>
-                {p.price}
-              </Typography>
-              <Typography sx={{ color: '#888', fontSize: 13, mb: 1 }}>{p.period}</Typography>
-              <Typography sx={{ color: '#E8913A', fontSize: 14, fontWeight: 600, mb: 2 }}>{p.tagline}</Typography>
-              <Divider sx={{ mb: 2 }} />
-              {p.features.map((f) => (
-                <Typography key={f} sx={{ color: '#555', fontSize: 14, mb: 0.8, textAlign: 'left', pl: 2 }}>
-                  {'\u2713'} {f}
-                </Typography>
-              ))}
-              <Button
-                fullWidth
-                variant={p.highlight ? 'contained' : 'outlined'}
-                sx={{
-                  mt: 3, py: 1.5, borderRadius: 2, fontWeight: 700, fontSize: 15,
-                  ...(p.highlight
-                    ? { backgroundColor: '#E8913A', '&:hover': { backgroundColor: '#d07c2e' } }
-                    : { borderColor: '#E8913A', color: '#E8913A', '&:hover': { backgroundColor: 'rgba(232,145,58,0.08)' } }
-                  ),
-                }}
-              >
-                {p.cta}
-              </Button>
-            </Paper>
-          ))}
         </Box>
       </Box>
     </Box>
@@ -266,57 +182,60 @@ function SectionPricing() {
 
 function SectionFinalCTA() {
   return (
-    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 3, md: 6 }, backgroundColor: '#FAF5EE', textAlign: 'center' }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, color: '#333', mb: 2 }}>
+    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 3, md: 6 }, textAlign: 'center' }}>
+      <Typography variant="h4" sx={{ fontWeight: 700, color: CHARCOAL, mb: 2 }}>
         Ready to Work Smarter?
       </Typography>
       <Typography sx={{ color: '#666', fontSize: 16, mb: 4, maxWidth: 500, mx: 'auto' }}>
         See how Horizon Sparks fits your project. We will walk you through it.
       </Typography>
-      <Button
-        variant="contained"
-        size="large"
-        href="mailto:creations@horizonsparks.ai?subject=Demo Request"
-        sx={{
-          px: 5, py: 1.8, fontSize: 17, fontWeight: 700, borderRadius: 2,
-          backgroundColor: '#E8913A', '&:hover': { backgroundColor: '#d07c2e' },
-          mr: 2, mb: { xs: 2, md: 0 },
-        }}
-      >
-        Book a Demo
-      </Button>
-      <Button
-        variant="outlined"
-        size="large"
-        href="tel:3462204606"
-        sx={{
-          px: 5, py: 1.8, fontSize: 17, fontWeight: 700, borderRadius: 2,
-          borderColor: '#E8913A', color: '#E8913A',
-          '&:hover': { backgroundColor: 'rgba(232,145,58,0.08)' },
-        }}
-      >
-        Call Us
-      </Button>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2 }}>
+        <Button
+          variant="contained"
+          size="large"
+          href={`mailto:${EMAIL}?subject=Demo Request`}
+          sx={{
+            px: 5, py: 1.8, fontSize: 17, fontWeight: 700, borderRadius: 2,
+            backgroundColor: ORANGE, '&:hover': { backgroundColor: '#d07c2e' },
+            width: { xs: '100%', sm: 'auto' },
+          }}
+        >
+          Book a Demo
+        </Button>
+        <Button
+          variant="outlined"
+          size="large"
+          href={PHONE_HREF}
+          sx={{
+            px: 5, py: 1.8, fontSize: 17, fontWeight: 700, borderRadius: 2,
+            borderColor: ORANGE, color: ORANGE,
+            '&:hover': { backgroundColor: 'rgba(232,145,58,0.08)' },
+            width: { xs: '100%', sm: 'auto' },
+          }}
+        >
+          Call Us
+        </Button>
+      </Box>
     </Box>
   );
 }
 
 function SectionFooter() {
   return (
-    <Box sx={{ py: 4, px: { xs: 3, md: 6 }, backgroundColor: '#333', color: '#ccc' }}>
+    <Box sx={{ py: 4, px: { xs: 3, md: 6 }, backgroundColor: CHARCOAL, color: '#ccc' }}>
       <Box sx={{ maxWidth: 1100, mx: 'auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
         <Box>
-          <Typography sx={{ color: '#E8913A', fontWeight: 700, fontSize: 16, letterSpacing: 2, mb: 0.5 }}>
+          <Typography sx={{ color: ORANGE, fontWeight: 700, fontSize: 16, letterSpacing: 2, mb: 0.5 }}>
             HORIZON SPARKS
           </Typography>
           <Typography sx={{ color: '#999', fontSize: 13 }}>Houston, Texas</Typography>
         </Box>
         <Box sx={{ textAlign: { xs: 'left', md: 'center' } }}>
-          <Typography component="a" href="tel:3462204606" sx={{ color: '#ccc', fontSize: 14, textDecoration: 'none', mr: 3 }}>
-            (346) 220-4606
+          <Typography component="a" href={PHONE_HREF} sx={{ color: '#ccc', fontSize: 14, textDecoration: 'none', mr: 3 }}>
+            {PHONE}
           </Typography>
-          <Typography component="a" href="mailto:creations@horizonsparks.ai" sx={{ color: '#ccc', fontSize: 14, textDecoration: 'none' }}>
-            creations@horizonsparks.ai
+          <Typography component="a" href={`mailto:${EMAIL}`} sx={{ color: '#ccc', fontSize: 14, textDecoration: 'none' }}>
+            {EMAIL}
           </Typography>
         </Box>
         <Box>
@@ -351,7 +270,6 @@ export default function LoginView({ onLogin }) {
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    checkFaceId();
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     if (!isStandalone) {
       setShowInstall(true);
@@ -365,16 +283,21 @@ export default function LoginView({ onLogin }) {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const checkFaceId = async () => {
-    try {
-      const res = await fetch('/api/webauthn/login-options', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      const data = await res.json();
-      if (data.available && window.PublicKeyCredential) {
-        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        setFaceIdAvailable(available);
-      }
-    } catch (e) {}
-  };
+  // Only check Face ID when login modal opens (Codex: avoid unnecessary API call on page load)
+  useEffect(() => {
+    if (!showLogin) return;
+    const checkFaceId = async () => {
+      try {
+        const res = await fetch('/api/webauthn/login-options', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (data.available && window.PublicKeyCredential) {
+          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          setFaceIdAvailable(available);
+        }
+      } catch (e) {}
+    };
+    checkFaceId();
+  }, [showLogin]);
 
   const handleFaceId = async () => {
     try {
@@ -441,7 +364,7 @@ export default function LoginView({ onLogin }) {
   };
 
   return (
-    <Box className="login-view" sx={{ backgroundColor: '#fff' }}>
+    <Box sx={{ backgroundColor: CREAM }}>
 
       {/* ── HERO SECTION ── */}
       <Box sx={{
@@ -451,7 +374,7 @@ export default function LoginView({ onLogin }) {
         backgroundSize: { xs: 'contain', md: 'cover' },
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        backgroundColor: '#FAF5EE',
+        backgroundColor: CREAM,
         position: 'relative',
       }}>
         {/* Tagline — above the orange arc */}
@@ -469,12 +392,12 @@ export default function LoginView({ onLogin }) {
             letterSpacing: 2,
             color: 'rgba(255,255,255,0.9)',
           }}>
-            <Box component="span" sx={{ color: '#E8913A', fontWeight: 600 }}>AI</Box>{' '}
+            <Box component="span" sx={{ color: ORANGE, fontWeight: 600 }}>AI</Box>{' '}
             Layer that Enhances your Intelligence
           </Typography>
         </Box>
 
-        {/* Top bar — Sign In link */}
+        {/* Top bar — Sign In button (Codex: must be a real button, not Typography) */}
         <Box sx={{
           position: 'absolute',
           top: 0,
@@ -486,20 +409,21 @@ export default function LoginView({ onLogin }) {
           px: { xs: 3, md: 5 },
           py: 2.5,
         }}>
-          <Typography
+          <Button
+            variant="text"
             onClick={() => setShowLogin(true)}
             sx={{
-              color: '#333',
+              color: CHARCOAL,
               fontWeight: 600,
               fontSize: 15,
-              cursor: 'pointer',
               letterSpacing: 0.5,
-              '&:hover': { color: '#E8913A' },
+              textTransform: 'none',
+              '&:hover': { color: ORANGE, backgroundColor: 'transparent' },
               transition: 'color 0.2s',
             }}
           >
             {t('login.title', 'Sign In')}
-          </Typography>
+          </Button>
         </Box>
       </Box>
 
@@ -508,7 +432,6 @@ export default function LoginView({ onLogin }) {
       <SectionWhoItsFor />
       <SectionCredibility />
       <SectionWhyDifferent />
-      <SectionPricing />
       <SectionFinalCTA />
       <SectionFooter />
 
@@ -516,6 +439,7 @@ export default function LoginView({ onLogin }) {
       <Dialog
         open={showLogin}
         onClose={() => { setShowLogin(false); setError(''); setPin(''); }}
+        aria-labelledby="login-dialog-title"
         slotProps={{
           backdrop: { sx: { backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(4px)' } },
           paper: { sx: {
@@ -529,6 +453,11 @@ export default function LoginView({ onLogin }) {
           } },
         }}
       >
+        <DialogTitle id="login-dialog-title" sx={{ p: 0, mb: 1 }}>
+          <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 800, letterSpacing: 3, color: ORANGE }}>
+            HORIZON SPARKS
+          </Typography>
+        </DialogTitle>
         <DialogContent sx={{ p: 1 }}>
           {showInstall && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
@@ -547,9 +476,6 @@ export default function LoginView({ onLogin }) {
               </ToggleButton>
             </ToggleButtonGroup>
           </Box>
-          <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 800, letterSpacing: 3, color: '#E8913A', mb: 1 }}>
-            HORIZON SPARKS
-          </Typography>
           <Typography variant="h6" sx={{ textAlign: 'center', mb: 0.5 }}>{t('login.title')}</Typography>
           <Typography sx={{ textAlign: 'center', color: 'text.secondary', mb: 2, fontSize: 14 }}>{t('login.enterPin')}</Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -567,11 +493,18 @@ export default function LoginView({ onLogin }) {
               <Box sx={{ flex: 1, height: '1px', bgcolor: 'grey.300' }} />
             </Box>
           )}
-          <TextField fullWidth autoFocus type="tel"
+          <TextField
+            fullWidth
+            autoFocus
+            type="tel"
+            label={t('login.pin', 'PIN')}
             slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*', maxLength: 8 } }}
-            value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+            value={pin}
+            onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            placeholder={t('login.pin')} variant="outlined" sx={{ mb: 2 }} />
+            variant="outlined"
+            sx={{ mb: 2 }}
+          />
           <Button fullWidth variant="contained" size="large" onClick={handleSubmit}
             disabled={loading || !pin.trim()} sx={{ py: 1.5, fontSize: 16 }}>
             {loading ? <CircularProgress size={24} color="inherit" /> : t('login.submit')}
