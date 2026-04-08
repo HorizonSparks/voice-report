@@ -152,7 +152,7 @@ function SectionWhyDifferent() {
         <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: CHARCOAL, mb: 4, letterSpacing: 1 }}>
           Why We Are Different
         </Typography>
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 6 }}>
           {WHY_DIFFERENT.map((b) => (
             <Box key={b} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: ORANGE, mt: 1, mr: 2, flexShrink: 0 }} />
