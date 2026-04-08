@@ -94,7 +94,7 @@ function SectionWhoItsFor() {
         <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: CHARCOAL, mb: 1, letterSpacing: 1 }}>
           Different Roles. Same Goal.
         </Typography>
-        <Typography sx={{ textAlign: 'center', color: '#666', mb: 5, fontSize: 16 }}>
+        <Typography sx={{ textAlign: 'center', color: '#666', mb: 4, fontSize: 16 }}>
           Smarter work, from the field to the front office.
         </Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
@@ -152,7 +152,7 @@ function SectionWhyDifferent() {
         <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: CHARCOAL, mb: 4, letterSpacing: 1 }}>
           Why We Are Different
         </Typography>
-        <Box sx={{ mb: 5 }}>
+        <Box sx={{ mb: 4 }}>
           {WHY_DIFFERENT.map((b) => (
             <Box key={b} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: ORANGE, mt: 1, mr: 2, flexShrink: 0 }} />
@@ -186,7 +186,7 @@ function SectionFinalCTA() {
       <Typography variant="h4" sx={{ fontWeight: 700, color: CHARCOAL, mb: 2 }}>
         Ready to Work Smarter?
       </Typography>
-      <Typography sx={{ color: '#666', fontSize: 16, mb: 4, maxWidth: 500, mx: 'auto' }}>
+      <Typography sx={{ color: '#666', fontSize: 16, mb: 4, maxWidth: 600, mx: 'auto' }}>
         See how Horizon Sparks fits your project. We will walk you through it.
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2 }}>
