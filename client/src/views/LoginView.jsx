@@ -361,14 +361,14 @@ export default function LoginView({ onLogin }) {
         {/* Top bar — Sign In button (Codex: must be a real button, not Typography) */}
         <Box sx={{
           position: 'absolute',
-          top: "15%",
+          top: 0,
           left: 0,
           right: 0,
           display: 'flex',
           justifyContent: 'flex-end',
           alignItems: 'center',
           px: { xs: 3, md: 5 },
-          
+          py: 2.5,
         }}>
           <Button
             variant="text"
