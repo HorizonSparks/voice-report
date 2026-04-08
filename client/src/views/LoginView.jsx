@@ -25,7 +25,7 @@ const PRODUCT_CARDS = [
   },
   {
     title: 'AI Agent',
-    desc: 'An intelligence layer that understands your project, your people, and your chain of command.',
+    desc: 'An intelligence layer that enhances your project, your people, and your chain of command.',
   },
 ];
 
