@@ -152,7 +152,7 @@ function SectionWhyDifferent() {
         <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 700, color: CHARCOAL, mb: 4, letterSpacing: 1 }}>
           Why We Are Different
         </Typography>
-        <Box sx={{ mb: 6 }}>
+        <Box sx={{ mb: 8 }}>
           {WHY_DIFFERENT.map((b) => (
             <Box key={b} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: ORANGE, mt: 1, mr: 2, flexShrink: 0 }} />
@@ -162,10 +162,10 @@ function SectionWhyDifferent() {
         </Box>
         <Box sx={{ p: 4, borderRadius: 3, textAlign: 'center', border: `1px solid rgba(232,145,58,0.3)`, backgroundColor: '#fff' }}>
           <Typography sx={{ color: CHARCOAL, fontSize: 17, fontWeight: 600, mb: 1 }}>
-            Have questions? Call us.
+            Ready to Work Smarter?
           </Typography>
           <Typography sx={{ color: '#666', fontSize: 15, mb: 2 }}>
-            Construction companies work with people they trust.
+            See how Horizon Sparks fits your project. Call us.
           </Typography>
           <Typography
             component="a"
@@ -180,45 +180,6 @@ function SectionWhyDifferent() {
   );
 }
 
-function SectionFinalCTA() {
-  return (
-    <Box sx={{ py: { xs: 6, md: 8 }, px: { xs: 3, md: 6 }, textAlign: 'center' }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, color: CHARCOAL, mb: 2 }}>
-        Ready to Work Smarter?
-      </Typography>
-      <Typography sx={{ color: '#666', fontSize: 16, mb: 4, maxWidth: 600, mx: 'auto' }}>
-        See how Horizon Sparks fits your project. We will walk you through it.
-      </Typography>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2 }}>
-        <Button
-          variant="contained"
-          size="large"
-          href={`mailto:${EMAIL}?subject=Demo Request`}
-          sx={{
-            px: 5, py: 1.8, fontSize: 17, fontWeight: 700, borderRadius: 2,
-            backgroundColor: ORANGE, '&:hover': { backgroundColor: '#d07c2e' },
-            width: { xs: '100%', sm: 'auto' },
-          }}
-        >
-          Book a Demo
-        </Button>
-        <Button
-          variant="outlined"
-          size="large"
-          href={PHONE_HREF}
-          sx={{
-            px: 5, py: 1.8, fontSize: 17, fontWeight: 700, borderRadius: 2,
-            borderColor: ORANGE, color: ORANGE,
-            '&:hover': { backgroundColor: 'rgba(232,145,58,0.08)' },
-            width: { xs: '100%', sm: 'auto' },
-          }}
-        >
-          Call Us
-        </Button>
-      </Box>
-    </Box>
-  );
-}
 
 function SectionFooter() {
   return (
@@ -432,7 +393,6 @@ export default function LoginView({ onLogin }) {
       <SectionWhoItsFor />
       <SectionCredibility />
       <SectionWhyDifferent />
-      <SectionFinalCTA />
       <SectionFooter />
 
       {/* ── LOGIN MODAL ── */}
