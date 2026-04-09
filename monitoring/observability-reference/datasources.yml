@@ -1,0 +1,38 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+
+  # ============================================================
+  # Agent Runtime Phase 1 — Horizon Sparks unified Postgres
+  # ============================================================
+  # Single postgres instance with multiple schemas:
+  #   - voicereport.analytics_ai_costs       (Voice Report AI cost rows)
+  #   - horizonsparks.file_check_logs_result_ia (LoopFolders extraction logs
+  #                                            with agent_call JSONB column)
+  - name: HorizonSparks-Postgres
+    type: postgres
+    access: proxy
+    url: postgress_horizonsparks:5432
+    user: horizon_spark
+    database: horizon
+    editable: false
+    secureJsonData:
+      password: ${HORIZONSPARKS_PG_PASSWORD}
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false

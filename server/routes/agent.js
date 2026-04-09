@@ -9,6 +9,8 @@ const fs = require('fs');
 const { requireAuth } = require('../middleware/sessionAuth');
 const { getActor } = require('../auth/authz');
 const { callClaude } = require('../services/ai/anthropicClient');
+const { runAgent } = require('../services/ai/agentRuntime');
+const sparksChat = require('../services/ai/agents/sparksChat');
 const DB = require('../../database/db');
 const { agentToolCallsTotal, agentSessionsTotal, agentToolLoopsExhausted } = require('../services/metrics');
 const { captureError } = require('../services/errorTracking');
@@ -2045,34 +2047,33 @@ ENGAGEMENT RULES:
     while (loops < 5) {
       loops++;
       let result;
-      try {
-        result = await callClaude({
-          systemPrompt,
-          messages,
-          maxTokens: 2000,
-          model: activeModel,
+      // Milestone C: route through runAgent(sparksChat, ...). The sparksChat agent
+      // has dynamicTools: true so the per-role-filtered tool set is supplied via
+      // overrides.tools. The systemPrompt (built above from runtime state) is
+      // passed via context.systemPrompt. The Opus -> Sonnet 429 downgrade is
+      // preserved by catching and retrying with overrides.model = sonnet.
+      const runChatAgent = (modelOverride, reqIdSuffix = '') => runAgent(sparksChat, {
+        context: { systemPrompt },
+        messages,
+        overrides: {
+          model: modelOverride,
           tools: userTools,
-          tracking: {
-            requestId: `agent_${Date.now()}_${loops}`,
-            personId,
-            service: 'agent',
-          },
-        });
+          maxTokens: 2000,
+        },
+        tracking: {
+          requestId: `agent_${Date.now()}_${loops}${reqIdSuffix}`,
+          personId,
+          projectId: req.body.project_id || 'default',
+          companyId: req.companyId,
+          service: 'agent',
+        },
+      });
+      try {
+        result = await runChatAgent(activeModel);
       } catch (err) {
         if (activeModel.includes('opus') && err.message.includes('429')) {
           activeModel = 'claude-sonnet-4-20250514';
-          result = await callClaude({
-            systemPrompt,
-            messages,
-            maxTokens: 2000,
-            model: activeModel,
-            tools: userTools,
-            tracking: {
-              requestId: `agent_${Date.now()}_${loops}_fallback`,
-              personId,
-              service: 'agent',
-            },
-          });
+          result = await runChatAgent(activeModel, '_fallback');
         } else {
           throw err;
         }

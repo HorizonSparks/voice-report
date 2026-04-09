@@ -42,15 +42,16 @@ function middleware(req, res, next) {
 /**
  * Track AI API cost
  */
-async function trackAiCost({ request_id, person_id, provider, service, model, input_tokens, output_tokens, audio_duration_seconds, tts_characters, estimated_cost_cents, context_type, knowledge_modules, conversation_round, phase, success, error_details }) {
+async function trackAiCost({ request_id, person_id, provider, service, model, input_tokens, output_tokens, audio_duration_seconds, tts_characters, estimated_cost_cents, context_type, knowledge_modules, conversation_round, phase, success, error_details, agent_name, project_id }) {
   try {
     await db.query(
-      'INSERT INTO analytics_ai_costs (request_id, person_id, provider, service, model, input_tokens, output_tokens, audio_duration_seconds, tts_characters, estimated_cost_cents, context_type, knowledge_modules, conversation_round, phase, success, error_details) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)',
+      'INSERT INTO analytics_ai_costs (request_id, person_id, provider, service, model, input_tokens, output_tokens, audio_duration_seconds, tts_characters, estimated_cost_cents, context_type, knowledge_modules, conversation_round, phase, success, error_details, agent_name, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)',
       [request_id || null, person_id || null, provider, service, model,
        input_tokens || 0, output_tokens || 0, audio_duration_seconds || 0, tts_characters || 0,
        estimated_cost_cents || 0, context_type || null,
        knowledge_modules ? JSON.stringify(knowledge_modules) : null,
-       conversation_round || null, phase || null, success !== undefined ? success : 1, error_details || null]
+       conversation_round || null, phase || null, success !== undefined ? success : 1, error_details || null,
+       agent_name || null, project_id || 'default']
     );
   } catch(e) { /* silent */ }
 }

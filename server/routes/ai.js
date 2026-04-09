@@ -12,6 +12,10 @@ const { buildRefinePrompt } = require('../services/ai/refinePrompts');
 const { loadRefineKnowledge } = require('../services/ai/refineKnowledgeLoader');
 const { transcribe, textToSpeech, textToSpeechBase64 } = require('../services/ai/openaiClient');
 const { callClaude, callClaudeJSON, cleanupFieldText } = require('../services/ai/anthropicClient');
+const { runAgent } = require('../services/ai/agentRuntime');
+const voiceStructure = require('../services/ai/agents/voiceStructure');
+const voiceConverse = require('../services/ai/agents/voiceConverse');
+const voiceRefine = require('../services/ai/agents/voiceRefine');
 const { detectSafety } = require('../services/ai/safetyDetector');
 
 const router = Router();
@@ -84,11 +88,16 @@ router.post('/structure', requireAuth, async (req, res) => {
     const person_id = resolvePersonId(req);
     if (!transcript) return res.status(400).json({ error: 'No transcript provided' });
 
-    // Field cleanup mode — just clean up spoken text for a form field
+    // Field cleanup mode — just clean up spoken text for a form field.
+    // Pass projectId/companyId so the underlying runAgent(fieldCleanup) call
+    // attributes Stripe billing correctly (Codex audit fix).
     if (field_cleanup) {
       try {
         const cleaned = await cleanupFieldText(transcript, custom_prompt, {
-          requestId: req.analyticsId, personId: person_id,
+          requestId: req.analyticsId,
+          personId: person_id,
+          projectId: req.body.project_id || 'default',
+          companyId: req.companyId,
         });
         return res.json({ cleaned, structured_report: cleaned, report: cleaned });
       } catch {
@@ -107,13 +116,19 @@ router.post('/structure', requireAuth, async (req, res) => {
       contextPackage = await buildContextPackage(person, template, req.db);
     }
 
-    const systemPrompt = buildStructurePrompt(contextPackage, safetyBlock);
-
-    const result = await callClaudeJSON({
-      systemPrompt,
+    // Milestone C: use runAgent(voiceStructure). voiceStructure.systemPrompt
+    // internally calls buildStructurePrompt(contextPackage, safetyBlock) and
+    // the agent has jsonMode: true so the result is auto-parsed.
+    const result = await runAgent(voiceStructure, {
+      context: { contextPackage, safetyBlock },
       messages: [{ role: 'user', content: `Here is the voice transcript to structure:\n\n<transcript>\n${transcript}\n</transcript>` }],
-      maxTokens: 4096,
-      tracking: { requestId: req.analyticsId, personId: person_id, service: 'structure' },
+      tracking: {
+        requestId: req.analyticsId,
+        personId: person_id,
+        projectId: req.body.project_id || 'default',
+        companyId: req.companyId,
+        service: 'structure',
+      },
     });
 
     if (!result.parsed) {
@@ -191,17 +206,24 @@ router.post('/converse', requireAuth, async (req, res) => {
       }
     }
 
-    const systemPrompt = buildConversePrompt({
-      personName, roleTitle, roleDescription, reportFocus, outputSections, messagesForPerson: messages_for_person, trade,
-    });
-
-    const result = await callClaude({
-      systemPrompt,
+    // Milestone C: use runAgent(voiceConverse). voiceConverse.systemPrompt
+    // internally calls buildConversePrompt which handles Sparks routing.
+    const result = await runAgent(voiceConverse, {
+      context: {
+        personName, roleTitle, roleDescription, reportFocus, outputSections,
+        messagesForPerson: messages_for_person,
+        trade,
+      },
       messages: conversation && conversation.length > 0
         ? conversation
         : [{ role: 'user', content: `Here's what ${personName} has reported so far:\n\n${transcript_so_far}` }],
-      maxTokens: 500,
-      tracking: { requestId: req.analyticsId, personId: person_id, service: 'converse' },
+      tracking: {
+        requestId: req.analyticsId,
+        personId: person_id,
+        projectId: req.body.project_id || 'default',
+        companyId: req.companyId,
+        service: 'converse',
+      },
     });
 
     res.json({ response: result.text });
@@ -262,12 +284,17 @@ router.post('/refine', requireAuth, async (req, res) => {
       } catch { /* reports table may not exist for all setups */ }
     }
 
-    // Build prompt using extracted module
-    const systemPrompt = buildRefinePrompt(currentPhase, context_type, {
-      round, personContext, safetyContext, tradeKnowledge,
-      teamContext: team_context, taskContext: task_context,
-      safetyDetection, recentReports,
-    });
+    // Build refine context package (passed to voiceRefine.systemPrompt function).
+    // The agent internally calls buildRefinePrompt(phase, contextType, opts).
+    const refineCtx = {
+      phase: currentPhase,
+      contextType: context_type,
+      opts: {
+        round, personContext, safetyContext, tradeKnowledge,
+        teamContext: team_context, taskContext: task_context,
+        safetyDetection, recentReports,
+      },
+    };
 
     // Build messages array
     const messages = [];
@@ -302,14 +329,18 @@ router.post('/refine', requireAuth, async (req, res) => {
       messages.push({ role: 'user', content: buildUserContent(raw_transcript) });
     }
 
-    // Call Claude using extracted client
-    const result = await callClaudeJSON({
-      systemPrompt,
+    // Milestone C: use runAgent(voiceRefine, ...). Agent has jsonMode: true so
+    // the structured output is auto-parsed. Max tokens varies by phase and is
+    // passed via overrides (clamped by the agent's maxTokens guardrail of 2048).
+    const result = await runAgent(voiceRefine, {
+      context: refineCtx,
       messages,
-      maxTokens: currentPhase === 'edit' ? 500 : 1500,
+      overrides: { maxTokens: currentPhase === 'edit' ? 500 : 1500 },
       tracking: {
         requestId: req.analyticsId,
         personId: person_id,
+        projectId: req.body.project_id || 'default',
+        companyId: req.companyId,
         service: 'refine',
         extra: {
           context_type: context_type || null,

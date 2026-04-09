@@ -26,7 +26,7 @@ const API_VERSION = '2023-06-01';
  * @param {object} params.tracking - { requestId, personId, service } for analytics
  * @returns {{ text: string, usage: object, raw: object }}
  */
-async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tracking = {}, tools }) {
+async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tracking = {}, tools, signal }) {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
@@ -53,6 +53,7 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
         'anthropic-version': API_VERSION,
       },
       body: JSON.stringify(body),
+      signal,
     });
   } catch (fetchErr) {
     const duration = (Date.now() - startTime) / 1000;
@@ -86,8 +87,14 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
   anthropicCostTotal.inc({ service }, costCents / 100);
   anthropicRequestDuration.observe({ service, model: useModel }, duration);
 
-  // Analytics DB tracking (existing)
+  // Analytics DB tracking (existing + Phase 1 agent fields)
+  // Phase 1: explicit forwarding of agent_name and project_id — the ...extras
+  // spread would not propagate to the fixed INSERT in analytics.trackAiCost.
+  // IMPORTANT: spread trackingExtra FIRST, then set reserved fields AFTER so extras
+  // cannot accidentally override analytics integrity (provider, service, success, etc).
+  const trackingExtra = tracking.extra || {};
   analytics.trackAiCost({
+    ...trackingExtra,
     request_id: tracking.requestId,
     person_id: tracking.personId || null,
     provider: 'anthropic',
@@ -97,7 +104,8 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
     output_tokens: outputTokens,
     estimated_cost_cents: costCents,
     success: 1,
-    ...(tracking.extra || {}),
+    agent_name: trackingExtra.agent_name || null,
+    project_id: trackingExtra.project_id || 'default',
   });
 
   return { text, usage: data.usage, raw: data, content: data.content, stop_reason: data.stop_reason };
@@ -120,16 +128,21 @@ async function callClaudeJSON(params) {
 }
 
 /**
- * Simple Claude call for field cleanup (short responses)
+ * Simple Claude call for field cleanup (short responses).
+ *
+ * Milestone C: This function is now a thin wrapper over runAgent(fieldCleanup, ...)
+ * so cleanup calls are cost-tracked and observable alongside other agent calls.
+ * The function signature stays the same for backward compatibility — existing
+ * callers (ai.js /api/structure field_cleanup path) do not need to change.
  */
 async function cleanupFieldText(text, customPrompt, tracking = {}) {
-  const prompt = customPrompt
-    ? `${customPrompt}\n\nSpoken text: "${text}"`
-    : `Clean up this spoken text for a professional construction safety/work form. Fix grammar, make it clear and concise, but keep the original meaning and all specific details (names, numbers, locations, equipment). Do NOT add information that wasn't said. Return ONLY the cleaned text, nothing else.\n\nSpoken text: "${text}"`;
+  // Lazy require to avoid any risk of circular dependency with agentRuntime.
+  const { runAgent } = require('./agentRuntime');
+  const fieldCleanup = require('./agents/fieldCleanup');
 
-  const result = await callClaude({
-    messages: [{ role: 'user', content: prompt }],
-    maxTokens: 500,
+  const result = await runAgent(fieldCleanup, {
+    context: { customPrompt },
+    messages: [{ role: 'user', content: fieldCleanup.buildUserContent(text) }],
     tracking: { ...tracking, service: 'field_cleanup' },
   });
 
