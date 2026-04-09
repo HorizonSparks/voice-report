@@ -31,7 +31,7 @@ const httpRequestsInFlight = new client.Gauge({
 });
 
 // ============================================
-// AI / ANTHROPIC METRICS
+// AI / ANTHROPIC METRICS (legacy — kept for backward compatibility)
 // ============================================
 const anthropicRequestsTotal = new client.Counter({
   name: 'horizon_anthropic_requests_total',
@@ -59,7 +59,7 @@ const anthropicRequestDuration = new client.Histogram({
 });
 
 // ============================================
-// AGENT METRICS
+// AGENT METRICS (chat orchestrator — existing)
 // ============================================
 const agentToolCallsTotal = new client.Counter({
   name: 'horizon_agent_tool_calls_total',
@@ -76,6 +76,43 @@ const agentSessionsTotal = new client.Counter({
 const agentToolLoopsExhausted = new client.Counter({
   name: 'horizon_agent_tool_loops_exhausted_total',
   help: 'Number of times agent hit max tool loop iterations',
+});
+
+// ============================================
+// AGENT RUNTIME METRICS (Phase 1 — agent-definition layer)
+// New parallel counters. Do NOT mutate labels on the anthropic* counters above
+// (prom-client throws on label redefinition after registration).
+// ============================================
+const agentRequestsTotal = new client.Counter({
+  name: 'horizon_agent_requests_total',
+  help: 'Total runAgent() invocations, labeled by agent_name',
+  labelNames: ['agent_name', 'model', 'success'],
+});
+
+const agentTokensTotal = new client.Counter({
+  name: 'horizon_agent_tokens_total',
+  help: 'Total tokens consumed by agent invocations, labeled by agent_name',
+  labelNames: ['agent_name', 'model', 'direction'],
+});
+
+// Stored in integer cents to avoid float drift across billions of increments.
+// Labels include project_id so Stripe billing can group by (project, agent).
+const agentCostTotalCents = new client.Counter({
+  name: 'horizon_agent_cost_cents_total',
+  help: 'Total agent cost in integer cents, labeled by agent_name and project_id',
+  labelNames: ['agent_name', 'project_id'],
+});
+
+const agentGuardrailViolationsTotal = new client.Counter({
+  name: 'horizon_agent_guardrail_violations_total',
+  help: 'Guardrail violations (disabled, cost_limit, pii_observed, etc.) labeled by agent_name',
+  labelNames: ['agent_name', 'guardrail_type'],
+});
+
+const agentCostOverrunsTotal = new client.Counter({
+  name: 'horizon_agent_cost_overruns_total',
+  help: 'Number of times actual call cost exceeded 2x the declared costLimitPerCallCents',
+  labelNames: ['agent_name'],
 });
 
 // ============================================
@@ -149,13 +186,22 @@ async function metricsHandler(req, res) {
 module.exports = {
   metricsMiddleware,
   metricsHandler,
+  // Legacy anthropic metrics (callClaude still writes these)
   anthropicRequestsTotal,
   anthropicTokensTotal,
   anthropicCostTotal,
   anthropicRequestDuration,
+  // Existing agent chat orchestrator metrics
   agentToolCallsTotal,
   agentSessionsTotal,
   agentToolLoopsExhausted,
+  // NEW Phase 1 agent-runtime metrics
+  agentRequestsTotal,
+  agentTokensTotal,
+  agentCostTotalCents,
+  agentGuardrailViolationsTotal,
+  agentCostOverrunsTotal,
+  // DB
   dbPoolSize,
   dbErrorsTotal,
 };

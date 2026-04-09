@@ -219,8 +219,19 @@ export default function App() {
     }
   };
 
-  // Session restoration — check /api/me on mount
+  // Session restoration — check /api/me on mount.
+  // Skip the probe entirely (and avoid a noisy 401 in the console) when no
+  // presence companion cookie exists. The companion is set/cleared by the
+  // server alongside the HttpOnly hs_session cookie, so its absence is a
+  // reliable signal that there's no session to restore.
   useEffect(() => {
+    const hasSession = document.cookie
+      .split('; ')
+      .some(c => c.startsWith('hs_session_present='));
+    if (!hasSession) {
+      setAuthStatus('anonymous');
+      return;
+    }
     fetch('/api/me')
       .then(r => {
         if (r.ok) return r.json();
