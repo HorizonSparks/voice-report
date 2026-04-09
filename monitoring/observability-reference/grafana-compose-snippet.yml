@@ -1,0 +1,32 @@
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: grafana
+    restart: unless-stopped
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-}
+      # Agent Runtime Phase 1 — Postgres datasource password for Horizon Sparks DB
+      - HORIZONSPARKS_PG_PASSWORD=${HORIZONSPARKS_PG_PASSWORD:-}
+
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_USERS_VIEWERS_CAN_EDIT=false
+      - GF_EXPLORE_ENABLED=false
+      - GF_SERVER_ROOT_URL=https://horizonsparks.com/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/voice-report-live.json
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - observability
+      - hasura-network
+    depends_on:
+      - prometheus
+      - loki
+
+  # ============================================
