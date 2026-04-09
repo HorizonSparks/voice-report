@@ -51,7 +51,7 @@ class AgentTimeoutError extends Error {
 
 // ── Constants ───────────────────────────────────────────────────
 
-const AGENT_NAME_REGEX = /^[a-z][a-z0-9]*(\.[a-z0-9]+)*\.v\d+$/;
+const AGENT_NAME_REGEX = /^[a-z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*\.v\d+$/;
 const CLAUDE_MODEL_PREFIX = 'claude-';
 const MAX_ALLOWED_TOKENS = 200000;
 
@@ -97,7 +97,7 @@ function defineAgent(config) {
   if (!AGENT_NAME_REGEX.test(config.name)) {
     throw new AgentValidationError(
       `defineAgent: name "${config.name}" does not match required format ` +
-      `(lowercase, dot-separated, ending in .v{N}, e.g. 'voice.structure.v1')`
+      `(first segment must start lowercase, dot-separated, ending in .v{N}, e.g. 'voice.jsaMatchCheck.v1')`
     );
   }
   if (!config.model || typeof config.model !== 'string') {
