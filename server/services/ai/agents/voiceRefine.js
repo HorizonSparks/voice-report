@@ -29,6 +29,7 @@ module.exports = defineAgent({
     return buildRefinePrompt(ctx.phase, ctx.contextType || 'daily_task', ctx.opts || {});
   },
   tools: [],
+  jsonMode: true, // structured output per phase — always parse
   mcpServers: [],
   guardrails: {
     // Refine finalize/edit returns JSON payloads that can be sizeable

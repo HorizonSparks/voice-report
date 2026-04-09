@@ -608,7 +608,7 @@ describe('Bypass Regression — grep guards', () => {
     // lands, but we define the invariant now. Until then, track jsa.js as the known
     // remaining bypass. Once C is done, remove the allowlist entirely.
     const routesDir = path.join(__dirname, '..', 'server', 'routes');
-    const allowedBypasses = new Set(['jsa.js']); // TODO: empty this after Milestone C
+    const allowedBypasses = new Set(); // Milestone C closed all known bypasses
     const files = fs.readdirSync(routesDir).filter(f => f.endsWith('.js'));
     const violators = [];
     for (const f of files) {

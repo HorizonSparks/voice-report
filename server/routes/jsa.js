@@ -3,6 +3,8 @@ const router = express.Router();
 const { requireAuth, requireRoleLevel, requireSparksEditMode } = require('../middleware/sessionAuth');
 const { getActor } = require('../auth/authz');
 const DB = require('../../database/db');
+const { runAgent } = require('../services/ai/agentRuntime');
+const jsaAnalyzer = require('../services/ai/agents/jsaAnalyzer');
 
 module.exports = function(db) {
 
@@ -488,41 +490,46 @@ module.exports = function(db) {
         });
       }
 
-      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 500,
+      // Milestone C: closed the direct-fetch bypass. Route through runAgent()
+      // so the call is cost-tracked (analytics_ai_costs.agent_name = voice.jsaMatchCheck.v1)
+      // and observable in Prometheus. Behavior-preserving: same fallbacks, same
+      // default error responses, same JSON shape.
+      try {
+        const result = await runAgent(jsaAnalyzer, {
           messages: [{
             role: 'user',
-            content: `You are a construction safety expert. Compare this JSA (Job Safety Analysis) task description against the assigned work task. Determine if the JSA adequately covers the hazards of this task.
-
-JSA Task Description: "${jsa_task_description}"
-
-Assigned Task: "${task_title}"${task_description ? `\nTask Details: "${task_description}"` : ''}
-
-Return ONLY valid JSON (no markdown): { "match": boolean, "confidence": "high"|"medium"|"low", "reason": "brief explanation", "missing_hazards": ["hazard1", "hazard2"] }
-If the work is substantially the same, match=true. If different work types, locations, or equipment, match=false with missing_hazards.`,
+            content: jsaAnalyzer.buildUserContent({
+              jsa_task_description,
+              task_title,
+              task_description,
+            }),
           }],
-        }),
-      });
-
-      if (aiRes.ok) {
-        const data = await aiRes.json();
-        const text = data.content[0].text;
-        try {
-          const result = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim());
-          return res.json(result);
-        } catch {
-          return res.json({ match: false, confidence: 'low', reason: 'AI response could not be parsed', missing_hazards: [] });
+          tracking: {
+            requestId: req.analyticsId,
+            personId: req.auth?.person_id,
+            projectId: req.body.project_id || 'default',
+            companyId: req.companyId,
+          },
+        });
+        if (result.parsed) {
+          return res.json(result.parsed);
         }
+        // JSON parse failed (runAgent's auto-parse returned null)
+        return res.json({
+          match: false,
+          confidence: 'low',
+          reason: 'AI response could not be parsed',
+          missing_hazards: [],
+        });
+      } catch (agentErr) {
+        console.error('JSA match-check agent error:', agentErr);
+        return res.json({
+          match: false,
+          confidence: 'low',
+          reason: 'AI service unavailable',
+          missing_hazards: [],
+        });
       }
-      res.json({ match: false, confidence: 'low', reason: 'AI service unavailable', missing_hazards: [] });
     } catch (err) {
       console.error('JSA match-check error:', err);
       res.json({ match: false, confidence: 'low', reason: 'Error checking match', missing_hazards: [] });

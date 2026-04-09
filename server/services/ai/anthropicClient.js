@@ -128,16 +128,21 @@ async function callClaudeJSON(params) {
 }
 
 /**
- * Simple Claude call for field cleanup (short responses)
+ * Simple Claude call for field cleanup (short responses).
+ *
+ * Milestone C: This function is now a thin wrapper over runAgent(fieldCleanup, ...)
+ * so cleanup calls are cost-tracked and observable alongside other agent calls.
+ * The function signature stays the same for backward compatibility — existing
+ * callers (ai.js /api/structure field_cleanup path) do not need to change.
  */
 async function cleanupFieldText(text, customPrompt, tracking = {}) {
-  const prompt = customPrompt
-    ? `${customPrompt}\n\nSpoken text: "${text}"`
-    : `Clean up this spoken text for a professional construction safety/work form. Fix grammar, make it clear and concise, but keep the original meaning and all specific details (names, numbers, locations, equipment). Do NOT add information that wasn't said. Return ONLY the cleaned text, nothing else.\n\nSpoken text: "${text}"`;
+  // Lazy require to avoid any risk of circular dependency with agentRuntime.
+  const { runAgent } = require('./agentRuntime');
+  const fieldCleanup = require('./agents/fieldCleanup');
 
-  const result = await callClaude({
-    messages: [{ role: 'user', content: prompt }],
-    maxTokens: 500,
+  const result = await runAgent(fieldCleanup, {
+    context: { customPrompt },
+    messages: [{ role: 'user', content: fieldCleanup.buildUserContent(text) }],
     tracking: { ...tracking, service: 'field_cleanup' },
   });
 

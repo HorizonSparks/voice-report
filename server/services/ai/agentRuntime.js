@@ -156,6 +156,7 @@ function defineAgent(config) {
     tools: frozenTools,
     mcpServers: frozenServers,
     dynamicTools: config.dynamicTools === true,
+    jsonMode: config.jsonMode === true, // force JSON auto-parse even if prompt doesn't match detectJsonMode
     guardrails: Object.freeze(guardrails),
   });
 
@@ -418,10 +419,10 @@ async function runAgent(agent, opts = {}) {
     });
   }
 
-  // ── Auto-parse JSON if detected ──
+  // ── Auto-parse JSON if agent declares jsonMode or prompt content suggests it ──
   let parsed = null;
   let parseError = null;
-  if (detectJsonMode(systemPromptStr)) {
+  if (agent.jsonMode || detectJsonMode(systemPromptStr)) {
     const parseResult = tryParseJson(result.text || '');
     parsed = parseResult.parsed;
     parseError = parseResult.parseError;

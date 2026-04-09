@@ -31,6 +31,7 @@ module.exports = defineAgent({
     return buildStructurePrompt(ctx.contextPackage, ctx.safetyBlock || '');
   },
   tools: [],
+  jsonMode: true, // {verbatim, structured} — always parse
   mcpServers: [],
   guardrails: {
     maxTokens: 4096,
