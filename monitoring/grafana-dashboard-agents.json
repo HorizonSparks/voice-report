@@ -1,0 +1,900 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Agent Runtime Phase 1 \u2014 per-project cost attribution, per-agent breakdown, and margin analysis across Voice Report + LoopFolders.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Total AI spend across Voice Report + LoopFolders in the selected time range.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (\n  COALESCE((SELECT SUM(estimated_cost_cents) FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL), 0)\n  +\n  COALESCE((SELECT SUM((ac ->> 'costCents')::int) FROM horizonsparks.file_check_logs_result_ia, LATERAL jsonb_array_elements(agent_call) AS ac WHERE checked_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_call IS NOT NULL AND jsonb_typeof(agent_call) = 'array'), 0)\n) / 100.0 AS total_cost_usd",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Total Platform AI Spend",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Number of unique projects with agent activity.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT project_id) AS active_projects FROM (SELECT project_id FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL UNION ALL SELECT (ac ->> 'projectId')::text FROM horizonsparks.file_check_logs_result_ia, LATERAL jsonb_array_elements(agent_call) AS ac WHERE checked_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_call IS NOT NULL) u",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Projects",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Total agent invocations across both apps.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (\n  COALESCE((SELECT COUNT(*) FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL), 0)\n  +\n  COALESCE((SELECT COUNT(*) FROM horizonsparks.file_check_logs_result_ia, LATERAL jsonb_array_elements(agent_call) AS ac WHERE checked_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_call IS NOT NULL AND jsonb_typeof(agent_call) = 'array'), 0)\n) AS total_calls",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Agent Invocations",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Total input + output tokens across both apps.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (\n  COALESCE((SELECT SUM(input_tokens + output_tokens) FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL), 0)\n  +\n  COALESCE((SELECT SUM((ac ->> 'inputTokens')::int + (ac ->> 'outputTokens')::int) FROM horizonsparks.file_check_logs_result_ia, LATERAL jsonb_array_elements(agent_call) AS ac WHERE checked_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_call IS NOT NULL AND jsonb_typeof(agent_call) = 'array'), 0)\n) AS total_tokens",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Tokens",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Per-project cost breakdown, sorted by highest spend. Unified across Voice Report and LoopFolders.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total_cost_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-RdYlGr"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total_calls"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total_input_tokens"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total_output_tokens"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "total_cost_usd"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT project_id, SUM(total_cost_usd) AS total_cost_usd, SUM(calls) AS total_calls, SUM(tokens_input) AS total_input_tokens, SUM(tokens_output) AS total_output_tokens FROM (\n  SELECT project_id, COUNT(*) AS calls, SUM(input_tokens) AS tokens_input, SUM(output_tokens) AS tokens_output, SUM(estimated_cost_cents) / 100.0 AS total_cost_usd FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL GROUP BY project_id\n  UNION ALL\n  SELECT (ac ->> 'projectId')::text AS project_id, COUNT(*) AS calls, SUM((ac ->> 'inputTokens')::int) AS tokens_input, SUM((ac ->> 'outputTokens')::int) AS tokens_output, SUM((ac ->> 'costCents')::int) / 100.0 AS total_cost_usd FROM horizonsparks.file_check_logs_result_ia, LATERAL jsonb_array_elements(agent_call) AS ac WHERE checked_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_call IS NOT NULL AND jsonb_typeof(agent_call) = 'array' GROUP BY (ac ->> 'projectId')::text\n) combined GROUP BY project_id ORDER BY total_cost_usd DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost Per Project (Unified)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Cost breakdown by agent type. Helps identify which agents burn the most budget so Phase 2 optimization targets the right layer.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": 6,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT agent_name, SUM(cost_usd) AS value FROM (\n  SELECT agent_name, SUM(estimated_cost_cents) / 100.0 AS cost_usd FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL GROUP BY agent_name\n  UNION ALL\n  SELECT (ac ->> 'name')::text AS agent_name, SUM((ac ->> 'costCents')::int) / 100.0 AS cost_usd FROM horizonsparks.file_check_logs_result_ia, LATERAL jsonb_array_elements(agent_call) AS ac WHERE checked_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_call IS NOT NULL AND jsonb_typeof(agent_call) = 'array' GROUP BY (ac ->> 'name')::text\n) combined GROUP BY agent_name ORDER BY value DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost By Agent",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Cost over time, grouped by agent. Shows which agents are driving usage spikes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('hour', created_at) AS time, agent_name AS metric, SUM(estimated_cost_cents) / 100.0 AS value FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL GROUP BY time, agent_name ORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost Over Time (Voice Report, stacked by agent)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "Per-project, per-agent cost breakdown. Primary billing view for Stripe attribution.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-RdYlGr"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calls"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tokens_input"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tokens_output"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "cost_usd"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT project_id, agent_name, COUNT(*) AS calls, SUM(input_tokens) AS tokens_input, SUM(output_tokens) AS tokens_output, SUM(estimated_cost_cents) / 100.0 AS cost_usd FROM voicereport.analytics_ai_costs WHERE created_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_name IS NOT NULL GROUP BY project_id, agent_name ORDER BY cost_usd DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Voice Report \u2014 Per-Project Per-Agent Breakdown",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P4B0CAA167F6518C4"
+      },
+      "description": "LoopFolders agent_call JSONB aggregation. Each row is a Claude invocation from the extract-tables pipeline.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cost_usd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-RdYlGr"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tokens_input"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tokens_output"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "cost_usd"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P4B0CAA167F6518C4"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (ac ->> 'projectId')::text AS project_id, (ac ->> 'name')::text AS agent_name, COUNT(*) AS calls, SUM((ac ->> 'inputTokens')::int) AS tokens_input, SUM((ac ->> 'outputTokens')::int) AS tokens_output, SUM((ac ->> 'costCents')::int) / 100.0 AS cost_usd FROM horizonsparks.file_check_logs_result_ia, LATERAL jsonb_array_elements(agent_call) AS ac WHERE checked_at BETWEEN $__timeFrom() AND $__timeTo() AND agent_call IS NOT NULL AND jsonb_typeof(agent_call) = 'array' GROUP BY project_id, agent_name ORDER BY cost_usd DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "LoopFolders \u2014 Per-Project Per-Agent Breakdown",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "horizon-sparks",
+    "agents",
+    "billing",
+    "phase1"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Horizon Sparks \u2014 Agent Cost Intelligence",
+  "uid": "horizon-agents-cost",
+  "version": 1,
+  "weekStart": ""
+}
