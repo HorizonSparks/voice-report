@@ -26,7 +26,7 @@ const API_VERSION = '2023-06-01';
  * @param {object} params.tracking - { requestId, personId, service } for analytics
  * @returns {{ text: string, usage: object, raw: object }}
  */
-async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tracking = {}, tools }) {
+async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tracking = {}, tools, signal }) {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY not configured');
   }
@@ -53,6 +53,7 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
         'anthropic-version': API_VERSION,
       },
       body: JSON.stringify(body),
+      signal,
     });
   } catch (fetchErr) {
     const duration = (Date.now() - startTime) / 1000;
@@ -86,8 +87,14 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
   anthropicCostTotal.inc({ service }, costCents / 100);
   anthropicRequestDuration.observe({ service, model: useModel }, duration);
 
-  // Analytics DB tracking (existing)
+  // Analytics DB tracking (existing + Phase 1 agent fields)
+  // Phase 1: explicit forwarding of agent_name and project_id — the ...extras
+  // spread would not propagate to the fixed INSERT in analytics.trackAiCost.
+  // IMPORTANT: spread trackingExtra FIRST, then set reserved fields AFTER so extras
+  // cannot accidentally override analytics integrity (provider, service, success, etc).
+  const trackingExtra = tracking.extra || {};
   analytics.trackAiCost({
+    ...trackingExtra,
     request_id: tracking.requestId,
     person_id: tracking.personId || null,
     provider: 'anthropic',
@@ -97,7 +104,8 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
     output_tokens: outputTokens,
     estimated_cost_cents: costCents,
     success: 1,
-    ...(tracking.extra || {}),
+    agent_name: trackingExtra.agent_name || null,
+    project_id: trackingExtra.project_id || 'default',
   });
 
   return { text, usage: data.usage, raw: data, content: data.content, stop_reason: data.stop_reason };

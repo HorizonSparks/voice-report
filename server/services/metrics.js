@@ -96,11 +96,13 @@ const agentTokensTotal = new client.Counter({
 });
 
 // Stored in integer cents to avoid float drift across billions of increments.
-// Labels include project_id so Stripe billing can group by (project, agent).
+// Label is agent_name ONLY — project_id would be unbounded cardinality in Prometheus
+// (customers churn). Per-project billing attribution is handled in analytics_ai_costs DB table,
+// which is the authoritative source for Stripe billing queries.
 const agentCostTotalCents = new client.Counter({
   name: 'horizon_agent_cost_cents_total',
-  help: 'Total agent cost in integer cents, labeled by agent_name and project_id',
-  labelNames: ['agent_name', 'project_id'],
+  help: 'Total agent cost in integer cents, labeled by agent_name',
+  labelNames: ['agent_name'],
 });
 
 const agentGuardrailViolationsTotal = new client.Counter({
