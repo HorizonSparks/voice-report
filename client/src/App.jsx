@@ -713,12 +713,9 @@ export default function App() {
         </List>
       </Drawer>
 
-      {/* Sub-header with back button */}
-      {view !== 'home' && (
-        <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.default', borderBottom: 'none' }}>
-          <Button startIcon={<ArrowBackIcon />} onClick={goBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
-            {t('nav.back')}
-          </Button>
+      {/* Sub-header with user info — hidden on home and sparks (has own nav) */}
+      {view !== 'home' && view !== 'sparks' && (
+        <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.default', borderBottom: 'none' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {user.photo && <Avatar src={`/api/photos/${user.photo}`} sx={{ width: 28, height: 28 }} />}
             <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary' }}>{user.name}</Typography>
