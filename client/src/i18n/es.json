@@ -344,9 +344,14 @@
   },
   "folders": {
     "newFolder": "Nueva Carpeta",
+    "editFolder": "Renombrar Carpeta",
     "folderName": "Nombre de carpeta",
     "nameRequired": "El nombre es requerido",
     "cancel": "Cancelar",
-    "create": "Crear"
+    "create": "Crear",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "deleteConfirmTitle": "Eliminar Carpeta",
+    "deleteConfirmMessage": "¿Estás seguro de eliminar \"{{name}}\"? Esta acción no se puede deshacer."
   }
 }

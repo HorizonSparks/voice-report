@@ -72,6 +72,22 @@ router.get('/:id', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// PUT /folders/:id — rename folder (owner or admin)
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Folder name required' });
+    const actor = getActor(req);
+    if (!actor.is_admin) {
+      const personId = await resolvePersonId(actor, req.db);
+      const folder = await DB.sharedFolders.getById(req.params.id);
+      if (!folder || folder.created_by !== personId) return res.status(403).json({ error: 'Only the owner can rename' });
+    }
+    await DB.db.query('UPDATE shared_folders SET name = $1, updated_at = NOW() WHERE id = $2', [name.trim(), req.params.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // DELETE /folders/:id — delete folder (owner only)
 router.delete('/:id', requireAuth, async (req, res) => {
   try {

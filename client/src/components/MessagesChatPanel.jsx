@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, IconButton, Chip, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Typography, IconButton, Chip, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import MessagesView from '../views/MessagesView.jsx';
 
@@ -20,8 +20,14 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   const [companyFolders, setCompanyFolders] = useState([]);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [folderNameError, setFolderNameError] = useState(false);
+  const [editingFolder, setEditingFolder] = useState(null); // { id, name }
+  const [editFolderName, setEditFolderName] = useState('');
+  const [editFolderNameError, setEditFolderNameError] = useState(false);
+  const [deletingFolder, setDeletingFolder] = useState(null); // { id, name }
+  const [apiError, setApiError] = useState(null);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showCloudLink, setShowCloudLink] = useState(null);
+  const [cloudLinkUrlError, setCloudLinkUrlError] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [cloudLinkUrl, setCloudLinkUrl] = useState('');
   const [cloudLinkName, setCloudLinkName] = useState('');
@@ -74,13 +80,56 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
     try { const res = await fetch('/api/folders'); if (res.ok) { const data = await res.json(); setCompanyFolders(Array.isArray(data) ? data : []); } } catch(e) {}
   };
 
+  const renameFolder = async () => {
+    if (!editFolderName.trim()) { setEditFolderNameError(true); return; }
+    try {
+      const res = await fetch(`/api/folders/${editingFolder.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editFolderName.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setApiError(data.error || `Error ${res.status}`);
+        return;
+      }
+      setEditingFolder(null);
+      reloadFolders();
+    } catch (e) {
+      setApiError(e.message || 'Network error');
+    }
+  };
+
+  const deleteFolder = async () => {
+    if (!deletingFolder) return;
+    try {
+      const res = await fetch(`/api/folders/${deletingFolder.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setApiError(data.error || `Error ${res.status}`);
+        return;
+      }
+      setDeletingFolder(null);
+      reloadFolders();
+    } catch (e) {
+      setApiError(e.message || 'Network error');
+    }
+  };
+
   const createFolder = async () => {
     if (!newFolderName.trim()) { setFolderNameError(true); return; }
     try {
-      await fetch('/api/folders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newFolderName.trim() }) });
+      const res = await fetch('/api/folders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newFolderName.trim() }) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setApiError(data.error || `Error ${res.status}`);
+        return;
+      }
       setNewFolderName(''); setFolderNameError(false); setShowCreateFolder(false);
       reloadFolders();
-    } catch(e) {}
+    } catch(e) {
+      setApiError(e.message || 'Network error');
+    }
   };
 
   const importFolder = async (files) => {
@@ -96,14 +145,33 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   };
 
   const cloudServices = {
-    gdrive: { name: 'Google Drive', icon: '🟢', placeholder: 'https://drive.google.com/drive/folders/...' },
-    icloud: { name: 'iCloud', icon: '🔵', placeholder: 'https://www.icloud.com/iclouddrive/...' },
-    dropbox: { name: 'Dropbox', icon: '🔷', placeholder: 'https://www.dropbox.com/sh/...' },
-    onedrive: { name: 'OneDrive', icon: '☁️', placeholder: 'https://onedrive.live.com/...' },
+    gdrive: { name: 'Google Drive', icon: '🟢', placeholder: 'https://drive.google.com/drive/folders/...', domains: ['drive.google.com', 'docs.google.com'] },
+    icloud: { name: 'iCloud', icon: '🔵', placeholder: 'https://www.icloud.com/iclouddrive/...', domains: ['icloud.com'] },
+    dropbox: { name: 'Dropbox', icon: '🔷', placeholder: 'https://www.dropbox.com/sh/...', domains: ['dropbox.com', 'www.dropbox.com'] },
+    onedrive: { name: 'OneDrive', icon: '☁️', placeholder: 'https://onedrive.live.com/...', domains: ['onedrive.live.com', '1drv.ms', 'sharepoint.com'] },
+  };
+
+  const validateCloudUrl = (url, serviceKey) => {
+    if (!url.trim()) return 'URL is required';
+    try {
+      const parsed = new URL(url.trim());
+      if (!['http:', 'https:'].includes(parsed.protocol)) return 'Must be a valid URL starting with https://';
+      const service = cloudServices[serviceKey];
+      if (service?.domains) {
+        const hostname = parsed.hostname.replace(/^www\./, '');
+        const valid = service.domains.some(d => hostname === d.replace(/^www\./, '') || hostname.endsWith('.' + d.replace(/^www\./, '')));
+        if (!valid) return `Must be a ${service.name} URL`;
+      }
+      return null;
+    } catch {
+      return 'Must be a valid URL starting with https://';
+    }
   };
 
   const addCloudLink = async () => {
-    if (!cloudLinkUrl.trim() || !showCloudLink) return;
+    if (!showCloudLink) return;
+    const urlError = validateCloudUrl(cloudLinkUrl, showCloudLink);
+    if (urlError) { setCloudLinkUrlError(urlError); return; }
     const service = cloudServices[showCloudLink];
     const name = cloudLinkName.trim() || `${service.name} Folder`;
     try {
@@ -311,11 +379,19 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
             </Box>
             <Box sx={{ flex: 1, overflowY: 'auto' }}>
               {companyFolders.length > 0 ? companyFolders.map(f => (
-                <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25, borderBottom: '1px solid rgba(72,72,74,0.06)' }}>
+                <Box key={f.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25, borderBottom: '1px solid rgba(72,72,74,0.06)', '&:hover .folder-actions': { opacity: 1 } }}>
                   <Typography sx={{ fontSize: 22 }}>📁</Typography>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: 13, color: 'text.primary' }}>{f.name}</Typography>
                     <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{f.file_count || 0} items</Typography>
+                  </Box>
+                  <Box className="folder-actions" sx={{ display: 'flex', gap: 0.5, opacity: 0, transition: 'opacity 0.15s' }}>
+                    <IconButton size="small" onClick={() => { setEditingFolder(f); setEditFolderName(f.name); setEditFolderNameError(false); }} sx={{ color: 'text.secondary', p: 0.5 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </IconButton>
+                    <IconButton size="small" onClick={() => setDeletingFolder(f)} sx={{ color: '#e74c3c', p: 0.5 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </IconButton>
                   </Box>
                 </Box>
               )) : (
@@ -362,6 +438,13 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
         )}
       </Box>
 
+      {/* API error alert */}
+      <Snackbar open={!!apiError} autoHideDuration={5000} onClose={() => setApiError(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setApiError(null)} sx={{ width: '100%', fontWeight: 600 }}>
+          {apiError}
+        </Alert>
+      </Snackbar>
+
       {/* Create Folder Dialog */}
       <Dialog open={showCreateFolder} onClose={() => { setShowCreateFolder(false); setFolderNameError(false); setNewFolderName(''); }} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
         <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>{t('folders.newFolder')}</DialogTitle>
@@ -383,8 +466,43 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
         </DialogActions>
       </Dialog>
 
+      {/* Edit Folder Dialog */}
+      <Dialog open={!!editingFolder} onClose={() => { setEditingFolder(null); setEditFolderNameError(false); }} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>{t('folders.editFolder')}</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus fullWidth
+            placeholder={t('folders.folderName')}
+            value={editFolderName}
+            onChange={e => { setEditFolderName(e.target.value); if (editFolderNameError) setEditFolderNameError(false); }}
+            onKeyPress={e => e.key === 'Enter' && renameFolder()}
+            variant="outlined" size="small" sx={{ mt: 1 }}
+            error={editFolderNameError}
+            helperText={editFolderNameError ? t('folders.nameRequired') : ''}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setEditingFolder(null); setEditFolderNameError(false); }} sx={{ color: 'text.secondary', textTransform: 'none' }}>{t('folders.cancel')}</Button>
+          <Button onClick={renameFolder} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>{t('folders.save')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Folder Confirm Dialog */}
+      <Dialog open={!!deletingFolder} onClose={() => setDeletingFolder(null)} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>{t('folders.deleteConfirmTitle')}</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: 14, color: 'text.primary' }}>
+            {t('folders.deleteConfirmMessage', { name: deletingFolder?.name || '' })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingFolder(null)} sx={{ color: 'text.secondary', textTransform: 'none' }}>{t('folders.cancel')}</Button>
+          <Button onClick={deleteFolder} sx={{ bgcolor: '#e74c3c', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#c0392b' } }}>{t('folders.delete')}</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Cloud Service Link Dialog */}
-      <Dialog open={!!showCloudLink} onClose={() => setShowCloudLink(null)} PaperProps={{ sx: { borderRadius: 3, minWidth: 360 } }}>
+      <Dialog open={!!showCloudLink} onClose={() => { setShowCloudLink(null); setCloudLinkUrl(''); setCloudLinkName(''); setCloudLinkUrlError(null); }} PaperProps={{ sx: { borderRadius: 3, minWidth: 360 } }}>
         {showCloudLink && (
           <>
             <DialogTitle sx={{ fontWeight: 800, fontSize: 18, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -394,15 +512,23 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
               <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
                 Paste a {cloudServices[showCloudLink]?.name} folder or file link.
               </Typography>
-              <TextField autoFocus fullWidth placeholder={cloudServices[showCloudLink]?.placeholder} value={cloudLinkUrl} onChange={e => setCloudLinkUrl(e.target.value)}
-                variant="outlined" size="small" sx={{ mt: 0.5 }} />
+              <TextField
+                autoFocus fullWidth
+                placeholder={cloudServices[showCloudLink]?.placeholder}
+                value={cloudLinkUrl}
+                onChange={e => { setCloudLinkUrl(e.target.value); if (cloudLinkUrlError) setCloudLinkUrlError(null); }}
+                onKeyPress={e => e.key === 'Enter' && addCloudLink()}
+                variant="outlined" size="small" sx={{ mt: 0.5 }}
+                error={!!cloudLinkUrlError}
+                helperText={cloudLinkUrlError || ''}
+              />
               <TextField fullWidth placeholder="Name (optional)" value={cloudLinkName} onChange={e => setCloudLinkName(e.target.value)}
                 onKeyPress={e => e.key === 'Enter' && addCloudLink()}
                 variant="outlined" size="small" />
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setShowCloudLink(null)} sx={{ color: 'text.secondary', textTransform: 'none' }}>Cancel</Button>
-              <Button onClick={addCloudLink} disabled={!cloudLinkUrl.trim()} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Save</Button>
+              <Button onClick={() => { setShowCloudLink(null); setCloudLinkUrl(''); setCloudLinkName(''); setCloudLinkUrlError(null); }} sx={{ color: 'text.secondary', textTransform: 'none' }}>Cancel</Button>
+              <Button onClick={addCloudLink} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Save</Button>
             </DialogActions>
           </>
         )}

@@ -865,7 +865,7 @@ CREATE INDEX idx_audit_created ON sparks_audit_log(created_at DESC);
 CREATE TABLE IF NOT EXISTS shared_folders (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  created_by TEXT NOT NULL REFERENCES people(id),
+  created_by TEXT NOT NULL,                      -- person_id or '__admin__' sentinel
   context_type TEXT NOT NULL DEFAULT 'team',    -- 'team' or 'company'
   context_id TEXT,                               -- company_id if context_type='company'
   description TEXT,
@@ -875,7 +875,7 @@ CREATE TABLE IF NOT EXISTS shared_folders (
 
 CREATE TABLE IF NOT EXISTS shared_folder_members (
   folder_id TEXT NOT NULL REFERENCES shared_folders(id) ON DELETE CASCADE,
-  person_id TEXT NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  person_id TEXT NOT NULL,                       -- person_id or '__admin__' sentinel
   role TEXT NOT NULL DEFAULT 'viewer',           -- 'owner', 'editor', 'viewer'
   added_at TIMESTAMP DEFAULT NOW(),
   PRIMARY KEY (folder_id, person_id)
@@ -895,12 +895,12 @@ CREATE TABLE IF NOT EXISTS shared_files (
   -- For type='link': external URL
   url TEXT,
   -- Metadata
-  uploaded_by TEXT NOT NULL REFERENCES people(id),
+  uploaded_by TEXT NOT NULL,                     -- person_id or '__admin__' sentinel
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_shared_files_folder ON shared_files(folder_id);
-CREATE INDEX idx_shared_folder_members_person ON shared_folder_members(person_id);
+CREATE INDEX IF NOT EXISTS idx_shared_files_folder ON shared_files(folder_id);
+CREATE INDEX IF NOT EXISTS idx_shared_folder_members_person ON shared_folder_members(person_id);
 
 -- ============================================
 -- END OF SCHEMA

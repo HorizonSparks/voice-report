@@ -344,9 +344,14 @@
   },
   "folders": {
     "newFolder": "New Folder",
+    "editFolder": "Rename Folder",
     "folderName": "Folder name",
     "nameRequired": "Name is required",
     "cancel": "Cancel",
-    "create": "Create"
+    "create": "Create",
+    "save": "Save",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete Folder",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
   }
 }

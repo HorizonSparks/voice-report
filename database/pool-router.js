@@ -27,7 +27,7 @@ const PG_BASE = {
 const COMPANY_DB_MAP = {
   'company_pacific_mechanical': 'horizon_pacific_mechanical',
   'company_summit_electrical': 'horizon_summit_electrical',
-  'company_horizon_sparks': 'horizon_sparks',
+  // company_horizon_sparks uses the shared 'horizon' DB (no dedicated DB in dev)
   // Add new companies here as they're onboarded
 };
 
