@@ -20,10 +20,10 @@ dist/
 client/dist/
 
 # User uploads
-message-audio/
-message-photos/
-photos/
-people/
+/message-audio/
+/message-photos/
+/photos/
+/people/
 
 # Backups
 memory_backup/
