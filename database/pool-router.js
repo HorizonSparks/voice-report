@@ -25,10 +25,11 @@ const PG_BASE = {
 // Company → database name mapping
 // Companies NOT listed here use the shared pool (horizon)
 const COMPANY_DB_MAP = {
-  'company_pacific_mechanical': 'horizon_pacific_mechanical',
-  'company_summit_electrical': 'horizon_summit_electrical',
-  // company_horizon_sparks uses the shared 'horizon' DB (no dedicated DB in dev)
-  // Add new companies here as they're onboarded
+  // In production, each company has its own DB:
+  // 'company_pacific_mechanical': 'horizon_pacific_mechanical',
+  // 'company_summit_electrical': 'horizon_summit_electrical',
+  // 'company_horizon_sparks': 'horizon_sparks',
+  // In dev, all companies use the shared 'horizon' DB (leave this map empty)
 };
 
 const SHARED_DB = process.env.PG_DATABASE || 'horizon';

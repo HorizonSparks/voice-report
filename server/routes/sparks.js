@@ -150,6 +150,17 @@ router.put('/companies/:id', requireSparksRole('admin'), async (req, res) => {
   }
 });
 
+// DELETE /api/sparks/companies/:id — Delete company (admin only)
+router.delete('/companies/:id', requireSparksRole('admin'), async (req, res) => {
+  try {
+    await DB.db.query('DELETE FROM companies WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete company error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================
 // COMPANY PRODUCTS
 // ============================================

@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, forwardRef, useImperative
 import {
   Box, Typography, Button, Paper, Chip, Alert, CircularProgress,
   Card, CardContent, CardActionArea, TextField, Select, MenuItem,
-  Grid, Dialog, DialogTitle, DialogContent, DialogActions
+  Grid, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar
 } from '@mui/material';
 import AnalyticsView from './AnalyticsView.jsx';
 import MessagesView from './MessagesView.jsx';
@@ -46,6 +46,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
   const [revenue, setRevenue] = useState(null);
   const [companyBilling, setCompanyBilling] = useState(null);
   const [allPlans, setAllPlans] = useState([]);
@@ -206,14 +207,14 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     finally { setLoading(false); }
   }
 
-  async function loadCompanyDetail(companyId) {
+  async function loadCompanyDetail(companyId, { keepScreen = false } = {}) {
     try {
       setLoading(true);
       const res = await fetch('/api/sparks/companies/' + companyId);
       if (!res.ok) throw new Error('Failed to load company');
       const data = await res.json();
       setSelectedCompany(data);
-      setCompanyScreen('overview');
+      if (!keepScreen) setCompanyScreen('overview');
       // Default to first licensed trade for this company
       const trades = (data.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean);
       setCompanyTrade(trades[0] || null);
@@ -276,14 +277,16 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     try {
       if (currentStatus === 'active') {
         await fetch('/api/sparks/companies/' + companyId + '/trades/' + encodeURIComponent(trade), { method: 'DELETE' });
+        setSuccessMsg(`Trade "${trade}" removed`);
       } else {
         await fetch('/api/sparks/companies/' + companyId + '/trades', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ trade }),
         });
+        setSuccessMsg(`Trade "${trade}" enabled`);
       }
-      loadCompanyDetail(companyId);
+      loadCompanyDetail(companyId, { keepScreen: true });
     } catch (err) {
       setError(err.message);
     }
@@ -293,14 +296,16 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     try {
       if (currentStatus === 'active') {
         await fetch('/api/sparks/companies/' + companyId + '/products/' + product, { method: 'DELETE' });
+        setSuccessMsg(`Product "${product}" removed`);
       } else {
         await fetch('/api/sparks/companies/' + companyId + '/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product }),
         });
+        setSuccessMsg(`Product "${product}" enabled`);
       }
-      loadCompanyDetail(companyId);
+      loadCompanyDetail(companyId, { keepScreen: true });
     } catch (err) {
       setError(err.message);
     }
@@ -383,6 +388,12 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
       {error && (
         <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>
       )}
+
+      <Snackbar open={!!successMsg} autoHideDuration={3000} onClose={() => setSuccessMsg(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ fontWeight: 600 }}>
+          {successMsg}
+        </Alert>
+      </Snackbar>
 
       {/* DASHBOARD SCREEN */}
       {screen === 'dashboard' && dashboard && (

@@ -9,7 +9,7 @@ import MessagesView from '../views/MessagesView.jsx';
  * Middle panel: company list → people in selected company
  * Right panel: active chat
  */
-export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail, onBack, agentOpen }) {
+export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail, agentOpen }) {
   const { t } = useTranslation();
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedPerson, setSelectedPerson] = useState(null);
@@ -194,7 +194,6 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
         <SidebarIcon icon="folders" active={sidebarTab === 'folders'} onClick={() => setSidebarTab('folders')} disabled={!selectedCompany} />
         <Box sx={{ flex: 1 }} />
         <SidebarIcon icon="agent" active={false} onClick={() => {}} disabled />
-        <SidebarIcon icon="back" active={false} onClick={onBack} />
       </Box>
 
       {/* Column 2: Middle panel */}
