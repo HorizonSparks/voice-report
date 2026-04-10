@@ -341,5 +341,12 @@
     "asFoundOutput": "As Found Output",
     "calibratedOutput": "Calibrated Output",
     "dcsReading": "DCS Reading"
+  },
+  "folders": {
+    "newFolder": "New Folder",
+    "folderName": "Folder name",
+    "nameRequired": "Name is required",
+    "cancel": "Cancel",
+    "create": "Create"
   }
 }

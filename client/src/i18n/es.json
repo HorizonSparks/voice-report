@@ -341,5 +341,12 @@
     "asFoundOutput": "Salida Encontrada",
     "calibratedOutput": "Salida Calibrada",
     "dcsReading": "Lectura DCS"
+  },
+  "folders": {
+    "newFolder": "Nueva Carpeta",
+    "folderName": "Nombre de carpeta",
+    "nameRequired": "El nombre es requerido",
+    "cancel": "Cancelar",
+    "create": "Crear"
   }
 }

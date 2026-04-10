@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Typography, IconButton, Chip, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import MessagesView from '../views/MessagesView.jsx';
 
 /**
@@ -9,6 +10,7 @@ import MessagesView from '../views/MessagesView.jsx';
  * Right panel: active chat
  */
 export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail, onBack, agentOpen }) {
+  const { t } = useTranslation();
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('companies'); // companies | info | analytics | agent
@@ -17,6 +19,7 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   const [companyAnalytics, setCompanyAnalytics] = useState(null);
   const [companyFolders, setCompanyFolders] = useState([]);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [folderNameError, setFolderNameError] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showCloudLink, setShowCloudLink] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
@@ -72,10 +75,10 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
   };
 
   const createFolder = async () => {
-    if (!newFolderName.trim()) return;
+    if (!newFolderName.trim()) { setFolderNameError(true); return; }
     try {
       await fetch('/api/folders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newFolderName.trim() }) });
-      setNewFolderName(''); setShowCreateFolder(false);
+      setNewFolderName(''); setFolderNameError(false); setShowCreateFolder(false);
       reloadFolders();
     } catch(e) {}
   };
@@ -360,16 +363,23 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
       </Box>
 
       {/* Create Folder Dialog */}
-      <Dialog open={showCreateFolder} onClose={() => setShowCreateFolder(false)} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
-        <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>New Folder</DialogTitle>
+      <Dialog open={showCreateFolder} onClose={() => { setShowCreateFolder(false); setFolderNameError(false); setNewFolderName(''); }} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>{t('folders.newFolder')}</DialogTitle>
         <DialogContent>
-          <TextField autoFocus fullWidth placeholder="Folder name" value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
+          <TextField
+            autoFocus fullWidth
+            placeholder={t('folders.folderName')}
+            value={newFolderName}
+            onChange={e => { setNewFolderName(e.target.value); if (folderNameError) setFolderNameError(false); }}
             onKeyPress={e => e.key === 'Enter' && createFolder()}
-            variant="outlined" size="small" sx={{ mt: 1 }} />
+            variant="outlined" size="small" sx={{ mt: 1 }}
+            error={folderNameError}
+            helperText={folderNameError ? t('folders.nameRequired') : ''}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowCreateFolder(false)} sx={{ color: 'text.secondary', textTransform: 'none' }}>Cancel</Button>
-          <Button onClick={createFolder} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>Create</Button>
+          <Button onClick={() => { setShowCreateFolder(false); setFolderNameError(false); setNewFolderName(''); }} sx={{ color: 'text.secondary', textTransform: 'none' }}>{t('folders.cancel')}</Button>
+          <Button onClick={createFolder} sx={{ bgcolor: 'var(--primary)', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'var(--primary)', opacity: 0.9 } }}>{t('folders.create')}</Button>
         </DialogActions>
       </Dialog>
 

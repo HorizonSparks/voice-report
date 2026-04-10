@@ -37,14 +37,26 @@ function parseCookies(req) {
 function setSessionCookie(res, sessionId, maxAge, req) {
   // Only set Secure flag when actually on HTTPS — HTTP cookies with Secure won't be sent back
   const isSecure = req ? (req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
+  const age = maxAge || 7 * 24 * 60 * 60; // 7 days
   res.setHeader('Set-Cookie', [
-    `${COOKIE_NAME}=${sessionId}`,
-    'HttpOnly',
-    isSecure ? 'Secure' : '',
-    'SameSite=Lax',
-    'Path=/',
-    `Max-Age=${maxAge || 7 * 24 * 60 * 60}`, // 7 days
-  ].filter(Boolean).join('; '));
+    // HttpOnly session token — not readable by JS
+    [
+      `${COOKIE_NAME}=${sessionId}`,
+      'HttpOnly',
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      `Max-Age=${age}`,
+    ].filter(Boolean).join('; '),
+    // Companion presence flag — readable by JS so client can skip /api/me when no session exists
+    [
+      `${COOKIE_NAME}_present=1`,
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      `Max-Age=${age}`,
+    ].filter(Boolean).join('; '),
+  ]);
 }
 
 /**
@@ -53,13 +65,22 @@ function setSessionCookie(res, sessionId, maxAge, req) {
 function clearSessionCookie(res, req) {
   const isSecure = req ? (req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
   res.setHeader('Set-Cookie', [
-    `${COOKIE_NAME}=`,
-    'HttpOnly',
-    isSecure ? 'Secure' : '',
-    'SameSite=Lax',
-    'Path=/',
-    'Max-Age=0',
-  ].filter(Boolean).join('; '));
+    [
+      `${COOKIE_NAME}=`,
+      'HttpOnly',
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      'Max-Age=0',
+    ].filter(Boolean).join('; '),
+    [
+      `${COOKIE_NAME}_present=`,
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      'Max-Age=0',
+    ].filter(Boolean).join('; '),
+  ]);
 }
 
 /**
