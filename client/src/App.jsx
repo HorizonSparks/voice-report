@@ -219,19 +219,8 @@ export default function App() {
     }
   };
 
-  // Session restoration — check /api/me on mount.
-  // Skip the probe entirely (and avoid a noisy 401 in the console) when no
-  // presence companion cookie exists. The companion is set/cleared by the
-  // server alongside the HttpOnly hs_session cookie, so its absence is a
-  // reliable signal that there's no session to restore.
+  // Session restoration — check /api/me on mount
   useEffect(() => {
-    const hasSession = document.cookie
-      .split('; ')
-      .some(c => c.startsWith('hs_session_present='));
-    if (!hasSession) {
-      setAuthStatus('anonymous');
-      return;
-    }
     fetch('/api/me')
       .then(r => {
         if (r.ok) return r.json();
@@ -774,7 +763,7 @@ export default function App() {
         {view === 'record' && <RecordView readOnly={readOnly} user={user} onSaved={() => navigateTo('list')} />}
         {view === 'list' && <ListView user={user} onOpen={openReport} />}
         {view === 'detail' && <DetailView id={selectedReport} onBack={goBack} onHome={goHome} />}
-        {view === 'reports' && <ReportsView ref={viewRef} user={user} onOpenReport={openReport} reportsPersonId={reportsPersonId} setReportsPersonId={setReportsPersonId} activeTrade={activeTrade} onNavigate={navigateTo} />}
+        {view === 'reports' && <ReportsView ref={viewRef} user={user} onOpenReport={openReport} reportsPersonId={reportsPersonId} setReportsPersonId={setReportsPersonId} activeTrade={activeTrade} onNavigate={navigateTo} readOnly={readOnly} />}
         {view === 'forms' && <FormsHub readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} />}
         {view === 'safety' && <SafetyHub user={user} goHome={goHome} />}
         {view === 'people' && (user.is_admin || (user.role_level || 1) >= 2) && <PeopleView readOnly={readOnly} ref={viewRef} activeTrade={activeTrade} activeRoleLevels={activeRoleLevels} onOpenReport={openReport} persistedViewingId={peopleViewingId} setPeopleViewingId={setPeopleViewingId} user={user} setView={setView} navigateTo={navigateTo} />}
@@ -940,7 +929,7 @@ export default function App() {
               <TextField
                 multiline placeholder="Ask Sparks AI anything..." value={globalAgentInput}
                 onChange={e => setGlobalAgentInput(e.target.value)}
-                onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGlobalAgent(); } }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGlobalAgent(); } }}
                 variant="standard" size="small" maxRows={4}
                 slotProps={{ input: { disableUnderline: true } }}
                 sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#333' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(0,0,0,0.35)', opacity: 1 } } }}

@@ -206,21 +206,23 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     finally { setLoading(false); }
   }
 
-  async function loadCompanyDetail(companyId) {
+  async function loadCompanyDetail(companyId, opts = {}) {
     try {
       setLoading(true);
       const res = await fetch('/api/sparks/companies/' + companyId);
       if (!res.ok) throw new Error('Failed to load company');
       const data = await res.json();
       setSelectedCompany(data);
-      setCompanyScreen('overview');
-      // Default to first licensed trade for this company
-      const trades = (data.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean);
-      setCompanyTrade(trades[0] || null);
-      setScreen('company-detail');
+      if (!opts.refreshOnly) {
+        setCompanyScreen('overview');
+        // Default to first licensed trade for this company
+        const trades = (data.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean);
+        setCompanyTrade(trades[0] || null);
+        setScreen('company-detail');
+        loadCompanyBilling(companyId);
+        loadCompanyAnalytics(companyId);
+      }
       setError(null);
-      loadCompanyBilling(companyId);
-      loadCompanyAnalytics(companyId);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -283,7 +285,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
           body: JSON.stringify({ trade }),
         });
       }
-      loadCompanyDetail(companyId);
+      loadCompanyDetail(companyId, { refreshOnly: true });
     } catch (err) {
       setError(err.message);
     }
@@ -300,7 +302,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
           body: JSON.stringify({ product }),
         });
       }
-      loadCompanyDetail(companyId);
+      loadCompanyDetail(companyId, { refreshOnly: true });
     } catch (err) {
       setError(err.message);
     }

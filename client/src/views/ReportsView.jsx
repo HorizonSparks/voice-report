@@ -2,7 +2,7 @@ import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Paper, CircularProgress } from '@mui/material';
 
-export default forwardRef(function ReportsView({ user, onOpenReport, reportsPersonId, setReportsPersonId, activeTrade, onNavigate }, ref) {
+export default forwardRef(function ReportsView({ user, onOpenReport, reportsPersonId, setReportsPersonId, activeTrade, onNavigate, readOnly = false }, ref) {
   const { t } = useTranslation();
   const [people, setPeople] = useState([]);
   const [allReports, setAllReports] = useState([]);
@@ -263,26 +263,30 @@ export default forwardRef(function ReportsView({ user, onOpenReport, reportsPers
     <Box className="office-view">
       <Typography variant="h2" className="office-title" sx={{ fontWeight: 800 }}>{t('reports.title')}</Typography>
 
-      {/* Voice Report button */}
-      <Box sx={{ textAlign: 'center', mb: '20px' }}>
-        <Button
-          onClick={() => onNavigate && onNavigate('record')}
-          sx={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            p: '10px 20px',
-            background: 'white', border: '2px solid var(--charcoal)',
-            borderRadius: '10px', cursor: 'pointer',
-            fontSize: '16px', fontWeight: 700, color: 'primary.main',
-            textTransform: 'none',
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--primary)">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-          </svg>
-          {t('reports.voiceReport')}
-        </Button>
-      </Box>
+      {/* Voice Report button — hidden in read-only contexts (Sparks operator
+          simulating a customer company) since recording would attribute audio
+          to the wrong person and is intentionally non-functional there. */}
+      {!readOnly && onNavigate && (
+        <Box sx={{ textAlign: 'center', mb: '20px' }}>
+          <Button
+            onClick={() => onNavigate('record')}
+            sx={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              p: '10px 20px',
+              background: 'white', border: '2px solid var(--charcoal)',
+              borderRadius: '10px', cursor: 'pointer',
+              fontSize: '16px', fontWeight: 700, color: 'primary.main',
+              textTransform: 'none',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--primary)">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+            {t('reports.voiceReport')}
+          </Button>
+        </Box>
+      )}
 
       {/* Tab switcher */}
       <Box sx={{ display: 'flex', gap: '0', mb: '20px', border: '2px solid var(--charcoal)', borderRadius: '10px', overflow: 'hidden', maxWidth: '400px', margin: '0 auto 20px' }}>

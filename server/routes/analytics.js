@@ -54,9 +54,13 @@ router.get('/ai-spending', requireAdmin, async (req, res) => {
       db.query(`SELECT DATE(created_at) as day, COUNT(*)::int as calls,
         SUM(estimated_cost_cents)::int as cost_cents
         FROM analytics_ai_costs GROUP BY day ORDER BY day DESC LIMIT 14`),
-      db.query(`SELECT a.person_id, p.name as person_name, COUNT(*)::int as calls,
+      db.query(`SELECT a.person_id,
+        COALESCE(p.name, 'Deleted user') as person_name,
+        COUNT(*)::int as calls,
         SUM(a.estimated_cost_cents)::int as cost_cents
-        FROM analytics_ai_costs a LEFT JOIN people p ON p.id = a.person_id
+        FROM analytics_ai_costs a
+        LEFT JOIN voicereport.people p ON p.id = a.person_id
+        WHERE a.person_id IS NOT NULL
         GROUP BY a.person_id, p.name ORDER BY cost_cents DESC LIMIT 10`),
     ]);
     res.json({

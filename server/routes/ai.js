@@ -157,6 +157,7 @@ router.post('/tts', requireAuth, async (req, res) => {
     const ttsRes = await textToSpeech(text, {
       speed,
       requestId: req.analyticsId,
+      personId: resolvePersonId(req),
     });
 
     // Stream the response directly to the client

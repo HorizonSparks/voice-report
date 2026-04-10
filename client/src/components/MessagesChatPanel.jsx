@@ -364,7 +364,7 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
         <DialogTitle sx={{ fontWeight: 800, fontSize: 18 }}>New Folder</DialogTitle>
         <DialogContent>
           <TextField autoFocus fullWidth placeholder="Folder name" value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
-            onKeyPress={e => e.key === 'Enter' && createFolder()}
+            onKeyDown={e => e.key === 'Enter' && createFolder()}
             variant="outlined" size="small" sx={{ mt: 1 }} />
         </DialogContent>
         <DialogActions>
@@ -387,7 +387,7 @@ export default function MessagesChatPanel({ user, companies, onLoadCompanyDetail
               <TextField autoFocus fullWidth placeholder={cloudServices[showCloudLink]?.placeholder} value={cloudLinkUrl} onChange={e => setCloudLinkUrl(e.target.value)}
                 variant="outlined" size="small" sx={{ mt: 0.5 }} />
               <TextField fullWidth placeholder="Name (optional)" value={cloudLinkName} onChange={e => setCloudLinkName(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && addCloudLink()}
+                onKeyDown={e => e.key === 'Enter' && addCloudLink()}
                 variant="outlined" size="small" />
             </DialogContent>
             <DialogActions>

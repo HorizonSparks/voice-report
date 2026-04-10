@@ -133,12 +133,22 @@ async function getDashboard(filters = {}) {
 
   const costByPerson = (await db.query(
     companyId
-      ? `SELECT c.person_id, p.name as person_name, SUM(c.estimated_cost_cents) as total_cost_cents, COUNT(*) as call_count
-         FROM analytics_ai_costs c LEFT JOIN voicereport.people p ON c.person_id = p.id
-         WHERE c.created_at BETWEEN $1 AND $2 AND p.company_id = $3 GROUP BY c.person_id, p.name ORDER BY total_cost_cents DESC LIMIT 20`
-      : `SELECT c.person_id, p.name as person_name, SUM(c.estimated_cost_cents) as total_cost_cents, COUNT(*) as call_count
-         FROM analytics_ai_costs c LEFT JOIN people p ON c.person_id = p.id
-         WHERE c.created_at BETWEEN $1 AND $2 GROUP BY c.person_id, p.name ORDER BY total_cost_cents DESC LIMIT 20`,
+      ? `SELECT c.person_id,
+                COALESCE(p.name, 'Deleted user') as person_name,
+                SUM(c.estimated_cost_cents) as total_cost_cents,
+                COUNT(*) as call_count
+         FROM analytics_ai_costs c
+         INNER JOIN voicereport.people p ON c.person_id = p.id
+         WHERE c.created_at BETWEEN $1 AND $2 AND p.company_id = $3
+         GROUP BY c.person_id, p.name ORDER BY total_cost_cents DESC LIMIT 20`
+      : `SELECT c.person_id,
+                COALESCE(p.name, 'Deleted user') as person_name,
+                SUM(c.estimated_cost_cents) as total_cost_cents,
+                COUNT(*) as call_count
+         FROM analytics_ai_costs c
+         LEFT JOIN voicereport.people p ON c.person_id = p.id
+         WHERE c.created_at BETWEEN $1 AND $2 AND c.person_id IS NOT NULL
+         GROUP BY c.person_id, p.name ORDER BY total_cost_cents DESC LIMIT 20`,
     companyParams
   )).rows;
 

@@ -59,6 +59,26 @@ export default function RecordView({ user, onSaved, readOnly }) {
       fullTranscript.current = '';
       audioUnlocked.current = true;
 
+      // Read-only contexts (Sparks operator simulating a customer company)
+      // must not record — audio would be attributed to the wrong person.
+      if (readOnly) {
+        setError('Recording is disabled in read-only mode.');
+        return;
+      }
+
+      // Step 0: Guard against insecure/unsupported contexts. getUserMedia
+      // requires a Secure Context (HTTPS or localhost). On plain HTTP or in
+      // some embedded WebViews `navigator.mediaDevices` is undefined, which
+      // used to throw a cryptic TypeError and leave the UI stuck on "idle".
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+        if (window.isSecureContext === false) {
+          setError('Recording requires a secure connection (HTTPS). Open this app over HTTPS and try again.');
+        } else {
+          setError(t('common.micNotSupported'));
+        }
+        return;
+      }
+
       // Step 1: Get microphone access
       let stream;
       try {
@@ -70,8 +90,13 @@ export default function RecordView({ user, onSaved, readOnly }) {
           setError(t('common.micNotFound'));
         } else if (micErr.name === 'NotSupportedError') {
           setError(t('common.micNotSupported'));
+        } else if (micErr.name === 'NotReadableError' || micErr.name === 'TrackStartError') {
+          // Mic is in use by another app/tab (common on Windows + Zoom/Teams)
+          setError('Microphone is already in use by another application. Close it and try again.');
+        } else if (micErr.name === 'SecurityError') {
+          setError('Microphone blocked by browser security policy. Open this app over HTTPS.');
         } else {
-          setError('Microphone error: ' + micErr.message);
+          setError('Microphone error: ' + (micErr.message || micErr.name || 'unknown'));
         }
         return;
       }

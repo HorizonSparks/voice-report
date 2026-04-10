@@ -103,23 +103,31 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeChat) return;
+    const text = newMessage.trim();
     try {
-      await fetch('/api/v2/messages', {
+      const res = await fetch('/api/v2/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           from_id: personId,
           to_id: activeChat,
-          content: newMessage.trim(),
+          content: text,
           type: 'text',
         }),
       });
+      if (!res.ok) {
+        let msg = t('messages.sendFailed');
+        try { const data = await res.json(); if (data.error) msg = data.error; } catch {}
+        showAlert(msg);
+        return;
+      }
       setNewMessage('');
       loadChat(activeChat, false);
     } catch(e) { showAlert(t('messages.sendFailed')); }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -144,7 +152,13 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
         formData.append('from_id', personId);
         formData.append('to_id', activeChat);
         try {
-          await fetch('/api/v2/messages/voice', { method: 'POST', body: formData });
+          const res = await fetch('/api/v2/messages/voice', { method: 'POST', body: formData, credentials: 'include' });
+          if (!res.ok) {
+            let msg = 'Failed to send voice message';
+            try { const data = await res.json(); if (data.error) msg = data.error; } catch {}
+            showAlert(msg);
+            return;
+          }
           loadChat(activeChat, false);
         } catch(e) { showAlert('Failed to send voice message'); }
       };
@@ -494,7 +508,7 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
                   multiline
                   value={newMessage}
                   onChange={e => setNewMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   onFocus={() => setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 300)}
                   placeholder={t('messages.typeMessage')}
                   rows={1}
@@ -582,7 +596,7 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
                 placeholder="Ask the agent..."
                 value={agentInput}
                 onChange={e => setAgentInput(e.target.value)}
-                onKeyPress={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAgentMessage(); } }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAgentMessage(); } }}
                 variant="standard"
                 size="small"
                 rows={1}
