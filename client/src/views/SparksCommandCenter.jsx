@@ -2,7 +2,8 @@ import { useState, useEffect, useLayoutEffect, useRef, forwardRef, useImperative
 import {
   Box, Typography, Button, Paper, Chip, Alert, CircularProgress,
   Card, CardContent, CardActionArea, TextField, Select, MenuItem,
-  Grid, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar
+  Grid, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar,
+  IconButton,
 } from '@mui/material';
 import AnalyticsView from './AnalyticsView.jsx';
 import MessagesView from './MessagesView.jsx';
@@ -55,7 +56,11 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [invoiceForm, setInvoiceForm] = useState({ amount: '', description: '', due_date: '' });
   const [showCreateCompany, setShowCreateCompany] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', tier: 'standard', notes: '' });
+  const [newCompanyNameError, setNewCompanyNameError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null); // { id, name, status, tier, notes }
+  const [editCompanyNameError, setEditCompanyNameError] = useState('');
+  const [deletingCompany, setDeletingCompany] = useState(null); // { id, name }
   const [dialogConfig, setDialogConfig] = useState(null);
   const [teamConversations, setTeamConversations] = useState({});
 
@@ -179,6 +184,58 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function createCompany() {
+    if (!newCompany.name.trim()) { setNewCompanyNameError('Name is required'); return; }
+    try {
+      setCreating(true);
+      const res = await fetch('/api/sparks/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCompany.name.trim(), tier: newCompany.tier, notes: newCompany.notes }),
+      });
+      if (!res.ok) throw new Error('Failed to create company');
+      setShowCreateCompany(false);
+      setNewCompany({ name: '', tier: 'standard', notes: '' });
+      setNewCompanyNameError('');
+      setSuccessMsg('Company created');
+      loadCompanies();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function updateCompany() {
+    if (!editingCompany?.name?.trim()) { setEditCompanyNameError('Name is required'); return; }
+    try {
+      const res = await fetch('/api/sparks/companies/' + editingCompany.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingCompany.name.trim(), status: editingCompany.status, tier: editingCompany.tier, notes: editingCompany.notes }),
+      });
+      if (!res.ok) throw new Error('Failed to update company');
+      setEditingCompany(null);
+      setEditCompanyNameError('');
+      setSuccessMsg('Company updated');
+      loadCompanies();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function deleteCompany(id) {
+    try {
+      const res = await fetch('/api/sparks/companies/' + id, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete company');
+      setDeletingCompany(null);
+      setSuccessMsg('Company deleted');
+      loadCompanies();
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -574,18 +631,44 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
       {/* COMPANIES LIST SCREEN */}
       {screen === 'companies' && (
         <>
-          <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
-            All Companies ({companies.length})
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>
+              All Companies ({companies.length})
+            </Typography>
+            {user.sparks_role === 'admin' && (
+              <Button size="small" variant="contained" onClick={() => { setNewCompany({ name: '', tier: 'standard', notes: '' }); setNewCompanyNameError(''); setShowCreateCompany(true); }}
+                sx={{ fontWeight: 700, fontSize: 12, textTransform: 'none', borderRadius: 2 }}>
+                + New Company
+              </Button>
+            )}
+          </Box>
           {companies.map(c => (
-            <Card key={c.id} variant="outlined" sx={{ mb: 1, borderRadius: 2.5, cursor: 'pointer' }}
-              onClick={() => loadCompanyDetail(c.id)}>
+            <Card key={c.id} variant="outlined" sx={{ mb: 1, borderRadius: 2.5, '&:hover .company-actions': { opacity: 1 } }}>
               <CardContent sx={{ py: 1.75, '&:last-child': { pb: 1.75 } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: 16 }}>{c.name}</Typography>
-                  <Chip label={c.status} size="small" sx={{ bgcolor: statusColors[c.status] || '#ccc', color: 'white', fontWeight: 700, fontSize: 11 }} />
+                  <Typography
+                    sx={{ fontWeight: 700, color: 'text.primary', fontSize: 16, cursor: 'pointer', flex: 1 }}
+                    onClick={() => loadCompanyDetail(c.id)}
+                  >
+                    {c.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Chip label={c.status} size="small" sx={{ bgcolor: statusColors[c.status] || '#ccc', color: 'white', fontWeight: 700, fontSize: 11 }} />
+                    {user.sparks_role === 'admin' && (
+                      <Box className="company-actions" sx={{ display: 'flex', gap: 0.25, opacity: 0, transition: 'opacity 0.15s', ml: 0.5 }}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditCompanyNameError(''); setEditingCompany({ id: c.id, name: c.name, status: c.status, tier: c.tier || 'standard', notes: c.notes || '' }); }}
+                          sx={{ color: 'text.secondary', p: 0.5 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </IconButton>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); setDeletingCompany({ id: c.id, name: c.name }); }}
+                          sx={{ color: '#e74c3c', p: 0.5 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        </IconButton>
+                      </Box>
+                    )}
+                  </Box>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => loadCompanyDetail(c.id)}>
                   {(c.products || []).map(p => (
                     <Chip key={p} label={p === 'voice_report' ? 'Voice Report' : 'Relation Data / LoopFolders'} size="small"
                       sx={{ bgcolor: 'secondary.main', color: 'primary.main', fontWeight: 600, fontSize: 10 }} />
@@ -594,7 +677,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                     <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontWeight: 600, fontSize: 10 }} />
                   ))}
                 </Box>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75 }}>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75, cursor: 'pointer' }} onClick={() => loadCompanyDetail(c.id)}>
                   {c.people_count} people {'\u00B7'} {c.report_count} reports
                 </Typography>
               </CardContent>
@@ -1371,6 +1454,111 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
             <Button onClick={() => setDialogConfig(null)}>Cancel</Button>
           )}
           <Button onClick={() => { setDialogConfig(null); if (dialogConfig?.onConfirm) dialogConfig.onConfirm(); }}>OK</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* CREATE COMPANY DIALOG */}
+      <Dialog open={showCreateCompany} onClose={() => setShowCreateCompany(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>New Company</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+          <TextField
+            label="Company Name"
+            value={newCompany.name}
+            onChange={(e) => { setNewCompany(p => ({ ...p, name: e.target.value })); if (e.target.value.trim()) setNewCompanyNameError(''); }}
+            error={!!newCompanyNameError}
+            helperText={newCompanyNameError}
+            size="small"
+            autoFocus
+            fullWidth
+          />
+          <Select
+            value={newCompany.tier}
+            onChange={(e) => setNewCompany(p => ({ ...p, tier: e.target.value }))}
+            size="small"
+            fullWidth
+          >
+            <MenuItem value="small">Small</MenuItem>
+            <MenuItem value="standard">Standard</MenuItem>
+            <MenuItem value="enterprise">Enterprise</MenuItem>
+          </Select>
+          <TextField
+            label="Notes (optional)"
+            value={newCompany.notes}
+            onChange={(e) => setNewCompany(p => ({ ...p, notes: e.target.value }))}
+            size="small"
+            multiline
+            rows={2}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCreateCompany(false)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={createCompany} disabled={creating} variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>
+            {creating ? 'Creating…' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* EDIT COMPANY DIALOG */}
+      <Dialog open={!!editingCompany} onClose={() => setEditingCompany(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Edit Company</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+          <TextField
+            label="Company Name"
+            value={editingCompany?.name || ''}
+            onChange={(e) => { setEditingCompany(p => ({ ...p, name: e.target.value })); if (e.target.value.trim()) setEditCompanyNameError(''); }}
+            error={!!editCompanyNameError}
+            helperText={editCompanyNameError}
+            size="small"
+            autoFocus
+            fullWidth
+          />
+          <Select
+            value={editingCompany?.status || 'active'}
+            onChange={(e) => setEditingCompany(p => ({ ...p, status: e.target.value }))}
+            size="small"
+            fullWidth
+          >
+            <MenuItem value="active">Active</MenuItem>
+            <MenuItem value="trial">Trial</MenuItem>
+            <MenuItem value="suspended">Suspended</MenuItem>
+            <MenuItem value="churned">Churned</MenuItem>
+          </Select>
+          <Select
+            value={editingCompany?.tier || 'standard'}
+            onChange={(e) => setEditingCompany(p => ({ ...p, tier: e.target.value }))}
+            size="small"
+            fullWidth
+          >
+            <MenuItem value="small">Small</MenuItem>
+            <MenuItem value="standard">Standard</MenuItem>
+            <MenuItem value="enterprise">Enterprise</MenuItem>
+          </Select>
+          <TextField
+            label="Notes (optional)"
+            value={editingCompany?.notes || ''}
+            onChange={(e) => setEditingCompany(p => ({ ...p, notes: e.target.value }))}
+            size="small"
+            multiline
+            rows={2}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingCompany(null)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={updateCompany} variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* DELETE COMPANY CONFIRM DIALOG */}
+      <Dialog open={!!deletingCompany} onClose={() => setDeletingCompany(null)}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Delete Company</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete <strong>{deletingCompany?.name}</strong>? This cannot be undone.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingCompany(null)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={() => deleteCompany(deletingCompany.id)} color="error" variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>Delete</Button>
         </DialogActions>
       </Dialog>
     </Box>
