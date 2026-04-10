@@ -165,14 +165,21 @@ function SectionWhyDifferent() {
             Ready to Work Smarter?
           </Typography>
           <Typography sx={{ color: '#666', fontSize: 15, mb: 2 }}>
-            See how Horizon Sparks fits your project. Call us.
+            See how Horizon Sparks fits your project. Call or email us.
           </Typography>
           <Typography
             component="a"
             href={PHONE_HREF}
-            sx={{ color: ORANGE, fontSize: 22, fontWeight: 700, textDecoration: 'none', letterSpacing: 1 }}
+            sx={{ color: ORANGE, fontSize: 22, fontWeight: 700, textDecoration: 'none', letterSpacing: 1, display: 'block' }}
           >
             {PHONE}
+          </Typography>
+          <Typography
+            component="a"
+            href={`mailto:${EMAIL}`}
+            sx={{ color: ORANGE, fontSize: 17, fontWeight: 600, textDecoration: 'none', letterSpacing: 0.3, display: 'block', mt: 1 }}
+          >
+            {EMAIL}
           </Typography>
         </Box>
       </Box>
