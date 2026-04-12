@@ -99,6 +99,7 @@ setInterval(() => {
 // Mount routes
 // AI cost guard on Claude-calling routes
 app.use('/api/agent', aiCostGuard);
+app.use('/api/loopfolders/intelligence', aiCostGuard);
 app.use('/api/structure', aiCostGuard);
 app.use('/api/refine', aiCostGuard);
 app.use('/api/converse', aiCostGuard);
@@ -124,6 +125,7 @@ app.use('/api/sparks', require('./routes/sparks'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api', require('./routes/files'));
 app.use('/api/folders', require('./routes/sharedFolders'));
+app.use('/api/loopfolders/intelligence', require('./routes/loopfolders-intelligence'));
 app.use('/api/agent', require('./routes/agent'));
 
 // Grafana reverse proxy — authenticated, Sparks role required, streamed responses

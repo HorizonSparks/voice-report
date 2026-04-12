@@ -1,17 +1,18 @@
 /**
- * Agent Runtime — Phase 1
+ * Agent Runtime — Phase 2
  *
- * Provides `defineAgent()` and `runAgent()` as a thin layer on top of
- * the existing `anthropicClient.js` `callClaude` function.
+ * Provides `defineAgent()`, `runAgent()`, and `runAgentWithTools()` as a
+ * structured layer on top of `anthropicClient.js` `callClaude`.
  *
  * Goals:
  *   1. Structure every Claude call as a reusable agent definition.
  *   2. Track cost / tokens per agent_name + project_id for Stripe billing.
  *   3. Enforce guardrails (max tokens, cost limits, timeouts) before Claude is called.
  *   4. Stay fully backward compatible — `callClaude` remains exported and usable.
+ *   5. Support tool-use loops with session-level guardrails (Phase 2).
  *
  * Forward-compatibility: the shape `{ model, systemPrompt, tools, mcpServers, guardrails }`
- * aligns with Anthropic's Claude Agent SDK / Managed Agents expectations, so Phase 2 can
+ * aligns with Anthropic's Claude Agent SDK / Managed Agents expectations, so Phase 3 can
  * swap the runtime internals without touching any route.
  */
 
@@ -54,6 +55,7 @@ class AgentTimeoutError extends Error {
 const AGENT_NAME_REGEX = /^[a-z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*\.v\d+$/;
 const CLAUDE_MODEL_PREFIX = 'claude-';
 const MAX_ALLOWED_TOKENS = 200000;
+const MAX_TOOL_ITERATIONS = 10;
 
 // PII regex patterns for observe-only scanning (Phase 1)
 const PII_PATTERNS = {
@@ -62,8 +64,30 @@ const PII_PATTERNS = {
   email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/,
 };
 
-// Claude pricing (cents per token, ×10000 for integer math)
-// sonnet-4: $3 / $15 per 1M tokens → 0.0003 / 0.0015 cents per token
+// ── Model-aware pricing (cents per token) ───────────────────────
+// Pricing as of April 2026. Update when models change.
+const MODEL_PRICING = {
+  // Sonnet 4: $3/$15 per 1M tokens
+  'claude-sonnet-4': { input: 0.0003, output: 0.0015 },
+  // Opus 4: $15/$75 per 1M tokens
+  'claude-opus-4': { input: 0.0015, output: 0.0075 },
+  // Haiku 4.5: $0.80/$4 per 1M tokens
+  'claude-haiku-4': { input: 0.00008, output: 0.0004 },
+};
+
+/**
+ * Get pricing for a model. Matches on prefix (e.g. 'claude-opus-4-20250514' → 'claude-opus-4').
+ * Falls back to Sonnet pricing if unknown.
+ */
+function getModelPricing(model) {
+  for (const [prefix, pricing] of Object.entries(MODEL_PRICING)) {
+    if (model.startsWith(prefix)) return pricing;
+  }
+  // Default to Sonnet pricing for unknown models
+  return MODEL_PRICING['claude-sonnet-4'];
+}
+
+// Legacy constants kept for backward compatibility
 const CLAUDE_INPUT_CENTS_PER_TOKEN = 0.0003;
 const CLAUDE_OUTPUT_CENTS_PER_TOKEN = 0.0015;
 
@@ -185,10 +209,11 @@ async function resolveSystemPrompt(agent, context) {
 
 /**
  * Estimate cost in cents BEFORE calling Claude.
- * Used by the costLimitPerCallCents guardrail as a pre-call gate.
+ * Uses model-aware pricing (Phase 2 fix — Codex review).
  */
-function estimateCostCents(systemPromptStr, messages, maxTokens) {
-  // Input: rough char → token ratio (~4 chars per token)
+function estimateCostCents(systemPromptStr, messages, maxTokens, model) {
+  const pricing = model ? getModelPricing(model) : MODEL_PRICING['claude-sonnet-4'];
+
   const systemChars = systemPromptStr.length;
   const messageChars = messages.reduce((sum, m) => {
     const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content || '');
@@ -197,10 +222,16 @@ function estimateCostCents(systemPromptStr, messages, maxTokens) {
   const estInputTokens = Math.ceil((systemChars + messageChars) / 4);
   const estOutputTokens = maxTokens;
 
-  const cents =
-    estInputTokens * CLAUDE_INPUT_CENTS_PER_TOKEN +
-    estOutputTokens * CLAUDE_OUTPUT_CENTS_PER_TOKEN;
+  const cents = estInputTokens * pricing.input + estOutputTokens * pricing.output;
   return Math.ceil(cents);
+}
+
+/**
+ * Calculate actual cost from token usage with model-aware pricing.
+ */
+function calculateActualCost(inputTokens, outputTokens, model) {
+  const pricing = model ? getModelPricing(model) : MODEL_PRICING['claude-sonnet-4'];
+  return Math.round(inputTokens * pricing.input + outputTokens * pricing.output);
 }
 
 /**
@@ -256,7 +287,7 @@ function tryParseJson(text) {
 }
 
 /**
- * Run an agent — the primary entry point for all Claude calls in Phase 1+.
+ * Run an agent — the primary entry point for all Claude calls.
  *
  * @param {object} agent - From defineAgent()
  * @param {object} opts
@@ -272,6 +303,7 @@ function tryParseJson(text) {
  * @param {string} [opts.overrides.model] - Override model (e.g. Opus→Sonnet fallback)
  * @param {number} [opts.overrides.maxTokens] - Override max tokens (clamped by guardrails)
  * @param {Array} [opts.overrides.tools] - Required if agent.dynamicTools === true
+ * @param {string} [opts._resolvedSystemPrompt] - Internal: pre-resolved system prompt (used by runAgentWithTools)
  * @returns {Promise<object>} { text, parsed, parseError, usage, raw, content, stop_reason, agent: {name, model, durationMs, costCents} }
  */
 async function runAgent(agent, opts = {}) {
@@ -291,8 +323,8 @@ async function runAgent(agent, opts = {}) {
     throw new AgentGuardrailError(`Agent "${agent.name}" is disabled (guardrails.enabled=false)`, 'disabled');
   }
 
-  // ── Resolve systemPrompt ──
-  const systemPromptStr = await resolveSystemPrompt(agent, context);
+  // ── Resolve systemPrompt (skip if pre-resolved by runAgentWithTools) ──
+  const systemPromptStr = opts._resolvedSystemPrompt || await resolveSystemPrompt(agent, context);
 
   // ── Resolve model (override allowed) ──
   const model = overrides.model || agent.model;
@@ -317,19 +349,18 @@ async function runAgent(agent, opts = {}) {
     }
     tools = overrides.tools;
   } else if (overrides.tools) {
-    // Agent is not dynamic but caller supplied tools — reject to avoid confusion
     throw new AgentValidationError(
       `runAgent[${agent.name}]: agent is not dynamicTools; do not supply overrides.tools`
     );
   }
 
-  // ── Guardrail: cost limit (pre-call estimate) ──
+  // ── Guardrail: cost limit (pre-call estimate, model-aware) ──
   if (agent.guardrails.costLimitPerCallCents !== null) {
-    const estCents = estimateCostCents(systemPromptStr, messages, maxTokens);
+    const estCents = estimateCostCents(systemPromptStr, messages, maxTokens, model);
     if (estCents > agent.guardrails.costLimitPerCallCents) {
       agentGuardrailViolationsTotal.inc({ agent_name: agent.name, guardrail_type: 'cost_limit' });
       throw new AgentGuardrailError(
-        `Agent "${agent.name}" estimated cost ${estCents}¢ exceeds limit ${agent.guardrails.costLimitPerCallCents}¢`,
+        `Agent "${agent.name}" estimated cost ${estCents}\u00A2 exceeds limit ${agent.guardrails.costLimitPerCallCents}\u00A2`,
         'cost_limit'
       );
     }
@@ -346,7 +377,6 @@ async function runAgent(agent, opts = {}) {
         phase: 'observe_only',
       });
       agentGuardrailViolationsTotal.inc({ agent_name: agent.name, guardrail_type: 'pii_observed' });
-      // Do NOT throw — Phase 1 is observe-only
     }
   }
 
@@ -378,9 +408,7 @@ async function runAgent(agent, opts = {}) {
     });
   } catch (err) {
     clearTimeout(timeoutHandle);
-    // Count failure on agent-scoped metric
     agentRequestsTotal.inc({ agent_name: agent.name, model, success: 'false' });
-    // Detect abort → timeout error
     if (err.name === 'AbortError' || /aborted/i.test(err.message || '')) {
       throw new AgentTimeoutError(
         `Agent "${agent.name}" exceeded timeout of ${agent.guardrails.timeoutMs}ms`
@@ -393,16 +421,12 @@ async function runAgent(agent, opts = {}) {
   const durationMs = Date.now() - startTime;
   const inputTokens = result.usage?.input_tokens || 0;
   const outputTokens = result.usage?.output_tokens || 0;
-  const actualCostCents = Math.round(
-    inputTokens * CLAUDE_INPUT_CENTS_PER_TOKEN + outputTokens * CLAUDE_OUTPUT_CENTS_PER_TOKEN
-  );
+  const actualCostCents = calculateActualCost(inputTokens, outputTokens, model);
 
   // ── Metrics: success ──
   agentRequestsTotal.inc({ agent_name: agent.name, model, success: 'true' });
   agentTokensTotal.inc({ agent_name: agent.name, model, direction: 'input' }, inputTokens);
   agentTokensTotal.inc({ agent_name: agent.name, model, direction: 'output' }, outputTokens);
-  // Prometheus label is agent_name only — project_id would be unbounded cardinality.
-  // Per-project attribution for billing lives in the analytics_ai_costs DB row.
   agentCostTotalCents.inc({ agent_name: agent.name }, actualCostCents);
 
   // ── Post-call guardrail: cost overrun observation ──
@@ -446,19 +470,251 @@ async function runAgent(agent, opts = {}) {
   };
 }
 
+// ── runAgentWithTools ───────────────────────────────────────────
+
+/**
+ * Run an agent with a tool-use loop. Iterates until Claude returns a text
+ * response (stop_reason !== 'tool_use') or session-level guardrails fire.
+ *
+ * Session-level guardrails enforced across ALL iterations:
+ *   - Total timeout budget (agent.guardrails.timeoutMs applies to entire session)
+ *   - Total cost budget (agent.guardrails.costLimitPerCallCents applies to entire session)
+ *   - Iteration cap (MAX_TOOL_ITERATIONS = 10)
+ *   - Tool name allowlisting (only agent-defined tools can be called)
+ *   - Tool errors returned with is_error: true (not thrown)
+ *
+ * @param {object} agent - From defineAgent()
+ * @param {object} opts
+ * @param {Array} opts.messages - Initial messages [{role, content}]
+ * @param {object} [opts.context] - Context for systemPrompt function
+ * @param {object} [opts.tracking] - Analytics/billing metadata
+ * @param {Function} opts.executeTool - async (toolName, toolInput) => string
+ * @param {object} [opts.overrides] - Per-call overrides
+ * @returns {Promise<object>} Final result with aggregated usage
+ */
+async function runAgentWithTools(agent, opts = {}) {
+  if (!agent || !agent.name) {
+    throw new AgentValidationError('runAgentWithTools: first argument must be an agent definition');
+  }
+  if (typeof opts.executeTool !== 'function') {
+    throw new AgentValidationError(
+      `runAgentWithTools[${agent.name}]: opts.executeTool must be a function`
+    );
+  }
+
+  const { context = {}, tracking = {}, overrides = {} } = opts;
+  let messages = [...opts.messages];
+
+  // ── Session-level budget tracking ──
+  const sessionStart = Date.now();
+  const sessionTimeoutMs = agent.guardrails.timeoutMs;
+  const sessionCostLimitCents = agent.guardrails.costLimitPerCallCents;
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCostCents = 0;
+  let iterations = 0;
+
+  // ── Resolve system prompt ONCE (not per iteration) ──
+  const systemPromptStr = await resolveSystemPrompt(agent, context);
+
+  // ── Build allowed tool name set for allowlisting ──
+  const allowedTools = new Set(agent.tools.map(t => t.name));
+
+  // ── Get model for pricing ──
+  const model = overrides.model || agent.model;
+
+  let lastResult = null;
+
+  while (iterations < MAX_TOOL_ITERATIONS) {
+    // ── Session timeout check (before iteration starts) ──
+    const elapsed = Date.now() - sessionStart;
+    if (elapsed >= sessionTimeoutMs) {
+      aiLogger.warn({
+        msg: 'agent_session_timeout',
+        agent: agent.name,
+        iterations,
+        elapsed_ms: elapsed,
+        budget_ms: sessionTimeoutMs,
+      });
+      throw new AgentTimeoutError(
+        `Agent "${agent.name}" session exceeded total timeout of ${sessionTimeoutMs}ms ` +
+        `after ${iterations} iterations (${elapsed}ms elapsed)`
+      );
+    }
+
+    // ── Session cost check (>= to prevent exact-budget overshoot) ──
+    if (sessionCostLimitCents !== null && totalCostCents >= sessionCostLimitCents) {
+      agentGuardrailViolationsTotal.inc({
+        agent_name: agent.name,
+        guardrail_type: 'session_cost_limit',
+      });
+      throw new AgentGuardrailError(
+        `Agent "${agent.name}" session cost ${totalCostCents}\u00A2 exceeded limit ` +
+        `${sessionCostLimitCents}\u00A2 after ${iterations} iterations`,
+        'session_cost_limit'
+      );
+    }
+
+    iterations++;
+
+    // ── Per-iteration timeout: remaining budget (strict — no overshoot) ──
+    const remainingMs = sessionTimeoutMs - (Date.now() - sessionStart);
+    const iterationTimeoutMs = Math.min(remainingMs, agent.guardrails.timeoutMs);
+
+    // ── Call runAgent with pre-resolved prompt, per-iteration timeout ──
+    const iterAgent = Object.freeze({
+      ...agent,
+      guardrails: Object.freeze({
+        ...agent.guardrails,
+        timeoutMs: iterationTimeoutMs,
+        // Disable per-call cost limit — we enforce at session level
+        costLimitPerCallCents: null,
+      }),
+    });
+
+    const result = await runAgent(iterAgent, {
+      messages,
+      context,
+      tracking,
+      overrides,
+      _resolvedSystemPrompt: systemPromptStr,
+    });
+
+    // ── Accumulate usage ──
+    const iterInput = result.usage?.input_tokens || 0;
+    const iterOutput = result.usage?.output_tokens || 0;
+    totalInputTokens += iterInput;
+    totalOutputTokens += iterOutput;
+    totalCostCents += calculateActualCost(iterInput, iterOutput, model);
+
+    lastResult = result;
+
+    // ── Done? Claude returned text, not tool calls ──
+    if (result.stop_reason !== 'tool_use') {
+      break;
+    }
+
+    // ── Extract tool calls from response content ──
+    const toolCalls = (result.content || []).filter(b => b.type === 'tool_use');
+    if (toolCalls.length === 0) {
+      // stop_reason was tool_use but no tool_use blocks — shouldn't happen, break
+      break;
+    }
+
+    // ── Execute tools (with allowlisting and error handling) ──
+    const toolResults = [];
+    for (const tc of toolCalls) {
+      // Tool allowlisting — only agent-defined tools
+      if (!allowedTools.has(tc.name)) {
+        aiLogger.warn({
+          msg: 'agent_tool_not_allowed',
+          agent: agent.name,
+          tool: tc.name,
+          allowed: [...allowedTools],
+        });
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tc.id,
+          content: JSON.stringify({ error: 'Tool not allowed: ' + tc.name }),
+          is_error: true,
+        });
+        continue;
+      }
+
+      // Execute tool with error handling
+      try {
+        const toolOutput = await opts.executeTool(tc.name, tc.input);
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tc.id,
+          content: typeof toolOutput === 'string' ? toolOutput : JSON.stringify(toolOutput),
+        });
+      } catch (err) {
+        aiLogger.error({
+          msg: 'agent_tool_execution_error',
+          agent: agent.name,
+          tool: tc.name,
+          error: err.message,
+        });
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tc.id,
+          content: JSON.stringify({ error: 'Tool execution failed: ' + err.message }),
+          is_error: true,
+        });
+      }
+    }
+
+    // ── Append assistant response + tool results to conversation ──
+    messages.push({ role: 'assistant', content: result.content });
+    messages.push({ role: 'user', content: toolResults });
+  }
+
+  // ── Iteration exhaustion ──
+  if (iterations >= MAX_TOOL_ITERATIONS && lastResult?.stop_reason === 'tool_use') {
+    aiLogger.warn({
+      msg: 'agent_max_iterations',
+      agent: agent.name,
+      iterations,
+      total_cost_cents: totalCostCents,
+    });
+    // Don't throw — return whatever the last response was. The agent may have
+    // useful partial analysis. The caller can check iterations in the result.
+  }
+
+  // ── Log session summary ──
+  const sessionDurationMs = Date.now() - sessionStart;
+  aiLogger.info({
+    msg: 'agent_tool_session_complete',
+    agent: agent.name,
+    model,
+    iterations,
+    total_input_tokens: totalInputTokens,
+    total_output_tokens: totalOutputTokens,
+    total_cost_cents: totalCostCents,
+    duration_ms: sessionDurationMs,
+  });
+
+  // ── Return final result with session-level aggregates ──
+  return {
+    text: lastResult?.text || '',
+    parsed: lastResult?.parsed || null,
+    parseError: lastResult?.parseError || null,
+    usage: {
+      input_tokens: totalInputTokens,
+      output_tokens: totalOutputTokens,
+    },
+    raw: lastResult?.raw,
+    content: lastResult?.content,
+    stop_reason: lastResult?.stop_reason,
+    agent: {
+      name: agent.name,
+      model,
+      durationMs: sessionDurationMs,
+      costCents: totalCostCents,
+      iterations,
+    },
+  };
+}
+
 module.exports = {
   defineAgent,
   runAgent,
+  runAgentWithTools,
   AgentValidationError,
   AgentGuardrailError,
   AgentTimeoutError,
   // Exported for tests
   _internal: {
     estimateCostCents,
+    calculateActualCost,
+    getModelPricing,
     scanPII,
     detectJsonMode,
     tryParseJson,
     resolveSystemPrompt,
     AGENT_NAME_REGEX,
+    MAX_TOOL_ITERATIONS,
+    MODEL_PRICING,
   },
 };
