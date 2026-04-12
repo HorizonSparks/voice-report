@@ -62,9 +62,23 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
   const actor = getActor(req);
   const personId = actor.person_id;
   const projectId = req.params.projectId;
-  const question = req.body.question || 'Analyze this project. Report any missing documents, incomplete loops, mismatches between Excel data and P&ID extractions, and coverage gaps. Prioritize safety-critical instruments.';
-    const conversationHistory = req.body.conversationHistory || [];
-    const analysisContext = req.body.analysisContext || null;
+  const question = typeof req.body.question === 'string' ? req.body.question.substring(0, 2000) : 'Analyze this project. Report any missing documents, incomplete loops, mismatches between Excel data and P&ID extractions, and coverage gaps. Prioritize safety-critical instruments.';
+
+    // Sanitize conversation history — clamp roles, require strings, cap size
+    const rawHistory = Array.isArray(req.body.conversationHistory) ? req.body.conversationHistory : [];
+    const conversationHistory = rawHistory
+      .slice(-6) // max 6 messages
+      .filter(m => m && typeof m === 'object')
+      .map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user', // clamp to valid roles
+        content: typeof m.content === 'string' ? m.content.replace(/<[^>]*>/g, '').substring(0, 1000) : '',
+      }))
+      .filter(m => m.content.length > 0);
+
+    // Sanitize analysis context — cap size, must be string
+    const analysisContext = typeof req.body.analysisContext === 'string'
+      ? req.body.analysisContext.substring(0, 5000)
+      : null;
 
   // ── Single-flight guard (set BEFORE any async work to prevent race) ──
   if (activeRequests.has(personId)) {
