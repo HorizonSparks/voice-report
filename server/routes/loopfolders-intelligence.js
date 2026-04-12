@@ -135,10 +135,7 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
     // Add analysis findings context if available
     let enrichedQuestion = question;
     if (analysisContext) {
-      enrichedQuestion = 'ANALYSIS CONTEXT (results from programmatic folder analysis on this P&ID):
-' + analysisContext + '
-
-USER QUESTION: ' + question;
+      enrichedQuestion = 'ANALYSIS CONTEXT (results from programmatic folder analysis on this P&ID):\n' + analysisContext + '\n\nUSER QUESTION: ' + question;
     }
     contextMessages.push({ role: 'user', content: enrichedQuestion });
 
