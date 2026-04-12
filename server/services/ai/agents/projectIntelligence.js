@@ -641,6 +641,55 @@ function loadIntelligenceKnowledge() {
       }
     } catch (e) { /* connection rules not available — continue */ }
 
+    // 5. Loop hierarchy — folder name IS a tag, field vs DCS instruments
+    try {
+      const fs = require('fs');
+      const loopHierarchyPath = require('path').resolve(__dirname, '../../../../knowledge/instrumentation_loop_hierarchy.json');
+      if (fs.existsSync(loopHierarchyPath)) {
+        const loopRules = JSON.parse(fs.readFileSync(loopHierarchyPath, 'utf8'));
+
+        knowledge += '\n\nLOOP FOLDER NAMING — THE FOLDER NAME IS AN INSTRUMENT TAG:\n';
+        const fnRules = loopRules.loop_hierarchy?.folder_name_rules || {};
+        for (const [, rule] of Object.entries(fnRules)) {
+          knowledge += '- ' + rule + '\n';
+        }
+
+        knowledge += '\nHOW TO REASON ABOUT A LOOP FOLDER:\n';
+        const reasoning = loopRules.loop_hierarchy?.how_to_reason || {};
+        for (const [, step] of Object.entries(reasoning)) {
+          knowledge += '- ' + step + '\n';
+        }
+
+        // Add examples for all loop types (universal, not just flow)
+        knowledge += '\nLOOP TYPES (the pattern is UNIVERSAL — first letter changes, hierarchy stays):\n';
+        const examples = loopRules.loop_hierarchy?.examples_by_variable || {};
+        for (const [name, ex] of Object.entries(examples)) {
+          if (typeof ex !== 'object' || !ex.meaning) continue; // skip description string
+          knowledge += '\n' + name.toUpperCase().replace(/_/g, ' ') + ': ' + ex.meaning;
+          knowledge += '\n  Controller: ' + ex.controller;
+          knowledge += '\n  Field instruments: ' + (ex.expected_field_instruments || []).join(', ');
+          if (ex.note) knowledge += '\n  Note: ' + ex.note;
+        }
+
+        // P&ID symbol shapes
+        knowledge += '\n\nP&ID SYMBOL SHAPES (why some tags are not in extraction):\n';
+        const shapes = loopRules.pid_symbol_shapes?.shapes || {};
+        for (const [, shape] of Object.entries(shapes)) {
+          knowledge += shape.symbol + ' = ' + shape.location + ' | Physical: ' + shape.is_physical + ' | In YOLO extraction: ' + shape.in_yolo_extraction + '\n';
+        }
+        knowledge += (loopRules.pid_symbol_shapes?.extraction_implication || '') + '\n';
+
+        // Common mistakes
+        knowledge += '\nNEVER FLAG AS MISSING:\n';
+        const neverFlag = loopRules.ai_reasoning_rules?.never_flag_as_missing || [];
+        neverFlag.forEach(r => { knowledge += '- ' + r + '\n'; });
+
+        knowledge += '\nCOMMON MISTAKES TO AVOID:\n';
+        const mistakes = loopRules.ai_reasoning_rules?.common_mistakes_to_avoid || [];
+        mistakes.forEach(m => { knowledge += '- ' + m + '\n'; });
+      }
+    } catch (e) { /* loop hierarchy not available — continue */ }
+
   } catch (e) {
     // Knowledge loading is best-effort — agent works without it, just less informed
     knowledge += '\n(Knowledge library not available: ' + e.message + ')\n';

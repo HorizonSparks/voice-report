@@ -1,0 +1,173 @@
+{
+  "metadata": {
+    "title": "Instrument Loop Hierarchy & Folder Naming Rules",
+    "description": "How control loops are organized, why the folder name IS an instrument tag, what the P&ID symbol shapes mean, and how to reason about field vs DCS instruments. Used by all AI agents to understand loop folder structure.",
+    "version": "1.0.0",
+    "created": "2026-04-12",
+    "source": "ISA 5.1-2024, field engineering practice, Horizon Sparks domain knowledge"
+  },
+
+  "loop_hierarchy": {
+    "description": "A control loop is a TEAM of instruments working together. They share a loop number. The controller is the 'boss' — it names the loop and the folder. But the controller may or may not be a physical field device.",
+
+    "principle": "The FOLDER NAME is an instrument tag. Parse it the same way you parse any tag: prefix-TYPE-loop-suffix. The TYPE tells you what kind of loop this is and what field instruments you should expect inside.",
+
+    "folder_name_rules": {
+      "rule_1": "The folder name IS the primary controller tag (e.g., 201C-FIC-2131-01 = Flow Indicating Controller, loop 2131)",
+      "rule_2": "Parse the folder name to extract the instrument type. This tells you the loop's measured variable and function.",
+      "rule_3": "The controller CAN be inside the folder (if it's field-mounted) or NOT inside the folder (if it's a DCS/PLC function). BOTH are normal.",
+      "rule_4": "If the controller tag appears in the folder's tag list → field-mounted controller. Normal.",
+      "rule_5": "If the controller tag does NOT appear in the folder's tag list → DCS/PLC function. Also normal. NOT a gap.",
+      "rule_6": "The folder contains the FIELD instruments of the loop — whatever is physically at the pipe, vessel, or equipment."
+    },
+
+    "how_to_reason": {
+      "step_1": "Read the folder name. Parse the instrument type (e.g., FIC, TIC, LIC, PIC).",
+      "step_2": "Determine the measured variable from the first letter (F=Flow, T=Temperature, P=Pressure, L=Level, etc.).",
+      "step_3": "Look at what's INSIDE the folder. These are the field instruments.",
+      "step_4": "Check if the controller tag is inside. If yes = field controller. If no = DCS controller. Either is fine.",
+      "step_5": "Check if the expected field instruments for this loop type are present (transmitter, element, valve, etc.).",
+      "step_6": "Evaluate documentation completeness based on the FIELD instruments, not the controller."
+    },
+
+    "examples_by_variable": {
+      "description": "The pattern is UNIVERSAL for process-variable loops (F, T, P, L, A, S, W, V). For non-measurement tags (X=on/off, H=hand, Z=position, Y=relay), the first letter indicates function type, not measured variable. These are examples, not the only possibilities.",
+
+      "flow_loop": {
+        "folder_name": "201C-FIC-2131-01",
+        "meaning": "Flow Indicating Controller — loop 2131",
+        "controller": "FIC (may or may not be in field)",
+        "expected_field_instruments": ["FE (Flow Element — orifice plate, mechanical, no cable)", "FIT or FT (Flow Transmitter — 4-20mA, has cable)", "FV (Flow Control Valve — positioner, has cable)", "FY (Flow Relay/Converter — has cable)"],
+        "note": "FE is mechanical (no cable needed). FIT and FV need cables."
+      },
+      "temperature_loop": {
+        "folder_name": "509A-TIC-5590-01",
+        "meaning": "Temperature Indicating Controller — loop 5590",
+        "controller": "TIC (may or may not be in field)",
+        "expected_field_instruments": ["TE (Temperature Element — RTD/thermocouple)", "TT or TIT (Temperature Transmitter — 4-20mA)", "TV (Temperature Control Valve — positioner)", "TW (Thermowell — mechanical pocket, no cable)"],
+        "note": "TW is mechanical (no cable). TE often shares cable with TT."
+      },
+      "pressure_loop": {
+        "folder_name": "221A-PIC-2221-01",
+        "meaning": "Pressure Indicating Controller — loop 2221",
+        "controller": "PIC (may or may not be in field)",
+        "expected_field_instruments": ["PT or PIT (Pressure Transmitter — 4-20mA)", "PV (Pressure Control Valve — positioner)", "PI (Pressure Indicator — local if no cable, remote if cable)", "PG (Pressure Gauge — mechanical, no cable)"],
+        "note": "PI and PG may both exist on same loop. PG is always mechanical."
+      },
+      "level_loop": {
+        "folder_name": "201C-LIC-2130-01",
+        "meaning": "Level Indicating Controller — loop 2130",
+        "controller": "LIC (may or may not be in field)",
+        "expected_field_instruments": ["LT or LIT (Level Transmitter — 4-20mA)", "LV (Level Control Valve — positioner)", "LG (Level Gauge — sight glass, mechanical, no cable)", "LI (Level Indicator — local or remote)"],
+        "note": "LG is always mechanical. LG with cable data = unusual (remote indicator on tall tower)."
+      },
+      "on_off_valve_loop": {
+        "folder_name": "201C-XV-2130-01",
+        "meaning": "On/Off Valve — loop 2130",
+        "controller": "XV is the valve itself (field device)",
+        "expected_field_instruments": ["XV (On/Off Valve — the actuated valve body)", "XY (Solenoid — actuates XV, has cable)", "ZSC (Position Switch Closed — discrete input)", "ZSO (Position Switch Open — discrete input)"],
+        "note": "XV loops are different — the 'controller' IS the field device. XV is always in the folder."
+      },
+      "relief_device": {
+        "folder_name": "201C-PSV-2131-01",
+        "meaning": "Pressure Safety Valve — relief device, loop 2131",
+        "controller": "PSV is NOT a controller — it is a mechanical protective device. The folder is named after the device, not a control function.",
+        "expected_field_instruments": ["PSV (Spring-loaded relief valve — mechanical, no cable)"],
+        "note": "PSV folders typically contain only the PSV itself. This is normal — relief valves are standalone mechanical devices. If pressure switches (PSH/PSL) exist for monitoring, they may be in a separate loop."
+      },
+      "safety_shutdown_loop": {
+        "folder_name": "201C-PSH-2131-01",
+        "meaning": "Pressure Switch High — safety shutdown, loop 2131",
+        "controller": "Safety logic is in the SIS/ESD system (not a field controller)",
+        "expected_field_instruments": ["PSH or PSL (Pressure Switch — discrete input, has cable)", "XV or SDV (Shutdown Valve — discrete output, has cable)", "XY (Solenoid — actuates valve, has cable)", "ZSC/ZSO (Position switches — confirm valve position)"],
+        "note": "Safety loops may have redundant switches (2oo3 voting). Multiple PSH tags in one loop is valid. The safety logic is in the SIS, not a field controller."
+      },
+      "analyzer_loop": {
+        "folder_name": "201C-AIC-2150-01",
+        "meaning": "Analyzer Indicating Controller — loop 2150",
+        "controller": "AIC (may or may not be in field)",
+        "expected_field_instruments": ["AT or AIT (Analyzer Transmitter — 4-20mA)", "AE (Analyzer Element/Probe — may share cable with AT)", "AV (Analyzer Valve — sample conditioning)"],
+        "note": "Analyzer loops often have complex sample systems."
+      },
+      "motor_loop": {
+        "folder_name": "201C-HS-2101-01",
+        "meaning": "Hand Switch — motor start/stop, loop 2101",
+        "controller": "HS is a field device (start/stop button)",
+        "expected_field_instruments": ["HS (Hand Switch — start/stop, discrete input)", "YS (Motor Starter — power contact)", "II (Current Indicator — motor current)", "TSH (Temperature Switch — bearing/winding)", "VSH (Vibration Switch)"],
+        "note": "Motor loops mix instrument and power elements."
+      }
+    }
+  },
+
+  "pid_symbol_shapes": {
+    "description": "The shape of the instrument symbol on a P&ID tells you WHERE the instrument lives. This affects whether it appears in tag extraction and whether it should be in the loop folder.",
+
+    "shapes": {
+      "circle_no_line": {
+        "symbol": "○",
+        "location": "Field — physically at the pipe, vessel, or equipment",
+        "is_physical": true,
+        "in_yolo_extraction": true,
+        "in_loop_folder": true,
+        "description": "Field-mounted instrument. This is what YOLO extracts from P&IDs."
+      },
+      "circle_solid_line": {
+        "symbol": "○ with horizontal line",
+        "location": "Primary location — operator-accessible (control room, local panel, or main board)",
+        "is_physical": true,
+        "in_yolo_extraction": "sometimes",
+        "in_loop_folder": true,
+        "description": "Panel-mounted instrument accessible to operator."
+      },
+      "circle_in_square": {
+        "symbol": "○ inside □",
+        "location": "DCS / Shared Display / Shared Control",
+        "is_physical": false,
+        "in_yolo_extraction": "rarely — different visual shape",
+        "in_loop_folder": "only if also field-mounted",
+        "description": "Software function in DCS. NOT a physical instrument. This is why controllers often don't appear in extraction data."
+      },
+      "diamond_in_square": {
+        "symbol": "◇ inside □",
+        "location": "PLC function",
+        "is_physical": false,
+        "in_yolo_extraction": "rarely",
+        "in_loop_folder": "only if also field-mounted",
+        "description": "PLC software instruction. NOT a physical instrument."
+      },
+      "circle_dashed_line": {
+        "symbol": "○ with dashed line",
+        "location": "Behind panel — not operator-accessible",
+        "is_physical": true,
+        "in_yolo_extraction": "sometimes",
+        "in_loop_folder": true,
+        "description": "Physical instrument behind a panel. Requires opening enclosure to access."
+      }
+    },
+
+    "extraction_implication": "YOLO+OCR primarily detects circles (field instruments). Circle-in-square (DCS functions) and diamond-in-square (PLC functions) are different visual patterns and may not be in extraction results. This is NORMAL — the AI should not flag missing DCS tags as errors."
+  },
+
+  "ai_reasoning_rules": {
+    "never_flag_as_missing": [
+      "Controller tag (FIC, TIC, PIC, LIC, AIC, SIC) not found in tag list — it's likely a DCS function",
+      "Alarm tag (PAH, TAH, LAH, PAHH) not in tag list — it's a DCS software alarm",
+      "Recorder tag (FR, TR, PR, LR) not in tag list — it's often a DCS historian function"
+    ],
+
+    "always_check": [
+      "Parse the FOLDER NAME as a tag to understand the loop type",
+      "Check if field instruments (transmitters, elements, valves) are present",
+      "For each field instrument, check if it has the documentation it needs (Cable Schedule, I/O List)",
+      "Remember: the controller NAMES the loop but may not be a FIELD device"
+    ],
+
+    "common_mistakes_to_avoid": [
+      "Saying 'no controllers found' when the folder name IS the controller",
+      "Saying 'missing FIC' when FIC is a DCS function shown as circle-in-square",
+      "Treating every instrument type the same — some are field, some are DCS, some are mechanical",
+      "Assuming the folder name is NOT inside the folder — field-mounted controllers ARE in the tag list",
+      "Using only flow loop examples — the pattern applies to ALL measured variables (T, P, L, A, S, etc.)"
+    ]
+  }
+}
