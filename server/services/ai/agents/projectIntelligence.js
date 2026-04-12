@@ -528,32 +528,151 @@ async function buildProjectSummary(projectId) {
   return summary;
 }
 
+// ── Knowledge Loader ────────────────────────────────────────────
+
+/**
+ * Load targeted instrumentation knowledge for the intelligence agent.
+ * Not all 356KB — just the pieces needed for project-level analysis.
+ */
+function loadIntelligenceKnowledge() {
+  let knowledge = '';
+
+  try {
+    const knowledgeCache = require('../knowledgeCache');
+    if (!knowledgeCache.stats().initialized) knowledgeCache.initialize();
+
+    // 1. Tag rules — loop composition templates (what a complete loop looks like)
+    try {
+      const fs = require('fs');
+      const tagRulesPath = require('path').resolve(__dirname, '../../../../knowledge/instrumentation_tag_rules.json');
+      if (fs.existsSync(tagRulesPath)) {
+        const tagRules = JSON.parse(fs.readFileSync(tagRulesPath, 'utf8'));
+        if (tagRules.loop_composition_templates) {
+          knowledge += '\n\nLOOP COMPOSITION TEMPLATES (what a complete loop requires):\n';
+          const templates = tagRules.loop_composition_templates.templates || {};
+          for (const [name, tmpl] of Object.entries(templates)) {
+            knowledge += '\n' + name.toUpperCase() + ': ' + tmpl.description;
+            knowledge += '\n  Instruments: ' + (tmpl.typical_instruments || []).join(', ');
+            if (tmpl.critical_rule) knowledge += '\n  CRITICAL: ' + tmpl.critical_rule;
+            if (tmpl.note) knowledge += '\n  Note: ' + tmpl.note;
+          }
+        }
+        if (tagRules.isa_first_letters && tagRules.isa_first_letters.letters) {
+          knowledge += '\n\nISA FIRST LETTERS (measured variable):\n';
+          for (const [letter, info] of Object.entries(tagRules.isa_first_letters.letters)) {
+            knowledge += letter + '=' + info.variable;
+            if (info.examples && info.examples.length > 0) knowledge += ' (' + info.examples.slice(0, 3).join(', ') + ')';
+            knowledge += '\n';
+          }
+        }
+        if (tagRules.ocr_confusion_in_context) {
+          knowledge += '\nCOMMON OCR ERRORS IN TAG EXTRACTION:\n';
+          knowledge += JSON.stringify(tagRules.ocr_confusion_in_context).substring(0, 1500) + '\n';
+        }
+        if (tagRules.tags_that_look_wrong_but_are_correct) {
+          knowledge += '\nTAGS THAT LOOK WRONG BUT ARE CORRECT:\n';
+          knowledge += JSON.stringify(tagRules.tags_that_look_wrong_but_are_correct).substring(0, 1000) + '\n';
+        }
+      }
+    } catch (e) { /* tag rules not available — continue without */ }
+
+    // 2. Commissioning sequence — what phases a project goes through
+    const commData = knowledgeCache.get('commissioning');
+    if (commData) {
+      const comm = typeof commData === 'string' ? JSON.parse(commData) : commData;
+      if (comm.instrument_commissioning_sequence) {
+        knowledge += '\n\nCOMMISSIONING PHASES (instrument):\n';
+        for (const [phase, steps] of Object.entries(comm.instrument_commissioning_sequence)) {
+          knowledge += phase.replace(/_/g, ' ').toUpperCase() + ':\n';
+          (steps || []).forEach(s => { knowledge += '  - ' + s + '\n'; });
+        }
+      }
+      if (comm.common_commissioning_mistakes) {
+        knowledge += '\nCOMMON COMMISSIONING MISTAKES TO FLAG:\n';
+        (comm.common_commissioning_mistakes || []).forEach(m => { knowledge += '  - ' + m + '\n'; });
+      }
+    }
+
+    // 3. Quality inspection — what defines a complete turnover package
+    const qualData = knowledgeCache.get('instrumentation_quality_inspection');
+    if (qualData) {
+      const qual = typeof qualData === 'string' ? JSON.parse(qualData) : qualData;
+      if (qual.turnover_package_contents) {
+        knowledge += '\n\nTURNOVER PACKAGE (what a loop folder SHOULD contain):\n';
+        knowledge += JSON.stringify(qual.turnover_package_contents).substring(0, 1500) + '\n';
+      }
+      if (qual.common_punch_list_items) {
+        knowledge += '\nCOMMON PUNCH LIST ITEMS:\n';
+        knowledge += JSON.stringify(qual.common_punch_list_items).substring(0, 1000) + '\n';
+      }
+    }
+
+  } catch (e) {
+    // Knowledge loading is best-effort — agent works without it, just less informed
+    knowledge += '\n(Knowledge library not available: ' + e.message + ')\n';
+  }
+
+  return knowledge;
+}
+
 // ── System Prompt Builder ───────────────────────────────────────
 
 async function buildSystemPrompt(context) {
   const summary = await buildProjectSummary(context.projectId);
+  const knowledge = loadIntelligenceKnowledge();
 
-  return 'You are the Project Intelligence Agent for Horizon Sparks.\n\n' +
-    'You see the ENTIRE commissioning project at a glance. Your job is to find\n' +
-    'mismatches, gaps, orphaned instruments, missing documents, and incomplete loops.\n\n' +
-    'You have 4 tools to drill down into specifics. ALWAYS start by analyzing the\n' +
+  return 'You are the Project Intelligence Agent for Horizon Sparks — a senior ' +
+    'instrumentation engineer with deep ISA 5.1 knowledge and commissioning experience.\n\n' +
+    'You see the ENTIRE commissioning project at a glance. Your job is to find ' +
+    'mismatches, gaps, orphaned instruments, missing documents, and incomplete loops. ' +
+    'You understand what each instrument type requires and can identify when a loop ' +
+    'is incomplete, when documents are missing for specific instrument types, and when ' +
+    'extraction data has quality issues.\n\n' +
+    'You have 4 tools to drill down into specifics. ALWAYS start by analyzing the ' +
     'summary below, then use tools to investigate anything suspicious.\n\n' +
     'CURRENT PROJECT SUMMARY:\n' + summary + '\n\n' +
-    'ISA TAG CONVENTIONS:\n' +
-    '- Tags follow the pattern: AREA-TYPE-NUMBER (e.g. 221A-FIT-2221-03)\n' +
-    '- Common types: FE (element), FIT (transmitter), FIC (controller), FV (valve),\n' +
-    '  PI (pressure indicator), TI (temperature indicator), PSV (safety valve),\n' +
-    '  LIT (level transmitter), AIT (analyzer transmitter)\n' +
-    '- A complete loop typically has: element + transmitter + controller + final element\n' +
-    '- Safety-critical: ESD, PSV, relief valves — flag these as high priority\n\n' +
+    '═══ INSTRUMENTATION KNOWLEDGE ═══\n' + knowledge + '\n\n' +
+    'DOCUMENT REQUIREMENTS BY INSTRUMENT TYPE:\n' +
+    '- Control valves (FV, TV, LV, PV): REQUIRE Cable Schedule (positioner wiring), ' +
+    'I/O List (DCS/PLC output), Schematics (wiring diagram)\n' +
+    '- Transmitters (FIT, TT, PT, LT, AT): REQUIRE Cable Schedule (signal wiring), ' +
+    'I/O List (DCS/PLC input)\n' +
+    '- Local indicators (PI, TI, LG, PG): Do NOT need Cable Schedule or I/O List ' +
+    '(no DCS connection). Missing cable data for these is NORMAL, not a gap.\n' +
+    '- Safety instruments (PSV, PSH, LSHH, SDV, ESD): REQUIRE all documents. ' +
+    'Missing data here is HIGH PRIORITY.\n' +
+    '- On/off valves (XV, SDV): REQUIRE Cable Schedule (solenoid wiring), ' +
+    'I/O List (DCS output + ZSC/ZSO inputs)\n' +
+    '- Position switches (ZSC, ZSO): These are part of the XV loop, not separate loops\n\n' +
+    'LOOP FOLDER BOXES (what each box type contains):\n' +
+    '- P&ID: Source drawing where instruments are shown. Creator — makes the folder.\n' +
+    '- EXCELs: Instrument List, Cable Schedule, I/O List, PCS/SCS lists. Data source.\n' +
+    '- Cable_Schedule: Wire routing, cable type, from/to JB, circuit numbers.\n' +
+    '- I/O_List: DCS/PLC channel assignments (input/output type, card, channel).\n' +
+    '- Location_Drawings: Physical location plans for instrument installation.\n' +
+    '- Schematics: Wiring diagrams and connection details.\n' +
+    '- Tests/Reports: Calibration reports, loop test sheets, FAT records.\n' +
+    '- ONE_LINE: Single-line diagrams. Creator — can also make folders.\n' +
+    '- Index_Drawing: Drawing index/register. NOT tied to individual loops.\n\n' +
+    'DATA QUALITY AWARENESS:\n' +
+    '- YOLO+OCR extraction has ~85% accuracy. Expect some tag misreads.\n' +
+    '- Common OCR confusions: 5↔S, 0↔O, 1↔I, Z↔2, B↔8\n' +
+    '- If a tag appears in P&ID but not Excel, check for OCR variants before flagging.\n' +
+    '- Excel data comes from SheetJS extraction + Claude classification — more reliable ' +
+    'than P&ID OCR but depends on header_row detection.\n' +
+    '- folder_values JSONB stores all matches. _excelMatches.count = 0 means no Excel ' +
+    'file mentioned this loop — could be a gap OR a local-only instrument.\n\n' +
     'ANALYSIS RULES:\n' +
     '- Report like a senior engineer briefing a PM\n' +
-    '- Be specific: "Loop 2131 is missing FE and FV cables" not "some loops have gaps"\n' +
-    '- When you find a mismatch, explain WHY it matters\n' +
-    '- Prioritize: safety-critical instruments first (ESD, PSV, relief valves)\n' +
+    '- Be specific: "Loop 2131 has FV (control valve) missing Cable Schedule — this valve ' +
+    'has a positioner that needs wiring documentation" not "some loops have gaps"\n' +
+    '- When you find a mismatch, explain WHY it matters using your knowledge\n' +
+    '- Distinguish between REAL gaps and EXPECTED gaps (PI without cable schedule is normal)\n' +
+    '- Prioritize: (1) Safety instruments, (2) Control valves, (3) Transmitters, (4) Indicators\n' +
     '- Group findings by area/prefix when presenting multiple issues\n' +
     '- If you find no issues, say so clearly — don\'t invent problems\n' +
-    '- Keep tool calls focused — don\'t scan every loop if the user asked about one area';
+    '- Keep tool calls focused — don\'t scan every loop if the user asked about one area\n' +
+    '- When reporting numbers, be exact — "12 of 76 loops" not "several loops"';
 }
 
 // ── Agent Definition ────────────────────────────────────────────
