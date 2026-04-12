@@ -80,6 +80,20 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
       ? req.body.analysisContext.substring(0, 5000)
       : null;
 
+    // Sanitize loopFolderGroups — the actual folder data visible on screen
+    const rawLoopFolderGroups = Array.isArray(req.body.loopFolderGroups) ? req.body.loopFolderGroups : [];
+    const loopFolderGroups = rawLoopFolderGroups
+      .slice(0, 30) // cap at 30 folders — enough context without blowing token budget
+      .filter(g => g && typeof g === 'object' && typeof g.loopNumber === 'string')
+      .map(g => ({
+        loopNumber: g.loopNumber.substring(0, 60),
+        status: typeof g.status === 'string' ? g.status.substring(0, 20) : '',
+        is_locked: g.is_locked === true,
+        tags: Array.isArray(g.tags) ? g.tags.slice(0, 10).map(t => ({
+          fullTag: typeof t.fullTag === 'string' ? t.fullTag.substring(0, 60) : '',
+        })) : [],
+      }));
+
   // ── Single-flight guard (set BEFORE any async work to prevent race) ──
   if (activeRequests.has(personId)) {
     return res.status(429).json({
@@ -148,7 +162,7 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
         companyId: req.companyId,
         service: 'project-intelligence',
       },
-      executeTool: projectIntelligence.executeTool,
+      executeTool: (toolName, toolInput) => projectIntelligence.executeTool(toolName, toolInput, { projectId }),
     });
 
     aiLogger.info({

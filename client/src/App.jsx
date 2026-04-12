@@ -558,7 +558,7 @@ export default function App() {
               background: 'rgba(249,148,64,0.2)',
               color: 'var(--primary)',
               fontSize: 12, fontWeight: 800, textTransform: 'none',
-              borderRadius: '20px', px: 1.5, py: 0.4, minWidth: 'auto',
+              borderRadius: '8px', px: 1.5, py: 0.4, minWidth: 'auto',
               '&:hover': { background: 'rgba(249,148,64,0.35)' },
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
