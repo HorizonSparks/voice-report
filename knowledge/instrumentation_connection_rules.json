@@ -1,0 +1,324 @@
+{
+  "metadata": {
+    "title": "Instrument Connection Classification Rules",
+    "description": "Classifies every ISA instrument type by whether it requires electrical cable connections, I/O points, or appears on Cable Schedules. Used by Project Intelligence, Tag Validator, and RD2 agents to distinguish real documentation gaps from expected behavior.",
+    "version": "1.0.0",
+    "created": "2026-04-12",
+    "source": "ISA 5.1-2024, field engineering standards, industry practice"
+  },
+
+  "categories": {
+    "never_has_cable": {
+      "description": "Purely mechanical instruments. No signal, no wire, no I/O, no Cable Schedule entry. If these appear in a Cable Schedule or I/O List, that is a DATA ERROR.",
+      "instruments": {
+        "LG": {
+          "name": "Level Gauge / Sight Glass",
+          "reason": "Mechanical — operator reads liquid level visually through glass tube or magnetic indicators. No electronics.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List", "ONE_LINE"]
+        },
+        "PG": {
+          "name": "Pressure Gauge",
+          "reason": "Bourdon tube — mechanical needle deflection. Direct reading, no signal output.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List", "ONE_LINE"]
+        },
+        "TG": {
+          "name": "Temperature Gauge",
+          "reason": "Bimetallic dial — mechanical. Direct reading at the pipe.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List", "ONE_LINE"]
+        },
+        "TW": {
+          "name": "Thermowell",
+          "reason": "Metal pocket welded into pipe — holds a temperature sensor. The thermowell itself has no signal. The sensor inside (TE/TT) has the cable.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        },
+        "FE": {
+          "name": "Flow Element (Orifice Plate, Venturi, Flow Nozzle)",
+          "reason": "Passive restriction in pipe — creates differential pressure. No electronics. The DP transmitter (FIT/FT) connected to it has the cable.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        },
+        "RO": {
+          "name": "Restriction Orifice",
+          "reason": "Fixed flow restriction — purely mechanical plate in pipe. No signal.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        },
+        "PSV": {
+          "name": "Pressure Safety Valve / Relief Valve",
+          "reason": "Spring-loaded mechanical — opens automatically on overpressure. No signal, no wire. Some facilities add a ZSO position switch to detect when PSV lifts, but the PSV itself has no cable.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        },
+        "PRV": {
+          "name": "Pressure Relief Valve",
+          "reason": "Same as PSV — spring-loaded mechanical relief. No signal.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        },
+        "BD": {
+          "name": "Rupture Disc / Bursting Disc",
+          "reason": "One-time burst pressure relief — metal disc that ruptures. Destroyed on activation. No signal.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        },
+        "SS": {
+          "name": "Steam Strainer / Y-Strainer",
+          "reason": "Mechanical filter — catches debris. No signal.",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        },
+        "HV": {
+          "name": "Hand Valve (manual, no actuator)",
+          "reason": "Manual handwheel operation — operator turns it physically. No cable unless it has an actuator (then it becomes XV/MOV).",
+          "has_cable": false,
+          "has_io": false,
+          "needs_cable_schedule": false,
+          "needs_io_list": false,
+          "appears_on": ["P&ID"],
+          "never_appears_on": ["Cable_Schedule", "I/O_List"]
+        }
+      }
+    },
+
+    "always_has_cable": {
+      "description": "Electronic instruments that MUST have cable connections and I/O points. If these are MISSING from a Cable Schedule or I/O List, that is a real documentation gap.",
+      "instruments": {
+        "transmitters": {
+          "tags": ["FT", "FIT", "PT", "PIT", "TT", "TIT", "LT", "LIT", "AT", "AIT", "PDT", "PDIT", "DT", "WT", "VT", "ST"],
+          "signal_type": "4-20mA analog input",
+          "description": "All transmitters send a continuous analog signal to DCS/PLC. They MUST appear in Cable Schedule (cable routing) and I/O List (DCS channel assignment).",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "controllers": {
+          "tags": ["FIC", "PIC", "TIC", "LIC", "AIC", "SIC", "WIC", "HC", "HIC"],
+          "signal_type": "DCS/PLC function",
+          "description": "Controllers are DCS functions — they receive transmitter input and send output to valves. The controller tag itself is a DCS point, so the associated transmitter and valve need cables.",
+          "needs_cable_schedule": false,
+          "needs_io_list": true
+        },
+        "control_valves": {
+          "tags": ["FV", "TV", "PV", "LV", "AV"],
+          "signal_type": "4-20mA analog output",
+          "description": "Control valves with positioners receive a 4-20mA signal from DCS to modulate position. They MUST appear in Cable Schedule and I/O List.",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "on_off_valves": {
+          "tags": ["XV", "SDV", "ESDV", "MOV", "SOV", "BDV"],
+          "signal_type": "Discrete output",
+          "description": "On/off valves are actuated by solenoids (XY). The solenoid receives a discrete signal from DCS. Cable runs from JB to solenoid.",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "solenoids": {
+          "tags": ["XY"],
+          "signal_type": "Discrete output",
+          "description": "Solenoid valve — converts electrical signal to pneumatic action. Actuates XV/SDV. Always has a cable.",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "switches": {
+          "tags": ["PSH", "PSL", "PSHH", "PSLL", "TSH", "TSL", "TSHH", "TSLL", "LSH", "LSL", "LSHH", "LSLL", "FSH", "FSL", "VSH", "VSHH", "ZSC", "ZSO", "ZSH", "ZSL"],
+          "signal_type": "Discrete input",
+          "description": "Process switches send ON/OFF signals to DCS when a process variable crosses a setpoint. Always wired.",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "hand_switches": {
+          "tags": ["HS"],
+          "signal_type": "Discrete input",
+          "description": "Hand switches (start/stop buttons) — operator-actuated, wired to DCS/PLC.",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "position_transmitters": {
+          "tags": ["ZT"],
+          "signal_type": "Analog input (4-20mA valve position)",
+          "description": "Position transmitter on valve actuator. Sends continuous valve position feedback to DCS. Always has a cable.",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "motor_instruments": {
+          "tags": ["II", "SI", "YS"],
+          "signal_type": "Analog/discrete",
+          "description": "Motor current indicators (II), speed indicators (SI), motor starters (YS) — all wired.",
+          "needs_cable_schedule": true,
+          "needs_io_list": true
+        },
+        "alarms": {
+          "tags": ["PAH", "PAL", "PAHH", "PALL", "TAH", "TAL", "TAHH", "TALL", "LAH", "LAL", "LAHH", "LALL", "FAH", "FAL"],
+          "signal_type": "DCS software function (derived from transmitter signal)",
+          "description": "Alarms are typically DCS SOFTWARE points — they use the transmitter's existing signal, not a separate cable. PAH is triggered when PT exceeds setpoint. The alarm tag itself has NO separate cable. Exception: if the tag is actually a hardware alarm switch (rare), it has its own cable — but then it's really a PSH/TSH/LSH, not PAH.",
+          "needs_cable_schedule": false,
+          "needs_io_list": true,
+          "note": "Software alarm = no cable. Hardware alarm switch = use PSH/TSH/LSH tag instead."
+        }
+      }
+    },
+
+    "depends_on_context": {
+      "description": "Instruments that may or may not have cables depending on whether they are local (field-mounted mechanical) or remote (wired to DCS). The P&ID symbol tells you: if drawn with a signal line to a DCS/PLC bubble, it has a cable. If standalone circle with no line, it's local/mechanical.",
+      "instruments": {
+        "PI": {
+          "name": "Pressure Indicator",
+          "local": "Field-mounted pressure gauge — same as PG. No cable.",
+          "remote": "If wired to DCS (shown as PIT), has 4-20mA cable.",
+          "rule": "If PI appears alone on P&ID with no signal line → no cable needed. If it has a signal line to DCS → it's really a PIT and needs cable."
+        },
+        "TI": {
+          "name": "Temperature Indicator",
+          "local": "Field-mounted dial thermometer — same as TG. No cable.",
+          "remote": "If wired to DCS (shown as TIT), has cable.",
+          "rule": "Same logic as PI. Local TI = no cable. Remote TI = cable."
+        },
+        "LI": {
+          "name": "Level Indicator",
+          "local": "Magnetic level indicator or sight glass type — no cable.",
+          "remote": "If wired to DCS → cable.",
+          "rule": "Same logic. Most LI in the field are local. Check P&ID symbol."
+        },
+        "FI": {
+          "name": "Flow Indicator",
+          "local": "Local rotameter or flow sight glass — no cable.",
+          "remote": "If remote reading via DCS → cable.",
+          "rule": "Local rotameters are mechanical. Check P&ID."
+        },
+        "ZI": {
+          "name": "Position Indicator",
+          "local": "Mechanical dial indicator on valve actuator — no cable. Operator reads position visually.",
+          "remote": "If wired to DCS for remote position display → has cable (rare, usually use ZT instead).",
+          "rule": "Most ZI in the field are local mechanical dials on actuators. No cable unless wired to DCS."
+        },
+        "TE": {
+          "name": "Temperature Element (RTD/Thermocouple)",
+          "local": "The bare sensing element. Often shares the cable with its TT (transmitter). The TE itself does not have a SEPARATE cable schedule entry — the TT does.",
+          "remote": "If wired directly to DCS without a TT (head-mount transmitter), the TE has its own cable.",
+          "rule": "TE usually shares wiring with TT. Don't flag TE as missing cable if TT in the same loop has a cable."
+        },
+        "PE": {
+          "name": "Pressure Element (sensing element)",
+          "local": "Primary sensing element — usually integral to PT. No separate cable.",
+          "remote": "Rare as a standalone. Usually part of PT assembly.",
+          "rule": "Same as TE — don't flag separately if PT has a cable."
+        },
+        "AE": {
+          "name": "Analyzer Element (sensor/probe)",
+          "local": "In-situ probe (e.g., zirconia O2). Often wired as part of AT assembly.",
+          "remote": "If separate from AT, may have its own cable for heater power or signal.",
+          "rule": "Context-dependent. Usually the AT cable covers the AE."
+        }
+      }
+    },
+
+    "one_line_elements": {
+      "description": "Elements that appear on ONE_LINE (single-line electrical) diagrams. These are POWER distribution, not instrumentation. They do NOT appear in instrument Cable Schedules — they appear in POWER cable schedules (electrical trade). Different document, different trade.",
+      "elements": {
+        "M": "Motor — power cable only, no instrument I/O (but monitoring instruments like VT, II, TSH are separate tags)",
+        "VFD": "Variable Frequency Drive — power + speed control signal (SIC). The VFD is power; the SIC is instrumentation.",
+        "MCC": "Motor Control Center — power distribution panel. No instrument I/O.",
+        "XFMR": "Transformer — voltage conversion. Power only.",
+        "CB": "Circuit Breaker — protection device. Power only (some have status contacts for DCS monitoring).",
+        "UPS": "Uninterruptible Power Supply — power backup. No instrument I/O.",
+        "GEN": "Generator — power source. No instrument I/O (but has monitoring instruments).",
+        "SWG": "Switchgear — power switching. No instrument I/O."
+      },
+      "rule": "ONE_LINE elements should NEVER appear in an instrument Cable Schedule. If they do, the data is mixing power and instrumentation — flag as error. Monitoring instruments (VT, II, TSH on motors) are separate tags that DO appear in instrument Cable Schedule."
+    }
+  },
+
+  "validation_rules": {
+    "cable_schedule_errors": [
+      {
+        "rule": "mechanical_in_cable_schedule",
+        "description": "A 'never_has_cable' instrument (LG, PG, TG, TW, FE, PSV, PRV, BD, RO, HV, SS) appears in the Cable Schedule",
+        "severity": "ERROR",
+        "message_template": "{tag} is a {instrument_name} — a mechanical instrument with no electrical connection. It should not appear in the Cable Schedule."
+      },
+      {
+        "rule": "one_line_in_cable_schedule",
+        "description": "A ONE_LINE element (M, VFD, MCC, XFMR, CB) appears in the instrument Cable Schedule",
+        "severity": "WARNING",
+        "message_template": "{tag} is a power distribution element. It belongs in the electrical power cable schedule, not the instrument cable schedule."
+      }
+    ],
+    "missing_cable_rules": [
+      {
+        "rule": "transmitter_missing_cable",
+        "description": "A transmitter (FIT, PT, TT, LT, AT, etc.) has no Cable Schedule entry",
+        "severity": "ERROR",
+        "message_template": "{tag} is a {instrument_name} that sends a 4-20mA signal to DCS. It MUST have a cable schedule entry."
+      },
+      {
+        "rule": "control_valve_missing_cable",
+        "description": "A control valve (FV, TV, PV, LV) has no Cable Schedule entry",
+        "severity": "ERROR",
+        "message_template": "{tag} is a control valve with a positioner. It receives a 4-20mA signal from DCS and MUST have cable documentation."
+      },
+      {
+        "rule": "switch_missing_cable",
+        "description": "A process switch (PSH, TSH, LSH, ZSC, ZSO, etc.) has no Cable Schedule entry",
+        "severity": "WARNING",
+        "message_template": "{tag} is a process switch that sends a discrete signal to DCS. It should have a cable schedule entry."
+      },
+      {
+        "rule": "local_indicator_missing_cable",
+        "description": "A local indicator (PI, TI, LI, FI) or local gauge (LG, PG, TG) has no Cable Schedule entry",
+        "severity": "NORMAL",
+        "message_template": "{tag} is a local indicator/gauge — no cable required. This is normal."
+      }
+    ]
+  },
+
+  "quick_lookup": {
+    "never_has_cable_tags": ["LG", "PG", "TG", "TW", "FE", "RO", "PSV", "PRV", "BD", "SS", "HV"],
+    "always_has_cable_tags": ["FT", "FIT", "PT", "PIT", "TT", "TIT", "LT", "LIT", "AT", "AIT", "PDT", "DT", "WT", "VT", "ST", "FV", "TV", "PV", "LV", "AV", "XV", "SDV", "ESDV", "MOV", "SOV", "BDV", "XY", "PSH", "PSL", "PSHH", "PSLL", "TSH", "TSL", "TSHH", "TSLL", "LSH", "LSL", "LSHH", "LSLL", "FSH", "FSL", "VSH", "VSHH", "ZSC", "ZSO", "ZSH", "ZSL", "HS", "ZT", "II", "SI", "YS"],
+    "no_separate_cable_tags": ["PAH", "PAL", "PAHH", "PALL", "TAH", "TAL", "TAHH", "TALL", "LAH", "LAL", "LAHH", "LALL", "FAH", "FAL"],
+    "context_dependent_tags": ["PI", "TI", "LI", "FI", "ZI", "TE", "PE", "AE"],
+    "one_line_only_tags": ["M", "VFD", "MCC", "XFMR", "CB", "UPS", "GEN", "SWG"]
+  }
+}

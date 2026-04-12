@@ -1805,6 +1805,11 @@ function loadRelevantKnowledge(query) {
     'pipe': ['pipefitting_codes'], 'millwright': ['millwright_codes_standards'],
     'safety': ['electrical_safety'], 'nec': ['electrical_codes'],
     'calibrat': ['instrumentation_procedures'],
+    'cable': ['instrumentation_connection_rules'], 'connection': ['instrumentation_connection_rules'],
+    'missing cable': ['instrumentation_connection_rules'], 'missing document': ['instrumentation_connection_rules'], 'gap': ['instrumentation_connection_rules'],
+    'loop folder': ['instrumentation_connection_rules'], 'mechanical': ['instrumentation_connection_rules'],
+    'gauge': ['instrumentation_connection_rules'], 'wiring': ['instrumentation_connection_rules'],
+    'i/o': ['instrumentation_connection_rules'], 'one line': ['instrumentation_connection_rules'],
   };
   const matched = new Set();
   for (const [kw, files] of Object.entries(keywordMap)) {

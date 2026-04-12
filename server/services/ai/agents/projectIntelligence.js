@@ -607,6 +607,40 @@ function loadIntelligenceKnowledge() {
       }
     }
 
+    // 4. Connection rules — which instruments need cables and which never do
+    try {
+      const fs = require('fs');
+      const connRulesPath = require('path').resolve(__dirname, '../../../../knowledge/instrumentation_connection_rules.json');
+      if (fs.existsSync(connRulesPath)) {
+        const connRules = JSON.parse(fs.readFileSync(connRulesPath, 'utf8'));
+        const quick = connRules.quick_lookup || {};
+
+        knowledge += '\n\nCONNECTION CLASSIFICATION (critical for gap analysis):\n';
+        knowledge += '\nNEVER HAS CABLE (mechanical — no Cable Schedule, no I/O):\n';
+        knowledge += (quick.never_has_cable_tags || []).join(', ') + '\n';
+        const neverCat = connRules.categories?.never_has_cable?.instruments || {};
+        for (const [tag, info] of Object.entries(neverCat)) {
+          knowledge += '  ' + tag + ': ' + info.name + ' — ' + info.reason.substring(0, 100) + '\n';
+        }
+
+        knowledge += '\nALWAYS HAS CABLE (electronic — MUST be in Cable Schedule + I/O):\n';
+        const alwaysCat = connRules.categories?.always_has_cable?.instruments || {};
+        for (const [group, info] of Object.entries(alwaysCat)) {
+          knowledge += '  ' + (info.tags || []).join(', ') + ' — ' + (info.description || '').substring(0, 120) + '\n';
+        }
+
+        knowledge += '\nCONTEXT-DEPENDENT (local=no cable, remote=has cable):\n';
+        const ctxCat = connRules.categories?.depends_on_context?.instruments || {};
+        for (const [tag, info] of Object.entries(ctxCat)) {
+          knowledge += '  ' + tag + ': ' + (info.rule || info.local || '') + '\n';
+        }
+
+        knowledge += '\nONE_LINE ELEMENTS (power, NOT instrumentation — different cable schedule):\n';
+        knowledge += (quick.one_line_only_tags || []).join(', ') + '\n';
+        knowledge += 'Rule: These should NEVER appear in an instrument Cable Schedule.\n';
+      }
+    } catch (e) { /* connection rules not available — continue */ }
+
   } catch (e) {
     // Knowledge loading is best-effort — agent works without it, just less informed
     knowledge += '\n(Knowledge library not available: ' + e.message + ')\n';
@@ -632,18 +666,15 @@ async function buildSystemPrompt(context) {
     'summary below, then use tools to investigate anything suspicious.\n\n' +
     'CURRENT PROJECT SUMMARY:\n' + summary + '\n\n' +
     '═══ INSTRUMENTATION KNOWLEDGE ═══\n' + knowledge + '\n\n' +
-    'DOCUMENT REQUIREMENTS BY INSTRUMENT TYPE:\n' +
-    '- Control valves (FV, TV, LV, PV): REQUIRE Cable Schedule (positioner wiring), ' +
-    'I/O List (DCS/PLC output), Schematics (wiring diagram)\n' +
-    '- Transmitters (FIT, TT, PT, LT, AT): REQUIRE Cable Schedule (signal wiring), ' +
-    'I/O List (DCS/PLC input)\n' +
-    '- Local indicators (PI, TI, LG, PG): Do NOT need Cable Schedule or I/O List ' +
-    '(no DCS connection). Missing cable data for these is NORMAL, not a gap.\n' +
-    '- Safety instruments (PSV, PSH, LSHH, SDV, ESD): REQUIRE all documents. ' +
-    'Missing data here is HIGH PRIORITY.\n' +
-    '- On/off valves (XV, SDV): REQUIRE Cable Schedule (solenoid wiring), ' +
-    'I/O List (DCS output + ZSC/ZSO inputs)\n' +
-    '- Position switches (ZSC, ZSO): These are part of the XV loop, not separate loops\n\n' +
+    'DOCUMENT REQUIREMENTS — USE YOUR CONNECTION CLASSIFICATION KNOWLEDGE:\n' +
+    '- When reporting missing Cable Schedule data, CHECK the instrument type first.\n' +
+    '- NEVER flag LG, PG, TG, TW, FE, PSV, PRV, BD, RO, HV for missing cables — they are mechanical.\n' +
+    '- ALWAYS flag FIT, PT, TT, LT, FV, TV, XV, XY, PSH, ZSC, ZSO for missing cables — they are wired.\n' +
+    '- For PI, TI, LI, FI: check context. Local = no cable needed. Remote = cable needed.\n' +
+    '- PSV is mechanical (spring relief) — no cable. But PSH (pressure switch) IS wired.\n' +
+    '- ONE_LINE elements (motors, VFDs, MCCs) use POWER cables, not instrument cables.\n' +
+    '- When reporting gaps, SEPARATE real gaps from expected behavior:\n' +
+    '  "12 loops missing Cable Schedule — but 4 are local gauges (LG/PG). The 8 that matter: ..."\n\n' +
     'LOOP FOLDER BOXES (what each box type contains):\n' +
     '- P&ID: Source drawing where instruments are shown. Creator — makes the folder.\n' +
     '- EXCELs: Instrument List, Cable Schedule, I/O List, PCS/SCS lists. Data source.\n' +
