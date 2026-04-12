@@ -63,6 +63,8 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
   const personId = actor.person_id;
   const projectId = req.params.projectId;
   const question = req.body.question || 'Analyze this project. Report any missing documents, incomplete loops, mismatches between Excel data and P&ID extractions, and coverage gaps. Prioritize safety-critical instruments.';
+    const conversationHistory = req.body.conversationHistory || [];
+    const analysisContext = req.body.analysisContext || null;
 
   // ── Single-flight guard (set BEFORE any async work to prevent race) ──
   if (activeRequests.has(personId)) {
@@ -110,8 +112,24 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
       question_length: question.length,
     });
 
+    // Build messages with conversation history and analysis context
+    const contextMessages = [];
+    // Add previous conversation for continuity
+    if (conversationHistory.length > 0) {
+      conversationHistory.forEach(m => contextMessages.push(m));
+    }
+    // Add analysis findings context if available
+    let enrichedQuestion = question;
+    if (analysisContext) {
+      enrichedQuestion = 'ANALYSIS CONTEXT (results from programmatic folder analysis on this P&ID):
+' + analysisContext + '
+
+USER QUESTION: ' + question;
+    }
+    contextMessages.push({ role: 'user', content: enrichedQuestion });
+
     const result = await runAgentWithTools(projectIntelligence.agent, {
-      messages: [{ role: 'user', content: question }],
+      messages: contextMessages,
       context: { projectId, companyId: req.companyId },
       tracking: {
         personId,
