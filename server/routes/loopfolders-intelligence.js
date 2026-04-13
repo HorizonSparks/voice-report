@@ -81,18 +81,28 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
       : null;
 
     // Sanitize loopFolderGroups — the actual folder data visible on screen
+    // Strip control chars, newlines, and instruction-like content to prevent prompt injection
+    const sanitizeField = (s, maxLen) => {
+      if (typeof s !== 'string') return '';
+      return s.replace(/[\x00-\x1f\x7f]/g, '') // strip control characters
+              .replace(/\n|\r/g, ' ')             // flatten newlines
+              .replace(/^(system|assistant|user|ignore|forget|override)[:]/gi, '') // strip role prefixes
+              .trim()
+              .substring(0, maxLen);
+    };
     const rawLoopFolderGroups = Array.isArray(req.body.loopFolderGroups) ? req.body.loopFolderGroups : [];
     const loopFolderGroups = rawLoopFolderGroups
       .slice(0, 30) // cap at 30 folders — enough context without blowing token budget
       .filter(g => g && typeof g === 'object' && typeof g.loopNumber === 'string')
       .map(g => ({
-        loopNumber: g.loopNumber.substring(0, 60),
-        status: typeof g.status === 'string' ? g.status.substring(0, 20) : '',
+        loopNumber: sanitizeField(g.loopNumber, 60),
+        status: sanitizeField(g.status || '', 20),
         is_locked: g.is_locked === true,
         tags: Array.isArray(g.tags) ? g.tags.slice(0, 10).map(t => ({
-          fullTag: typeof t.fullTag === 'string' ? t.fullTag.substring(0, 60) : '',
+          fullTag: sanitizeField(t.fullTag || '', 60),
         })) : [],
-      }));
+      }))
+      .filter(g => g.loopNumber.length > 0); // drop entries that became empty after sanitization
 
   // ── Single-flight guard (set BEFORE any async work to prevent race) ──
   if (activeRequests.has(personId)) {
@@ -127,9 +137,15 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
       [projectId]
     );
 
-    if (folderCount.total === 0) {
+    // Guard: project must have SOME data (files or saved folders).
+    // loopFolderGroups from UI supplements but cannot replace real project data.
+    const { rows: [fileCount] } = await DB.db.query(
+      'SELECT COUNT(*)::int as total FROM horizonsparks.files WHERE project_id = $1',
+      [projectId]
+    );
+    if (folderCount.total === 0 && fileCount.total === 0) {
       return res.status(400).json({
-        error: 'Project "' + project.name + '" has no loop folders. Upload and process files first.',
+        error: 'Project "' + project.name + '" has no data. Upload and process files first.',
       });
     }
     aiLogger.info({
@@ -146,10 +162,18 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
     if (conversationHistory.length > 0) {
       conversationHistory.forEach(m => contextMessages.push(m));
     }
-    // Add analysis findings context if available
+    // Add analysis findings context and on-screen folder data
     let enrichedQuestion = question;
     if (analysisContext) {
       enrichedQuestion = 'ANALYSIS CONTEXT (results from programmatic folder analysis on this P&ID):\n' + analysisContext + '\n\nUSER QUESTION: ' + question;
+    }
+    // Inject loopFolderGroups so the AI can see what's on screen
+    if (loopFolderGroups.length > 0) {
+      const folderSummary = loopFolderGroups.map(g => {
+        const tags = (g.tags || []).map(t => t.fullTag).filter(Boolean).join(', ');
+        return g.loopNumber + (g.status ? ' [' + g.status + ']' : '') + (g.is_locked ? ' [LOCKED]' : '') + (tags ? ' — tags: ' + tags : '');
+      }).join('\n');
+      enrichedQuestion = 'LOOP FOLDERS VISIBLE ON SCREEN (these are the actual folders the user is looking at right now):\n' + folderSummary + '\n\n' + enrichedQuestion;
     }
     contextMessages.push({ role: 'user', content: enrichedQuestion });
 
