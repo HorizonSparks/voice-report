@@ -199,6 +199,40 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
       output_tokens: result.usage.output_tokens,
     });
 
+    // ── Cache analysis for training data (fire-and-forget) ──────────
+    // Every analysis becomes a training example for the fine-tuned Boss Agent.
+    // This runs async — never blocks the response to the user.
+    const loopNums = loopFolderGroups.map(g => g.loopNumber).filter(Boolean);
+    DB.db.query(
+      `INSERT INTO horizonsparks.ai_analysis_cache
+       (project_id, loop_numbers, question, analysis_context, loop_folder_groups,
+        analysis_text, reasoning_version, model,
+        input_tokens, output_tokens, cost_cents, tool_iterations, duration_ms, person_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+      [
+        projectId,
+        loopNums,
+        question.substring(0, 2000),
+        analysisContext ? analysisContext.substring(0, 5000) : null,
+        loopFolderGroups.length > 0 ? JSON.stringify(loopFolderGroups) : null,
+        result.text,
+        'v1.0',
+        result.agent.model || 'claude-opus-4',
+        result.usage.input_tokens || 0,
+        result.usage.output_tokens || 0,
+        result.agent.costCents || 0,
+        result.agent.iterations || 0,
+        result.agent.durationMs || 0,
+        personId,
+        req.companyId || null,
+      ]
+    ).then(() => {
+      aiLogger.info({ msg: 'analysis_cached', project_id: projectId, loop_count: loopNums.length });
+    }).catch(cacheErr => {
+      // Cache failures never break the user experience
+      aiLogger.warn({ msg: 'analysis_cache_failed', project_id: projectId, error: cacheErr.message });
+    });
+
     res.json({
       analysis: result.text,
       project: { id: project.id, name: project.name },
@@ -224,6 +258,116 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
     res.status(500).json({ error: 'Intelligence analysis failed: ' + err.message });
   } finally {
     activeRequests.delete(personId);
+  }
+});
+
+// ── Training Data Export ─────────────────────────────────────────
+// GET /api/loopfolders/intelligence/training-data/export
+// Exports cached analyses as JSONL for fine-tuning.
+// Admin only (roleLevel 5). Returns streaming JSONL.
+
+router.get('/training-data/export', requireAuth, requireRoleLevel(5), async (req, res) => {
+  try {
+    const minScore = parseInt(req.query.min_score) || 0;
+    const limit = Math.min(parseInt(req.query.limit) || 10000, 10000);
+
+    const { rows } = await DB.db.query(
+      `SELECT
+         id, question, analysis_context, loop_folder_groups,
+         analysis_text, reasoning_version, model,
+         input_tokens, output_tokens, created_at
+       FROM horizonsparks.ai_analysis_cache
+       WHERE (training_quality_score IS NULL OR training_quality_score >= $1)
+         AND exported_to_training = false
+       ORDER BY created_at
+       LIMIT $2`,
+      [minScore, limit]
+    );
+
+    res.setHeader('Content-Type', 'application/jsonl');
+    res.setHeader('Content-Disposition', 'attachment; filename="training_data_' + new Date().toISOString().slice(0,10) + '.jsonl"');
+
+    for (const row of rows) {
+      // Build the training input: what the model would receive
+      let input = '';
+      if (row.loop_folder_groups) {
+        const groups = typeof row.loop_folder_groups === 'string'
+          ? JSON.parse(row.loop_folder_groups)
+          : row.loop_folder_groups;
+        const folderSummary = groups.map(g => {
+          const tags = (g.tags || []).map(t => t.fullTag).filter(Boolean).join(', ');
+          return g.loopNumber + (tags ? ' — tags: ' + tags : '');
+        }).join('\n');
+        input += 'LOOP FOLDERS:\n' + folderSummary + '\n\n';
+      }
+      if (row.analysis_context) {
+        input += 'ANALYSIS CONTEXT:\n' + row.analysis_context + '\n\n';
+      }
+      input += 'QUESTION: ' + row.question;
+
+      const example = {
+        input: input.trim(),
+        output: row.analysis_text,
+        metadata: {
+          reasoning_version: row.reasoning_version,
+          model: row.model,
+          tokens: row.input_tokens + row.output_tokens,
+          date: row.created_at,
+        },
+      };
+
+      res.write(JSON.stringify(example) + '\n');
+    }
+
+    // Mark only the actually exported rows (not all eligible rows)
+    if (rows.length > 0) {
+      const exportedIds = rows.map(r => r.id).filter(Boolean);
+      if (exportedIds.length > 0) {
+        await DB.db.query(
+          `UPDATE horizonsparks.ai_analysis_cache
+           SET exported_to_training = true
+           WHERE id = ANY($1)`,
+          [exportedIds]
+        );
+      }
+    }
+
+    res.end();
+
+    aiLogger.info({ msg: 'training_data_exported', count: rows.length });
+  } catch (err) {
+    aiLogger.error({ msg: 'training_data_export_error', error: err.message });
+    res.status(500).json({ error: 'Export failed: ' + err.message });
+  }
+});
+
+// GET /api/loopfolders/intelligence/training-data/stats
+// Quick stats on collected training data
+router.get('/training-data/stats', requireAuth, requireRoleLevel(3), async (req, res) => {
+  try {
+    const { rows: [stats] } = await DB.db.query(
+      `SELECT
+         COUNT(*)::int as total_analyses,
+         COUNT(CASE WHEN exported_to_training THEN 1 END)::int as exported,
+         COUNT(CASE WHEN training_quality_score >= 3 THEN 1 END)::int as high_quality,
+         COALESCE(SUM(input_tokens + output_tokens), 0)::int as total_tokens,
+         COALESCE(SUM(cost_cents), 0)::numeric as total_cost_cents,
+         MIN(created_at) as first_analysis,
+         MAX(created_at) as last_analysis
+       FROM horizonsparks.ai_analysis_cache`
+    );
+
+    const goal = 500;
+    const progress = Math.min(100, Math.round((stats.total_analyses / goal) * 100));
+
+    res.json({
+      ...stats,
+      training_goal: goal,
+      progress_percent: progress,
+      ready_for_finetuning: stats.total_analyses >= goal,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Stats failed: ' + err.message });
   }
 });
 
