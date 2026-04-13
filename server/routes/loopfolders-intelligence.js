@@ -223,7 +223,8 @@ router.post('/:projectId', requireAuth, requireRoleLevel(3), async (req, res) =>
         result.agent.costCents || 0,
         result.agent.iterations || 0,
         result.agent.durationMs || 0,
-        personId,
+        // personId may be 'integration' (non-UUID) from proxy requests — use null
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(personId) ? personId : null,
         req.companyId || null,
       ]
     ).then(() => {
