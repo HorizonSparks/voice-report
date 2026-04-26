@@ -10,6 +10,7 @@ import MessagesView from './MessagesView.jsx';
 import TeamChatPanel from '../components/TeamChatPanel.jsx';
 import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
 import MessagesChatPanel from '../components/MessagesChatPanel.jsx';
+import SupportInboxPanel from '../components/SupportInboxPanel.jsx';
 import SystemHealthPanel from '../components/SystemHealthPanel.jsx';
 import PeopleView from './PeopleView.jsx';
 import ReportsView from './ReportsView.jsx';
@@ -24,7 +25,7 @@ import SafetyHub from './SafetyHub.jsx';
  * Control Center — the operating system for Horizon Sparks.
  * Only visible to users with a sparks_role.
  */
-export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, agentOpen }, ref) {
+export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, agentOpen, onSupportConvOpen }, ref) {
   const [screen, setScreen] = useState('dashboard');
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -580,6 +581,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                   { label: 'Team', icon: '\uD83D\uDC65', action: loadTeam, show: true },
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
                   { label: 'Messages', icon: '\uD83D\uDCAC', action: loadMessages, show: true },
+                  { label: 'Support', icon: '\uD83D\uDEE0\uFE0F', action: () => setScreen('support'), show: ['admin', 'support'].includes(user.sparks_role) },
                   { label: 'AI Spending', icon: '\uD83E\uDDE0', action: loadAiSpending, show: ['admin', 'support'].includes(user.sparks_role) },
                   { label: 'System Health', icon: '\uD83D\uDCCA', action: () => setScreen('system-health'), show: ['admin', 'support'].includes(user.sparks_role) },
                 ].filter(t => t.show).map((tile, i) => (
@@ -1306,6 +1308,16 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
           companies={companies}
           onBack={() => setScreen('dashboard')}
           agentOpen={agentOpen}
+        />
+      )}
+
+      {/* SUPPORT INBOX — open `support_conversations` rows; click to pop the
+          floating SupportChat widget (lifted state in App.jsx) on the chosen row */}
+      {screen === 'support' && (
+        <SupportInboxPanel
+          user={user}
+          onBack={() => setScreen('dashboard')}
+          onOpenConversation={(id) => { if (onSupportConvOpen) onSupportConvOpen(id); }}
         />
       )}
 

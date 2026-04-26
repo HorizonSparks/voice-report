@@ -74,6 +74,7 @@ export default function App() {
   const [pinError, setPinError] = useState('');
   const readOnly = !!simulatingCompany && !editModeEnabled;
   const [supportChatOpen, setSupportChatOpen] = useState(false); // 'customer' or 'support'
+  const [selectedSupportConvId, setSelectedSupportConvId] = useState(null); // Sparks-side: conversation row clicked from SupportInbox
   const [currentWorld, setCurrentWorld] = useState(null); // 'control-center' | 'voice-report' | null
   const [dialogConfig, setDialogConfig] = useState(null); // { title, message, onConfirm, confirmText, cancelText }
 
@@ -781,7 +782,7 @@ export default function App() {
         {view === 'taskdetail' && <TaskDetailView readOnly={readOnly} user={user} taskId={selectedTaskId} goBack={goBack} onNavigate={navigateTo} activeTrade={activeTrade} />}
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
-        {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} agentOpen={globalAgentOpen} />}
+        {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} agentOpen={globalAgentOpen} onSupportConvOpen={(convId) => { setSelectedSupportConvId(convId); setSupportChatOpen(true); }} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>
@@ -840,15 +841,31 @@ export default function App() {
 
       <InstallBanner />
       {user && currentWorld === 'voice-report' && user.sparks_role && (
-        <><PinModal
+        <PinModal
           visible={showPinModal}
           companyName={simulatingCompany?.name || ''}
           onSubmit={handleEnableEditing}
           onCancel={() => { setShowPinModal(false); setPinError(''); }}
           error={pinError}
         />
-        {/* SupportChat removed — replaced by Messages panel + Agent sidebar */}
-        </>
+      )}
+
+      {/*
+        SupportChat — floating chat bubble for tech support
+        Gate: any logged-in user with role_level >= 2 (Foreman+) OR any Sparks team member.
+        Customers (foremen+) see the customer-side widget; Sparks ops see the
+        operator-side widget when an Inbox row is clicked (drives `activeConversation`).
+        Phone users (helpers, role_level 1) use full-screen messaging instead.
+      */}
+      {user && (user.sparks_role || (user.role_level || 0) >= 2) && (
+        <SupportChat
+          user={user}
+          simulatingCompany={simulatingCompany}
+          externalOpen={supportChatOpen}
+          onExternalOpenChange={setSupportChatOpen}
+          activeConversation={selectedSupportConvId}
+          onConversationChange={setSelectedSupportConvId}
+        />
       )}
 
       {/* RD2 Sidebar — Claude/ChatGPT style, full viewport height */}

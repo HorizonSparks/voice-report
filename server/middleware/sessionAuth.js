@@ -241,7 +241,8 @@ function tenantFilter(req, res, next) {
  * Role hierarchy: admin(4) > support(3) > collaborator(2) > advisor(1)
  */
 function requireSparksRole(minRole) {
-  const roleLevel = { admin: 4, support: 3, collaborator: 2, advisor: 1 };
+  // annotator(0) is the lowest tier — formally defined so unknown values don't silently pass gates.
+  const roleLevel = { admin: 4, support: 3, collaborator: 2, advisor: 1, annotator: 0 };
   const minLevel = roleLevel[minRole] || 0;
 
   return (req, res, next) => {
