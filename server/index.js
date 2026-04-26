@@ -128,6 +128,7 @@ app.use('/api/folders', require('./routes/sharedFolders'));
 app.use('/api/loopfolders/intelligence', require('./routes/loopfolders-intelligence'));
 app.use('/api/agent', require('./routes/agent'));
 app.use('/api/support', require('./routes/support'));
+app.use('/api/ppe', require('./routes/ppe'));
 
 // Grafana reverse proxy — authenticated, Sparks role required, streamed responses
 const GRAFANA_INTERNAL = process.env.GRAFANA_URL || 'http://grafana:3000';

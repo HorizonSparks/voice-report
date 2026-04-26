@@ -11,6 +11,7 @@ import TeamChatPanel from '../components/TeamChatPanel.jsx';
 import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
 import MessagesChatPanel from '../components/MessagesChatPanel.jsx';
 import SupportInboxPanel from '../components/SupportInboxPanel.jsx';
+import PPEInboxPanel from '../components/PPEInboxPanel.jsx';
 import SystemHealthPanel from '../components/SystemHealthPanel.jsx';
 import PeopleView from './PeopleView.jsx';
 import ReportsView from './ReportsView.jsx';
@@ -582,6 +583,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
                   { label: 'Messages', icon: '\uD83D\uDCAC', action: loadMessages, show: true },
                   { label: 'Support', icon: '\uD83D\uDEE0\uFE0F', action: () => setScreen('support'), show: ['admin', 'support'].includes(user.sparks_role) },
+                  { label: 'PPE', icon: '\uD83E\uDD7D', action: () => setScreen('ppe'), show: ['admin', 'support', 'advisor'].includes(user.sparks_role) },
                   { label: 'AI Spending', icon: '\uD83E\uDDE0', action: loadAiSpending, show: ['admin', 'support'].includes(user.sparks_role) },
                   { label: 'System Health', icon: '\uD83D\uDCCA', action: () => setScreen('system-health'), show: ['admin', 'support'].includes(user.sparks_role) },
                 ].filter(t => t.show).map((tile, i) => (
@@ -1318,6 +1320,14 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
           user={user}
           onBack={() => setScreen('dashboard')}
           onOpenConversation={(id) => { if (onSupportConvOpen) onSupportConvOpen(id); }}
+        />
+      )}
+
+      {/* PPE INBOX — open ppe_requests for Sparks safety/support to fulfill */}
+      {screen === 'ppe' && (
+        <PPEInboxPanel
+          user={user}
+          onBack={() => setScreen('dashboard')}
         />
       )}
 
