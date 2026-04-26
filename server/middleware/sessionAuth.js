@@ -91,9 +91,17 @@ function clearSessionCookie(res, req) {
 async function loadSession(req, res, next) {
   req.auth = null;
 
-    // Integration key auth — for cross-origin calls from LoopFolders
+    // Integration key auth — accepts EITHER:
+    //   INTEGRATION_KEY         (legacy; also used by LoopFolders sparks-ai-chat
+    //                            which inlines it via NEXT_PUBLIC_, so it leaks
+    //                            into client JS — schedule for refactor)
+    //   INTEGRATION_KEY_SUPPORT (server-only key for the PIDS-app support proxy;
+    //                            never exposed to a browser)
+    // Multi-key acceptance lets us rotate the support path independently of the
+    // still-leaked LoopFolders path without breaking either.
     const integrationKey = req.headers['x-integration-key'];
-    if (integrationKey && process.env.INTEGRATION_KEY && integrationKey === process.env.INTEGRATION_KEY) {
+    const acceptedKeys = [process.env.INTEGRATION_KEY, process.env.INTEGRATION_KEY_SUPPORT].filter(Boolean);
+    if (integrationKey && acceptedKeys.includes(integrationKey)) {
       req.auth = {
         sessionId: 'integration_' + Date.now(),
         person_id: 'integration',
@@ -108,9 +116,17 @@ async function loadSession(req, res, next) {
     }
 
   try {
-    // Integration key auth — for cross-origin calls from LoopFolders
+    // Integration key auth — accepts EITHER:
+    //   INTEGRATION_KEY         (legacy; also used by LoopFolders sparks-ai-chat
+    //                            which inlines it via NEXT_PUBLIC_, so it leaks
+    //                            into client JS — schedule for refactor)
+    //   INTEGRATION_KEY_SUPPORT (server-only key for the PIDS-app support proxy;
+    //                            never exposed to a browser)
+    // Multi-key acceptance lets us rotate the support path independently of the
+    // still-leaked LoopFolders path without breaking either.
     const integrationKey = req.headers['x-integration-key'];
-    if (integrationKey && process.env.INTEGRATION_KEY && integrationKey === process.env.INTEGRATION_KEY) {
+    const acceptedKeys = [process.env.INTEGRATION_KEY, process.env.INTEGRATION_KEY_SUPPORT].filter(Boolean);
+    if (integrationKey && acceptedKeys.includes(integrationKey)) {
       req.auth = {
         sessionId: 'integration_' + Date.now(),
         person_id: 'integration',
