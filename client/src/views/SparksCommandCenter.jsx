@@ -12,6 +12,7 @@ import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
 import MessagesChatPanel from '../components/MessagesChatPanel.jsx';
 import SupportInboxPanel from '../components/SupportInboxPanel.jsx';
 import PPEInboxPanel from '../components/PPEInboxPanel.jsx';
+import LoopFoldersPanel from '../components/LoopFoldersPanel.jsx';
 import SystemHealthPanel from '../components/SystemHealthPanel.jsx';
 import PeopleView from './PeopleView.jsx';
 import ReportsView from './ReportsView.jsx';
@@ -35,6 +36,9 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [splitChatPerson, setSplitChatPerson] = useState(null);
   const [splitPanelWidth, setSplitPanelWidth] = useState(40);
   const [splitRightView, setSplitRightView] = useState('home');
+  // Right-pane app toggle: 'voicereport' (existing) | 'loopfolders' (iframe to PIDS-app).
+  // See docs/SPARKS_SUPPORT_MODE.md for the architecture.
+  const [rightPaneApp, setRightPaneApp] = useState('voicereport');
 
   // Reset window scroll for internal Control Center navigation.
   useLayoutEffect(() => {
@@ -773,11 +777,32 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
 
               {/* RIGHT: Customer view — navigable */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* Right header: company + trade + navigation tabs */}
+                {/* Right header: app toggle + company + trade + navigation tabs */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 0.75, bgcolor: 'rgba(249,148,64,0.06)', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, flexWrap: 'wrap', gap: 0.5 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
-                    {selectedCompany.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* App toggle: which product am I viewing for this customer? */}
+                    <Box sx={{ display: 'flex', gap: 0.25, p: 0.25, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                      <Button size="small"
+                        variant={rightPaneApp === 'voicereport' ? 'contained' : 'text'}
+                        onClick={() => setRightPaneApp('voicereport')}
+                        sx={{ fontSize: 10, fontWeight: 800, textTransform: 'none', px: 1, py: 0.25, minWidth: 'auto', borderRadius: 1,
+                          ...(rightPaneApp === 'voicereport' ? { bgcolor: 'primary.main', color: 'white' } : { color: 'text.secondary' }),
+                        }}>
+                        Voice Report
+                      </Button>
+                      <Button size="small"
+                        variant={rightPaneApp === 'loopfolders' ? 'contained' : 'text'}
+                        onClick={() => setRightPaneApp('loopfolders')}
+                        sx={{ fontSize: 10, fontWeight: 800, textTransform: 'none', px: 1, py: 0.25, minWidth: 'auto', borderRadius: 1,
+                          ...(rightPaneApp === 'loopfolders' ? { bgcolor: 'primary.main', color: 'white' } : { color: 'text.secondary' }),
+                        }}>
+                        LoopFolders
+                      </Button>
+                    </Box>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
+                      {selectedCompany.name}
+                    </Typography>
+                  </Box>
                   <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                     {(selectedCompany.trades || []).map(t => {
                       const tradeName = typeof t === 'object' ? t.trade : t;
@@ -799,6 +824,29 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                     </Button>
                   </Box>
                 </Box>
+                {/* RIGHT-PANE APP SWAP — see docs/SPARKS_SUPPORT_MODE.md */}
+                {rightPaneApp === 'loopfolders' ? (
+                  /* LoopFolders iframe view: PIDS-app embedded for the same company. */
+                  <LoopFoldersPanel
+                    company={selectedCompany}
+                    supportThreadId={splitChatPerson?.support_thread_id || null}
+                    onAction={(msg) => {
+                      // Operator did a write action inside PIDS-app (e.g. re-process file).
+                      // TODO Phase 4 wiring: post a system message into the support_conversations
+                      // thread so the customer sees a transparent audit trail.
+                      // For now we just log so the dev team can verify the bridge fires.
+                      // eslint-disable-next-line no-console
+                      console.log('[sparks-support] action from iframe:', msg);
+                    }}
+                    onExit={() => {
+                      // Operator clicked "Exit support" in the iframe banner.
+                      // Flip the right pane back to Voice Report view.
+                      setRightPaneApp('voicereport');
+                    }}
+                  />
+                ) : (
+                  /* Voice Report view (existing nav tabs + view content) */
+                  <>
                 {/* Navigation tabs */}
                 <Box sx={{ display: 'flex', gap: 0.5, px: 2, py: 0.75, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, bgcolor: 'background.paper' }}>
                   {[
@@ -871,6 +919,8 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                     <FormsHub user={user} readOnly={true} activeTrade={companyTrade} goHome={() => setSplitRightView('home')} />
                   )}
                 </Box>
+                  </>
+                )}
               </Box>
             </Box>
           )}
