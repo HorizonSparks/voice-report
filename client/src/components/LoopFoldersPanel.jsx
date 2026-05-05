@@ -185,8 +185,10 @@ export default function LoopFoldersPanel({ company, supportThreadId, onAction, o
           src={iframeSrc}
           title={`LoopFolders for ${company.name}`}
           style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-          // sandbox left wide-open — this is a trusted first-party app, not arbitrary content.
-          // Adding allow-* for forms/popups/scripts in case Keycloak login uses them.
+          // Defensive sandbox: trusted first-party app, but contain blast radius if it's ever compromised.
+          // allow-same-origin is required so the iframe can use Keycloak/cookies; scripts/forms/popups for normal app behavior.
+          // allow-modals included for any in-app confirm/alert dialogs.
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals"
           allow="clipboard-read; clipboard-write"
           onLoad={() => {
             // We treat iframe-load as 'loaded' even if Keycloak login screen is showing,

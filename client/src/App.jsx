@@ -592,8 +592,10 @@ export default function App() {
               sx={{ mb: 1, justifyContent: 'flex-start', borderColor: 'primary.main', border: '2px solid', fontSize: 14 }}>
               Voice Report
             </Button>
-            <Button fullWidth disabled sx={{ mb: 1, justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
-              LoopFolders <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>
+            <Button fullWidth variant="outlined" color="secondary"
+              onClick={() => window.open('https://app.horizonsparks.ai/', '_blank', 'noopener,noreferrer')}
+              sx={{ mb: 1, justifyContent: 'flex-start', fontSize: 14 }}>
+              LoopFolders
             </Button>
             <Button fullWidth disabled sx={{ justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
               Sparks <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>

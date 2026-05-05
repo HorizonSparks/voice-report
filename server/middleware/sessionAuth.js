@@ -38,6 +38,10 @@ function setSessionCookie(res, sessionId, maxAge, req) {
   // Only set Secure flag when actually on HTTPS — HTTP cookies with Secure won't be sent back
   const isSecure = req ? (req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
   const age = maxAge || 7 * 24 * 60 * 60; // 7 days
+  // Cross-domain cookie: when COOKIE_DOMAIN env is set (e.g. .horizonsparks.ai)
+  // the same hs_session works across all .horizonsparks.ai subdomains
+  // and any subdomain — required for true SSO. Unset = host-only cookie (today).
+  const cookieDomain = process.env.COOKIE_DOMAIN || null;
   res.setHeader('Set-Cookie', [
     // HttpOnly session token — not readable by JS
     [
@@ -46,6 +50,7 @@ function setSessionCookie(res, sessionId, maxAge, req) {
       isSecure ? 'Secure' : '',
       'SameSite=Lax',
       'Path=/',
+      cookieDomain ? `Domain=${cookieDomain}` : '',
       `Max-Age=${age}`,
     ].filter(Boolean).join('; '),
     // Companion presence flag — readable by JS so client can skip /api/me when no session exists
@@ -54,6 +59,7 @@ function setSessionCookie(res, sessionId, maxAge, req) {
       isSecure ? 'Secure' : '',
       'SameSite=Lax',
       'Path=/',
+      cookieDomain ? `Domain=${cookieDomain}` : '',
       `Max-Age=${age}`,
     ].filter(Boolean).join('; '),
   ]);
@@ -64,6 +70,7 @@ function setSessionCookie(res, sessionId, maxAge, req) {
  */
 function clearSessionCookie(res, req) {
   const isSecure = req ? (req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
+  const cookieDomain = process.env.COOKIE_DOMAIN || null;
   res.setHeader('Set-Cookie', [
     [
       `${COOKIE_NAME}=`,
@@ -71,6 +78,7 @@ function clearSessionCookie(res, req) {
       isSecure ? 'Secure' : '',
       'SameSite=Lax',
       'Path=/',
+      cookieDomain ? `Domain=${cookieDomain}` : '',
       'Max-Age=0',
     ].filter(Boolean).join('; '),
     [

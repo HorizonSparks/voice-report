@@ -1,4 +1,5 @@
 require('dotenv').config({ override: true });
+require('./lib/validateEnv').validateEnv();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -13,6 +14,23 @@ const { requestLogger } = require('./services/logger');
 errorTracking.initialize();
 
 const app = express();
+
+// Legacy-domain 301 redirect — sends any request hitting a retired hostname
+// to the canonical hostname, preserving path + query string. Configured via env:
+//   LEGACY_HOSTS               (CSV, e.g. "voice-report.ai,www.voice-report.ai")
+//   CANONICAL_HOST             (e.g. "horizonsparks.com")
+// Defaults retire voice-report.ai → horizonsparks.com without needing env vars.
+const LEGACY_HOSTS = (process.env.LEGACY_HOSTS || 'voice-report.ai,www.voice-report.ai')
+  .split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
+const CANONICAL_HOST = (process.env.CANONICAL_HOST || 'horizonsparks.com').trim();
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase().split(':')[0];
+  if (LEGACY_HOSTS.includes(host)) {
+    return res.redirect(301, 'https://' + CANONICAL_HOST + req.originalUrl);
+  }
+  next();
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Ensure directories exist
@@ -59,7 +77,14 @@ app.use('/api', analytics.middleware);
 
 // Session auth — loads req.auth from cookie on every request
 const { loadSession, tenantFilter, attachCompanyDb } = require('./middleware/sessionAuth');
+const { verifyKeycloakJwt } = require('./middleware/verifyKeycloakJwt');
 app.use(loadSession);
+// Keycloak JWT auth — additive. If Authorization: Bearer <jwt> is present and
+// verifies, JWT-derived identity OVERRIDES whatever loadSession populated
+// (cookie or integration key). If absent, this middleware is a no-op. If
+// present but invalid, returns 401 instead of falling through to weaker auth.
+// Mount AFTER loadSession so we can override; BEFORE tenant/company guards.
+app.use(verifyKeycloakJwt());
 app.use(tenantFilter);
 app.use(attachCompanyDb);
 
@@ -125,6 +150,8 @@ app.use('/api/sparks', require('./routes/sparks'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api', require('./routes/files'));
 app.use('/api/folders', require('./routes/sharedFolders'));
+// Keycloak SSO redirect/callback routes (additive — PIN flow at /api/auth/login still works)
+app.use('/auth/sso', require('./routes/sso'));
 app.use('/api/loopfolders/intelligence', require('./routes/loopfolders-intelligence'));
 app.use('/api/agent', require('./routes/agent'));
 app.use('/api/support', require('./routes/support'));
@@ -167,6 +194,12 @@ app.use('/grafana', (req, res, next) => {
 
 // Error tracking middleware (AFTER all routes — catches unhandled errors)
 app.use(errorTracking.errorHandler);
+
+// Unknown /api/* paths must return JSON 404, not the SPA index.html.
+// Placed BEFORE the static handler so unknown API paths never fall through.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found', path: req.originalUrl });
+});
 
 // In production, serve built client files
 // In dev mode, Vite handles the client
