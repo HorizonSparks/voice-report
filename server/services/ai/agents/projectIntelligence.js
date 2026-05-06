@@ -97,7 +97,159 @@ const TOOLS = [
       required: [],
     },
   },
+  // ─── L3: folder sign-off history tools ─────────────────────────────────
+  // Wired against horizonsparks.loopfolder_history (created May 6 2026 — see
+  // PIDS-app migrations/loopfolder_history.sql + loopfolder_auto_revert_v2.sql).
+  // Each operator Complete creates a snapshot row; the auto-revert trigger
+  // marks rows invalidated when underlying data changes. These tools let
+  // the agent answer "how many folders has Rabia signed off this week" or
+  // "which Completes got reverted yesterday" using real DB data, no guessing.
+  // History tools are scoped to the current project only — agent gets
+  // project_id auto-injected and we do NOT expose an "all_projects" option.
+  // That option was removed after Codex review pointed out it would bypass
+  // any per-project authorization Voice Report enforces upstream by directly
+  // querying raw Postgres without a project filter. If a true cross-project
+  // surface is ever needed it should be a separate agent/tool with its own
+  // role check, not a query-string toggle.
+  {
+    name: 'get_user_completions',
+    description:
+      'Count and list the loop folders an operator has marked Complete (signed off) IN THIS PROJECT. ' +
+      'Returns only LIVE completions — auto-reverted ones are excluded. Use this when ' +
+      'the user asks how many folders someone has completed, or for per-user productivity ' +
+      'questions. Examples: "How many folders has Rabia completed?", "What did Tonny ' +
+      'sign off this week?".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        user_id: {
+          type: 'string',
+          description: 'The UUID of the user whose completions to query.',
+        },
+        user_name: {
+          type: 'string',
+          description:
+            'Optional: a name (firstname, lastname, full "First Last", or email) to ' +
+            'resolve to a user_id when you only know the operator by name. The tool ' +
+            'tries exact email match → exact full name → exact first or last → partial. ' +
+            'If multiple users still match, the tool returns the candidate list instead ' +
+            'of guessing — you should ask the operator to pick one. If both user_id and ' +
+            'user_name are given, user_id wins.',
+        },
+        project_id: {
+          type: 'string',
+          description: 'The project UUID (auto-injected — do not provide).',
+        },
+        since_iso: {
+          type: 'string',
+          description:
+            'Optional ISO-8601 timestamp lower bound (e.g. 2026-05-01T00:00:00Z) to ' +
+            'restrict the window. Use for "this week", "today", etc. Note: timestamps ' +
+            'are interpreted as UTC unless an explicit timezone is given in the string.',
+        },
+        limit: {
+          type: 'integer',
+          description: 'Max rows to return. Default 50, cap 100.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_recent_completions',
+    description:
+      'List the most recently signed-off loop folders IN THIS PROJECT. Use for "what was ' +
+      'just completed" / "today" / "this week" / "in the last hour" questions. Returns ' +
+      'operator name + folder tag + timestamp for each. Always pass since_iso when the ' +
+      'user asks about a bounded window.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: {
+          type: 'string',
+          description: 'The project UUID (auto-injected).',
+        },
+        since_iso: {
+          type: 'string',
+          description:
+            'Optional ISO-8601 lower bound on completed_at (e.g. start of today, start of ' +
+            'this week). Apply when the user asks about a bounded window — without this ' +
+            'the tool just returns the latest N rows, which is not the same as "this week".',
+        },
+        limit: {
+          type: 'integer',
+          description: 'Default 20, cap 100.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_folder_timeline',
+    description:
+      'Get the complete sign-off history for ONE folder IN THIS PROJECT — every time it ' +
+      'was Completed, and every time an underlying-data edit invalidated a previous ' +
+      'Complete. Use this when the user asks about a specific folder\'s history: ' +
+      '"What happened to LIT-T54KD-304?" or "When was XS-GMUP12 last signed off?".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        loop_number: {
+          type: 'string',
+          description: 'The loop number (e.g. "LIT-T54KD-304"). Either this or folder_id required.',
+        },
+        folder_id: {
+          type: 'string',
+          description: 'The folder UUID. Either this or loop_number required.',
+        },
+        project_id: {
+          type: 'string',
+          description: 'The project UUID (auto-injected).',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'list_invalidated_completions',
+    description:
+      'List sign-offs IN THIS PROJECT that were auto-reverted because underlying data ' +
+      'changed after the Complete. Use when the user asks about quality control, ' +
+      'regressions, or "what Completes got undone": "Which folders had their Complete ' +
+      'invalidated this week?".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project_id: {
+          type: 'string',
+          description: 'The project UUID (auto-injected).',
+        },
+        since_iso: {
+          type: 'string',
+          description: 'Optional ISO-8601 lower bound on invalidated_at.',
+        },
+        limit: {
+          type: 'integer',
+          description: 'Default 20, cap 100.',
+        },
+      },
+      required: [],
+    },
+  },
 ];
+
+// ─── L3: shared validators for the history tools ────────────────────────
+// Codex review: malformed since_iso / UUIDs would otherwise become opaque
+// Postgres errors. Validate at the JS boundary so the agent gets a useful
+// "your input was wrong" message instead of an SQL panic.
+const ISO_TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function isValidIso(s) {
+  return typeof s === 'string' && ISO_TIMESTAMP_RE.test(s) && !Number.isNaN(Date.parse(s));
+}
+function isValidUuid(s) {
+  return typeof s === 'string' && UUID_RE.test(s);
+}
 
 // ── Tool Executor ───────────────────────────────────────────────
 
@@ -445,6 +597,285 @@ async function executeTool(toolName, toolInput, context) {
       });
     }
 
+    // ─── L3: folder sign-off history tool executors ────────────────────
+    // All four query horizonsparks.loopfolder_history scoped to the project_id
+    // auto-injected by executeTool. The previous "all_projects" toggle was
+    // removed after Codex review pointed out it would bypass per-project
+    // authorization Voice Report enforces upstream. If a cross-project
+    // surface is ever needed, it must be a separately-authorized tool.
+    case 'get_user_completions': {
+      let { user_id } = toolInput;
+      const { user_name, since_iso, limit, project_id } = toolInput;
+      // Codex review: cap reduced from 500 → 100 to stay within agent token budget.
+      const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+
+      if (since_iso && !isValidIso(since_iso)) {
+        return JSON.stringify({
+          error: 'Invalid since_iso. Pass an ISO-8601 timestamp like 2026-05-01T00:00:00Z.',
+        });
+      }
+      if (user_id && !isValidUuid(user_id)) {
+        return JSON.stringify({ error: 'Invalid user_id (not a UUID).' });
+      }
+
+      // Resolve user_name → user_id with progressive specificity. If multiple
+      // users still match after the partial pass, return the candidate list
+      // instead of guessing (Codex hardening).
+      if (!user_id && user_name) {
+        const trimmed = user_name.trim();
+        const fragments = trimmed.split(/\s+/);
+        // 1) exact email
+        let r = await db.query(
+          `SELECT id, firstname, lastname, email FROM horizonsparks.users WHERE LOWER(email) = LOWER($1)`,
+          [trimmed]
+        );
+        // 2) exact full name "First Last"
+        if (r.rowCount === 0 && fragments.length >= 2) {
+          r = await db.query(
+            `SELECT id, firstname, lastname, email FROM horizonsparks.users
+             WHERE LOWER(firstname) = LOWER($1) AND LOWER(lastname) = LOWER($2)`,
+            [fragments[0], fragments[fragments.length - 1]]
+          );
+        }
+        // 3) exact first OR last
+        if (r.rowCount === 0) {
+          r = await db.query(
+            `SELECT id, firstname, lastname, email FROM horizonsparks.users
+             WHERE LOWER(firstname) = LOWER($1) OR LOWER(lastname) = LOWER($1)`,
+            [trimmed]
+          );
+        }
+        // 4) partial match (last resort)
+        if (r.rowCount === 0) {
+          r = await db.query(
+            `SELECT id, firstname, lastname, email FROM horizonsparks.users
+             WHERE LOWER(firstname) LIKE LOWER($1) OR LOWER(lastname) LIKE LOWER($1)
+                OR LOWER(firstname || ' ' || lastname) LIKE LOWER($1)
+             LIMIT 10`,
+            [`%${trimmed}%`]
+          );
+        }
+        if (r.rowCount === 1) {
+          user_id = r.rows[0].id;
+        } else if (r.rowCount > 1) {
+          return JSON.stringify({
+            error: 'AMBIGUOUS_USER',
+            message: `"${user_name}" matches ${r.rowCount} users. Ask the operator to pick one and pass user_id.`,
+            candidates: r.rows.map((u) => ({
+              user_id: u.id,
+              name: [u.firstname, u.lastname].filter(Boolean).join(' '),
+              email: u.email,
+            })),
+          });
+        }
+      }
+      if (!user_id) {
+        return JSON.stringify({
+          error: 'Missing user_id (and user_name did not resolve to a known user)',
+        });
+      }
+
+      // Always project-scoped — the all_projects option was removed (Codex review).
+      const params = [user_id];
+      let where = `completed_by = $1 AND invalidated_at IS NULL`;
+      if (project_id) {
+        params.push(project_id);
+        where += ` AND project_id = $${params.length}`;
+      }
+      if (since_iso) {
+        params.push(since_iso);
+        where += ` AND completed_at >= $${params.length}`;
+      }
+      params.push(safeLimit);
+      const limitParamIdx = params.length;
+
+      const result = await db.query(
+        `SELECT id, folder_id, project_id, loop_number, completed_at
+         FROM horizonsparks.loopfolder_history
+         WHERE ${where}
+         ORDER BY completed_at DESC
+         LIMIT $${limitParamIdx}`,
+        params
+      );
+
+      return JSON.stringify({
+        user_id,
+        project_id: project_id || null,
+        since: since_iso || null,
+        total: result.rows.length,
+        items: result.rows,
+        as_of: new Date().toISOString(),
+      });
+    }
+
+    case 'get_recent_completions': {
+      const { project_id, since_iso, limit } = toolInput;
+      const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+      if (since_iso && !isValidIso(since_iso)) {
+        return JSON.stringify({
+          error: 'Invalid since_iso. Pass an ISO-8601 timestamp like 2026-05-01T00:00:00Z.',
+        });
+      }
+
+      const params = [];
+      let where = `lh.invalidated_at IS NULL`;
+      if (project_id) {
+        params.push(project_id);
+        where += ` AND lh.project_id = $${params.length}`;
+      }
+      if (since_iso) {
+        params.push(since_iso);
+        where += ` AND lh.completed_at >= $${params.length}`;
+      }
+      params.push(safeLimit);
+
+      const result = await db.query(
+        `SELECT lh.id, lh.folder_id, lh.project_id, lh.loop_number,
+                lh.completed_by, lh.completed_at,
+                u.firstname, u.lastname, u.email,
+                p.name AS project_name
+         FROM horizonsparks.loopfolder_history lh
+         LEFT JOIN horizonsparks.users u ON u.id = lh.completed_by
+         LEFT JOIN horizonsparks.projects p ON p.id = lh.project_id
+         WHERE ${where}
+         ORDER BY lh.completed_at DESC
+         LIMIT $${params.length}`,
+        params
+      );
+
+      return JSON.stringify({
+        project_id: project_id || null,
+        since: since_iso || null,
+        items: result.rows.map((r) => ({
+          id: r.id,
+          folder_id: r.folder_id,
+          loop_number: r.loop_number,
+          project_name: r.project_name,
+          completed_at: r.completed_at,
+          completed_by_name:
+            [r.firstname, r.lastname].filter(Boolean).join(' ') || r.email || 'Unknown',
+        })),
+        as_of: new Date().toISOString(),
+      });
+    }
+
+    case 'get_folder_timeline': {
+      const { loop_number, folder_id, project_id } = toolInput;
+      if (!loop_number && !folder_id) {
+        return JSON.stringify({
+          error: 'get_folder_timeline requires either loop_number or folder_id',
+        });
+      }
+      if (folder_id && !isValidUuid(folder_id)) {
+        return JSON.stringify({ error: 'Invalid folder_id (not a UUID).' });
+      }
+
+      const params = [];
+      let where = '1=1';
+      if (project_id) {
+        params.push(project_id);
+        where += ` AND lh.project_id = $${params.length}`;
+      }
+      if (folder_id) {
+        params.push(folder_id);
+        where += ` AND lh.folder_id = $${params.length}`;
+      } else if (loop_number) {
+        params.push(loop_number);
+        where += ` AND LOWER(lh.loop_number) = LOWER($${params.length})`;
+      }
+
+      const result = await db.query(
+        `SELECT lh.id, lh.folder_id, lh.loop_number,
+                lh.completed_by, lh.completed_at,
+                lh.invalidated_at, lh.invalidated_by_user, lh.invalidated_reason,
+                cu.firstname AS c_firstname, cu.lastname AS c_lastname, cu.email AS c_email,
+                iu.firstname AS i_firstname, iu.lastname AS i_lastname, iu.email AS i_email
+         FROM horizonsparks.loopfolder_history lh
+         LEFT JOIN horizonsparks.users cu ON cu.id = lh.completed_by
+         LEFT JOIN horizonsparks.users iu ON iu.id = lh.invalidated_by_user
+         WHERE ${where}
+         ORDER BY lh.completed_at ASC`,
+        params
+      );
+
+      return JSON.stringify({
+        loop_number: loop_number || null,
+        folder_id: folder_id || null,
+        events: result.rows.map((r) => ({
+          id: r.id,
+          completed_at: r.completed_at,
+          completed_by_name:
+            [r.c_firstname, r.c_lastname].filter(Boolean).join(' ') || r.c_email || 'Unknown',
+          invalidated_at: r.invalidated_at,
+          invalidated_by_name: r.invalidated_at
+            ? [r.i_firstname, r.i_lastname].filter(Boolean).join(' ') || r.i_email || 'Unknown'
+            : null,
+          invalidated_reason: r.invalidated_reason,
+          is_live: !r.invalidated_at,
+        })),
+      });
+    }
+
+    case 'list_invalidated_completions': {
+      const { project_id, since_iso, limit } = toolInput;
+      const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+      if (since_iso && !isValidIso(since_iso)) {
+        return JSON.stringify({
+          error: 'Invalid since_iso. Pass an ISO-8601 timestamp like 2026-05-01T00:00:00Z.',
+        });
+      }
+
+      const params = [];
+      let where = `lh.invalidated_at IS NOT NULL`;
+      if (project_id) {
+        params.push(project_id);
+        where += ` AND lh.project_id = $${params.length}`;
+      }
+      if (since_iso) {
+        params.push(since_iso);
+        where += ` AND lh.invalidated_at >= $${params.length}`;
+      }
+      params.push(safeLimit);
+
+      const result = await db.query(
+        `SELECT lh.id, lh.folder_id, lh.project_id, lh.loop_number,
+                lh.completed_by, lh.completed_at,
+                lh.invalidated_at, lh.invalidated_by_user, lh.invalidated_reason,
+                cu.firstname AS c_firstname, cu.lastname AS c_lastname, cu.email AS c_email,
+                iu.firstname AS i_firstname, iu.lastname AS i_lastname, iu.email AS i_email,
+                p.name AS project_name
+         FROM horizonsparks.loopfolder_history lh
+         LEFT JOIN horizonsparks.users cu ON cu.id = lh.completed_by
+         LEFT JOIN horizonsparks.users iu ON iu.id = lh.invalidated_by_user
+         LEFT JOIN horizonsparks.projects p ON p.id = lh.project_id
+         WHERE ${where}
+         ORDER BY lh.invalidated_at DESC
+         LIMIT $${params.length}`,
+        params
+      );
+
+      return JSON.stringify({
+        project_id: project_id || null,
+        since: since_iso || null,
+        as_of: new Date().toISOString(),
+        items: result.rows.map((r) => ({
+          id: r.id,
+          folder_id: r.folder_id,
+          loop_number: r.loop_number,
+          project_name: r.project_name,
+          completed_at: r.completed_at,
+          completed_by_name:
+            [r.c_firstname, r.c_lastname].filter(Boolean).join(' ') || r.c_email || 'Unknown',
+          invalidated_at: r.invalidated_at,
+          invalidated_by_name:
+            [r.i_firstname, r.i_lastname].filter(Boolean).join(' ') || r.i_email || 'Unknown',
+          invalidated_reason: r.invalidated_reason,
+        })),
+      });
+    }
+
     default:
       return JSON.stringify({ error: 'Unknown tool: ' + toolName });
   }
@@ -764,18 +1195,47 @@ IMPORTANT RULES FOR REPORTING:
 - Group findings by priority (critical first), then by loop.
 - If everything looks good, say so — don't invent problems. "These 12 loops are complete. All transmitters have cable schedules, all safety switches have I/O documentation. Ready for pre-commissioning checkout."
 
-YOUR 4 TOOLS — use them when you need real data, do not guess:
+YOUR 8 TOOLS — use them when you need real data, do not guess:
+
+DATA-QUALITY TOOLS (for "what's in the folders / drawings / spreadsheets?"):
 - get_folder_details: See everything inside ONE loop folder (box coverage, Excel matches, status)
 - get_pid_tags: See what YOLO+OCR extracted from a specific P&ID drawing
 - compare_excel_vs_pid: Cross-reference Excel data vs P&ID extraction for one loop
 - get_missing_documents: Find ALL loops in the project missing specific box types
 
+SIGN-OFF / HISTORY TOOLS (for "who did what when?"):
+- get_user_completions: How many folders has this operator marked Complete? Group by project.
+  Use for "How many folders has Rabia completed this week?" / per-user productivity.
+- get_recent_completions: List the latest sign-offs in this project. Pass since_iso when the
+  user asks about a bounded window ("today", "this week", "in the last hour") — without
+  since_iso the tool just returns the latest N rows, which is NOT the same as "this week".
+  Use for "What was just completed?" / activity feed questions.
+- get_folder_timeline: Full audit trail for ONE folder — every Complete + every invalidation event.
+  Use for "What happened to LIT-T54KD-304?" / "When was XS-GMUP12 last signed off?".
+- list_invalidated_completions: Sign-offs that got auto-reverted because someone edited
+  underlying data. Use for QA / regression questions: "Which Completes got undone this week?".
+
 WHEN TO USE TOOLS:
-- User asks about a specific loop -> get_folder_details first
+- User asks about a specific loop -> get_folder_details first; if they ask about HISTORY of
+  that loop, also call get_folder_timeline.
 - User asks about data quality -> compare_excel_vs_pid
 - User asks about project completeness -> get_missing_documents
 - User asks about what is on a drawing -> get_pid_tags
-- When LOOP FOLDERS VISIBLE ON SCREEN gives you folder names and tags, START by analyzing those
+- User asks "how many folders has [person] completed" -> get_user_completions (use user_name
+  if you only know the name; the tool resolves to user_id).
+- User asks "what was completed today / this week / recently" -> get_recent_completions.
+- User asks about sign-off history of one folder -> get_folder_timeline.
+- User asks about reverted/undone Completes -> list_invalidated_completions.
+- When LOOP FOLDERS VISIBLE ON SCREEN gives you folder names and tags, START by analyzing those.
+
+HISTORY TOOL RULES:
+- "Completed" in our system means an operator clicked Complete on a folder. The system snapshots
+  the state and locks the folder. If anyone later edits underlying data, the folder auto-flips
+  back to In Progress and the previous Complete is recorded as "invalidated."
+- Always say "live" sign-offs (still valid) vs "invalidated" (superseded by an edit).
+- "Folders Complete" on the dashboard counts only LIVE sign-offs.
+- The 'saved' status is the legacy default-after-insert; it does NOT mean "complete." Don't
+  conflate it with operator sign-off.
 
 CRITICAL RULES:
 - PSV = Pressure Safety VALVE (mechanical, spring relief) = NO cable
