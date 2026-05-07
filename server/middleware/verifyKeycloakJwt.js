@@ -105,10 +105,42 @@ function verifyKeycloakJwt() {
     const jwks = getJWKS();
 
     try {
+      // 2026-05-07: Removed the `audience` option from jwtVerify and instead
+      // verify the authorized-party (azp) claim manually below. Why: Keycloak
+      // by default issues access tokens with `aud: "account"` (the realm-level
+      // account service), regardless of which client requested them. So the
+      // strict `audience: "app"` check was failing every token with
+      // ERR_JWT_CLAIM_VALIDATION_FAILED. The canonical resource-server check
+      // for Keycloak when no Audience Mapper is configured is to look at
+      // `azp` (authorized party) — that's set to the client_id that the
+      // token was issued for. If the realm later adds an Audience Mapper
+      // putting "app" into the `aud` array, the fallback below picks that up
+      // too without needing another code change.
       const { payload } = await jwtVerify(token, jwks, {
         issuer: ISSUER,
-        audience: AUDIENCE,
+        // audience intentionally omitted — verified manually below.
       });
+
+      // Verify the token was issued for our client. Either the authorized
+      // party (azp) matches, OR the audience array contains our client_id
+      // (which only happens if the realm has an Audience Mapper).
+      if (AUDIENCE) {
+        const audValues = Array.isArray(payload.aud)
+          ? payload.aud
+          : payload.aud
+            ? [payload.aud]
+            : [];
+        const azpMatch = payload.azp === AUDIENCE;
+        const audMatch = audValues.includes(AUDIENCE);
+        if (!azpMatch && !audMatch) {
+          console.warn('[verifyKeycloakJwt] Token azp/aud mismatch', {
+            expected: AUDIENCE,
+            actual_azp: payload.azp,
+            actual_aud: audValues,
+          });
+          return res.status(401).json({ error: 'Invalid or expired token' });
+        }
+      }
 
       const person = await resolvePersonFromClaims(payload);
 
