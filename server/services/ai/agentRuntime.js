@@ -65,14 +65,22 @@ const PII_PATTERNS = {
 };
 
 // ── Model-aware pricing (cents per token) ───────────────────────
-// Pricing as of April 2026. Update when models change.
+// Source: https://docs.anthropic.com/en/docs/about-claude/pricing (verified 2026-05-15).
+// Order matters: more-specific prefixes go FIRST so prefix-match resolves them
+// before the family default. Object.entries preserves insertion order in V8.
+// Used by guardrails for cost-limit estimates. Authoritative cost tracking
+// for actual billing lives in anthropicClient.js (kept in sync with this).
 const MODEL_PRICING = {
-  // Sonnet 4: $3/$15 per 1M tokens
-  'claude-sonnet-4': { input: 0.0003, output: 0.0015 },
-  // Opus 4: $15/$75 per 1M tokens
-  'claude-opus-4': { input: 0.0015, output: 0.0075 },
-  // Haiku 4.5: $0.80/$4 per 1M tokens
-  'claude-haiku-4': { input: 0.00008, output: 0.0004 },
+  // Opus 4.5+ (newer cheaper tier — $5 / $25 per Mtok)
+  'claude-opus-4-7': { input: 0.0005,  output: 0.0025  },
+  'claude-opus-4-6': { input: 0.0005,  output: 0.0025  },
+  'claude-opus-4-5': { input: 0.0005,  output: 0.0025  },
+  // Legacy Opus 4 / 4.1 (deprecated — $15 / $75 per Mtok)
+  'claude-opus-4':   { input: 0.0015,  output: 0.0075  },
+  // Sonnet — all 4.x at $3 / $15 per Mtok
+  'claude-sonnet-4': { input: 0.0003,  output: 0.0015  },
+  // Haiku 4.5 ($1 / $5 per Mtok). Different from retired Haiku 3.5 ($0.80 / $4).
+  'claude-haiku-4':  { input: 0.0001,  output: 0.0005  },
 };
 
 /**

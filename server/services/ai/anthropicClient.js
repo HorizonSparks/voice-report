@@ -28,12 +28,22 @@ const SYSTEM_CACHE_THRESHOLD = 4096;   // chars; cache only when system prompt i
 const MAX_RETRIES = 3;                 // total attempts on 429/529/5xx (incl. first try)
 
 // ── Per-model pricing (cents per token) ─────────────────────────
-// Anthropic published prices, Jan 2026. Update when models change.
-// Cache discount: cache_read = 10% of normal input, cache_creation = 125% of normal input.
+// Source: https://docs.anthropic.com/en/docs/about-claude/pricing (verified 2026-05-15).
+// Order matters: more-specific prefixes go FIRST so prefix-match resolves them
+// before the family default. Object.entries preserves insertion order in V8.
+// Cache discount: cache_read = 10% of normal input, cache_creation = 125%.
 const MODEL_PRICING = {
-  'claude-opus-4':   { input: 0.0015,  output: 0.0075  }, // $15 / $75 per Mtok
-  'claude-sonnet-4': { input: 0.0003,  output: 0.0015  }, // $3 / $15 per Mtok
-  'claude-haiku-4':  { input: 0.00008, output: 0.0004  }, // $0.80 / $4 per Mtok
+  // Opus 4.5+ (newer cheaper tier — $5 / $25 per Mtok)
+  'claude-opus-4-7': { input: 0.0005,  output: 0.0025  },
+  'claude-opus-4-6': { input: 0.0005,  output: 0.0025  },
+  'claude-opus-4-5': { input: 0.0005,  output: 0.0025  },
+  // Legacy Opus 4 / 4.1 (deprecated — $15 / $75 per Mtok). Default for any
+  // unknown claude-opus-4-* prefix that isn't 4.5+ above.
+  'claude-opus-4':   { input: 0.0015,  output: 0.0075  },
+  // Sonnet — all 4.x at $3 / $15 per Mtok
+  'claude-sonnet-4': { input: 0.0003,  output: 0.0015  },
+  // Haiku 4.5 ($1 / $5 per Mtok). NOTE: different from retired Haiku 3.5 ($0.80 / $4).
+  'claude-haiku-4':  { input: 0.0001,  output: 0.0005  },
 };
 
 function getModelPricing(model) {
@@ -143,6 +153,15 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
         signal,
       });
     } catch (fetchErr) {
+      // Deliberate cancellation (signal aborted, AbortError) — never retry.
+      // Otherwise a cancelled request keeps occupying the route handler for ~3s
+      // of backoff sleep before failing. Rethrow immediately.
+      if (fetchErr && (fetchErr.name === 'AbortError' || (signal && signal.aborted))) {
+        const duration = (Date.now() - startTime) / 1000;
+        anthropicRequestsTotal.inc({ service, model: useModel, success: 'false' });
+        anthropicRequestDuration.observe({ service, model: useModel }, duration);
+        throw fetchErr;
+      }
       // Network-level failure (DNS, connection reset, etc.) — retry like 5xx.
       lastError = fetchErr;
       if (attempt < MAX_RETRIES) {

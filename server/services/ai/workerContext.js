@@ -200,7 +200,7 @@ function formatWorkerWorldBlock(world) {
   }
 
   lines.push('');
-  lines.push("Use this context only when relevant to what the worker is asking. Don't dump it.");
+  lines.push("Use this worker context only when it directly helps answer the worker's request. Prefer the minimum relevant detail. Do not volunteer or enumerate unrelated fields.");
   return lines.join('\n');
 }
 
