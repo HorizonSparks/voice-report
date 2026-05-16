@@ -45,7 +45,7 @@ async function loadPersonContext(personId, dbOverride) {
     // Load knowledge files for deeper person context
     try {
       const knowledgeRows = (await (dbOverride || DB).db.query(
-        "SELECT title, text_content FROM knowledge_files WHERE person_id = $1 AND text_content IS NOT NULL AND text_content != '' ORDER BY created_at DESC LIMIT 3",
+        "SELECT title, text_content FROM knowledge_files WHERE person_id = $1 AND text_content IS NOT NULL AND text_content != '' AND COALESCE(visibility, 'shared') = 'shared' ORDER BY created_at DESC LIMIT 3",
         [person.id]
       )).rows;
       if (knowledgeRows.length > 0) {

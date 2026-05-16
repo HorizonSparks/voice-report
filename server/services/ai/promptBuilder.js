@@ -39,7 +39,7 @@ async function buildContextPackage(person, template, dbOverride) {
   try {
     const DB = dbOverride || require('../../../database/db');
     const knowledgeRows = (await DB.db.query(
-      'SELECT title, text_content, source_type FROM knowledge_files WHERE person_id = $1 AND text_content IS NOT NULL AND text_content != $2 ORDER BY created_at DESC LIMIT 5',
+      `SELECT title, text_content, source_type FROM knowledge_files WHERE person_id = $1 AND text_content IS NOT NULL AND text_content != $2 AND COALESCE(visibility, 'shared') = 'shared' ORDER BY created_at DESC LIMIT 5`,
       [person.id, '']
     )).rows;
     if (knowledgeRows.length > 0) {

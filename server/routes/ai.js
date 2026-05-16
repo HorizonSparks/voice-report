@@ -17,6 +17,7 @@ const voiceStructure = require('../services/ai/agents/voiceStructure');
 const voiceConverse = require('../services/ai/agents/voiceConverse');
 const voiceRefine = require('../services/ai/agents/voiceRefine');
 const { detectSafety } = require('../services/ai/safetyDetector');
+const { loadWorkerWorld } = require('../services/ai/workerContext');
 
 const router = Router();
 
@@ -116,11 +117,16 @@ router.post('/structure', requireAuth, async (req, res) => {
       contextPackage = await buildContextPackage(person, template, req.db);
     }
 
+    // 2026-05-15: load worker-world (supervisor + project + customer + JSA today + real certs)
+    // so the structuring agent can include them when relevant. Defensive: returns null on
+    // failure, agent silently falls back to existing context.
+    const workerWorld = await loadWorkerWorld(person_id, req.db);
+
     // Milestone C: use runAgent(voiceStructure). voiceStructure.systemPrompt
     // internally calls buildStructurePrompt(contextPackage, safetyBlock) and
     // the agent has jsonMode: true so the result is auto-parsed.
     const result = await runAgent(voiceStructure, {
-      context: { contextPackage, safetyBlock },
+      context: { contextPackage, safetyBlock, workerWorld },
       messages: [{ role: 'user', content: `Here is the voice transcript to structure:\n\n<transcript>\n${transcript}\n</transcript>` }],
       tracking: {
         requestId: req.analyticsId,
@@ -206,6 +212,10 @@ router.post('/converse', requireAuth, async (req, res) => {
       }
     }
 
+    // 2026-05-15: load worker-world so converse can answer "who's my foreman?",
+    // "what's my JSA status?", "what project am I on?" without phoning the office.
+    const workerWorld = await loadWorkerWorld(person_id, req.db);
+
     // Milestone C: use runAgent(voiceConverse). voiceConverse.systemPrompt
     // internally calls buildConversePrompt which handles Sparks routing.
     const result = await runAgent(voiceConverse, {
@@ -213,6 +223,7 @@ router.post('/converse', requireAuth, async (req, res) => {
         personName, roleTitle, roleDescription, reportFocus, outputSections,
         messagesForPerson: messages_for_person,
         trade,
+        workerWorld,
       },
       messages: conversation && conversation.length > 0
         ? conversation
@@ -284,6 +295,10 @@ router.post('/refine', requireAuth, async (req, res) => {
       } catch { /* reports table may not exist for all setups */ }
     }
 
+    // 2026-05-15: load worker-world for refine on ALL modes (was: only shift_update
+    // got JSA via taskContext.jsa_summary; daily_task and punch_list were blind).
+    const workerWorld = await loadWorkerWorld(person_id, req.db);
+
     // Build refine context package (passed to voiceRefine.systemPrompt function).
     // The agent internally calls buildRefinePrompt(phase, contextType, opts).
     const refineCtx = {
@@ -293,6 +308,7 @@ router.post('/refine', requireAuth, async (req, res) => {
         round, personContext, safetyContext, tradeKnowledge,
         teamContext: team_context, taskContext: task_context,
         safetyDetection, recentReports,
+        workerWorld,
       },
     };
 
