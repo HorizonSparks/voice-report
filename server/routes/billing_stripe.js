@@ -129,22 +129,38 @@ async function handleInvoicePaymentFailed(invoice) {
   });
 }
 
-/** Sync subscription status from Stripe to our DB. */
+/** Sync subscription status from Stripe to our DB.
+ *  Mapping intentionally errs toward "withhold access" for any non-active state.
+ *  Stripe statuses: trialing/active/past_due/canceled/unpaid/incomplete/incomplete_expired/paused
+ *  Ours:            trial / active / past_due / cancelled
+ */
 async function handleSubscriptionChange(sub) {
   if (!sub.id) return;
-  // Status mapping: Stripe statuses → our status enum
-  // Stripe: trialing/active/past_due/canceled/unpaid/incomplete/incomplete_expired
-  // Ours:   trial / active / past_due / cancelled
   const map = {
     trialing: 'trial',
     active: 'active',
     past_due: 'past_due',
     canceled: 'cancelled',
     unpaid: 'past_due',
-    incomplete: 'trial',
+    // incomplete = first invoice/payment never finished. They do NOT have a
+    // paid subscription — treat as past_due, NOT trial, so the entitlement
+    // layer doesn't grant access.
+    incomplete: 'past_due',
     incomplete_expired: 'cancelled',
+    paused: 'past_due',
   };
-  const localStatus = map[sub.status] || 'active';
+  // Unknown Stripe status → past_due (safer than 'active' for unmapped states).
+  // Log it so we know to add a mapping.
+  let localStatus = map[sub.status];
+  if (!localStatus) {
+    aiLogger.warn({
+      msg: 'unknown_stripe_subscription_status',
+      stripe_status: sub.status,
+      stripe_subscription_id: sub.id,
+      defaulted_to: 'past_due',
+    });
+    localStatus = 'past_due';
+  }
   await DB.db.query(
     `UPDATE voicereport.company_subscriptions
        SET status = $1, updated_at = NOW()
@@ -154,7 +170,8 @@ async function handleSubscriptionChange(sub) {
   aiLogger.info({
     msg: 'subscription_status_synced',
     stripe_subscription_id: sub.id,
-    status: localStatus,
+    stripe_status: sub.status,
+    local_status: localStatus,
   });
 }
 

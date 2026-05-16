@@ -23,6 +23,7 @@
  * Created 2026-05-15.
  */
 
+const crypto = require('crypto');
 const DB = require('../../../database/db');
 const { reportMeterEvent, isStripeConfigured } = require('../stripe/client');
 const { aiLogger } = require('../logger'); // server/services/logger.js
@@ -40,12 +41,36 @@ function modelToTier(model) {
 }
 
 /**
- * Build the deterministic Stripe meter event identifier for a (company, tier,
- * direction, date) tuple. Format keeps it human-readable for debugging.
+ * Build the deterministic Stripe meter event identifier for a group of rows.
+ *
+ * The identifier MUST be:
+ *   - SAME if the rows being synced are the same (so retries dedup at Stripe)
+ *   - DIFFERENT if any new row is added to the group (so new usage is billed)
+ *
+ * Date-based identifiers (the obvious approach) are broken two ways:
+ *   1. UPDATE-failure leaves rows pending → next-day sync uses NEW identifier
+ *      → Stripe accepts as fresh event → double bill.
+ *   2. Two same-day syncs over different row sets get the SAME identifier
+ *      → Stripe dedups the second → new usage is lost.
+ *
+ * Content-hash identifier (rows actually being reported) avoids both.
+ *
+ * @param {string} companyId
+ * @param {string} tier      'opus'|'sonnet'|'haiku'
+ * @param {string} direction 'input'|'output'
+ * @param {number[]} costIds  unique row ids in this aggregation group
+ * @returns {string}
  */
-function buildEventIdentifier(companyId, tier, direction, syncDate) {
-  const datePart = syncDate.toISOString().slice(0, 10).replace(/-/g, '');
-  return `hs_${companyId}_${tier}_${direction}_${datePart}`;
+function buildEventIdentifier(companyId, tier, direction, costIds) {
+  // Sort numerically so the same set of ids always produces the same hash,
+  // regardless of arrival order.
+  const sorted = [...new Set(costIds)].sort((a, b) => a - b);
+  const hash = crypto
+    .createHash('sha256')
+    .update(sorted.join(','))
+    .digest('hex')
+    .slice(0, 16);
+  return `hs_${companyId}_${tier}_${direction}_${hash}`;
 }
 
 /**
@@ -157,14 +182,15 @@ async function aggregateAndSync({ dryRun = false } = {}) {
 
   // Report each group as a meter event, then mark its rows synced on success.
   const companiesSeen = new Set();
-  const syncDate = new Date();
   for (const group of groups.values()) {
     const eventName = `sparks_ai_${group.tier}_${group.direction}`;
+    // Identifier reflects the actual rows being reported. Retry of the same
+    // set → same identifier → Stripe dedups. New rows → new identifier.
     const identifier = buildEventIdentifier(
       group.company_id,
       group.tier,
       group.direction,
-      syncDate
+      group.cost_ids
     );
 
     if (dryRun) {
