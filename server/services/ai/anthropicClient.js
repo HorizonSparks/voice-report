@@ -222,6 +222,7 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
     ...trackingExtra,
     request_id: tracking.requestId,
     person_id: tracking.personId || null,
+    company_id: tracking.companyId || null,
     provider: 'anthropic',
     service,
     model: useModel,

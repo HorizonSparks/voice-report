@@ -72,6 +72,12 @@ app.use(metrics.metricsMiddleware);
 app.use(requestLogger);
 
 // Middleware
+// === STRIPE WEBHOOK (2026-05-15) ===
+// MUST be mounted before express.json — webhook needs the raw request body
+// for signature verification. Its own router uses express.raw() internally.
+const { buildStripeWebhookRouter } = require("./routes/billing_stripe");
+app.use("/api/billing/webhook", buildStripeWebhookRouter());
+
 app.use(express.json({ limit: '50mb' }));
 app.use('/api', analytics.middleware);
 

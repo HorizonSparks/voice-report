@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const DB = require('../../database/db');
 const { requireAuth, requireSparksRole } = require('../middleware/sessionAuth');
 
+const { attachSyncRoutes } = require("./billing_stripe");
 const router = Router();
 
 router.use(requireAuth);
@@ -200,5 +201,8 @@ router.get('/revenue', requireSparksRole('support'), async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Stripe sync trigger + status (mounted by attachSyncRoutes — added 2026-05-15)
+attachSyncRoutes(router);
 
 module.exports = router;
