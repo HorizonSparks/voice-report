@@ -1846,7 +1846,7 @@ router.post('/chat', requireAuth, async (req, res) => {
     const { message, conversationContext, contactName, contactRole, companyName, currentScreen, currentWorld: clientWorld } = req.body;
     if (!message) return res.status(400).json({ error: 'message required' });
     const isAdmin = actor.is_admin || actor.role_level >= 5;
-    const model = isAdmin ? 'claude-opus-4-20250514' : 'claude-sonnet-4-20250514';
+    const model = isAdmin ? 'claude-opus-4-7' : 'claude-sonnet-4-6';
     // Prometheus: track agent session
     agentSessionsTotal.inc({ model_tier: isAdmin ? 'opus' : 'sonnet' });
     let personId = actor.person_id;
@@ -2077,7 +2077,7 @@ ENGAGEMENT RULES:
         result = await runChatAgent(activeModel);
       } catch (err) {
         if (activeModel.includes('opus') && err.message.includes('429')) {
-          activeModel = 'claude-sonnet-4-20250514';
+          activeModel = 'claude-sonnet-4-6';
           result = await runChatAgent(activeModel, '_fallback');
         } else {
           throw err;

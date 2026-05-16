@@ -21,7 +21,7 @@ const { buildRefinePrompt } = require('../refinePrompts');
 
 module.exports = defineAgent({
   name: 'voice.refine.v1',
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-sonnet-4-6',
   systemPrompt: (ctx) => {
     if (!ctx || !ctx.phase) {
       throw new Error('voiceRefine: context.phase is required (dialogue|finalize|edit)');

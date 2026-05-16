@@ -1,5 +1,13 @@
 /**
  * Anthropic Claude API Client
+ *
+ * 2026-05-15 update — fixes:
+ *   1. Per-model cost tracking (was hardcoded to Sonnet pricing — Opus was 5x undercount)
+ *   2. Prompt caching via cache_control on system prompts > 4096 chars
+ *      (uses anthropic-beta: prompt-caching-2024-07-31 header)
+ *   3. 429-aware retry with exponential backoff + Retry-After respect
+ *   4. Tracks cache_creation/cache_read input tokens separately
+ *
  * Wraps all Claude API calls with consistent error handling, cost tracking,
  * and Prometheus metrics for observability.
  */
@@ -13,18 +21,97 @@ const {
 } = require('../metrics');
 
 const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
+const DEFAULT_MODEL = 'claude-sonnet-4-6';
 const API_VERSION = '2023-06-01';
+const PROMPT_CACHE_BETA = 'prompt-caching-2024-07-31';
+const SYSTEM_CACHE_THRESHOLD = 4096;   // chars; cache only when system prompt is large enough to matter
+const MAX_RETRIES = 3;                 // total attempts on 429/529/5xx (incl. first try)
+
+// ── Per-model pricing (cents per token) ─────────────────────────
+// Anthropic published prices, Jan 2026. Update when models change.
+// Cache discount: cache_read = 10% of normal input, cache_creation = 125% of normal input.
+const MODEL_PRICING = {
+  'claude-opus-4':   { input: 0.0015,  output: 0.0075  }, // $15 / $75 per Mtok
+  'claude-sonnet-4': { input: 0.0003,  output: 0.0015  }, // $3 / $15 per Mtok
+  'claude-haiku-4':  { input: 0.00008, output: 0.0004  }, // $0.80 / $4 per Mtok
+};
+
+function getModelPricing(model) {
+  for (const [prefix, p] of Object.entries(MODEL_PRICING)) {
+    if (model.startsWith(prefix)) return p;
+  }
+  // Unknown model — default to Sonnet pricing rather than 0 so we never report "free."
+  return MODEL_PRICING['claude-sonnet-4'];
+}
+
+function computeCostCents(model, usage) {
+  const p = getModelPricing(model);
+  const inputTokens = usage?.input_tokens || 0;
+  const outputTokens = usage?.output_tokens || 0;
+  const cacheRead = usage?.cache_read_input_tokens || 0;
+  const cacheCreation = usage?.cache_creation_input_tokens || 0;
+  // Standard input + output, plus cache surcharge/discount.
+  const cents =
+    inputTokens * p.input +
+    outputTokens * p.output +
+    cacheRead * p.input * 0.10 +       // cached read = 10% of normal input
+    cacheCreation * p.input * 1.25;    // cache write = 25% premium over normal input
+  return Math.round(cents);
+}
+
+// ── 429 / 529 / 5xx retry with exponential backoff ─────────────
+function isTransientStatus(status) {
+  return status === 429 || status === 529 || (status >= 500 && status < 600);
+}
+
+function backoffMs(attempt, retryAfterHeader) {
+  if (retryAfterHeader) {
+    const seconds = parseInt(retryAfterHeader, 10);
+    if (!Number.isNaN(seconds) && seconds > 0 && seconds <= 60) return seconds * 1000;
+  }
+  return Math.min(8000, 1000 * Math.pow(2, attempt - 1)); // 1s → 2s → 4s, cap 8s
+}
+
+// ── Build request body, applying prompt caching when worth it ──
+function buildRequestBody({ model, maxTokens, systemPrompt, messages, tools }) {
+  const body = { model, max_tokens: maxTokens, messages };
+  if (systemPrompt) {
+    if (typeof systemPrompt === 'string' && systemPrompt.length >= SYSTEM_CACHE_THRESHOLD) {
+      // Convert long system prompts to an array block with cache_control so the
+      // identical prompt is billed at 10% on subsequent calls within the 5-min TTL.
+      body.system = [
+        { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
+      ];
+    } else {
+      body.system = systemPrompt; // small or already-shaped — leave untouched
+    }
+  }
+  if (tools && tools.length > 0) body.tools = tools;
+  return body;
+}
+
+function shouldRequestCacheBeta(body) {
+  // Beta header only needed if anything in the body uses cache_control.
+  if (Array.isArray(body.system)) {
+    return body.system.some(b => b && b.cache_control);
+  }
+  if (Array.isArray(body.tools)) {
+    return body.tools.some(t => t && t.cache_control);
+  }
+  return false;
+}
 
 /**
  * Call Claude API
  * @param {object} params
- * @param {string} params.systemPrompt - System prompt
- * @param {Array} params.messages - Conversation messages [{role, content}]
- * @param {number} params.maxTokens - Max output tokens (default 1000)
- * @param {string} params.model - Model override (default claude-sonnet)
- * @param {object} params.tracking - { requestId, personId, service } for analytics
- * @returns {{ text: string, usage: object, raw: object }}
+ * @param {string} params.systemPrompt - System prompt (string; auto-cached when > 4KB)
+ * @param {Array}  params.messages     - [{role, content}]
+ * @param {number} params.maxTokens    - default 1000
+ * @param {string} params.model        - override DEFAULT_MODEL
+ * @param {object} params.tracking     - { requestId, personId, service, extra } for analytics
+ * @param {Array}  params.tools        - tool defs (cache_control supported on entries)
+ * @param {AbortSignal} params.signal
+ * @returns {{ text, usage, raw, content, stop_reason }}
  */
 async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tracking = {}, tools, signal }) {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -35,39 +122,57 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
   const service = tracking.service || 'claude';
   const startTime = Date.now();
 
-  const body = {
-    model: useModel,
-    max_tokens: maxTokens,
-    messages,
+  const body = buildRequestBody({ model: useModel, maxTokens, systemPrompt, messages, tools });
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': process.env.ANTHROPIC_API_KEY,
+    'anthropic-version': API_VERSION,
   };
-  if (systemPrompt) body.system = systemPrompt;
-  if (tools && tools.length > 0) body.tools = tools;
-
-  let res;
-  try {
-    res = await fetch(CLAUDE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': API_VERSION,
-      },
-      body: JSON.stringify(body),
-      signal,
-    });
-  } catch (fetchErr) {
-    const duration = (Date.now() - startTime) / 1000;
-    anthropicRequestsTotal.inc({ service, model: useModel, success: 'false' });
-    anthropicRequestDuration.observe({ service, model: useModel }, duration);
-    throw fetchErr;
+  if (shouldRequestCacheBeta(body)) {
+    headers['anthropic-beta'] = PROMPT_CACHE_BETA;
   }
 
-  if (!res.ok) {
+  let res;
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      res = await fetch(CLAUDE_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (fetchErr) {
+      // Network-level failure (DNS, connection reset, etc.) — retry like 5xx.
+      lastError = fetchErr;
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, backoffMs(attempt)));
+        continue;
+      }
+      const duration = (Date.now() - startTime) / 1000;
+      anthropicRequestsTotal.inc({ service, model: useModel, success: 'false' });
+      anthropicRequestDuration.observe({ service, model: useModel }, duration);
+      throw fetchErr;
+    }
+
+    if (res.ok) break;
+
+    if (isTransientStatus(res.status) && attempt < MAX_RETRIES) {
+      const retryAfter = res.headers.get('retry-after');
+      const wait = backoffMs(attempt, retryAfter);
+      aiLogger.warn({ msg: 'claude_retry', status: res.status, attempt, wait_ms: wait, model: useModel, service });
+      // drain body so the connection is reusable
+      await res.text().catch(() => {});
+      await new Promise(r => setTimeout(r, wait));
+      continue;
+    }
+
+    // Non-retriable or attempts exhausted.
     const err = await res.text();
     const duration = (Date.now() - startTime) / 1000;
     anthropicRequestsTotal.inc({ service, model: useModel, success: 'false' });
     anthropicRequestDuration.observe({ service, model: useModel }, duration);
-    aiLogger.error({ msg: 'claude_api_error', status: res.status, error: err.substring(0, 500), model: useModel, service });
+    aiLogger.error({ msg: 'claude_api_error', status: res.status, error: err.substring(0, 500), model: useModel, service, attempts: attempt });
     throw new Error('Claude API failed: ' + res.status);
   }
 
@@ -75,23 +180,24 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
   const text = data.content?.[0]?.text || '';
   const duration = (Date.now() - startTime) / 1000;
 
-  // Track cost: input * $3/10K + output * $15/10K
-  const inputTokens = data.usage?.input_tokens || 0;
-  const outputTokens = data.usage?.output_tokens || 0;
-  const costCents = Math.round((inputTokens * 3 + outputTokens * 15) / 10000);
+  // Per-model cost (now correct for Opus / Sonnet / Haiku) + cache token surcharge/discount.
+  const usage = data.usage || {};
+  const inputTokens = usage.input_tokens || 0;
+  const outputTokens = usage.output_tokens || 0;
+  const cacheRead = usage.cache_read_input_tokens || 0;
+  const cacheCreation = usage.cache_creation_input_tokens || 0;
+  const costCents = computeCostCents(useModel, usage);
 
   // Prometheus metrics
   anthropicRequestsTotal.inc({ service, model: useModel, success: 'true' });
   anthropicTokensTotal.inc({ model: useModel, direction: 'input' }, inputTokens);
   anthropicTokensTotal.inc({ model: useModel, direction: 'output' }, outputTokens);
+  if (cacheRead) anthropicTokensTotal.inc({ model: useModel, direction: 'cache_read' }, cacheRead);
+  if (cacheCreation) anthropicTokensTotal.inc({ model: useModel, direction: 'cache_creation' }, cacheCreation);
   anthropicCostTotal.inc({ service }, costCents / 100);
   anthropicRequestDuration.observe({ service, model: useModel }, duration);
 
-  // Analytics DB tracking (existing + Phase 1 agent fields)
-  // Phase 1: explicit forwarding of agent_name and project_id — the ...extras
-  // spread would not propagate to the fixed INSERT in analytics.trackAiCost.
-  // IMPORTANT: spread trackingExtra FIRST, then set reserved fields AFTER so extras
-  // cannot accidentally override analytics integrity (provider, service, success, etc).
+  // Analytics DB tracking — keep schema-stable; spread extras first so reserved fields win.
   const trackingExtra = tracking.extra || {};
   analytics.trackAiCost({
     ...trackingExtra,
@@ -108,7 +214,7 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
     project_id: trackingExtra.project_id || 'default',
   });
 
-  return { text, usage: data.usage, raw: data, content: data.content, stop_reason: data.stop_reason };
+  return { text, usage, raw: data, content: data.content, stop_reason: data.stop_reason };
 }
 
 /**
@@ -116,7 +222,6 @@ async function callClaude({ systemPrompt, messages, maxTokens = 1000, model, tra
  */
 async function callClaudeJSON(params) {
   const result = await callClaude(params);
-
   try {
     const jsonMatch = result.text.match(/\{[\s\S]*\}/);
     const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : result.text);
@@ -129,15 +234,10 @@ async function callClaudeJSON(params) {
 
 /**
  * Simple Claude call for field cleanup (short responses).
- *
- * Milestone C: This function is now a thin wrapper over runAgent(fieldCleanup, ...)
- * so cleanup calls are cost-tracked and observable alongside other agent calls.
- * The function signature stays the same for backward compatibility — existing
- * callers (ai.js /api/structure field_cleanup path) do not need to change.
+ * Routed through agentRuntime so it gets the same metrics + guardrails.
  */
 async function cleanupFieldText(text, customPrompt, tracking = {}) {
-  // Lazy require to avoid any risk of circular dependency with agentRuntime.
-  const { runAgent } = require('./agentRuntime');
+  const { runAgent } = require('./agentRuntime'); // lazy — avoid circular dep
   const fieldCleanup = require('./agents/fieldCleanup');
 
   const result = await runAgent(fieldCleanup, {
@@ -152,6 +252,9 @@ async function cleanupFieldText(text, customPrompt, tracking = {}) {
 module.exports = {
   CLAUDE_URL,
   DEFAULT_MODEL,
+  MODEL_PRICING,
+  getModelPricing,
+  computeCostCents,
   callClaude,
   callClaudeJSON,
   cleanupFieldText,

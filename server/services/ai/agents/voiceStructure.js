@@ -22,7 +22,7 @@ const { buildStructurePrompt } = require('../promptBuilder');
 
 module.exports = defineAgent({
   name: 'voice.structure.v1',
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-sonnet-4-6',
   systemPrompt: (ctx) => {
     if (!ctx || !ctx.contextPackage) {
       // Null-safe fallback inside buildStructurePrompt

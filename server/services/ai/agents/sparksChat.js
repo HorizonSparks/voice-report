@@ -28,7 +28,7 @@ module.exports = defineAgent({
   name: 'voice.sparks.v1',
   // Default model — the route will override with Opus for admins and
   // fall back to Sonnet on 429.
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-opus-4-7',
   systemPrompt: (ctx) => {
     if (!ctx || typeof ctx.systemPrompt !== 'string' || ctx.systemPrompt.length === 0) {
       throw new Error(

@@ -1258,7 +1258,7 @@ ${knowledge}`;
 module.exports = {
   agent: defineAgent({
     name: 'loopfolders.projectIntelligence.v1',
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-7',
     systemPrompt: buildSystemPrompt,
     tools: TOOLS,
     guardrails: {

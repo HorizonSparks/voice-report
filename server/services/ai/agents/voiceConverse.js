@@ -22,7 +22,7 @@ const { buildConversePrompt } = require('../promptBuilder');
 
 module.exports = defineAgent({
   name: 'voice.converse.v1',
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-opus-4-7',
   systemPrompt: (ctx) => buildConversePrompt(ctx || {}),
   tools: [],
   mcpServers: [],

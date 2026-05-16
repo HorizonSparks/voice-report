@@ -76,7 +76,7 @@ const MODEL_PRICING = {
 };
 
 /**
- * Get pricing for a model. Matches on prefix (e.g. 'claude-opus-4-20250514' → 'claude-opus-4').
+ * Get pricing for a model. Matches on prefix (e.g. 'claude-opus-4-7' → 'claude-opus-4').
  * Falls back to Sonnet pricing if unknown.
  */
 function getModelPricing(model) {
