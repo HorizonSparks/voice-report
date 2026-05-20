@@ -10,6 +10,7 @@ const multer = require('multer');
 const rateLimit = require('express-rate-limit');
 const DB = require('../../database/db');
 const { requireAuth, requireSparksRole } = require('../middleware/sessionAuth');
+const { uploadLimiter } = require('../middleware/rateLimiters');
 const { callClaude } = require('../services/ai/anthropicClient');
 
 const router = Router();
@@ -969,8 +970,10 @@ const supportFileStorage = multer.diskStorage({
 });
 const supportFileUpload = multer({ storage: supportFileStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
-// POST /api/support/upload — Upload attachment for support messages
-router.post('/upload', requireAuth, supportFileUpload.single('file'), async (req, res) => {
+// POST /api/support/upload — Upload attachment for support messages.
+// uploadLimiter runs BEFORE multer so we reject the request without parsing
+// the file body, sparing disk + memory cost.
+router.post('/upload', requireAuth, uploadLimiter, supportFileUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     res.json({

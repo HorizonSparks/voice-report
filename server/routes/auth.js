@@ -9,7 +9,9 @@ const router = Router();
 // limiter (5 failed attempts / 5 min / IP, configured in middleware/
 // rateLimiters.js with skipSuccessfulRequests=true) replaces the previous
 // hand-rolled in-memory limiter — same behavior, standard RateLimit-*
-// headers, one source of truth.
+// headers, one source of truth. On a successful login we also call
+// loginLimiter.resetKey(ip) to wipe prior failed attempts — preserves the
+// old "fat-fingering then succeeding restarts your counter" UX.
 router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { pin } = req.body;
@@ -19,6 +21,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!adminPin) return res.status(503).json({ error: 'Server misconfigured: ADMIN_PIN not set' });
 
     if (pin === adminPin) {
+      try { loginLimiter.resetKey(req.ip); } catch {}
       // Admin login — use sentinel admin ID (avoids null person_id edge cases)
       const ADMIN_ID = '__admin__';
       const session = await DB.sessions.create({
@@ -45,6 +48,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     const person = await DB.people.getByPin(pin);
     if (person) {
+      try { loginLimiter.resetKey(req.ip); } catch {}
       // Person login — create session with company_id and sparks_role
       const session = await DB.sessions.create({
         person_id: person.id,

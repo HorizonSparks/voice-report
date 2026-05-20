@@ -15,13 +15,26 @@ errorTracking.initialize();
 
 const app = express();
 
-// Trust the first proxy hop (Cloudflare / nginx in front of this container).
-// Required so `req.secure` and `req.ip` reflect the real client connection,
-// which the cookie Secure flag and per-IP rate limiters both depend on.
-// Without this, every request looks like it came from the proxy itself —
-// Secure cookies wouldn't set on HTTPS and rate limits would group all
-// users into one bucket.
-app.set('trust proxy', 1);
+// Trust proxy configuration — controls how req.ip and req.secure resolve when
+// the request comes through Cloudflare/nginx. Env-configurable so a topology
+// change doesn't require a code change:
+//
+//   TRUST_PROXY=1                  one hop (default; matches Cloudflare → app)
+//   TRUST_PROXY=2                  two hops (Cloudflare → nginx → app)
+//   TRUST_PROXY=loopback           only localhost (development)
+//   TRUST_PROXY=1.2.3.4,5.6.7.8/16 explicit CIDR allowlist (most secure)
+//   TRUST_PROXY=false              ignore XFF entirely
+//
+// Wrong value = either spoofed req.ip (too permissive) or req.secure stuck at
+// false behind HTTPS proxies (too strict). Affects login rate limit + cookie
+// Secure flag.
+const trustProxyRaw = process.env.TRUST_PROXY || '1';
+const trustProxyParsed = (() => {
+  if (trustProxyRaw === 'true' || trustProxyRaw === 'false') return trustProxyRaw === 'true';
+  const n = Number(trustProxyRaw);
+  return Number.isFinite(n) ? n : trustProxyRaw;
+})();
+app.set('trust proxy', trustProxyParsed);
 
 // Legacy-domain 301 redirect — sends any request hitting a retired hostname
 // to the canonical hostname, preserving path + query string. Configured via env:

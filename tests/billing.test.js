@@ -46,7 +46,10 @@ jest.mock('../database/db', () => ({
 
 // ---- Mock the session middleware so we can inject req.auth per test. ----
 // The real middleware reads a cookie; in tests we set req.auth directly.
+// requireSparksRole models the real hierarchy from sessionAuth.js so tests
+// can detect a regression that lets a lower-ranked role through.
 let mockTestAuth = null;
+const SPARKS_RANK = { advisor: 1, collaborator: 1, support: 2, admin: 3 };
 jest.mock('../server/middleware/sessionAuth', () => {
   return {
     requireAuth: (req, res, next) => {
@@ -54,11 +57,13 @@ jest.mock('../server/middleware/sessionAuth', () => {
       req.auth = mockTestAuth;
       next();
     },
-    requireSparksRole: (_role) => (req, res, next) => {
+    requireSparksRole: (required) => (req, res, next) => {
       if (!req.auth) return res.status(401).json({ error: 'Authentication required' });
-      // Same hierarchy used by sessionAuth.js (advisor < support < admin)
-      // but for tests we only need to know if sparks_role is set at all.
-      if (!req.auth.sparks_role) return res.status(403).json({ error: 'Forbidden' });
+      const userRank = SPARKS_RANK[req.auth.sparks_role] || 0;
+      const requiredRank = SPARKS_RANK[required] || 0;
+      if (userRank < requiredRank) {
+        return res.status(403).json({ error: 'Forbidden — requires ' + required });
+      }
       next();
     },
     setSessionCookie: jest.fn(),
@@ -103,19 +108,28 @@ describe('Billing — auth boundary', () => {
   });
 
   test('POST /company/:id/subscribe rejects support-level user (admin-only endpoint)', async () => {
-    // The real middleware allows admin > support > advisor. Our mock collapses
-    // to "any sparks_role passes" — that's coarser than prod but enough to
-    // prove the requireSparksRole guard is wired up. Detailed hierarchy is
-    // covered by tests/auth.test.js.
+    // Mock models the real admin > support > advisor hierarchy. A support
+    // user must be blocked from admin-only endpoints — anything OTHER than
+    // 403 here would be a real regression in role gating.
     mockTestAuth = { person_id: 'person_op', sparks_role: 'support', role_level: 3 };
-    // Mock just enough DB to not crash if the guard accidentally lets through.
-    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
     const res = await request(makeApp())
       .post('/api/billing/company/company_x/subscribe')
-      .send({ tier: 'small' });
-    // Either 403 (guard caught it) or 400/500 (guard passed but no plan). The
-    // test asserts the GUARD wired up — exact downstream behavior is route-specific.
-    expect([403, 400, 404, 500]).toContain(res.status);
+      .send({ plan_id: 'plan_small' });
+    expect(res.status).toBe(403);
+  });
+
+  test('POST /company/:id/subscribe allows admin user past role gate', async () => {
+    mockTestAuth = { person_id: 'person_admin', sparks_role: 'admin', role_level: 5 };
+    mockPlans.getById.mockResolvedValueOnce({ id: 'plan_small', name: 'Small' });
+    mockSubscriptions.getByCompanyId.mockResolvedValueOnce(null);
+    mockSubscriptions.create.mockResolvedValueOnce({ id: 'sub_new', company_id: 'company_x' });
+    const res = await request(makeApp())
+      .post('/api/billing/company/company_x/subscribe')
+      .send({ plan_id: 'plan_small' });
+    // Past the guard; downstream details are route-specific. The hard
+    // assertion: NOT a 401 or 403 (auth + role gating passed).
+    expect(res.status).not.toBe(401);
+    expect(res.status).not.toBe(403);
   });
 });
 
