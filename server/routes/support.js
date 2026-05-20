@@ -835,7 +835,7 @@ router.get('/sla-metrics', requireAuth, denyIntegration, requireSparksRole('supp
               FILTER (WHERE first_response_at IS NOT NULL))::int AS p50_first_response_seconds,
         ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)))
               FILTER (WHERE resolved_at IS NOT NULL))::int AS avg_resolution_seconds,
-        ROUND(AVG(customer_rating)::numeric, 2) FILTER (WHERE customer_rating IS NOT NULL) AS avg_rating,
+        ROUND(AVG(customer_rating) FILTER (WHERE customer_rating IS NOT NULL), 2) AS avg_rating,
         COUNT(customer_rating)::int AS ratings_count
       FROM support_conversations
       WHERE created_at > NOW() - INTERVAL '30 days'
