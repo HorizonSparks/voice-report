@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Button, IconButton, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useTranslation } from 'react-i18next';
 import AnalyticsTracker from '../utils/AnalyticsTracker.js';
 
 export default function VoiceRefinePanel({ contextType, teamContext, onAccept, onCancel, personId, defaultVoiceMode, autoStart, taskContext }) {
+  const { i18n } = useTranslation();
   // Stages: idle, recording, processing, talking, listening, finalizing, review
   // Flow mode adds: flow-listening (continuous Speech Recognition with silence detection)
   const [stage, setStageRaw] = useState('idle');
@@ -105,7 +107,7 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
         const recog = new SR();
         recog.continuous = true;
         recog.interimResults = true;
-        recog.lang = 'en-US';
+        recog.lang = i18n.language === 'es' ? 'es-ES' : 'en-US';
 
         recog.onresult = (event) => {
           flowRetryCountRef.current = 0; // Reset retry count on any speech
@@ -194,19 +196,19 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
       recog.start();
       flowRecogRef.current = recog;
 
-      // 3-second pause with speech = AI's turn to respond
+      // 1.2-second pause with speech = AI's turn to respond (optimized for responsiveness)
       flowSilenceTimerRef.current = setInterval(() => {
         const silenceDuration = Date.now() - flowLastSpeechRef.current;
         const currentText = flowTranscriptRef.current.trim();
 
-        if (currentText.length > 0 && silenceDuration > 3000) {
-          // User paused for 3 seconds after saying something — AI's turn
+        if (currentText.length > 0 && silenceDuration > 1200) {
+          // User paused for 1.2 seconds after saying something — AI's turn
           clearInterval(flowSilenceTimerRef.current);
           flowSilenceTimerRef.current = null;
           stopFlowListening();
           processFlowTranscript(currentText);
         }
-      }, 500);
+      }, 250);
 
       // 10s total silence (no speech detected at all) — AI checks in, conversation stays open
       const silenceCheckCountRef = { current: 0 };
@@ -393,7 +395,7 @@ export default function VoiceRefinePanel({ contextType, teamContext, onAccept, o
           const recog = new SpeechRecognition();
           recog.continuous = true;
           recog.interimResults = true;
-          recog.lang = 'en-US';
+          recog.lang = i18n.language === 'es' ? 'es-ES' : 'en-US';
           recog.onresult = (event) => {
             let interim = '';
             for (let i = 0; i < event.results.length; i++) {
