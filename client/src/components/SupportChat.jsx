@@ -1,13 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, IconButton, TextField, Button, Paper, Fab, Badge } from '@mui/material';
+import { Box, Typography, IconButton, TextField, Button, Paper, Fab, Badge, Stack } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
+import NotesIcon from '@mui/icons-material/Notes';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 /**
  * SupportChat — Floating chat bubble
  *
- * FOR CUSTOMERS: Send messages to Sparks support, saved to database
- * FOR SPARKS ADMIN: Shows active support conversation when viewing a customer's ticket
+ * FOR CUSTOMERS: Send messages to Sparks support, saved to database.
+ *   Also surfaces a CSAT 1-5 emoji rating once the conversation is resolved.
+ * FOR SPARKS ADMIN: Shows active support conversation when viewing a customer's ticket.
+ *   AI generates a suggested reply attached to each customer message when operators
+ *   are online; the operator can Accept/Edit/Dismiss before sending.
+ *   Also surfaces an internal-notes textarea (never visible to the customer).
  *
  * The bubble persists across all views — it follows you everywhere.
  */
@@ -19,18 +27,29 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const [conversationStatus, setConversationStatus] = useState(null);
+  const [customerRating, setCustomerRating] = useState(null);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [aiSuggestionMessageId, setAiSuggestionMessageId] = useState(null);
+  const [internalNotes, setInternalNotes] = useState('');
+  const [notesExpanded, setNotesExpanded] = useState(false);
+  const [notesSaveStatus, setNotesSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const pollRef = useRef(null);
   const pingPollRef = useRef(null);
   const audioCtxRef = useRef(null);
   const lastUnreadRef = useRef(0);
+  const notesSaveTimerRef = useRef(null);
+  // Tracks which conversation's notes we've already seeded from the server.
+  // Prevents stale poll responses from clobbering operator-edited text after
+  // the textarea has been touched in this session.
+  const notesSeededForConvId = useRef(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const isSparksUser = !!user?.sparks_role;
 
   // Lazy-init AudioContext on first user gesture (browsers require this).
-  // Plays a short, gentle "pop" — in-app WhatsApp metaphor, NOT real WhatsApp.
   const playPingTone = () => {
     try {
       if (typeof window === 'undefined') return;
@@ -38,7 +57,6 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
       if (!Ctx) return;
       if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
       const ctx = audioCtxRef.current;
-      // Some browsers suspend the context until a user gesture; resume defensively.
       if (ctx.state === 'suspended') ctx.resume();
       const t0 = ctx.currentTime;
       const o = ctx.createOscillator();
@@ -53,13 +71,10 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
       o.start(t0);
       o.stop(t0 + 0.25);
     } catch {
-      // sound is best-effort — never fail the UI
+      // sound is best-effort
     }
   };
 
-  // Eagerly initialize (or resume) the AudioContext on a real user gesture
-  // so when the poll fires later the chime is reliable. Browsers block
-  // AudioContext.resume() outside a gesture stack, so we hook the Fab.
   const warmAudioCtx = () => {
     try {
       if (typeof window === 'undefined') return;
@@ -72,8 +87,6 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     }
   };
 
-  // Close the AudioContext on unmount so we don't leak hardware audio
-  // resources if the SupportChat component is unmounted (e.g. logout).
   useEffect(() => () => {
     try {
       if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
@@ -85,10 +98,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     }
   }, []);
 
-  // Sparks-side ONLY: background-poll the unread support count every 15s
-  // even when chat is closed. Plays a soft tone + badges the Fab when the
-  // count goes up. Suppresses the chime on first paint so login doesn't
-  // ring in old unread tickets.
+  // Sparks-side: poll unread badge every 15s with chime on increase.
   useEffect(() => {
     if (!isSparksUser) return undefined;
     let mounted = true;
@@ -129,15 +139,23 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     }
   }, [open]);
 
+  // Reset per-conversation state when the active conversation changes.
+  useEffect(() => {
+    setAiSuggestion(null);
+    setAiSuggestionMessageId(null);
+    setInternalNotes('');
+    setNotesExpanded(false);
+    setConversationStatus(null);
+    setCustomerRating(null);
+    notesSeededForConvId.current = null;
+  }, [activeConversation]);
+
   // Load conversation on open
   useEffect(() => {
     if (!open) return;
-
     if (isSparksUser && activeConversation) {
-      // Sparks admin viewing a specific customer conversation
       loadSparksConversation(activeConversation);
     } else if (!isSparksUser) {
-      // Customer loading their own conversation
       loadCustomerConversation();
     }
   }, [open, activeConversation]);
@@ -145,7 +163,6 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   // Poll for new messages every 5 seconds when open
   useEffect(() => {
     if (!open || !conversationId) return;
-
     pollRef.current = setInterval(() => {
       if (isSparksUser && conversationId) {
         loadSparksConversation(conversationId);
@@ -153,7 +170,6 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
         loadCustomerConversation();
       }
     }, 5000);
-
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [open, conversationId]);
 
@@ -163,6 +179,8 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
       if (!r.ok) return;
       const data = await r.json();
       if (data.conversation_id) setConversationId(data.conversation_id);
+      if (data.status !== undefined) setConversationStatus(data.status);
+      if (data.customer_rating !== undefined) setCustomerRating(data.customer_rating);
       if (data.messages && data.messages.length > 0) {
         setMessages(data.messages.map(m => ({
           id: m.id,
@@ -187,6 +205,16 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
       if (!r.ok) return;
       const data = await r.json();
       setConversationId(convId);
+      if (data.conversation) {
+        setConversationStatus(data.conversation.status);
+        // Seed notes from server only ONCE per conversation. After the
+        // operator has interacted with the textarea, polling can never
+        // overwrite their local edits (even if they deliberately cleared).
+        if (notesSeededForConvId.current !== convId) {
+          setInternalNotes(data.conversation.internal_notes || '');
+          notesSeededForConvId.current = convId;
+        }
+      }
       if (data.messages) {
         setMessages(data.messages.map(m => ({
           id: m.id,
@@ -195,6 +223,20 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           name: m.person_name,
           time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         })));
+        // Find the most recent customer message that still carries an AI draft.
+        // Iterate backwards — only the latest unanswered suggestion is relevant.
+        let foundSuggestion = null;
+        let foundMessageId = null;
+        for (let i = data.messages.length - 1; i >= 0; i--) {
+          const m = data.messages[i];
+          if (m.sender_type === 'customer' && m.ai_suggested_reply) {
+            foundSuggestion = m.ai_suggested_reply;
+            foundMessageId = m.id;
+            break;
+          }
+        }
+        setAiSuggestion(foundSuggestion);
+        setAiSuggestionMessageId(foundMessageId);
       }
     } catch {}
   };
@@ -202,10 +244,6 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || sending) return;
-    // Sparks operators can ONLY reply to an existing thread. Without an
-    // activeConversation there is no /send target — silently refusing
-    // here also prevents an operator from accidentally creating a
-    // customer-authored ticket as themselves.
     if (isSparksUser && !conversationId) {
       console.warn('SupportChat: Sparks user has no active conversation; refusing send');
       return;
@@ -221,24 +259,22 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     setInput('');
     setSending(true);
 
-    // Auto-tag the message with where the user was when they sent it.
-    // current_route + app_origin land in support_conversations so the
-    // Sparks operator sees the context in the inbox.
     const current_route = (typeof window !== 'undefined')
       ? (window.location.pathname + window.location.hash + window.location.search).slice(0, 500)
       : '';
 
     try {
       if (isSparksUser && conversationId) {
-        // Sparks admin replying to customer
         const r = await fetch(`/api/support/reply/${conversationId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: text }),
         });
         if (!r.ok) throw new Error('Failed to send');
+        // Manually sending wipes any pending AI suggestion (operator chose their own words).
+        setAiSuggestion(null);
+        setAiSuggestionMessageId(null);
       } else {
-        // Customer sending to support
         const r = await fetch('/api/support/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -265,6 +301,95 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     setSending(false);
   };
 
+  // Operator accepts the AI draft as-is (no edits) and sends it.
+  const acceptAiSuggestion = async () => {
+    if (!aiSuggestionMessageId || sending) return;
+    setSending(true);
+    try {
+      const r = await fetch(`/api/support/accept-suggestion/${aiSuggestionMessageId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!r.ok) throw new Error('Failed to accept');
+      setAiSuggestion(null);
+      setAiSuggestionMessageId(null);
+      await loadSparksConversation(conversationId);
+    } catch (err) {
+      console.error('Accept suggestion error:', err);
+    }
+    setSending(false);
+  };
+
+  // Operator wants to edit the draft — pop it into the input and clear the
+  // banner. The operator then sends via the normal sendMessage() path.
+  // We ALSO clear the DB-side suggestion so the next 5s poll doesn't
+  // resurrect the banner while the operator is mid-edit.
+  const editAiSuggestion = async () => {
+    if (!aiSuggestion) return;
+    const idToDismiss = aiSuggestionMessageId;
+    setInput(aiSuggestion);
+    setAiSuggestion(null);
+    setAiSuggestionMessageId(null);
+    if (inputRef.current) inputRef.current.focus();
+    try {
+      await fetch(`/api/support/dismiss-suggestion/${idToDismiss}`, { method: 'POST' });
+    } catch (err) {
+      console.error('Edit (DB clear) error:', err);
+    }
+  };
+
+  // Operator dismisses the draft without sending. Backend clears the column.
+  const dismissAiSuggestion = async () => {
+    if (!aiSuggestionMessageId) return;
+    const idToDismiss = aiSuggestionMessageId;
+    // Optimistic UI — clear local state immediately.
+    setAiSuggestion(null);
+    setAiSuggestionMessageId(null);
+    try {
+      await fetch(`/api/support/dismiss-suggestion/${idToDismiss}`, { method: 'POST' });
+    } catch (err) {
+      console.error('Dismiss suggestion error:', err);
+    }
+  };
+
+  // Customer rates a resolved conversation. One-shot — backend rejects re-rates.
+  const rateConversation = async (rating) => {
+    if (!conversationId) return;
+    try {
+      const r = await fetch(`/api/support/rate/${conversationId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating }),
+      });
+      if (r.ok) setCustomerRating(rating);
+    } catch (err) {
+      console.error('Rate error:', err);
+    }
+  };
+
+  // Auto-save internal notes 800ms after the operator stops typing.
+  const onInternalNotesChange = (value) => {
+    setInternalNotes(value);
+    if (!conversationId) return;
+    setNotesSaveStatus('saving');
+    if (notesSaveTimerRef.current) clearTimeout(notesSaveTimerRef.current);
+    notesSaveTimerRef.current = setTimeout(async () => {
+      try {
+        await fetch(`/api/support/notes/${conversationId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: value }),
+        });
+        setNotesSaveStatus('saved');
+        setTimeout(() => setNotesSaveStatus('idle'), 1500);
+      } catch (err) {
+        console.error('Notes save error:', err);
+        setNotesSaveStatus('idle');
+      }
+    }, 800);
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -275,10 +400,21 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   const headerTitle = isSparksUser ? 'Support Chat' : 'Horizon Sparks Support';
   const headerSub = isSparksUser && activeConversation ? (messages[0]?.name || 'Customer') : (simulatingCompany?.name || user?.company_name || '');
 
+  // CSAT prompt is shown to the customer once the conversation is resolved
+  // and not yet rated. After rating, a thank-you takes its place.
+  const showCsatPrompt = !isSparksUser && conversationStatus === 'resolved' && customerRating == null;
+  const showCsatThanks = !isSparksUser && conversationStatus === 'resolved' && customerRating != null;
+  const csatEmojis = [
+    { v: 1, glyph: '😞', label: 'Very dissatisfied' },
+    { v: 2, glyph: '🙁', label: 'Dissatisfied' },
+    { v: 3, glyph: '😐', label: 'Neutral' },
+    { v: 4, glyph: '🙂', label: 'Satisfied' },
+    { v: 5, glyph: '😀', label: 'Very satisfied' },
+  ];
+
   return (
     <>
-      {/* Floating Bubble — always visible except when chat is open.
-          Sits above iOS home-indicator via env(safe-area-inset-bottom). */}
+      {/* Floating Bubble */}
       {!open && (
         <Badge
           badgeContent={isSparksUser ? unreadCount : 0}
@@ -298,7 +434,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           onTouchStart={warmAudioCtx}
           title="Support Chat"
           sx={{
-            width: 56, height: 56, // 56pt > 44pt iPad min target
+            width: 56, height: 56,
             bgcolor: 'secondary.main', border: '3px solid', borderColor: 'primary.main',
             color: 'primary.main', fontSize: 24,
             '&:hover': { bgcolor: 'secondary.dark' },
@@ -316,7 +452,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           right: 'calc(24px + env(safe-area-inset-right, 0px))',
           zIndex: 1000,
           width: 360, maxWidth: 'calc(100vw - 48px)',
-          height: 480, maxHeight: 'calc(100vh - 120px)',
+          height: 560, maxHeight: 'calc(100vh - 120px)',
           borderRadius: 4, border: '2px solid', borderColor: 'secondary.main',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
@@ -373,10 +509,134 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                 </Typography>
               </Box>
             ))}
+
+            {/* CSAT prompt (customer only, resolved conversations not yet rated) */}
+            {showCsatPrompt && (
+              <Box sx={{
+                mt: 1, p: 1.5,
+                bgcolor: 'success.light', color: 'success.contrastText',
+                borderRadius: 2, textAlign: 'center',
+              }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 1 }}>
+                  This conversation was resolved. How was your experience?
+                </Typography>
+                <Stack direction="row" spacing={0.5} justifyContent="center">
+                  {csatEmojis.map(e => (
+                    <IconButton
+                      key={e.v}
+                      onClick={() => rateConversation(e.v)}
+                      title={e.label}
+                      sx={{ fontSize: 24, p: 0.5 }}
+                    >
+                      {e.glyph}
+                    </IconButton>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+            {showCsatThanks && (
+              <Box sx={{
+                mt: 1, p: 1.25,
+                bgcolor: 'success.light', color: 'success.contrastText',
+                borderRadius: 2, textAlign: 'center',
+              }}>
+                <Typography sx={{ fontSize: 12 }}>
+                  Thanks for your feedback! {csatEmojis.find(e => e.v === customerRating)?.glyph}
+                </Typography>
+              </Box>
+            )}
+
             <div ref={chatEndRef} />
           </Box>
 
-          {/* Input */}
+          {/* Operator: AI suggestion banner */}
+          {isSparksUser && aiSuggestion && (
+            <Box sx={{
+              px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider',
+              bgcolor: 'info.light',
+            }}>
+              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.5 }}>
+                <AutoAwesomeIcon sx={{ fontSize: 14, color: 'info.dark' }} />
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'info.dark' }}>
+                  Sparks AI suggests
+                </Typography>
+              </Stack>
+              <Typography sx={{
+                fontSize: 12, lineHeight: 1.45, color: 'text.primary',
+                mb: 1, whiteSpace: 'pre-wrap',
+                maxHeight: 96, overflowY: 'auto',
+              }}>
+                {aiSuggestion}
+              </Typography>
+              <Stack direction="row" spacing={0.75}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  startIcon={<CheckIcon fontSize="small" />}
+                  onClick={acceptAiSuggestion}
+                  disabled={sending}
+                  sx={{ fontSize: 11, py: 0.5 }}
+                >
+                  Accept & Send
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<EditIcon fontSize="small" />}
+                  onClick={editAiSuggestion}
+                  sx={{ fontSize: 11, py: 0.5 }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={dismissAiSuggestion}
+                  sx={{ fontSize: 11, py: 0.5 }}
+                >
+                  Dismiss
+                </Button>
+              </Stack>
+            </Box>
+          )}
+
+          {/* Operator: internal notes (collapsible, never visible to customer) */}
+          {isSparksUser && conversationId && (
+            <Box sx={{ borderTop: '1px solid', borderColor: 'divider', bgcolor: 'grey.50' }}>
+              <Button
+                fullWidth
+                onClick={() => setNotesExpanded(v => !v)}
+                startIcon={<NotesIcon fontSize="small" />}
+                sx={{
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                  fontSize: 11, color: 'text.secondary',
+                  py: 0.75,
+                }}
+              >
+                Internal notes (operator only)
+                {notesSaveStatus === 'saving' && <Typography component="span" sx={{ ml: 1, fontSize: 10, opacity: 0.6 }}>saving…</Typography>}
+                {notesSaveStatus === 'saved' && <Typography component="span" sx={{ ml: 1, fontSize: 10, color: 'success.main' }}>saved</Typography>}
+              </Button>
+              {notesExpanded && (
+                <Box sx={{ px: 1.5, pb: 1 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    size="small"
+                    placeholder="Notes only visible to support staff…"
+                    value={internalNotes}
+                    onChange={e => onInternalNotesChange(e.target.value)}
+                    sx={{ '& .MuiOutlinedInput-root': { fontSize: 12 } }}
+                  />
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* Reply input */}
           {isSparksUser && !conversationId && (
             <Box sx={{ px: 2, py: 1, bgcolor: 'warning.light', color: 'warning.contrastText', fontSize: 12 }}>
               Open a conversation from the Support Inbox to reply.
@@ -398,7 +658,6 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 5,
-                  // 44pt min touch target for iPad pointer:coarse
                   '@media (pointer: coarse)': { minHeight: 44 },
                 },
               }}

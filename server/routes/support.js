@@ -77,7 +77,9 @@ router.post('/send', requireAuth, async (req, res) => {
       content, message_type, app_origin, current_route, screen_context, file_url,
       as_person_id, as_company_id, as_person_name, as_person_role, as_company_name,
     } = req.body;
-    if (!content) return res.status(400).json({ error: 'Message content required' });
+    if (typeof content !== 'string' || !content.trim()) {
+      return res.status(400).json({ error: 'Message content (non-empty string) required' });
+    }
 
     // When the caller is an integration (PIDS-app proxy), accept the body's
     // identity overrides; otherwise lock to the real session identity.
@@ -184,8 +186,14 @@ router.post('/send', requireAuth, async (req, res) => {
     }
 
     const isOffline = activeAgents === 0 && !isBusinessHoursNow();
+    // When operators are online (hybrid mode), the AI does NOT auto-send.
+    // Instead it generates a draft attached to the customer's message
+    // (support_messages.ai_suggested_reply). The operator reviews via
+    // /accept-suggestion. This gives human-in-the-loop control without
+    // sacrificing AI assistance — the operator just clicks Accept/Edit.
+    const isDraftMode = !isOffline;
 
-    // Trigger async auto-reply (Always enabled in hybrid mode)
+    // Trigger async AI response (auto-send when offline, draft when online)
     setImmediate(async () => {
       try {
         // Human takeover check: skip auto-reply if a human operator (not Sparks
@@ -202,12 +210,16 @@ router.post('/send', requireAuth, async (req, res) => {
           return;
         }
 
-        // Build context for Claude
-        const systemPrompt = `You are Sparks AI, the helpful technical support assistant for Horizon Sparks.
-${isOffline 
-  ? 'The human support operators are currently OFFLINE (outside business hours or away). Acknowledge that support is currently offline and their message has been queued for human review.' 
-  : 'The human support operators are currently ONLINE and can intervene to take over this conversation at any moment. Acknowledge that human operators are online and may jump in, but you are responding immediately to assist them in the meantime.'}
-Your job is to read the customer's message and their page/screen context, and provide a helpful, polite, and professional automatic response.
+        // Build context for Claude. Prompt diverges based on whether this
+        // will be auto-sent (offline) or shown to an operator as a draft.
+        const systemPrompt = isDraftMode
+          ? `You are Sparks AI, the technical support assistant for Horizon Sparks. A human support operator is currently online and will REVIEW your response before it is sent to the customer. Write a polished, ready-to-send reply that the operator can accept as-is or edit lightly.
+Do NOT include scaffolding like "Here is a draft" or "You could say" — write only the message the operator would send.
+Answer the customer's question using your general engineering and Horizon Sparks knowledge. If context (P&ID, drawing number, current route) is provided, incorporate it.
+Detect the user's language and respond in the same language.
+Be concise, accurate, and on-brand. Standard bold/italics are fine, but no markdown that requires special rendering.`
+          : `You are Sparks AI, the helpful technical support assistant for Horizon Sparks.
+The human support operators are currently OFFLINE (outside business hours or away). Acknowledge that support is currently offline and their message has been queued for human review.
 Then, answer their question as best as you can using your general engineering and Horizon Sparks knowledge based on their query.
 If they provided context like a P&ID, drawing number, or a specific page/URL, take that into account!
 Detect the user's language and respond in the same language (e.g., reply in Spanish if the user writes in Spanish, or English if they write in English).
@@ -295,19 +307,43 @@ Keep your response concise, clear, and reassuring. Do not use markdown syntax th
               return;
             }
 
-            // Save Claude's reply to DB
-            const replyMsgId = 'smsg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-            await DB.db.query(
-              `INSERT INTO support_messages (id, conversation_id, company_id, person_id, person_name, sender_type, content, message_type, created_at)
-               VALUES ($1, $2, $3, $4, $5, 'support', $6, 'text', NOW())`,
-              [replyMsgId, conversation_id, company_id, person_id, 'Sparks AI', result.text]
-            );
+            if (isDraftMode) {
+              // Attach as suggestion to the customer message that triggered
+              // this AI call. The operator UI surfaces it with Accept/Edit
+              // controls. No support_messages row is created, no notification
+              // is sent to the customer.
+              //
+              // Clear any older drafts on prior customer messages in this
+              // conversation first — the operator UI only shows the latest,
+              // and the latest draft already incorporates full history, so
+              // older drafts would be dead state if left attached.
+              await DB.db.query(
+                `UPDATE support_messages SET ai_suggested_reply = NULL
+                  WHERE conversation_id = $1
+                    AND sender_type = 'customer'
+                    AND id != $2
+                    AND ai_suggested_reply IS NOT NULL`,
+                [conversation_id, msg_id]
+              );
+              await DB.db.query(
+                "UPDATE support_messages SET ai_suggested_reply = $1 WHERE id = $2",
+                [result.text, msg_id]
+              );
+            } else {
+              // Offline: AI auto-sends and we record it as a real message.
+              const replyMsgId = 'smsg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+              await DB.db.query(
+                `INSERT INTO support_messages (id, conversation_id, company_id, person_id, person_name, sender_type, content, message_type, is_ai, created_at)
+                 VALUES ($1, $2, $3, $4, $5, 'support', $6, 'text', true, NOW())`,
+                [replyMsgId, conversation_id, company_id, person_id, 'Sparks AI', result.text]
+              );
 
-            // Update conversation's last message
-            await DB.db.query(
-              "UPDATE support_conversations SET last_message = $1, last_message_at = NOW(), updated_at = NOW(), status = 'waiting' WHERE id = $2",
-              [result.text.substring(0, 200), conversation_id]
-            );
+              // Update conversation's last message
+              await DB.db.query(
+                "UPDATE support_conversations SET last_message = $1, last_message_at = NOW(), updated_at = NOW(), status = 'waiting' WHERE id = $2",
+                [result.text.substring(0, 200), conversation_id]
+              );
+            }
           }
         } catch (autoErr) {
           console.error('Failed to generate offline auto-reply:', autoErr);
@@ -336,8 +372,15 @@ router.get('/my-conversation', requireAuth, async (req, res) => {
     const person_id = isIntegration ? req.query.as_person_id : req.auth.person_id;
     if (!person_id) return res.json({ messages: [] });
 
+    // Customer needs to see resolved conversations too so the CSAT prompt
+    // can render after resolution. We pick the most recently updated thread
+    // regardless of status; the UI gates rating to status === 'resolved'.
     const { rows: convos } = await DB.db.query(
-      "SELECT id FROM support_conversations WHERE person_id = $1 AND status != 'resolved' ORDER BY updated_at DESC LIMIT 1",
+      `SELECT id, status, customer_rating
+         FROM support_conversations
+        WHERE person_id = $1
+        ORDER BY updated_at DESC
+        LIMIT 1`,
       [person_id]
     );
     if (convos.length === 0) return res.json({ messages: [] });
@@ -346,7 +389,12 @@ router.get('/my-conversation', requireAuth, async (req, res) => {
       'SELECT id, sender_type, content, message_type, file_url, read_at, created_at FROM support_messages WHERE conversation_id = $1 ORDER BY created_at ASC',
       [convos[0].id]
     );
-    res.json({ conversation_id: convos[0].id, messages });
+    res.json({
+      conversation_id: convos[0].id,
+      status: convos[0].status,
+      customer_rating: convos[0].customer_rating,
+      messages,
+    });
   } catch (err) {
     console.error('Support my-conversation error:', err);
     res.status(500).json({ error: 'Failed to load conversation' });
@@ -437,7 +485,9 @@ router.get('/conversation/:id', requireAuth, denyIntegration, requireSparksRole(
 router.post('/reply/:id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
   try {
     const { content, message_type, file_url } = req.body;
-    if (!content) return res.status(400).json({ error: 'Message content required' });
+    if (typeof content !== 'string' || !content.trim()) {
+      return res.status(400).json({ error: 'Message content (non-empty string) required' });
+    }
 
     const conversation_id = req.params.id;
 
@@ -457,10 +507,15 @@ router.post('/reply/:id', requireAuth, denyIntegration, requireSparksRole('suppo
       [msg_id, conversation_id, req.auth.person_id, support_name, content, message_type || 'text', file_url || null]
     );
 
-    // Stamp last_support_reply_at so the auto-reply gate backs off for the
-    // configured human-takeover window (see support_chat_phase_c.sql).
+    // Stamp last_support_reply_at (backoff gate) + first_response_at (SLA,
+    // only on the FIRST human reply per conversation — COALESCE preserves it).
     await DB.db.query(
-      "UPDATE support_conversations SET last_message = $1, last_message_at = NOW(), updated_at = NOW(), status = 'waiting', last_support_reply_at = NOW() WHERE id = $2",
+      `UPDATE support_conversations
+          SET last_message = $1, last_message_at = NOW(), updated_at = NOW(),
+              status = 'waiting',
+              last_support_reply_at = NOW(),
+              first_response_at = COALESCE(first_response_at, NOW())
+        WHERE id = $2`,
       [content.substring(0, 200), conversation_id]
     );
 
@@ -474,7 +529,16 @@ router.post('/reply/:id', requireAuth, denyIntegration, requireSparksRole('suppo
 // POST /api/support/resolve/:id — Mark conversation as resolved
 router.post('/resolve/:id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
   try {
-    await DB.db.query("UPDATE support_conversations SET status = 'resolved', updated_at = NOW() WHERE id = $1", [req.params.id]);
+    // Stamp resolved_at on the FIRST resolve only — COALESCE preserves the
+    // original timestamp if the conversation is re-resolved after a reopen.
+    await DB.db.query(
+      `UPDATE support_conversations
+          SET status = 'resolved',
+              updated_at = NOW(),
+              resolved_at = COALESCE(resolved_at, NOW())
+        WHERE id = $1`,
+      [req.params.id]
+    );
     res.json({ success: true });
   } catch (err) {
     console.error('Support resolve error:', err);
@@ -612,6 +676,174 @@ router.patch('/assign/:id', requireAuth, denyIntegration, requireSparksRole('sup
   } catch (err) {
     console.error('Support assign error:', err);
     res.status(500).json({ error: 'Failed to assign conversation' });
+  }
+});
+
+// POST /api/support/accept-suggestion/:message_id
+// Operator accepts (and optionally edits) an AI-generated draft attached to
+// a customer's message via support_messages.ai_suggested_reply. Inserts a
+// real support reply, clears the suggestion, and stamps SLA timestamps.
+router.post('/accept-suggestion/:message_id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  const { content } = req.body;
+  const message_id = req.params.message_id;
+
+  // Pre-flight read outside the transaction so we can 4xx without a connection.
+  const { rows: orig } = await DB.db.query(
+    "SELECT conversation_id, ai_suggested_reply FROM support_messages WHERE id = $1 AND sender_type = 'customer'",
+    [message_id]
+  );
+  if (orig.length === 0) return res.status(404).json({ error: 'Customer message not found' });
+  if (!orig[0].ai_suggested_reply) return res.status(400).json({ error: 'No AI suggestion attached to this message' });
+
+  const conversation_id = orig[0].conversation_id;
+  const finalContent = (typeof content === 'string' && content.trim())
+    ? content.trim()
+    : orig[0].ai_suggested_reply;
+
+  let support_name = 'Horizon Sparks Support';
+  try {
+    if (req.auth.person_id !== '__admin__') {
+      const { rows } = await DB.db.query('SELECT name FROM people WHERE id = $1', [req.auth.person_id]);
+      if (rows[0]) support_name = rows[0].name;
+    }
+  } catch {}
+
+  const reply_id = 'smsg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+  // Insert + clear + update must be atomic. Without a transaction, a partial
+  // failure (e.g. clear succeeds, conversation update fails) would leave the
+  // operator looking at a sent reply with a stale draft still attached.
+  const client = await DB.db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `INSERT INTO support_messages (id, conversation_id, person_id, person_name, sender_type, content, message_type, is_ai, created_at)
+       VALUES ($1, $2, $3, $4, 'support', $5, 'text', false, NOW())`,
+      [reply_id, conversation_id, req.auth.person_id, support_name, finalContent]
+    );
+    await client.query(
+      "UPDATE support_messages SET ai_suggested_reply = NULL WHERE id = $1",
+      [message_id]
+    );
+    await client.query(
+      `UPDATE support_conversations
+          SET last_message = $1, last_message_at = NOW(), updated_at = NOW(),
+              status = 'waiting',
+              last_support_reply_at = NOW(),
+              first_response_at = COALESCE(first_response_at, NOW())
+        WHERE id = $2`,
+      [finalContent.substring(0, 200), conversation_id]
+    );
+    await client.query('COMMIT');
+    res.json({ success: true, message_id: reply_id });
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch {}
+    console.error('Support accept-suggestion error:', err);
+    res.status(500).json({ error: 'Failed to accept suggestion' });
+  } finally {
+    client.release();
+  }
+});
+
+// POST /api/support/dismiss-suggestion/:message_id
+// Operator dismisses an AI draft without sending. Clears ai_suggested_reply
+// so the prompt disappears from the UI; no message is created.
+router.post('/dismiss-suggestion/:message_id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const { rowCount } = await DB.db.query(
+      "UPDATE support_messages SET ai_suggested_reply = NULL WHERE id = $1 AND sender_type = 'customer'",
+      [req.params.message_id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Customer message not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Support dismiss-suggestion error:', err);
+    res.status(500).json({ error: 'Failed to dismiss suggestion' });
+  }
+});
+
+// POST /api/support/rate/:conversation_id
+// Customer rates a RESOLVED conversation 1-5. Only the conversation's
+// person can rate; rating cannot be changed once set.
+router.post('/rate/:conversation_id', requireAuth, async (req, res) => {
+  try {
+    const { rating } = req.body;
+    const r = Number(rating);
+    if (!Number.isInteger(r) || r < 1 || r > 5) {
+      return res.status(400).json({ error: 'rating must be an integer 1-5' });
+    }
+
+    const isIntegration = !!req.auth.isIntegration;
+    const person_id = isIntegration
+      ? (req.body.as_person_id || req.query.as_person_id)
+      : req.auth.person_id;
+    if (!person_id) return res.status(400).json({ error: 'person_id required' });
+
+    const { rows: convo } = await DB.db.query(
+      'SELECT person_id, status, customer_rating FROM support_conversations WHERE id = $1',
+      [req.params.conversation_id]
+    );
+    if (convo.length === 0) return res.status(404).json({ error: 'Conversation not found' });
+    if (convo[0].person_id !== person_id) return res.status(403).json({ error: 'Not your conversation' });
+    if (convo[0].status !== 'resolved') return res.status(400).json({ error: 'Conversation not yet resolved' });
+    if (convo[0].customer_rating != null) return res.status(409).json({ error: 'Already rated' });
+
+    await DB.db.query(
+      'UPDATE support_conversations SET customer_rating = $1, updated_at = NOW() WHERE id = $2',
+      [r, req.params.conversation_id]
+    );
+
+    res.json({ success: true, rating: r });
+  } catch (err) {
+    console.error('Support rate error:', err);
+    res.status(500).json({ error: 'Failed to save rating' });
+  }
+});
+
+// PATCH /api/support/notes/:conversation_id
+// Operator-only internal notes on a conversation. Never returned to the
+// customer (GET /my-conversation does not select this column).
+router.patch('/notes/:conversation_id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const { notes } = req.body;
+    // Cap to 10k chars defensively — operator notes should not be unbounded.
+    const safe = (typeof notes === 'string') ? notes.slice(0, 10000) : '';
+    const { rowCount } = await DB.db.query(
+      'UPDATE support_conversations SET internal_notes = $1, updated_at = NOW() WHERE id = $2',
+      [safe || null, req.params.conversation_id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Conversation not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Support notes error:', err);
+    res.status(500).json({ error: 'Failed to save notes' });
+  }
+});
+
+// GET /api/support/sla-metrics
+// Rolled-up SLA stats over the last 30 days for operator dashboards.
+router.get('/sla-metrics', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const { rows: [m] } = await DB.db.query(`
+      SELECT
+        COUNT(*)::int AS conversations_total,
+        COUNT(*) FILTER (WHERE first_response_at IS NOT NULL)::int AS conversations_with_response,
+        COUNT(*) FILTER (WHERE resolved_at IS NOT NULL)::int AS conversations_resolved,
+        ROUND(AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)))
+              FILTER (WHERE first_response_at IS NOT NULL))::int AS avg_first_response_seconds,
+        ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (first_response_at - created_at)))
+              FILTER (WHERE first_response_at IS NOT NULL))::int AS p50_first_response_seconds,
+        ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)))
+              FILTER (WHERE resolved_at IS NOT NULL))::int AS avg_resolution_seconds,
+        ROUND(AVG(customer_rating)::numeric, 2) FILTER (WHERE customer_rating IS NOT NULL) AS avg_rating,
+        COUNT(customer_rating)::int AS ratings_count
+      FROM support_conversations
+      WHERE created_at > NOW() - INTERVAL '30 days'
+    `);
+    res.json(m);
+  } catch (err) {
+    console.error('SLA metrics error:', err);
+    res.status(500).json({ error: 'Failed to compute SLA metrics' });
   }
 });
 
