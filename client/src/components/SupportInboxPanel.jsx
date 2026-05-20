@@ -1,10 +1,22 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Button, Paper, Chip, IconButton,
   CircularProgress, Stack, Tooltip, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
+// Render a duration in seconds as a compact human string. Returns '—' for null.
+function fmtDuration(sec) {
+  if (sec == null) return '—';
+  const n = Number(sec);
+  if (!Number.isFinite(n) || n < 0) return '—';
+  if (n < 60) return `${Math.round(n)}s`;
+  if (n < 3600) return `${Math.round(n / 60)}m`;
+  if (n < 86400) return `${(n / 3600).toFixed(1)}h`;
+  return `${Math.round(n / 86400)}d`;
+}
 
 /**
  * SupportInboxPanel — Sparks operator's view of all open support threads.
@@ -31,11 +43,13 @@ function fmtRelative(iso) {
 }
 
 export default function SupportInboxPanel({ user, onBack, onOpenConversation }) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'open' | 'waiting' | 'voicereport' | 'pids-app'
   const [resolvingId, setResolvingId] = useState(null);
+  const [sla, setSla] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -55,10 +69,29 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
     }
   }, []);
 
+  // Fetch SLA metrics on mount + refresh every 5 min. They change slowly
+  // compared to the inbox itself, so a higher cadence wastes server time.
+  useEffect(() => {
+    let cancelled = false;
+    const loadSla = async () => {
+      try {
+        const r = await fetch('/api/support/sla-metrics');
+        if (!r.ok || cancelled) return;
+        const data = await r.json();
+        if (!cancelled) setSla(data);
+      } catch {
+        // best-effort; missing SLA bar is acceptable degradation
+      }
+    };
+    loadSla();
+    const id = setInterval(loadSla, 5 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
   useEffect(() => {
     load();
-    const t = setInterval(load, 30000); // 30s poll — see also App.jsx for Fab badge polling
-    return () => clearInterval(t);
+    const id = setInterval(load, 30000); // 30s poll — see also App.jsx for Fab badge polling
+    return () => clearInterval(id);
   }, [load]);
 
   const handleResolve = async (id) => {
@@ -91,22 +124,57 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
         {onBack && (
           <Button size="small" variant="outlined" onClick={onBack} sx={{ color: 'text.primary', borderColor: 'grey.300' }}>
-            ← Back
+            ← {t('support.back')}
           </Button>
         )}
         <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>
-          Support Inbox
+          {t('support.inbox')}
         </Typography>
         {totalUnread > 0 && (
-          <Chip label={`${totalUnread} unread`} size="small" color="error" sx={{ fontWeight: 700 }} />
+          <Chip label={t('support.unread', { count: totalUnread })} size="small" color="error" sx={{ fontWeight: 700 }} />
         )}
         <Box sx={{ flex: 1 }} />
-        <Tooltip title="Refresh">
+        <Tooltip title={t('support.refresh')}>
           <IconButton size="small" onClick={load} sx={{ color: 'text.secondary' }}>
             <RefreshIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       </Box>
+
+      {/* SLA dashboard — rolled-up metrics for the last 30 days. Empty/null
+          values render as '—' so a fresh-install state stays informative. */}
+      {sla && (
+        <Paper variant="outlined" sx={{ px: 2, py: 1.25, mb: 2, bgcolor: 'background.default' }}>
+          <Stack direction="row" spacing={3} flexWrap="wrap" alignItems="center">
+            <Box>
+              <Typography sx={{ fontSize: 10, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {t('support.sla.avgFirstResponse')}
+              </Typography>
+              <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'text.primary' }}>
+                {fmtDuration(sla.avg_first_response_seconds)}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: 10, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {t('support.sla.resolution')}
+              </Typography>
+              <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'text.primary' }}>
+                {fmtDuration(sla.avg_resolution_seconds)}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: 10, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {t('support.sla.csat')}
+              </Typography>
+              <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'text.primary' }}>
+                {sla.avg_rating != null
+                  ? <>{Number(sla.avg_rating).toFixed(2)} ⭐ <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 400 }}>({sla.ratings_count})</Typography></>
+                  : <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary', fontWeight: 400 }}>{t('support.sla.noRatings')}</Typography>}
+              </Typography>
+            </Box>
+          </Stack>
+        </Paper>
+      )}
 
       {/* Filter chips */}
       <ToggleButtonGroup
@@ -116,11 +184,11 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
         size="small"
         sx={{ mb: 2 }}
       >
-        <ToggleButton value="all">All ({rows.length})</ToggleButton>
-        <ToggleButton value="open">Open ({rows.filter(r => r.status === 'open').length})</ToggleButton>
-        <ToggleButton value="waiting">Waiting ({rows.filter(r => r.status === 'waiting').length})</ToggleButton>
-        <ToggleButton value="voicereport">Voice Report ({rows.filter(r => (r.app_origin || 'voicereport') === 'voicereport').length})</ToggleButton>
-        <ToggleButton value="pids-app">P&IDS ({rows.filter(r => r.app_origin === 'pids-app').length})</ToggleButton>
+        <ToggleButton value="all">{t('support.filterAll', { n: rows.length })}</ToggleButton>
+        <ToggleButton value="open">{t('support.filterOpen', { n: rows.filter(r => r.status === 'open').length })}</ToggleButton>
+        <ToggleButton value="waiting">{t('support.filterWaiting', { n: rows.filter(r => r.status === 'waiting').length })}</ToggleButton>
+        <ToggleButton value="voicereport">{t('support.filterVoiceReport', { n: rows.filter(r => (r.app_origin || 'voicereport') === 'voicereport').length })}</ToggleButton>
+        <ToggleButton value="pids-app">{t('support.filterPidsApp', { n: rows.filter(r => r.app_origin === 'pids-app').length })}</ToggleButton>
       </ToggleButtonGroup>
 
       {loading && (
@@ -138,9 +206,9 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
       {!loading && !error && filtered.length === 0 && (
         <Paper sx={{ p: 6, textAlign: 'center', bgcolor: 'background.paper', border: '1px dashed', borderColor: 'grey.300' }}>
           <Typography fontSize={48} sx={{ mb: 1 }}>📭</Typography>
-          <Typography sx={{ fontWeight: 700, color: 'text.primary' }}>No support conversations</Typography>
+          <Typography sx={{ fontWeight: 700, color: 'text.primary' }}>{t('support.noConversations')}</Typography>
           <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-            When customers send a message from the floating bubble, it shows up here.
+            {t('support.noConversationsHint')}
           </Typography>
         </Paper>
       )}
@@ -219,7 +287,7 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
                       sx={{ height: 20, fontSize: 10, fontWeight: 700, textTransform: 'capitalize' }}
                     />
                     {conv.current_route && (
-                      <Tooltip title={`Customer is on: ${conv.current_route}`}>
+                      <Tooltip title={t('support.customerOn', { route: conv.current_route })}>
                         <Typography sx={{ fontSize: 10, color: 'text.secondary', fontFamily: 'monospace' }} noWrap>
                           {conv.current_route.length > 40 ? `${conv.current_route.slice(0, 37)}…` : conv.current_route}
                         </Typography>
@@ -235,11 +303,11 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
                   {isUnread && (
                     <Chip label={conv.unread_count} size="small" color="error" sx={{ height: 22, fontWeight: 800, fontSize: 11, minWidth: 28 }} />
                   )}
-                  <Tooltip title="Mark resolved">
+                  <Tooltip title={t('support.markResolved')}>
                     <span>
                       <IconButton
                         size="small"
-                        aria-label={`Mark conversation with ${conv.person_name || 'unknown'} as resolved`}
+                        aria-label={t('support.markResolved')}
                         disabled={resolvingId === conv.id}
                         onClick={(e) => { e.stopPropagation(); handleResolve(conv.id); }}
                         sx={{ color: 'success.main' }}

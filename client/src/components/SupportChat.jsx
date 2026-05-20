@@ -1,11 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, IconButton, TextField, Button, Paper, Fab, Badge, Stack } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import { Box, Typography, IconButton, TextField, Button, Paper, Fab, Badge, Stack, Chip, Link } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import NotesIcon from '@mui/icons-material/Notes';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+
+// Map a file_url (relative path returned by /api/support/upload) to a
+// renderable URL + an "is this an image?" boolean for inline preview.
+const IMAGE_RX = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+function resolveAttachment(file_url) {
+  if (!file_url) return null;
+  // Multer storage uses the filename; the GET /files/:filename endpoint
+  // serves them back. Anything else (full URLs, etc.) is rendered as-is.
+  const isAbs = /^https?:\/\//i.test(file_url);
+  const href = isAbs ? file_url : `/api/support/files/${encodeURIComponent(file_url)}`;
+  const filename = file_url.split('/').pop() || file_url;
+  return { href, filename, isImage: IMAGE_RX.test(file_url) };
+}
+
+// Stoplight color band for AI self-rated confidence.
+function confidenceColor(c) {
+  if (c == null) return 'default';
+  if (c >= 0.8) return 'success';
+  if (c >= 0.5) return 'warning';
+  return 'error';
+}
 
 /**
  * SupportChat — Floating chat bubble
@@ -20,6 +43,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
  * The bubble persists across all views — it follows you everywhere.
  */
 export default function SupportChat({ user, simulatingCompany, externalOpen, onExternalOpenChange, activeConversation, onConversationChange }) {
+  const { t } = useTranslation();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (val) => { setInternalOpen(val); if (onExternalOpenChange) onExternalOpenChange(val); };
@@ -31,6 +55,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   const [customerRating, setCustomerRating] = useState(null);
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiSuggestionMessageId, setAiSuggestionMessageId] = useState(null);
+  const [aiConfidence, setAiConfidence] = useState(null);
   const [internalNotes, setInternalNotes] = useState('');
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [notesSaveStatus, setNotesSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
@@ -143,6 +168,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   useEffect(() => {
     setAiSuggestion(null);
     setAiSuggestionMessageId(null);
+    setAiConfidence(null);
     setInternalNotes('');
     setNotesExpanded(false);
     setConversationStatus(null);
@@ -186,13 +212,14 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           id: m.id,
           role: m.sender_type === 'customer' ? 'user' : 'support',
           text: m.content,
+          fileUrl: m.file_url,
           time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         })));
       } else if (messages.length === 0) {
         setMessages([{
           id: 'welcome',
           role: 'support',
-          text: 'Hi! How can we help you today? Describe your issue and our team will get back to you.',
+          text: t('support.chat.welcome'),
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }]);
       }
@@ -221,22 +248,26 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           role: m.sender_type === 'customer' ? 'user' : 'support',
           text: m.content,
           name: m.person_name,
+          fileUrl: m.file_url,
           time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         })));
         // Find the most recent customer message that still carries an AI draft.
         // Iterate backwards — only the latest unanswered suggestion is relevant.
         let foundSuggestion = null;
         let foundMessageId = null;
+        let foundConfidence = null;
         for (let i = data.messages.length - 1; i >= 0; i--) {
           const m = data.messages[i];
           if (m.sender_type === 'customer' && m.ai_suggested_reply) {
             foundSuggestion = m.ai_suggested_reply;
             foundMessageId = m.id;
+            foundConfidence = (typeof m.ai_confidence === 'number') ? m.ai_confidence : null;
             break;
           }
         }
         setAiSuggestion(foundSuggestion);
         setAiSuggestionMessageId(foundMessageId);
+        setAiConfidence(foundConfidence);
       }
     } catch {}
   };
@@ -274,6 +305,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
         // Manually sending wipes any pending AI suggestion (operator chose their own words).
         setAiSuggestion(null);
         setAiSuggestionMessageId(null);
+        setAiConfidence(null);
       } else {
         const r = await fetch('/api/support/send', {
           method: 'POST',
@@ -293,7 +325,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
       setMessages(prev => [...prev, {
         id: 'err_' + Date.now(),
         role: 'support',
-        text: 'Failed to send message. Please try again.',
+        text: t('support.chat.sendFailed'),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }]);
     }
@@ -314,6 +346,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
       if (!r.ok) throw new Error('Failed to accept');
       setAiSuggestion(null);
       setAiSuggestionMessageId(null);
+      setAiConfidence(null);
       await loadSparksConversation(conversationId);
     } catch (err) {
       console.error('Accept suggestion error:', err);
@@ -331,6 +364,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     setInput(aiSuggestion);
     setAiSuggestion(null);
     setAiSuggestionMessageId(null);
+    setAiConfidence(null);
     if (inputRef.current) inputRef.current.focus();
     try {
       await fetch(`/api/support/dismiss-suggestion/${idToDismiss}`, { method: 'POST' });
@@ -346,6 +380,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     // Optimistic UI — clear local state immediately.
     setAiSuggestion(null);
     setAiSuggestionMessageId(null);
+    setAiConfidence(null);
     try {
       await fetch(`/api/support/dismiss-suggestion/${idToDismiss}`, { method: 'POST' });
     } catch (err) {
@@ -397,19 +432,19 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     }
   };
 
-  const headerTitle = isSparksUser ? 'Support Chat' : 'Horizon Sparks Support';
-  const headerSub = isSparksUser && activeConversation ? (messages[0]?.name || 'Customer') : (simulatingCompany?.name || user?.company_name || '');
+  const headerTitle = isSparksUser ? t('support.chat.titleOperator') : t('support.chat.title');
+  const headerSub = isSparksUser && activeConversation ? (messages[0]?.name || '') : (simulatingCompany?.name || user?.company_name || '');
 
   // CSAT prompt is shown to the customer once the conversation is resolved
   // and not yet rated. After rating, a thank-you takes its place.
   const showCsatPrompt = !isSparksUser && conversationStatus === 'resolved' && customerRating == null;
   const showCsatThanks = !isSparksUser && conversationStatus === 'resolved' && customerRating != null;
   const csatEmojis = [
-    { v: 1, glyph: '😞', label: 'Very dissatisfied' },
-    { v: 2, glyph: '🙁', label: 'Dissatisfied' },
-    { v: 3, glyph: '😐', label: 'Neutral' },
-    { v: 4, glyph: '🙂', label: 'Satisfied' },
-    { v: 5, glyph: '😀', label: 'Very satisfied' },
+    { v: 1, glyph: '😞', label: t('support.csat.veryDissatisfied') },
+    { v: 2, glyph: '🙁', label: t('support.csat.dissatisfied') },
+    { v: 3, glyph: '😐', label: t('support.csat.neutral') },
+    { v: 4, glyph: '🙂', label: t('support.csat.satisfied') },
+    { v: 5, glyph: '😀', label: t('support.csat.verySatisfied') },
   ];
 
   return (
@@ -432,7 +467,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           onClick={() => { warmAudioCtx(); setOpen(true); }}
           onMouseDown={warmAudioCtx}
           onTouchStart={warmAudioCtx}
-          title="Support Chat"
+          title={t('support.chat.titleOperator')}
           sx={{
             width: 56, height: 56,
             bgcolor: 'secondary.main', border: '3px solid', borderColor: 'primary.main',
@@ -482,7 +517,9 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
             display: 'flex', flexDirection: 'column', gap: 1,
             bgcolor: 'grey.100',
           }}>
-            {messages.map(msg => (
+            {messages.map(msg => {
+              const att = resolveAttachment(msg.fileUrl);
+              return (
               <Box key={msg.id} sx={{
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '80%',
@@ -498,7 +535,40 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                   border: msg.role === 'support' ? '1px solid' : 'none',
                   borderColor: 'divider',
                 }}>
-                  {msg.text}
+                  {msg.text && <Box sx={{ whiteSpace: 'pre-wrap' }}>{msg.text}</Box>}
+                  {att && att.isImage && (
+                    <Box sx={{ mt: msg.text ? 0.75 : 0 }}>
+                      <Link href={att.href} target="_blank" rel="noopener noreferrer">
+                        <Box
+                          component="img"
+                          src={att.href}
+                          alt={att.filename}
+                          sx={{
+                            display: 'block',
+                            maxWidth: '100%', maxHeight: 200,
+                            borderRadius: 2, border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        />
+                      </Link>
+                    </Box>
+                  )}
+                  {att && !att.isImage && (
+                    <Box sx={{ mt: msg.text ? 0.75 : 0 }}>
+                      <Chip
+                        icon={<AttachFileIcon />}
+                        label={att.filename}
+                        component={Link}
+                        href={att.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        clickable
+                        size="small"
+                        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }}
+                        title={t('support.attachment.downloadFile')}
+                      />
+                    </Box>
+                  )}
                 </Paper>
                 <Typography sx={{
                   fontSize: 10, color: 'text.secondary', mt: 0.375,
@@ -508,7 +578,8 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                   {msg.time}
                 </Typography>
               </Box>
-            ))}
+              );
+            })}
 
             {/* CSAT prompt (customer only, resolved conversations not yet rated) */}
             {showCsatPrompt && (
@@ -518,7 +589,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                 borderRadius: 2, textAlign: 'center',
               }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 1 }}>
-                  This conversation was resolved. How was your experience?
+                  {t('support.csat.prompt')}
                 </Typography>
                 <Stack direction="row" spacing={0.5} justifyContent="center">
                   {csatEmojis.map(e => (
@@ -541,7 +612,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                 borderRadius: 2, textAlign: 'center',
               }}>
                 <Typography sx={{ fontSize: 12 }}>
-                  Thanks for your feedback! {csatEmojis.find(e => e.v === customerRating)?.glyph}
+                  {t('support.csat.thanks')} {csatEmojis.find(e => e.v === customerRating)?.glyph}
                 </Typography>
               </Box>
             )}
@@ -555,11 +626,19 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
               px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider',
               bgcolor: 'info.light',
             }}>
-              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.5 }}>
+              <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
                 <AutoAwesomeIcon sx={{ fontSize: 14, color: 'info.dark' }} />
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'info.dark' }}>
-                  Sparks AI suggests
+                  {t('support.aiSuggestion.label')}
                 </Typography>
+                {aiConfidence != null && (
+                  <Chip
+                    size="small"
+                    color={confidenceColor(aiConfidence)}
+                    label={`${t('support.aiSuggestion.confidence')}: ${Math.round(aiConfidence * 100)}%`}
+                    sx={{ height: 18, fontSize: 10, fontWeight: 700 }}
+                  />
+                )}
               </Stack>
               <Typography sx={{
                 fontSize: 12, lineHeight: 1.45, color: 'text.primary',
@@ -578,7 +657,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                   disabled={sending}
                   sx={{ fontSize: 11, py: 0.5 }}
                 >
-                  Accept & Send
+                  {t('support.aiSuggestion.accept')}
                 </Button>
                 <Button
                   size="small"
@@ -587,7 +666,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                   onClick={editAiSuggestion}
                   sx={{ fontSize: 11, py: 0.5 }}
                 >
-                  Edit
+                  {t('support.aiSuggestion.edit')}
                 </Button>
                 <Button
                   size="small"
@@ -595,7 +674,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                   onClick={dismissAiSuggestion}
                   sx={{ fontSize: 11, py: 0.5 }}
                 >
-                  Dismiss
+                  {t('support.aiSuggestion.dismiss')}
                 </Button>
               </Stack>
             </Box>
@@ -615,9 +694,9 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                   py: 0.75,
                 }}
               >
-                Internal notes (operator only)
-                {notesSaveStatus === 'saving' && <Typography component="span" sx={{ ml: 1, fontSize: 10, opacity: 0.6 }}>saving…</Typography>}
-                {notesSaveStatus === 'saved' && <Typography component="span" sx={{ ml: 1, fontSize: 10, color: 'success.main' }}>saved</Typography>}
+                {t('support.notes.label')}
+                {notesSaveStatus === 'saving' && <Typography component="span" sx={{ ml: 1, fontSize: 10, opacity: 0.6 }}>{t('support.notes.saving')}</Typography>}
+                {notesSaveStatus === 'saved' && <Typography component="span" sx={{ ml: 1, fontSize: 10, color: 'success.main' }}>{t('support.notes.saved')}</Typography>}
               </Button>
               {notesExpanded && (
                 <Box sx={{ px: 1.5, pb: 1 }}>
@@ -626,7 +705,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                     multiline
                     rows={3}
                     size="small"
-                    placeholder="Notes only visible to support staff…"
+                    placeholder={t('support.notes.placeholder')}
                     value={internalNotes}
                     onChange={e => onInternalNotesChange(e.target.value)}
                     sx={{ '& .MuiOutlinedInput-root': { fontSize: 12 } }}
@@ -639,7 +718,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
           {/* Reply input */}
           {isSparksUser && !conversationId && (
             <Box sx={{ px: 2, py: 1, bgcolor: 'warning.light', color: 'warning.contrastText', fontSize: 12 }}>
-              Open a conversation from the Support Inbox to reply.
+              {t('support.chat.openFromInbox')}
             </Box>
           )}
           <Box sx={{
@@ -654,7 +733,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isSparksUser ? (conversationId ? "Reply to customer..." : "Open a conversation to reply") : "Type your message..."}
+              placeholder={isSparksUser ? (conversationId ? t('support.chat.replyCustomer') : t('support.chat.openConvToReply')) : t('support.chat.typeMessage')}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 5,

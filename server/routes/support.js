@@ -7,11 +7,66 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const DB = require('../../database/db');
 const { requireAuth, requireSparksRole } = require('../middleware/sessionAuth');
 const { callClaude } = require('../services/ai/anthropicClient');
 
 const router = Router();
+
+// Rate limit for customer-facing /send: 30 msgs/minute per person to deter
+// spam and protect Claude API spend. Operators and integration callers are
+// also keyed by person_id so a single misbehaving tenant cannot starve
+// others. Falls back to req.ip when person_id is missing.
+const sendRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // For integration auth (PIDS-app proxy), req.auth.person_id is the shared
+  // literal 'integration', so we'd throttle all tenants into the same bucket.
+  // Prefer the customer-supplied as_person_id to isolate per real customer.
+  keyGenerator: (req) => {
+    if (req.auth && req.auth.isIntegration) {
+      return (req.body && req.body.as_person_id) || (req.query && req.query.as_person_id) || req.ip;
+    }
+    return (req.auth && req.auth.person_id) || req.ip;
+  },
+  message: { error: 'Too many messages — please slow down and try again in a minute.' },
+});
+
+// Best-effort audit logger. Failures here should NEVER block the action
+// that triggered them — losing a log entry is worse than losing the action.
+async function logEvent(conversation_id, actor_person_id, action, payload) {
+  try {
+    await DB.db.query(
+      `INSERT INTO support_conversation_events (conversation_id, actor_person_id, action, payload)
+       VALUES ($1, $2, $3, $4)`,
+      [conversation_id, actor_person_id || null, action, payload ? JSON.stringify(payload) : null]
+    );
+  } catch (err) {
+    console.error('Audit log error:', err);
+  }
+}
+
+// Parses a "CONFIDENCE: 0.XX" footer the AI is asked to append. Tolerant:
+// the marker can appear on any line, with optional punctuation/text after
+// the value. ALWAYS strips every CONFIDENCE line from cleanText even if
+// the value fails to parse — better to drop a meaningless marker than leak
+// "CONFIDENCE: …" to customers when the model deviates from format.
+function extractAiConfidence(text) {
+  if (typeof text !== 'string') return { confidence: null, cleanText: text };
+  let confidence = null;
+  const m = text.match(/(?:^|\n)\s*CONFIDENCE\s*[:=]?\s*(0(?:\.\d+)?|1(?:\.0+)?)/i);
+  if (m) {
+    const v = parseFloat(m[1]);
+    if (Number.isFinite(v)) confidence = Math.max(0, Math.min(1, v));
+  }
+  const cleanText = text
+    .replace(/(?:^|\n)[^\n]*CONFIDENCE[^\n]*/gi, '')
+    .trim();
+  return { confidence, cleanText };
+}
 
 // Business hours are evaluated in this timezone, NOT the server's local time,
 // so the customer-facing offline banner and the auto-reply prompt stay correct
@@ -71,7 +126,7 @@ function denyIntegration(req, res, next) {
 //   2. Integration key (X-Integration-Key) + as_person_id/as_company_id body fields
 //      — used by PIDS-app's Next.js server-side proxy to forward customer messages
 //      with the REAL customer identity (instead of the generic 'integration' user).
-router.post('/send', requireAuth, async (req, res) => {
+router.post('/send', requireAuth, sendRateLimiter, async (req, res) => {
   try {
     const {
       content, message_type, app_origin, current_route, screen_context, file_url,
@@ -212,7 +267,12 @@ router.post('/send', requireAuth, async (req, res) => {
 
         // Build context for Claude. Prompt diverges based on whether this
         // will be auto-sent (offline) or shown to an operator as a draft.
-        const systemPrompt = isDraftMode
+        const confidenceFooter = `
+
+After your reply, on its OWN final line, output exactly:
+CONFIDENCE: 0.XX
+where 0.XX is your self-rated confidence (0.00-1.00) that the reply is accurate and complete given the available context. The operator UI uses this to flag low-confidence drafts for closer review.`;
+        const systemPrompt = (isDraftMode
           ? `You are Sparks AI, the technical support assistant for Horizon Sparks. A human support operator is currently online and will REVIEW your response before it is sent to the customer. Write a polished, ready-to-send reply that the operator can accept as-is or edit lightly.
 Do NOT include scaffolding like "Here is a draft" or "You could say" — write only the message the operator would send.
 Answer the customer's question using your general engineering and Horizon Sparks knowledge. If context (P&ID, drawing number, current route) is provided, incorporate it.
@@ -223,7 +283,7 @@ The human support operators are currently OFFLINE (outside business hours or awa
 Then, answer their question as best as you can using your general engineering and Horizon Sparks knowledge based on their query.
 If they provided context like a P&ID, drawing number, or a specific page/URL, take that into account!
 Detect the user's language and respond in the same language (e.g., reply in Spanish if the user writes in Spanish, or English if they write in English).
-Keep your response concise, clear, and reassuring. Do not use markdown syntax that requires rendering features not supported in simple text blocks, but standard bold/italics are fine.`;
+Keep your response concise, clear, and reassuring. Do not use markdown syntax that requires rendering features not supported in simple text blocks, but standard bold/italics are fine.`) + confidenceFooter;
 
           // Load conversation history (including the message just sent)
           const { rows: history } = await DB.db.query(
@@ -307,18 +367,20 @@ Keep your response concise, clear, and reassuring. Do not use markdown syntax th
               return;
             }
 
+            const { confidence: ai_confidence, cleanText } = extractAiConfidence(result.text);
+
             if (isDraftMode) {
               // Attach as suggestion to the customer message that triggered
               // this AI call. The operator UI surfaces it with Accept/Edit
-              // controls. No support_messages row is created, no notification
-              // is sent to the customer.
+              // controls + a confidence badge. No support_messages row is
+              // created, no notification is sent to the customer.
               //
               // Clear any older drafts on prior customer messages in this
               // conversation first — the operator UI only shows the latest,
               // and the latest draft already incorporates full history, so
               // older drafts would be dead state if left attached.
               await DB.db.query(
-                `UPDATE support_messages SET ai_suggested_reply = NULL
+                `UPDATE support_messages SET ai_suggested_reply = NULL, ai_confidence = NULL
                   WHERE conversation_id = $1
                     AND sender_type = 'customer'
                     AND id != $2
@@ -326,22 +388,22 @@ Keep your response concise, clear, and reassuring. Do not use markdown syntax th
                 [conversation_id, msg_id]
               );
               await DB.db.query(
-                "UPDATE support_messages SET ai_suggested_reply = $1 WHERE id = $2",
-                [result.text, msg_id]
+                "UPDATE support_messages SET ai_suggested_reply = $1, ai_confidence = $2 WHERE id = $3",
+                [cleanText, ai_confidence, msg_id]
               );
             } else {
               // Offline: AI auto-sends and we record it as a real message.
               const replyMsgId = 'smsg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
               await DB.db.query(
-                `INSERT INTO support_messages (id, conversation_id, company_id, person_id, person_name, sender_type, content, message_type, is_ai, created_at)
-                 VALUES ($1, $2, $3, $4, $5, 'support', $6, 'text', true, NOW())`,
-                [replyMsgId, conversation_id, company_id, person_id, 'Sparks AI', result.text]
+                `INSERT INTO support_messages (id, conversation_id, company_id, person_id, person_name, sender_type, content, message_type, is_ai, ai_confidence, created_at)
+                 VALUES ($1, $2, $3, $4, $5, 'support', $6, 'text', true, $7, NOW())`,
+                [replyMsgId, conversation_id, company_id, person_id, 'Sparks AI', cleanText, ai_confidence]
               );
 
               // Update conversation's last message
               await DB.db.query(
                 "UPDATE support_conversations SET last_message = $1, last_message_at = NOW(), updated_at = NOW(), status = 'waiting' WHERE id = $2",
-                [result.text.substring(0, 200), conversation_id]
+                [cleanText.substring(0, 200), conversation_id]
               );
             }
           }
@@ -531,7 +593,7 @@ router.post('/resolve/:id', requireAuth, denyIntegration, requireSparksRole('sup
   try {
     // Stamp resolved_at on the FIRST resolve only — COALESCE preserves the
     // original timestamp if the conversation is re-resolved after a reopen.
-    await DB.db.query(
+    const { rowCount } = await DB.db.query(
       `UPDATE support_conversations
           SET status = 'resolved',
               updated_at = NOW(),
@@ -539,6 +601,9 @@ router.post('/resolve/:id', requireAuth, denyIntegration, requireSparksRole('sup
         WHERE id = $1`,
       [req.params.id]
     );
+    if (rowCount > 0) {
+      logEvent(req.params.id, req.auth.person_id, 'resolve', null);
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('Support resolve error:', err);
@@ -647,6 +712,7 @@ router.post('/reopen/:id', requireAuth, denyIntegration, requireSparksRole('supp
       [req.params.id]
     );
     if (rowCount === 0) return res.status(404).json({ error: 'Conversation not found or not resolved' });
+    logEvent(req.params.id, req.auth.person_id, 'reopen', null);
     res.json({ success: true });
   } catch (err) {
     console.error('Support reopen error:', err);
@@ -672,6 +738,7 @@ router.patch('/assign/:id', requireAuth, denyIntegration, requireSparksRole('sup
       [person_id || null, req.params.id]
     );
     if (rowCount === 0) return res.status(404).json({ error: 'Conversation not found' });
+    logEvent(req.params.id, req.auth.person_id, person_id ? 'assign' : 'unassign', { assigned_to: person_id || null });
     res.json({ success: true });
   } catch (err) {
     console.error('Support assign error:', err);
@@ -792,6 +859,7 @@ router.post('/rate/:conversation_id', requireAuth, async (req, res) => {
       'UPDATE support_conversations SET customer_rating = $1, updated_at = NOW() WHERE id = $2',
       [r, req.params.conversation_id]
     );
+    logEvent(req.params.conversation_id, person_id, 'rate', { rating: r });
 
     res.json({ success: true, rating: r });
   } catch (err) {
@@ -813,10 +881,34 @@ router.patch('/notes/:conversation_id', requireAuth, denyIntegration, requireSpa
       [safe || null, req.params.conversation_id]
     );
     if (rowCount === 0) return res.status(404).json({ error: 'Conversation not found' });
+    // Notes events log the LENGTH only, not the content — internal_notes can
+    // be sensitive and the events table is queried more broadly than the
+    // conversations table itself.
+    logEvent(req.params.conversation_id, req.auth.person_id, 'notes_update', { length: safe.length });
     res.json({ success: true });
   } catch (err) {
     console.error('Support notes error:', err);
     res.status(500).json({ error: 'Failed to save notes' });
+  }
+});
+
+// GET /api/support/conversation/:id/events — Audit log of state changes
+router.get('/conversation/:id/events', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const { rows } = await DB.db.query(
+      `SELECT e.id, e.conversation_id, e.actor_person_id, e.action, e.payload, e.created_at,
+              p.name AS actor_name
+         FROM support_conversation_events e
+         LEFT JOIN people p ON p.id = e.actor_person_id
+        WHERE e.conversation_id = $1
+        ORDER BY e.created_at DESC, e.id DESC
+        LIMIT 200`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Support events error:', err);
+    res.status(500).json({ error: 'Failed to load events' });
   }
 });
 
@@ -874,14 +966,45 @@ router.post('/upload', requireAuth, supportFileUpload.single('file'), async (req
   }
 });
 
-// GET /api/support/files/:filename — Download/serve support message attachment securely
-router.get('/files/:filename', requireAuth, (req, res) => {
+// GET /api/support/files/:filename — Download/serve support message attachment.
+// Authz: Sparks staff can fetch any attachment (cross-company by design per
+// the team charter). Customers can fetch only attachments referenced by a
+// message in a conversation they own.
+router.get('/files/:filename', requireAuth, async (req, res) => {
   const filename = path.basename(req.params.filename);
   const filePath = path.resolve(msgFileDir, filename);
   if (!filePath.startsWith(path.resolve(msgFileDir) + path.sep)) {
     return res.status(400).json({ error: 'Invalid filename' });
   }
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+
+  const isSupportStaff = !!(req.auth && (
+    req.auth.sparks_role === 'support'
+    || req.auth.sparks_role === 'admin'
+    || req.auth.is_admin === true
+  ));
+  if (!isSupportStaff) {
+    const isIntegration = !!(req.auth && req.auth.isIntegration);
+    const person_id = isIntegration
+      ? ((req.body && req.body.as_person_id) || (req.query && req.query.as_person_id))
+      : (req.auth && req.auth.person_id);
+    if (!person_id) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      const { rowCount } = await DB.db.query(
+        `SELECT 1
+           FROM support_messages sm
+           JOIN support_conversations sc ON sc.id = sm.conversation_id
+          WHERE sm.file_url = $1 AND sc.person_id = $2
+          LIMIT 1`,
+        [filename, person_id]
+      );
+      if (rowCount === 0) return res.status(403).json({ error: 'Forbidden' });
+    } catch (err) {
+      console.error('Attachment authz error:', err);
+      return res.status(500).json({ error: 'Authorization check failed' });
+    }
+  }
+
   res.download(filePath);
 });
 

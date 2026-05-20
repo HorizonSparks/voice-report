@@ -353,5 +353,62 @@
     "delete": "Eliminar",
     "deleteConfirmTitle": "Eliminar Carpeta",
     "deleteConfirmMessage": "¿Estás seguro de eliminar \"{{name}}\"? Esta acción no se puede deshacer."
+  },
+  "support": {
+    "inbox": "Bandeja de Soporte",
+    "back": "Atrás",
+    "unread": "{{count}} sin leer",
+    "filterAll": "Todas ({{n}})",
+    "filterOpen": "Abiertas ({{n}})",
+    "filterWaiting": "En espera ({{n}})",
+    "filterVoiceReport": "Voice Report ({{n}})",
+    "filterPidsApp": "P&IDS ({{n}})",
+    "noConversations": "Sin conversaciones de soporte",
+    "noConversationsHint": "Cuando un cliente envíe un mensaje desde el chat flotante, aparecerá aquí.",
+    "markResolved": "Marcar como resuelta",
+    "customerOn": "El cliente está en: {{route}}",
+    "refresh": "Actualizar",
+    "sla": {
+      "avgFirstResponse": "Tiempo de primera respuesta",
+      "resolution": "Resolución",
+      "csat": "CSAT",
+      "noData": "Sin datos aún",
+      "noRatings": "sin calificaciones"
+    },
+    "chat": {
+      "title": "Soporte Horizon Sparks",
+      "titleOperator": "Chat de Soporte",
+      "typeMessage": "Escribe tu mensaje...",
+      "replyCustomer": "Responder al cliente...",
+      "openConvToReply": "Abre una conversación para responder",
+      "openFromInbox": "Abre una conversación desde la Bandeja de Soporte para responder.",
+      "welcome": "¡Hola! ¿En qué podemos ayudarte hoy? Describe tu problema y nuestro equipo te responderá pronto.",
+      "sendFailed": "No se pudo enviar el mensaje. Inténtalo de nuevo."
+    },
+    "aiSuggestion": {
+      "label": "Sparks AI sugiere",
+      "accept": "Aceptar y enviar",
+      "edit": "Editar",
+      "dismiss": "Descartar",
+      "confidence": "Confianza"
+    },
+    "notes": {
+      "label": "Notas internas (solo operador)",
+      "placeholder": "Notas visibles solo para el equipo de soporte…",
+      "saving": "guardando…",
+      "saved": "guardado"
+    },
+    "csat": {
+      "prompt": "Esta conversación se resolvió. ¿Cómo fue tu experiencia?",
+      "thanks": "¡Gracias por tu retroalimentación!",
+      "veryDissatisfied": "Muy insatisfecho",
+      "dissatisfied": "Insatisfecho",
+      "neutral": "Neutral",
+      "satisfied": "Satisfecho",
+      "verySatisfied": "Muy satisfecho"
+    },
+    "attachment": {
+      "downloadFile": "Descargar archivo"
+    }
   }
 }

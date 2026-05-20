@@ -353,5 +353,62 @@
     "delete": "Delete",
     "deleteConfirmTitle": "Delete Folder",
     "deleteConfirmMessage": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
+  },
+  "support": {
+    "inbox": "Support Inbox",
+    "back": "Back",
+    "unread": "{{count}} unread",
+    "filterAll": "All ({{n}})",
+    "filterOpen": "Open ({{n}})",
+    "filterWaiting": "Waiting ({{n}})",
+    "filterVoiceReport": "Voice Report ({{n}})",
+    "filterPidsApp": "P&IDS ({{n}})",
+    "noConversations": "No support conversations",
+    "noConversationsHint": "When customers send a message from the floating bubble, it shows up here.",
+    "markResolved": "Mark resolved",
+    "customerOn": "Customer is on: {{route}}",
+    "refresh": "Refresh",
+    "sla": {
+      "avgFirstResponse": "Avg first response",
+      "resolution": "Resolution",
+      "csat": "CSAT",
+      "noData": "No data yet",
+      "noRatings": "no ratings"
+    },
+    "chat": {
+      "title": "Horizon Sparks Support",
+      "titleOperator": "Support Chat",
+      "typeMessage": "Type your message...",
+      "replyCustomer": "Reply to customer...",
+      "openConvToReply": "Open a conversation to reply",
+      "openFromInbox": "Open a conversation from the Support Inbox to reply.",
+      "welcome": "Hi! How can we help you today? Describe your issue and our team will get back to you.",
+      "sendFailed": "Failed to send message. Please try again."
+    },
+    "aiSuggestion": {
+      "label": "Sparks AI suggests",
+      "accept": "Accept & Send",
+      "edit": "Edit",
+      "dismiss": "Dismiss",
+      "confidence": "Confidence"
+    },
+    "notes": {
+      "label": "Internal notes (operator only)",
+      "placeholder": "Notes only visible to support staff…",
+      "saving": "saving…",
+      "saved": "saved"
+    },
+    "csat": {
+      "prompt": "This conversation was resolved. How was your experience?",
+      "thanks": "Thanks for your feedback!",
+      "veryDissatisfied": "Very dissatisfied",
+      "dissatisfied": "Dissatisfied",
+      "neutral": "Neutral",
+      "satisfied": "Satisfied",
+      "verySatisfied": "Very satisfied"
+    },
+    "attachment": {
+      "downloadFile": "Download file"
+    }
   }
 }
