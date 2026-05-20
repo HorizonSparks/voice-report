@@ -32,14 +32,16 @@ const ORIGIN_LABEL = {
   'pids-app':    { label: 'P&IDS', color: 'secondary' },
 };
 
-function fmtRelative(iso) {
+// t() is passed in so this stays a plain function (testable + tree-shakeable)
+// instead of becoming a hook.
+function fmtRelative(iso, t) {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   const sec = Math.max(0, Math.floor((Date.now() - then) / 1000));
-  if (sec < 60) return 'just now';
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
-  return `${Math.floor(sec / 86400)}d ago`;
+  if (sec < 60) return t('support.time.justNow');
+  if (sec < 3600) return t('support.time.minutesAgo', { n: Math.floor(sec / 60) });
+  if (sec < 86400) return t('support.time.hoursAgo', { n: Math.floor(sec / 3600) });
+  return t('support.time.daysAgo', { n: Math.floor(sec / 86400) });
 }
 
 export default function SupportInboxPanel({ user, onBack, onOpenConversation }) {
@@ -295,7 +297,7 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
                     )}
                     <Box sx={{ flex: 1 }} />
                     <Typography sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 600 }}>
-                      {fmtRelative(conv.last_message_at || conv.updated_at || conv.created_at)}
+                      {fmtRelative(conv.last_message_at || conv.updated_at || conv.created_at, t)}
                     </Typography>
                   </Box>
                 </Box>

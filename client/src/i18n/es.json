@@ -368,6 +368,12 @@
     "markResolved": "Marcar como resuelta",
     "customerOn": "El cliente está en: {{route}}",
     "refresh": "Actualizar",
+    "time": {
+      "justNow": "ahora",
+      "minutesAgo": "hace {{n}}m",
+      "hoursAgo": "hace {{n}}h",
+      "daysAgo": "hace {{n}}d"
+    },
     "sla": {
       "avgFirstResponse": "Tiempo de primera respuesta",
       "resolution": "Resolución",

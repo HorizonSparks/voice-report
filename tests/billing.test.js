@@ -14,14 +14,34 @@
 const path = require('path');
 
 // ---- Mock the DB module BEFORE requiring the billing route. ----
-// node-postgres style: DB.db.query returns { rows, rowCount }.
+// billing.js uses high-level helpers (DB.plans.getAll, DB.subscriptions.*,
+// DB.invoices.*) plus the raw query path for some operations. We expose
+// all of them as jest.fn() so each test can shape return values directly.
 const mockDbQuery = jest.fn();
 const mockDbConnect = jest.fn(async () => ({
   query: mockDbQuery,
   release: jest.fn(),
 }));
+const mockPlans = {
+  getAll: jest.fn(),
+  getById: jest.fn(),
+};
+const mockSubscriptions = {
+  getByCompanyId: jest.fn(),
+  create: jest.fn(),
+  cancel: jest.fn(),
+};
+const mockInvoices = {
+  getByCompanyId: jest.fn(),
+  getById: jest.fn(),
+  create: jest.fn(),
+  markPaid: jest.fn(),
+};
 jest.mock('../database/db', () => ({
   db: { query: mockDbQuery, connect: mockDbConnect },
+  plans: mockPlans,
+  subscriptions: mockSubscriptions,
+  invoices: mockInvoices,
 }));
 
 // ---- Mock the session middleware so we can inject req.auth per test. ----
@@ -61,6 +81,9 @@ function makeApp() {
 beforeEach(() => {
   mockDbQuery.mockReset();
   mockDbConnect.mockClear();
+  Object.values(mockPlans).forEach(fn => fn.mockReset());
+  Object.values(mockSubscriptions).forEach(fn => fn.mockReset());
+  Object.values(mockInvoices).forEach(fn => fn.mockReset());
   mockTestAuth = null;
 });
 
@@ -104,21 +127,19 @@ describe('Billing — GET /plans', () => {
     mockTestAuth = { person_id: 'person_admin', sparks_role: 'admin', role_level: 5 };
   });
 
-  test('returns the rows that DB.db.query produces', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [
-        { id: 'plan_small', name: 'Small', monthly_price_cents: 9900 },
-        { id: 'plan_large', name: 'Large', monthly_price_cents: 49900 },
-      ],
-    });
+  test('returns the rows that DB.plans.getAll produces', async () => {
+    mockPlans.getAll.mockResolvedValueOnce([
+      { id: 'plan_small', name: 'Small', monthly_price_cents: 9900 },
+      { id: 'plan_large', name: 'Large', monthly_price_cents: 49900 },
+    ]);
     const res = await request(makeApp()).get('/api/billing/plans');
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
     expect(res.body[0].id).toBe('plan_small');
   });
 
-  test('500s if the DB throws', async () => {
-    mockDbQuery.mockRejectedValueOnce(new Error('connection refused'));
+  test('500s if the DB helper throws', async () => {
+    mockPlans.getAll.mockRejectedValueOnce(new Error('connection refused'));
     const res = await request(makeApp()).get('/api/billing/plans');
     expect(res.status).toBe(500);
   });
@@ -132,14 +153,26 @@ describe('Billing — GET /company/:id', () => {
     mockTestAuth = { person_id: 'person_admin', sparks_role: 'admin', role_level: 5 };
   });
 
-  test('returns 404 if the company has no billing record', async () => {
-    // billing.js does multiple queries; the route's first lookup (company plan)
-    // returning empty rows should bubble up as a clean error or empty payload.
-    mockDbQuery.mockResolvedValue({ rows: [] });
+  test('returns subscription + invoices payload for an existing company', async () => {
+    mockSubscriptions.getByCompanyId.mockResolvedValueOnce({
+      id: 'sub_abc', company_id: 'company_x', plan_id: 'plan_small', status: 'active',
+    });
+    mockInvoices.getByCompanyId.mockResolvedValueOnce([
+      { id: 'inv_1', amount_cents: 9900, status: 'paid' },
+    ]);
+    const res = await request(makeApp()).get('/api/billing/company/company_x');
+    expect(res.status).toBe(200);
+    expect(res.body.subscription.id).toBe('sub_abc');
+    expect(res.body.invoices).toHaveLength(1);
+  });
+
+  test('returns null subscription cleanly when no record exists', async () => {
+    mockSubscriptions.getByCompanyId.mockResolvedValueOnce(null);
+    mockInvoices.getByCompanyId.mockResolvedValueOnce([]);
     const res = await request(makeApp()).get('/api/billing/company/company_unknown');
-    // Allow either 404 (explicit not-found) or 200 with null payload — both
-    // are defensible. The hard requirement: NOT a 500.
-    expect([200, 404]).toContain(res.status);
+    expect(res.status).toBe(200);
+    expect(res.body.subscription).toBeNull();
+    expect(res.body.invoices).toEqual([]);
   });
 });
 

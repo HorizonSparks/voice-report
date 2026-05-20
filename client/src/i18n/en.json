@@ -368,6 +368,12 @@
     "markResolved": "Mark resolved",
     "customerOn": "Customer is on: {{route}}",
     "refresh": "Refresh",
+    "time": {
+      "justNow": "just now",
+      "minutesAgo": "{{n}}m ago",
+      "hoursAgo": "{{n}}h ago",
+      "daysAgo": "{{n}}d ago"
+    },
     "sla": {
       "avgFirstResponse": "Avg first response",
       "resolution": "Resolution",
