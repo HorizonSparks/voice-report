@@ -5,7 +5,7 @@ import TabView from '../components/TabView.jsx';
 import { safeMarkdown } from '../utils/helpers.js';
 
 export default function RecordView({ user, onSaved, readOnly }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [stage, setStage] = useState('idle'); // idle, recording, processing, conversation, structuring, done
   const [elapsed, setElapsed] = useState(0);
   const [turns, setTurns] = useState([]); // [{role:'user',text:''},{role:'ai',text:''}]
@@ -113,7 +113,7 @@ export default function RecordView({ user, onSaved, readOnly }) {
           const recog = new SR();
           recog.continuous = true;
           recog.interimResults = true;
-          recog.lang = 'en-US';
+          recog.lang = i18n.language === 'es' ? 'es-ES' : 'en-US';
           recog.onresult = (event) => {
             let interim = '', final = '';
             for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -183,57 +183,66 @@ export default function RecordView({ user, onSaved, readOnly }) {
 
   const stopRecording = async () => {
     if (recognition.current) { recognition.current.onend = null; recognition.current.stop(); }
-    if (mediaRecorder.current?.state !== 'inactive') mediaRecorder.current.stop();
+    
     clearInterval(timerRef.current);
     setTotalDuration(d => d + elapsed);
     setStage('processing');
 
-    setTimeout(async () => {
-      try {
-        const mimeType = mediaRecorder.current?.mimeType || 'audio/webm';
-        const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
-        const blob = new Blob(audioChunks.current, { type: mimeType });
-        const formData = new FormData();
-        formData.append('audio', blob, `recording.${ext}`);
-        formData.append('report_id', reportId + '_turn' + turns.length);
+    if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+      await new Promise((resolve) => {
+        const prevOnStop = mediaRecorder.current.onstop;
+        mediaRecorder.current.onstop = () => {
+          if (prevOnStop) prevOnStop();
+          resolve();
+        };
+        mediaRecorder.current.stop();
+      });
+    }
 
-        const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
-        let transcriptText = '';
+    try {
+      const mimeType = mediaRecorder.current?.mimeType || 'audio/webm';
+      const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+      const blob = new Blob(audioChunks.current, { type: mimeType });
+      const formData = new FormData();
+      formData.append('audio', blob, `recording.${ext}`);
+      formData.append('report_id', reportId + '_turn' + turns.length);
 
-        if (res.ok) {
-          const data = await res.json();
-          transcriptText = data.transcript;
-          audioFilenamesRef.current = [...audioFilenamesRef.current, data.audio_file];
-          setAudioFilenames(audioFilenamesRef.current);
-        } else {
-          transcriptText = fullTranscript.current.trim();
-        }
+      const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+      let transcriptText = '';
 
-        if (!transcriptText) {
-          setError(t('common.noSpeechDetected'));
-          setStage(turns.length > 0 ? 'conversation' : 'idle');
-          return;
-        }
-
-        // Add user turn
-        const newTurns = [...turns, { role: 'user', text: transcriptText }];
-        setTurns(newTurns);
-        setLiveText('');
-
-        // Get AI follow-up
-        await getAiResponse(newTurns);
-      } catch (e) {
-        const fallbackText = fullTranscript.current.trim();
-        if (fallbackText) {
-          const newTurns = [...turns, { role: 'user', text: fallbackText }];
-          setTurns(newTurns);
-          await getAiResponse(newTurns);
-        } else {
-          setError('Recording failed. Try again.');
-          setStage(turns.length > 0 ? 'conversation' : 'idle');
-        }
+      if (res.ok) {
+        const data = await res.json();
+        transcriptText = data.transcript;
+        audioFilenamesRef.current = [...audioFilenamesRef.current, data.audio_file];
+        setAudioFilenames(audioFilenamesRef.current);
+      } else {
+        transcriptText = fullTranscript.current.trim();
       }
-    }, 500);
+
+      if (!transcriptText) {
+        setError(t('common.noSpeechDetected'));
+        setStage(turns.length > 0 ? 'conversation' : 'idle');
+        return;
+      }
+
+      // Add user turn
+      const newTurns = [...turns, { role: 'user', text: transcriptText }];
+      setTurns(newTurns);
+      setLiveText('');
+
+      // Get AI follow-up
+      await getAiResponse(newTurns);
+    } catch (e) {
+      const fallbackText = fullTranscript.current.trim();
+      if (fallbackText) {
+        const newTurns = [...turns, { role: 'user', text: fallbackText }];
+        setTurns(newTurns);
+        await getAiResponse(newTurns);
+      } else {
+        setError('Recording failed. Try again.');
+        setStage(turns.length > 0 ? 'conversation' : 'idle');
+      }
+    }
   };
 
   const getAiResponse = async (currentTurns) => {

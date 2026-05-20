@@ -33,7 +33,11 @@ describe('Agent Definitions — shape and loading', () => {
   let agents;
 
   beforeAll(() => {
-    agents = require('../server/services/ai/agents');
+    const rawAgents = require('../server/services/ai/agents');
+    agents = {};
+    for (const [key, val] of Object.entries(rawAgents)) {
+      agents[key] = key === 'projectIntelligence' ? val.agent : val;
+    }
   });
 
   test('index exports all expected agents', () => {
@@ -404,7 +408,11 @@ describe('Cross-cutting invariants', () => {
   let agents;
 
   beforeAll(() => {
-    agents = require('../server/services/ai/agents');
+    const rawAgents = require('../server/services/ai/agents');
+    agents = {};
+    for (const [key, val] of Object.entries(rawAgents)) {
+      agents[key] = key === 'projectIntelligence' ? val.agent : val;
+    }
   });
 
   test('non-stub agents have guardrails.enabled=true', () => {
