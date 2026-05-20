@@ -24,6 +24,7 @@
  */
 
 const { createRemoteJWKSet, jwtVerify } = require('jose');
+const crypto = require('crypto');
 const DB = require('../../database/db');
 
 const ISSUER = process.env.KEYCLOAK_ISSUER;
@@ -38,33 +39,81 @@ function getJWKS() {
   return JWKS;
 }
 
+// Columns the resolver returns. Kept in one constant so the SELECT and the
+// post-INSERT SELECT below stay in lockstep — drift between them caused
+// confusing "field missing" bugs the last time this was refactored.
+const PEOPLE_COLUMNS = 'id, name, role_title, role_level, sparks_role, photo, status, ' +
+                      'company_id, keycloak_user_id, keycloak_username';
+
+// Extract company_id from a verified JWT. Tries multiple claim locations
+// because Keycloak's mapping is configured server-side and we want the
+// resolver to keep working regardless of which convention the realm admin
+// uses. Returns null if no recognizable company claim is found.
+function extractCompanyId(claims) {
+  if (!claims || typeof claims !== 'object') return null;
+  // 1. Direct custom attribute mapped as claim — recommended approach.
+  if (typeof claims.company_id === 'string' && claims.company_id.trim()) {
+    return claims.company_id.trim();
+  }
+  // 2. Namespaced claim (common when avoiding short-name collisions).
+  const ns = claims['https://horizonsparks.ai/company_id'];
+  if (typeof ns === 'string' && ns.trim()) return ns.trim();
+  // 3. Hasura-style namespaced claim block (the JWT we already inspect for
+  //    x-hasura-user-id could also carry an x-hasura-company-id).
+  const h = claims['https://hasura.io/jwt/claims'];
+  if (h && typeof h === 'object' && typeof h['x-hasura-company-id'] === 'string') {
+    const v = h['x-hasura-company-id'].trim();
+    if (v) return v;
+  }
+  // 4. Group-based: e.g. claims.groups = ['/companies/company_horizon_sparks'].
+  if (Array.isArray(claims.groups)) {
+    for (const g of claims.groups) {
+      if (typeof g !== 'string') continue;
+      const m = g.match(/(?:^|\/)companies\/([^/]+)/);
+      if (m) return m[1];
+    }
+  }
+  return null;
+}
+
+// Build a default display name from JWT claims. We try name, then given+family,
+// then preferred_username, then sub. Always returns a non-empty string.
+function deriveName(claims) {
+  if (typeof claims.name === 'string' && claims.name.trim()) return claims.name.trim();
+  const given = (claims.given_name || '').trim();
+  const family = (claims.family_name || '').trim();
+  if (given || family) return `${given} ${family}`.trim();
+  if (claims.preferred_username) return String(claims.preferred_username);
+  return String(claims.sub || 'Unknown User');
+}
+
 /**
- * Look up a voicereport.people row by Keycloak user_id, with fallback to
- * preferred_username. Returns the row or null.
+ * Look up a voicereport.people row by Keycloak user_id, with fallbacks.
+ *
+ * Resolution order:
+ *   1. Match by keycloak_user_id (sub) — fast path for already-provisioned users
+ *   2. Match by keycloak_username (preferred_username) — legacy mappings; lazy-
+ *      upgrades the row with the now-known sub
+ *   3. If still unmapped AND the JWT carries a company_id claim, auto-create
+ *      a new row from JWT claims. Returns the new row.
+ *   4. If still unmapped AND no company_id claim, return null — the caller
+ *      then 403s with "user not provisioned" (same as legacy behavior).
  */
 async function resolvePersonFromClaims(claims) {
   const sub = claims.sub;
   const username = claims.preferred_username || null;
 
-  // Primary lookup: keycloak_user_id
   if (sub) {
     const r = await DB.db.query(
-      'SELECT id, name, role_title, role_level, sparks_role, photo, status, ' +
-      '       company_id, keycloak_user_id, keycloak_username ' +
-      'FROM voicereport.people ' +
-      'WHERE keycloak_user_id = $1 LIMIT 1',
+      `SELECT ${PEOPLE_COLUMNS} FROM voicereport.people WHERE keycloak_user_id = $1 LIMIT 1`,
       [sub]
     );
     if (r.rows[0]) return r.rows[0];
   }
 
-  // Fallback lookup: keycloak_username (for users mapped before we had the UUID)
   if (username) {
     const r = await DB.db.query(
-      'SELECT id, name, role_title, role_level, sparks_role, photo, status, ' +
-      '       company_id, keycloak_user_id, keycloak_username ' +
-      'FROM voicereport.people ' +
-      'WHERE keycloak_username = $1 LIMIT 1',
+      `SELECT ${PEOPLE_COLUMNS} FROM voicereport.people WHERE keycloak_username = $1 LIMIT 1`,
       [username]
     );
     if (r.rows[0]) {
@@ -79,7 +128,87 @@ async function resolvePersonFromClaims(claims) {
     }
   }
 
-  return null;
+  // Auto-provision path. Requires a derivable company_id from the JWT —
+  // without it the new row would be useless (most queries scope by company).
+  //
+  // SECURITY MODEL: trust in the company_id claim depends on the Keycloak
+  // realm configuration. The realm admin MUST map company_id from an
+  // admin-controlled source (group membership or admin-managed user
+  // attribute), NOT a self-service attribute. If users can set their own
+  // company_id, this code would let any user join any tenant. We defense-
+  // in-depth this by verifying the company exists, but the primary defense
+  // is Keycloak-side. See deploy/keycloak/README if it exists.
+  const company_id = extractCompanyId(claims);
+  if (!sub || !company_id) return null;
+
+  // Reject phantom company_ids — the claim must reference a real tenant.
+  // Defense-in-depth only; not a substitute for proper Keycloak attribute
+  // mapping (see SECURITY MODEL above).
+  try {
+    const { rows: companyRows } = await DB.db.query(
+      'SELECT id FROM voicereport.companies WHERE id = $1 LIMIT 1',
+      [company_id]
+    );
+    if (companyRows.length === 0) {
+      console.warn('[verifyKeycloakJwt] auto-provision rejected: unknown company_id', {
+        sub, claimed_company_id: company_id,
+      });
+      return null;
+    }
+  } catch (err) {
+    console.error('[verifyKeycloakJwt] company lookup failed during auto-provision', err);
+    return null;
+  }
+
+  const newId = 'person_' + crypto.randomUUID().slice(0, 12);
+  const newName = deriveName(claims);
+  // Generate an unguessable PIN so legacy PIN-login fails for auto-provisioned
+  // users — they must always authenticate via Keycloak. 32 hex chars exceeds
+  // any practical PIN-entry surface area.
+  const sentinelPin = crypto.randomBytes(16).toString('hex');
+
+  try {
+    const r = await DB.db.query(
+      `INSERT INTO voicereport.people (id, name, pin, role_title, role_level, company_id,
+                                       keycloak_user_id, keycloak_username, status,
+                                       created_at, updated_at)
+       VALUES ($1, $2, $3, 'User', 1, $4, $5, $6, 'active', NOW(), NOW())
+       RETURNING ${PEOPLE_COLUMNS}`,
+      [newId, newName, sentinelPin, company_id, sub, username]
+    );
+    console.log('[verifyKeycloakJwt] auto-provisioned new user', {
+      id: r.rows[0].id, sub, username, company_id, name: newName,
+    });
+    return r.rows[0];
+  } catch (err) {
+    // Race recovery: a concurrent request just provisioned this sub. The
+    // unique index uniq_people_keycloak_user_id (keycloak_auto_provision.sql)
+    // produces 23505. Re-fetch and return the winner's row.
+    const isExpectedRace = err && err.code === '23505'
+      && (err.constraint === 'uniq_people_keycloak_user_id'
+          || /keycloak_user_id/i.test(err.constraint || ''));
+    if (isExpectedRace) {
+      const r2 = await DB.db.query(
+        `SELECT ${PEOPLE_COLUMNS} FROM voicereport.people WHERE keycloak_user_id = $1 LIMIT 1`,
+        [sub]
+      );
+      if (r2.rows[0]) return r2.rows[0];
+      // Index winner not findable — should not happen. Log loudly.
+      console.error('[verifyKeycloakJwt] race winner not findable after 23505', { sub });
+      return null;
+    }
+    if (err && err.code === '23505') {
+      // A DIFFERENT unique constraint fired — programming or schema bug,
+      // not a race. Log a distinct message so it doesn't look like a normal
+      // unmapped-user 403 to whoever reads the logs later.
+      console.error('[verifyKeycloakJwt] unexpected unique violation during auto-provision', {
+        sub, constraint: err.constraint, detail: err.detail,
+      });
+      return null;
+    }
+    console.error('[verifyKeycloakJwt] auto-provision failed', { sub, err: err && err.message });
+    return null;
+  }
 }
 
 /**

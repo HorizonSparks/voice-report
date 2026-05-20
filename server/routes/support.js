@@ -136,6 +136,23 @@ router.post('/send', requireAuth, sendRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Message content (non-empty string) required' });
     }
 
+    // Support staff must use /api/support/reply/:id to respond. /send is the
+    // customer entry point — if a sparks user POSTs here they'd end up creating
+    // a "customer" row attributed to themselves, polluting the data and
+    // confusing SLA metrics. Integration auth is allowed (PIDS-app proxy
+    // forwards real customer identity).
+    //
+    // Trim before checking so dirty rows with sparks_role='' still pass through
+    // as normal customers — only a non-empty role string blocks /send.
+    const sparksRoleTrimmed = (req.auth && typeof req.auth.sparks_role === 'string')
+      ? req.auth.sparks_role.trim()
+      : '';
+    if (sparksRoleTrimmed && !req.auth.isIntegration) {
+      return res.status(403).json({
+        error: 'Support staff cannot initiate customer messages via /send. Use /reply/:id from the operator inbox.',
+      });
+    }
+
     // When the caller is an integration (PIDS-app proxy), accept the body's
     // identity overrides; otherwise lock to the real session identity.
     const isIntegration = !!req.auth.isIntegration;
