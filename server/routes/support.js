@@ -145,6 +145,16 @@ router.post('/send', requireAuth, async (req, res) => {
     // Trigger async auto-reply (Always enabled in hybrid mode)
     setImmediate(async () => {
       try {
+        // Human takeover check: If a human operator has already replied to this
+        // conversation, the AI should step back.
+        const { rows: humanCheckPre } = await DB.db.query(
+          "SELECT id FROM support_messages WHERE conversation_id = $1 AND sender_type = 'support' AND person_name != 'Sparks AI' LIMIT 1",
+          [conversation_id]
+        );
+        if (humanCheckPre.length > 0) {
+          return;
+        }
+
         // Build context for Claude
         const systemPrompt = `You are Sparks AI, the helpful technical support assistant for Horizon Sparks.
 ${isOffline 
@@ -224,6 +234,16 @@ Keep your response concise, clear, and reassuring. Do not use markdown syntax th
           });
 
           if (result.text) {
+            // Double check: Has a human operator replied during the ~2 seconds Claude was thinking?
+            const { rows: humanCheckPost } = await DB.db.query(
+              "SELECT id FROM support_messages WHERE conversation_id = $1 AND sender_type = 'support' AND person_name != 'Sparks AI' LIMIT 1",
+              [conversation_id]
+            );
+            if (humanCheckPost.length > 0) {
+              console.log(`Support auto-reply: human intervention detected for ${conversation_id} during thinking. Aborting AI reply.`);
+              return;
+            }
+
             // Save Claude's reply to DB
             const replyMsgId = 'smsg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
             await DB.db.query(
