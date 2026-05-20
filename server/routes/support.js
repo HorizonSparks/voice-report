@@ -139,6 +139,7 @@ router.post('/send', requireAuth, async (req, res) => {
     const nowTime = new Date();
     const dayOfWeek = nowTime.getDay();
     const hourOfDay = nowTime.getHours();
+    // NOTE: uses server local time — ensure the server TZ matches business timezone
     const isBusinessHours = dayOfWeek >= 1 && dayOfWeek <= 5 && hourOfDay >= 9 && hourOfDay < 17;
     const isOffline = activeAgents === 0 && !isBusinessHours;
 
@@ -263,7 +264,7 @@ Keep your response concise, clear, and reassuring. Do not use markdown syntax th
         }
       });
 
-    res.json({ success: true, conversation_id, message_id: msg_id });
+    res.json({ success: true, conversation_id, message_id: msg_id, status: 'open' });
   } catch (err) {
     console.error('Support send error:', err);
     res.status(500).json({ error: 'Failed to send message' });
@@ -315,6 +316,7 @@ router.get('/status', requireAuth, async (req, res) => {
     const activeAgents = rows[0]?.count || 0;
 
     // Fallback: check business hours (Mon-Fri 9:00 - 17:00 local server time)
+    // NOTE: uses server local time — ensure the server TZ matches business timezone
     const now = new Date();
     const day = now.getDay();
     const hour = now.getHours();
@@ -340,15 +342,26 @@ router.get('/status', requireAuth, async (req, res) => {
 // ============================================
 
 // GET /api/support/inbox — All open conversations (Sparks support+)
+// Query params: ?page=1&limit=50&origin=voicereport|pids-app
 router.get('/inbox', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
   try {
+    const limit  = Math.min(parseInt(req.query.limit) || 50, 100);
+    const page   = Math.max(parseInt(req.query.page)  || 1, 1);
+    const offset = (page - 1) * limit;
+    const origin = ['voicereport', 'pids-app'].includes(req.query.origin) ? req.query.origin : null;
+
+    const params        = origin ? [limit, offset, origin] : [limit, offset];
+    const originClause  = origin ? 'AND sc.app_origin = $3' : '';
+
     const { rows } = await DB.db.query(`
       SELECT sc.*,
         (SELECT count(*)::int FROM support_messages sm WHERE sm.conversation_id = sc.id AND sm.sender_type = 'customer' AND sm.read_at IS NULL) as unread_count
       FROM support_conversations sc
       WHERE sc.status IN ('open', 'waiting')
+        ${originClause}
       ORDER BY sc.last_message_at DESC NULLS LAST
-    `);
+      LIMIT $1 OFFSET $2
+    `, params);
     res.json(rows);
   } catch (err) {
     console.error('Support inbox error:', err);
@@ -472,6 +485,95 @@ router.post('/read', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/support/my-unread-count — Customer unread badge count
+router.get('/my-unread-count', requireAuth, async (req, res) => {
+  try {
+    const isIntegration = !!req.auth.isIntegration;
+    const person_id = isIntegration ? req.query.as_person_id : req.auth.person_id;
+    if (!person_id) return res.json({ unread: 0 });
+
+    const { rows: [{ count }] } = await DB.db.query(`
+      SELECT count(*)::int as count
+      FROM support_messages sm
+      JOIN support_conversations sc ON sm.conversation_id = sc.id
+      WHERE sc.person_id = $1
+        AND sc.status != 'resolved'
+        AND sm.sender_type = 'support'
+        AND sm.read_at IS NULL
+    `, [person_id]);
+    res.json({ unread: count });
+  } catch (err) {
+    res.json({ unread: 0 });
+  }
+});
+
+// GET /api/support/resolved — Resolved conversations history (Sparks support+)
+// Query params: ?page=1&limit=20&origin=voicereport|pids-app
+router.get('/resolved', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const limit  = Math.min(parseInt(req.query.limit) || 20, 100);
+    const page   = Math.max(parseInt(req.query.page)  || 1, 1);
+    const offset = (page - 1) * limit;
+    const origin = ['voicereport', 'pids-app'].includes(req.query.origin) ? req.query.origin : null;
+
+    const params       = origin ? [limit, offset, origin] : [limit, offset];
+    const originClause = origin ? 'AND sc.app_origin = $3' : '';
+
+    const { rows } = await DB.db.query(`
+      SELECT sc.*
+      FROM support_conversations sc
+      WHERE sc.status = 'resolved'
+        ${originClause}
+      ORDER BY sc.updated_at DESC
+      LIMIT $1 OFFSET $2
+    `, params);
+    res.json(rows);
+  } catch (err) {
+    console.error('Support resolved error:', err);
+    res.status(500).json({ error: 'Failed to load resolved conversations' });
+  }
+});
+
+// POST /api/support/reopen/:id — Reopen a resolved conversation
+router.post('/reopen/:id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const { rowCount } = await DB.db.query(
+      "UPDATE support_conversations SET status = 'open', updated_at = NOW() WHERE id = $1 AND status = 'resolved'",
+      [req.params.id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Conversation not found or not resolved' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Support reopen error:', err);
+    res.status(500).json({ error: 'Failed to reopen conversation' });
+  }
+});
+
+// PATCH /api/support/assign/:id — Assign/unassign conversation to a support agent
+// Body: { person_id: "..." } or { person_id: null } to unassign
+// Requires migration: support_chat_phase_b.sql
+router.patch('/assign/:id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const { person_id } = req.body;
+    if (person_id != null) {
+      const { rows } = await DB.db.query(
+        "SELECT id FROM people WHERE id = $1 AND sparks_role IN ('admin', 'support')",
+        [person_id]
+      );
+      if (rows.length === 0) return res.status(400).json({ error: 'Person not found or lacks support role' });
+    }
+    const { rowCount } = await DB.db.query(
+      'UPDATE support_conversations SET assigned_to = $1, updated_at = NOW() WHERE id = $2',
+      [person_id || null, req.params.id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Conversation not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Support assign error:', err);
+    res.status(500).json({ error: 'Failed to assign conversation' });
+  }
+});
+
 // File upload configuration for support
 const msgFileDir = path.join(__dirname, '../../message-files');
 if (!fs.existsSync(msgFileDir)) fs.mkdirSync(msgFileDir, { recursive: true });
@@ -501,7 +603,11 @@ router.post('/upload', requireAuth, supportFileUpload.single('file'), async (req
 
 // GET /api/support/files/:filename — Download/serve support message attachment securely
 router.get('/files/:filename', requireAuth, (req, res) => {
-  const filePath = path.join(__dirname, '../../message-files', req.params.filename);
+  const filename = path.basename(req.params.filename);
+  const filePath = path.resolve(msgFileDir, filename);
+  if (!filePath.startsWith(path.resolve(msgFileDir) + path.sep)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
   res.download(filePath);
 });
