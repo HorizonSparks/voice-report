@@ -43,7 +43,9 @@ function setSessionCookie(res, sessionId, maxAge, req) {
   // and any subdomain — required for true SSO. Unset = host-only cookie (today).
   const cookieDomain = process.env.COOKIE_DOMAIN || null;
   res.setHeader('Set-Cookie', [
-    // HttpOnly session token — not readable by JS
+    // HttpOnly session token — not readable by JS. Priority=High asks
+    // browsers to keep this cookie if storage eviction kicks in (the
+    // companion presence flag is OK to lose, the session id is not).
     [
       `${COOKIE_NAME}=${sessionId}`,
       'HttpOnly',
@@ -52,6 +54,7 @@ function setSessionCookie(res, sessionId, maxAge, req) {
       'Path=/',
       cookieDomain ? `Domain=${cookieDomain}` : '',
       `Max-Age=${age}`,
+      'Priority=High',
     ].filter(Boolean).join('; '),
     // Companion presence flag — readable by JS so client can skip /api/me when no session exists
     [

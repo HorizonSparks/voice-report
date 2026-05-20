@@ -15,6 +15,14 @@ errorTracking.initialize();
 
 const app = express();
 
+// Trust the first proxy hop (Cloudflare / nginx in front of this container).
+// Required so `req.secure` and `req.ip` reflect the real client connection,
+// which the cookie Secure flag and per-IP rate limiters both depend on.
+// Without this, every request looks like it came from the proxy itself —
+// Secure cookies wouldn't set on HTTPS and rate limits would group all
+// users into one bucket.
+app.set('trust proxy', 1);
+
 // Legacy-domain 301 redirect — sends any request hitting a retired hostname
 // to the canonical hostname, preserving path + query string. Configured via env:
 //   LEGACY_HOSTS               (CSV, e.g. "voice-report.ai,www.voice-report.ai")
@@ -128,13 +136,16 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 
 // Mount routes
-// AI cost guard on Claude-calling routes
-app.use('/api/agent', aiCostGuard);
-app.use('/api/loopfolders/intelligence', aiCostGuard);
-app.use('/api/structure', aiCostGuard);
-app.use('/api/refine', aiCostGuard);
-app.use('/api/converse', aiCostGuard);
-app.use('/api/refine-speak', aiCostGuard);
+// AI cost guard + per-user rate limit on AI-heavy routes. Cost guard caps
+// $/day spend; rate limiter caps request frequency. Both needed — a runaway
+// agent loop can spike spend before tripping the daily ceiling.
+const { aiHeavyLimiter, webauthnLimiter } = require('./middleware/rateLimiters');
+app.use('/api/agent', aiCostGuard, aiHeavyLimiter);
+app.use('/api/loopfolders/intelligence', aiCostGuard, aiHeavyLimiter);
+app.use('/api/structure', aiCostGuard, aiHeavyLimiter);
+app.use('/api/refine', aiCostGuard, aiHeavyLimiter);
+app.use('/api/converse', aiCostGuard, aiHeavyLimiter);
+app.use('/api/refine-speak', aiCostGuard, aiHeavyLimiter);
 
 app.use('/api', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
@@ -149,7 +160,7 @@ app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/jsa', require('./routes/jsa')(require('../database/db').db));
 app.use('/api/punch-list', require('./routes/punchList'));
 app.use('/api/analytics', require('./routes/analytics'));
-app.use('/api/webauthn', require('./routes/webauthn'));
+app.use('/api/webauthn', webauthnLimiter, require('./routes/webauthn'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/sparks', require('./routes/sparks'));
