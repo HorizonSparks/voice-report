@@ -13,6 +13,40 @@ const { callClaude } = require('../services/ai/anthropicClient');
 
 const router = Router();
 
+// Business hours are evaluated in this timezone, NOT the server's local time,
+// so the customer-facing offline banner and the auto-reply prompt stay correct
+// regardless of where the container is hosted. Override via env if Sparks moves.
+const SUPPORT_TIMEZONE = process.env.SUPPORT_TIMEZONE || 'America/Mexico_City';
+// Fail loud (once) on a typo'd timezone so it doesn't silently fall back to
+// "always offline" without anyone noticing.
+try {
+  new Intl.DateTimeFormat('en-US', { timeZone: SUPPORT_TIMEZONE });
+} catch (err) {
+  console.error(`[support] Invalid SUPPORT_TIMEZONE="${SUPPORT_TIMEZONE}":`, err.message);
+}
+function isBusinessHoursNow() {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: SUPPORT_TIMEZONE,
+      weekday: 'short',
+      hour: 'numeric',
+      hour12: false,
+    }).formatToParts(new Date());
+    const weekday = parts.find(p => p.type === 'weekday')?.value;
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value, 10);
+    if (!weekday || !Number.isFinite(hour)) return false;
+    return !['Sat', 'Sun'].includes(weekday) && hour >= 9 && hour < 17;
+  } catch {
+    return false;
+  }
+}
+
+// Window (minutes) during which the AI auto-reply backs off after a human
+// operator sends a message. Once the window passes, the AI resumes helping
+// — supports the soft-handoff pattern where a human steps in, resolves the
+// active thread of conversation, then leaves.
+const AUTO_REPLY_HUMAN_BACKOFF_MINUTES = 10;
+
 // Defense-in-depth: the integration key currently mints an admin-equivalent
 // session (see middleware/sessionAuth.js loadSession), which is broader than
 // the support-chat use case requires. This guard blocks integration callers
@@ -97,14 +131,27 @@ router.post('/send', requireAuth, async (req, res) => {
       );
     } else {
       conversation_id = 'conv_' + crypto.randomUUID().slice(0, 12);
-      await DB.db.query(
-        `INSERT INTO support_conversations
-           (id, company_id, person_id, person_name, person_role, company_name,
-            status, app_origin, current_route, screen_context, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9, NOW(), NOW())`,
-        [conversation_id, company_id, person_id, person_name, person_role,
-         company_name, origin, route, ctx]
-      );
+      try {
+        await DB.db.query(
+          `INSERT INTO support_conversations
+             (id, company_id, person_id, person_name, person_role, company_name,
+              status, app_origin, current_route, screen_context, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9, NOW(), NOW())`,
+          [conversation_id, company_id, person_id, person_name, person_role,
+           company_name, origin, route, ctx]
+        );
+      } catch (insertErr) {
+        // 23505 = unique violation against uniq_support_conv_active_person.
+        // Another concurrent request opened a thread for this person between
+        // our SELECT and INSERT — re-select to pick up its id and continue.
+        if (insertErr.code !== '23505') throw insertErr;
+        const { rows: raced } = await DB.db.query(
+          "SELECT id FROM support_conversations WHERE person_id = $1 AND status != 'resolved' ORDER BY updated_at DESC LIMIT 1",
+          [person_id]
+        );
+        if (raced.length === 0) throw insertErr;
+        conversation_id = raced[0].id;
+      }
     }
 
     // Save message
@@ -136,23 +183,22 @@ router.post('/send', requireAuth, async (req, res) => {
       console.error('Active check error during send:', e);
     }
 
-    const nowTime = new Date();
-    const dayOfWeek = nowTime.getDay();
-    const hourOfDay = nowTime.getHours();
-    // NOTE: uses server local time — ensure the server TZ matches business timezone
-    const isBusinessHours = dayOfWeek >= 1 && dayOfWeek <= 5 && hourOfDay >= 9 && hourOfDay < 17;
-    const isOffline = activeAgents === 0 && !isBusinessHours;
+    const isOffline = activeAgents === 0 && !isBusinessHoursNow();
 
     // Trigger async auto-reply (Always enabled in hybrid mode)
     setImmediate(async () => {
       try {
-        // Human takeover check: If a human operator has already replied to this
-        // conversation, the AI should step back.
-        const { rows: humanCheckPre } = await DB.db.query(
-          "SELECT id FROM support_messages WHERE conversation_id = $1 AND sender_type = 'support' AND person_name != 'Sparks AI' LIMIT 1",
-          [conversation_id]
+        // Human takeover check: skip auto-reply if a human operator (not Sparks
+        // AI) has replied within the configured backoff window. Time-based so
+        // the AI resumes helping once the human disengages from the thread.
+        const { rows: takeoverPre } = await DB.db.query(
+          `SELECT 1 FROM support_conversations
+            WHERE id = $1
+              AND last_support_reply_at > NOW() - $2 * INTERVAL '1 minute'
+            LIMIT 1`,
+          [conversation_id, AUTO_REPLY_HUMAN_BACKOFF_MINUTES]
         );
-        if (humanCheckPre.length > 0) {
+        if (takeoverPre.length > 0) {
           return;
         }
 
@@ -235,12 +281,16 @@ Keep your response concise, clear, and reassuring. Do not use markdown syntax th
           });
 
           if (result.text) {
-            // Double check: Has a human operator replied during the ~2 seconds Claude was thinking?
-            const { rows: humanCheckPost } = await DB.db.query(
-              "SELECT id FROM support_messages WHERE conversation_id = $1 AND sender_type = 'support' AND person_name != 'Sparks AI' LIMIT 1",
-              [conversation_id]
+            // Double check after Claude returns: has a human replied during
+            // the API call window? Same time-based gate as the pre-check.
+            const { rows: takeoverPost } = await DB.db.query(
+              `SELECT 1 FROM support_conversations
+                WHERE id = $1
+                  AND last_support_reply_at > NOW() - $2 * INTERVAL '1 minute'
+                LIMIT 1`,
+              [conversation_id, AUTO_REPLY_HUMAN_BACKOFF_MINUTES]
             );
-            if (humanCheckPost.length > 0) {
+            if (takeoverPost.length > 0) {
               console.log(`Support auto-reply: human intervention detected for ${conversation_id} during thinking. Aborting AI reply.`);
               return;
             }
@@ -315,23 +365,13 @@ router.get('/status', requireAuth, async (req, res) => {
     `);
     const activeAgents = rows[0]?.count || 0;
 
-    // Fallback: check business hours (Mon-Fri 9:00 - 17:00 local server time)
-    // NOTE: uses server local time — ensure the server TZ matches business timezone
-    const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
-    const isBusinessHours = day >= 1 && day <= 5 && hour >= 9 && hour < 17;
-
     res.json({
-      online: activeAgents > 0 || isBusinessHours,
+      online: activeAgents > 0 || isBusinessHoursNow(),
       active_agents: activeAgents,
     });
   } catch (err) {
-    const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
     res.json({
-      online: day >= 1 && day <= 5 && hour >= 9 && hour < 17,
+      online: isBusinessHoursNow(),
       active_agents: 0,
     });
   }
@@ -417,9 +457,10 @@ router.post('/reply/:id', requireAuth, denyIntegration, requireSparksRole('suppo
       [msg_id, conversation_id, req.auth.person_id, support_name, content, message_type || 'text', file_url || null]
     );
 
-    // Update conversation
+    // Stamp last_support_reply_at so the auto-reply gate backs off for the
+    // configured human-takeover window (see support_chat_phase_c.sql).
     await DB.db.query(
-      "UPDATE support_conversations SET last_message = $1, last_message_at = NOW(), updated_at = NOW(), status = 'waiting' WHERE id = $2",
+      "UPDATE support_conversations SET last_message = $1, last_message_at = NOW(), updated_at = NOW(), status = 'waiting', last_support_reply_at = NOW() WHERE id = $2",
       [content.substring(0, 200), conversation_id]
     );
 
