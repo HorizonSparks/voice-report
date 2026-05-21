@@ -10,6 +10,14 @@
 
 SET search_path TO voicereport;
 
+-- Columns are normally added by the SSO bootstrap migration that landed
+-- with a9000e4 (Keycloak SSO integration). Re-declared here with
+-- IF NOT EXISTS so this file is self-contained on fresh dev databases
+-- where that bootstrap was never applied — production already has them.
+ALTER TABLE voicereport.people
+  ADD COLUMN IF NOT EXISTS keycloak_user_id TEXT,
+  ADD COLUMN IF NOT EXISTS keycloak_username TEXT;
+
 -- Unique index on keycloak_user_id (partial — only non-null values).
 -- Postgres allows multiple NULLs in a unique index, so legacy people rows
 -- without a Keycloak mapping continue to coexist freely.
