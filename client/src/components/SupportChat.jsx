@@ -56,6 +56,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiSuggestionMessageId, setAiSuggestionMessageId] = useState(null);
   const [aiConfidence, setAiConfidence] = useState(null);
+  const [lastSupportReplyAt, setLastSupportReplyAt] = useState(null);
   const [internalNotes, setInternalNotes] = useState('');
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [notesSaveStatus, setNotesSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
@@ -173,6 +174,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     setNotesExpanded(false);
     setConversationStatus(null);
     setCustomerRating(null);
+    setLastSupportReplyAt(null);
     notesSeededForConvId.current = null;
   }, [activeConversation]);
 
@@ -234,6 +236,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
       setConversationId(convId);
       if (data.conversation) {
         setConversationStatus(data.conversation.status);
+        setLastSupportReplyAt(data.conversation.last_support_reply_at || null);
         // Seed notes from server only ONCE per conversation. After the
         // operator has interacted with the textarea, polling can never
         // overwrite their local edits (even if they deliberately cleared).
@@ -388,6 +391,18 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
     }
   };
 
+  // Operator clears the soft-handoff backoff so the AI can resume on the
+  // next customer message. Backend sets last_support_reply_at = NULL.
+  const releaseAi = async () => {
+    if (!conversationId) return;
+    try {
+      const r = await fetch(`/api/support/release-ai/${conversationId}`, { method: 'POST' });
+      if (r.ok) setLastSupportReplyAt(null);
+    } catch (err) {
+      console.error('Release AI error:', err);
+    }
+  };
+
   // Customer rates a resolved conversation. One-shot — backend rejects re-rates.
   const rateConversation = async (rating) => {
     if (!conversationId) return;
@@ -439,6 +454,15 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   // and not yet rated. After rating, a thank-you takes its place.
   const showCsatPrompt = !isSparksUser && conversationStatus === 'resolved' && customerRating == null;
   const showCsatThanks = !isSparksUser && conversationStatus === 'resolved' && customerRating != null;
+
+  // AI is in the soft-handoff backoff window when a human reply landed within
+  // the last AI_BACKOFF_MS. The 3-min default matches SUPPORT_AI_BACKOFF_MINUTES
+  // in the backend — keep these in sync if you tune the server-side env var.
+  const AI_BACKOFF_MS = 3 * 60 * 1000;
+  const aiPaused = isSparksUser
+    && conversationId
+    && lastSupportReplyAt
+    && (Date.now() - new Date(lastSupportReplyAt).getTime() < AI_BACKOFF_MS);
   const csatEmojis = [
     { v: 1, glyph: '😞', label: t('support.csat.veryDissatisfied') },
     { v: 2, glyph: '🙁', label: t('support.csat.dissatisfied') },
@@ -712,6 +736,30 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                   />
                 </Box>
               )}
+            </Box>
+          )}
+
+          {/* Operator: AI-paused banner with Release button. Shown while the
+              soft-handoff backoff window from the last human reply is active. */}
+          {aiPaused && (
+            <Box sx={{
+              px: 1.5, py: 0.75,
+              display: 'flex', alignItems: 'center', gap: 1,
+              borderTop: '1px solid', borderColor: 'divider',
+              bgcolor: 'warning.light',
+            }}>
+              <Typography sx={{ flex: 1, fontSize: 11, color: 'warning.contrastText' }}>
+                ⏸ {t('support.ai.paused')}
+              </Typography>
+              <Button
+                size="small"
+                variant="contained"
+                color="warning"
+                onClick={releaseAi}
+                sx={{ fontSize: 11, py: 0.25, px: 1, minWidth: 'auto' }}
+              >
+                {t('support.ai.release')}
+              </Button>
             </Box>
           )}
 

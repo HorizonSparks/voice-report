@@ -426,6 +426,10 @@
       "dismiss": "Descartar",
       "confidence": "Confianza"
     },
+    "ai": {
+      "paused": "IA en pausa — el operador respondió hace poco",
+      "release": "Liberar IA ahora"
+    },
     "notes": {
       "label": "Notas internas (solo operador)",
       "placeholder": "Notas visibles solo para el equipo de soporte…",

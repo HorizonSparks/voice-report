@@ -101,8 +101,13 @@ function isBusinessHoursNow() {
 // Window (minutes) during which the AI auto-reply backs off after a human
 // operator sends a message. Once the window passes, the AI resumes helping
 // — supports the soft-handoff pattern where a human steps in, resolves the
-// active thread of conversation, then leaves.
-const AUTO_REPLY_HUMAN_BACKOFF_MINUTES = 10;
+// active thread of conversation, then leaves. Operators can shorten the
+// window for a specific conversation by hitting POST /release-ai/:id.
+// Override globally via env without redeploying code.
+const AUTO_REPLY_HUMAN_BACKOFF_MINUTES = Math.max(
+  1,
+  parseInt(process.env.SUPPORT_AI_BACKOFF_MINUTES, 10) || 3
+);
 
 // Defense-in-depth: the integration key currently mints an admin-equivalent
 // session (see middleware/sessionAuth.js loadSession), which is broader than
@@ -894,6 +899,26 @@ router.patch('/notes/:conversation_id', requireAuth, denyIntegration, requireSpa
   } catch (err) {
     console.error('Support notes error:', err);
     res.status(500).json({ error: 'Failed to save notes' });
+  }
+});
+
+// POST /api/support/release-ai/:conversation_id
+// Operator explicitly releases the AI backoff for a conversation. Clears
+// last_support_reply_at so the next customer message immediately re-engages
+// the AI. Useful when the operator has finished their part of the answer
+// and wants the bot to handle follow-ups without waiting for the timer.
+router.post('/release-ai/:conversation_id', requireAuth, denyIntegration, requireSparksRole('support'), async (req, res) => {
+  try {
+    const { rowCount } = await DB.db.query(
+      'UPDATE support_conversations SET last_support_reply_at = NULL, updated_at = NOW() WHERE id = $1',
+      [req.params.conversation_id]
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'Conversation not found' });
+    logEvent(req.params.conversation_id, req.auth.person_id, 'release_ai', null);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Support release-ai error:', err);
+    res.status(500).json({ error: 'Failed to release AI' });
   }
 });
 

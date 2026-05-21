@@ -426,6 +426,10 @@
       "dismiss": "Dismiss",
       "confidence": "Confidence"
     },
+    "ai": {
+      "paused": "AI paused — last operator reply was recent",
+      "release": "Release AI now"
+    },
     "notes": {
       "label": "Internal notes (operator only)",
       "placeholder": "Notes only visible to support staff…",
