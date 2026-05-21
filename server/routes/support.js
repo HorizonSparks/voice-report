@@ -120,14 +120,17 @@ const AUTO_REPLY_HUMAN_BACKOFF_MINUTES = Math.max(
 // with no question mark and no digits) are answered with a canned "👍"
 // instead of calling Claude. Default 3 catches "ok", "ya", "thx" etc.
 // Set to 0 to disable (every message goes to Claude).
-const AI_HISTORY_LIMIT = Math.max(
-  4,
-  parseInt(process.env.SUPPORT_AI_HISTORY_LIMIT, 10) || 20
-);
-const AI_TRIVIAL_THRESHOLD = Math.max(
-  0,
-  parseInt(process.env.SUPPORT_AI_TRIVIAL_THRESHOLD, 10) ?? 3
-);
+// parseInt of undefined returns NaN; nullish-coalescing (??) does NOT
+// fall back from NaN to the default. Use Number.isFinite to detect a
+// real number first — otherwise SUPPORT_AI_TRIVIAL_THRESHOLD=unset turns
+// into NaN, which makes `length > NaN` always false and incorrectly
+// treats every message as trivial.
+function envInt(name, fallback) {
+  const v = parseInt(process.env[name], 10);
+  return Number.isFinite(v) ? v : fallback;
+}
+const AI_HISTORY_LIMIT = Math.max(4, envInt('SUPPORT_AI_HISTORY_LIMIT', 20));
+const AI_TRIVIAL_THRESHOLD = Math.max(0, envInt('SUPPORT_AI_TRIVIAL_THRESHOLD', 3));
 
 // Heuristic: does this message warrant a real Claude call?
 // We skip very short messages with no question mark and no digits — those
