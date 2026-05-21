@@ -252,9 +252,15 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
         }
       }
       if (data.messages) {
+        // Operator perspective: the operator's "own side" (right, role='user')
+        // is the support team — every sender_type='support' message including
+        // AI and other operators on the team. The customer's messages go on
+        // the left (role='support', the OTHER person). This is the inverse of
+        // loadCustomerConversation, which sees the same row set from the
+        // opposite perspective.
         setMessages(data.messages.map(m => ({
           id: m.id,
-          role: m.sender_type === 'customer' ? 'user' : 'support',
+          role: m.sender_type === 'support' ? 'user' : 'support',
           text: m.content,
           name: m.person_name,
           fileUrl: m.file_url,
