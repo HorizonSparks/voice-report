@@ -188,23 +188,35 @@ router.post('/send', requireAuth, sendRateLimiter, async (req, res) => {
       }
     } catch {}
 
-    // Find or create conversation
+    // Find or create conversation. Includes resolved threads on purpose —
+    // a customer who returns after resolution gets the SAME thread reopened,
+    // preserving history. The prior customer_rating (if any) stays as a
+    // snapshot of how the previous resolution went; rating is one-shot
+    // (POST /rate returns 409 if already set).
     let conversation_id;
+    let reopened = false;
     const { rows: existing } = await DB.db.query(
-      "SELECT id FROM support_conversations WHERE person_id = $1 AND status != 'resolved' ORDER BY updated_at DESC LIMIT 1",
+      "SELECT id, status FROM support_conversations WHERE person_id = $1 ORDER BY updated_at DESC LIMIT 1",
       [person_id]
     );
 
     if (existing.length > 0) {
       conversation_id = existing[0].id;
+      reopened = existing[0].status === 'resolved';
       // Refresh route + context on every customer message so the operator
       // sees where they are NOW, not where they were when the thread opened.
+      // If the thread was resolved, flip it back to 'open' so it returns
+      // to the operator inbox.
       await DB.db.query(
         `UPDATE support_conversations
-            SET app_origin = $1, current_route = $2, screen_context = $3
+            SET app_origin = $1, current_route = $2, screen_context = $3,
+                status = CASE WHEN status = 'resolved' THEN 'open' ELSE status END
           WHERE id = $4`,
         [origin, route, ctx, conversation_id]
       );
+      if (reopened) {
+        logEvent(conversation_id, person_id, 'reopen_by_customer', null);
+      }
     } else {
       conversation_id = 'conv_' + crypto.randomUUID().slice(0, 12);
       try {
