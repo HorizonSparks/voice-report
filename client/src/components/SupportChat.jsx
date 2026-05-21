@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, IconButton, TextField, Button, Paper, Fab, Badge, Stack, Chip, Link } from '@mui/material';
+import { Box, Typography, IconButton, TextField, Button, Paper, Fab, Badge, Stack, Chip, Link, Popover } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
 import EditIcon from '@mui/icons-material/Edit';
@@ -8,6 +8,11 @@ import CheckIcon from '@mui/icons-material/Check';
 import NotesIcon from '@mui/icons-material/Notes';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
+
+// Lazy-load the emoji picker so its ~200KB chunk doesn't bloat the initial
+// PWA bundle. Customers who never open the chat never pay that cost.
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
 // Map a file_url (relative path returned by /api/support/upload) to a
 // renderable URL + an "is this an image?" boolean for inline preview.
@@ -57,6 +62,7 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
   const [aiSuggestionMessageId, setAiSuggestionMessageId] = useState(null);
   const [aiConfidence, setAiConfidence] = useState(null);
   const [lastSupportReplyAt, setLastSupportReplyAt] = useState(null);
+  const [emojiAnchor, setEmojiAnchor] = useState(null);
   const [internalNotes, setInternalNotes] = useState('');
   const [notesExpanded, setNotesExpanded] = useState(false);
   const [notesSaveStatus, setNotesSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
@@ -789,6 +795,17 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
                 },
               }}
             />
+            <IconButton
+              onClick={(e) => setEmojiAnchor(emojiAnchor ? null : e.currentTarget)}
+              disabled={isSparksUser && !conversationId}
+              aria-label="Insert emoji"
+              sx={{
+                color: 'text.secondary',
+                '@media (pointer: coarse)': { minWidth: 44, minHeight: 44 },
+              }}
+            >
+              <EmojiEmotionsIcon fontSize="small" />
+            </IconButton>
             <Button
               variant="contained"
               onClick={sendMessage}
@@ -802,6 +819,32 @@ export default function SupportChat({ user, simulatingCompany, externalOpen, onE
               <SendIcon fontSize="small" />
             </Button>
           </Box>
+
+          {/* Emoji picker — lazy-loaded, opens above the input via Popover. */}
+          <Popover
+            open={Boolean(emojiAnchor)}
+            anchorEl={emojiAnchor}
+            onClose={() => setEmojiAnchor(null)}
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            slotProps={{ paper: { sx: { boxShadow: 6, overflow: 'visible' } } }}
+          >
+            <Suspense fallback={<Box sx={{ p: 2, fontSize: 12, color: 'text.secondary' }}>Loading…</Box>}>
+              <EmojiPicker
+                onEmojiClick={(emojiObj) => {
+                  setInput(prev => prev + emojiObj.emoji);
+                  setEmojiAnchor(null);
+                  if (inputRef.current) inputRef.current.focus();
+                }}
+                width={320}
+                height={400}
+                searchPlaceholder="Search"
+                skinTonesDisabled
+                previewConfig={{ showPreview: false }}
+                lazyLoadEmojis
+              />
+            </Suspense>
+          </Popover>
         </Paper>
       )}
     </>
