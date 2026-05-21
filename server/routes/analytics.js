@@ -1,8 +1,29 @@
 const { Router } = require('express');
 const analytics = require('../../database/analytics');
 const { requireAuth, requireAdmin } = require('../middleware/sessionAuth');
+const { getBudgetSnapshot, AI_DAILY_CAP_USD } = require('../middleware/aiBudgetGuard');
 
 const router = Router();
+
+// GET /api/analytics/ai-budget — current AI spending vs daily cap for the
+// caller's company. Cached 60s in-memory (same cache aiBudgetGuard uses).
+// Returns { company_id, used_usd, cap_usd, cap_enabled, pct_used }.
+router.get('/ai-budget', requireAuth, async (req, res) => {
+  const company_id = req.auth && req.auth.company_id;
+  if (!company_id) {
+    return res.json({
+      company_id: null, used_usd: 0,
+      cap_usd: AI_DAILY_CAP_USD, cap_enabled: AI_DAILY_CAP_USD > 0, pct_used: null,
+    });
+  }
+  try {
+    const snapshot = await getBudgetSnapshot(company_id);
+    res.json(snapshot);
+  } catch (err) {
+    console.error('ai-budget endpoint error:', err);
+    res.status(500).json({ error: 'Failed to load budget' });
+  }
+});
 
 // POST /events — track client events (any authenticated user)
 router.post('/events', requireAuth, async (req, res) => {

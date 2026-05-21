@@ -149,16 +149,19 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 
 // Mount routes
-// AI cost guard + per-user rate limit on AI-heavy routes. Cost guard caps
-// $/day spend; rate limiter caps request frequency. Both needed — a runaway
-// agent loop can spike spend before tripping the daily ceiling.
+// AI guards on Claude-calling routes, in this order:
+//   1. aiCostGuard         — per-user request rate (60 calls / 10 min)
+//   2. aiBudgetGuard       — per-company daily USD cap (env-configurable)
+//   3. aiHeavyLimiter      — per-user min/max per minute (lower-level burst)
+// Each is independent — failing any of them returns a 429 without reaching the route.
 const { aiHeavyLimiter, webauthnLimiter } = require('./middleware/rateLimiters');
-app.use('/api/agent', aiCostGuard, aiHeavyLimiter);
-app.use('/api/loopfolders/intelligence', aiCostGuard, aiHeavyLimiter);
-app.use('/api/structure', aiCostGuard, aiHeavyLimiter);
-app.use('/api/refine', aiCostGuard, aiHeavyLimiter);
-app.use('/api/converse', aiCostGuard, aiHeavyLimiter);
-app.use('/api/refine-speak', aiCostGuard, aiHeavyLimiter);
+const { aiBudgetGuard } = require('./middleware/aiBudgetGuard');
+app.use('/api/agent', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/loopfolders/intelligence', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/structure', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/refine', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/converse', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/refine-speak', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
 
 app.use('/api', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
