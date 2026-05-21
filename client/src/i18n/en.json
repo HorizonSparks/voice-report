@@ -394,6 +394,7 @@
     "noConversations": "No support conversations",
     "noConversationsHint": "When customers send a message from the floating bubble, it shows up here.",
     "markResolved": "Mark resolved",
+    "new": "NEW",
     "customerOn": "Customer is on: {{route}}",
     "refresh": "Refresh",
     "time": {

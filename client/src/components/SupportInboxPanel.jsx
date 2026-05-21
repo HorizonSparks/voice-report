@@ -92,7 +92,10 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 30000); // 30s poll — see also App.jsx for Fab badge polling
+    // 10s poll — keeps the list "live" for operators monitoring active chats.
+    // The Fab badge poll (15s in App.jsx) runs separately and stays slower
+    // because it only needs the integer unread count, not the row diff.
+    const id = setInterval(load, 10000);
     return () => clearInterval(id);
   }, [load]);
 
@@ -220,6 +223,11 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
         {filtered.map((conv) => {
           const origin = ORIGIN_LABEL[conv.app_origin] || ORIGIN_LABEL['voicereport'];
           const isUnread = (conv.unread_count || 0) > 0;
+          // "Just arrived" = last message landed within the last 60s. Gives
+          // operators a momentary visual cue when a brand-new activity hits
+          // the inbox between polls, instead of just silently reordering.
+          const isFresh = conv.last_message_at
+            && (Date.now() - new Date(conv.last_message_at).getTime() < 60 * 1000);
           return (
             <Paper
               key={conv.id}
@@ -288,6 +296,22 @@ export default function SupportInboxPanel({ user, onBack, onOpenConversation }) 
                       color={conv.status === 'open' ? 'error' : conv.status === 'waiting' ? 'warning' : 'success'}
                       sx={{ height: 20, fontSize: 10, fontWeight: 700, textTransform: 'capitalize' }}
                     />
+                    {isFresh && (
+                      <Chip
+                        label={t('support.new')}
+                        size="small"
+                        color="info"
+                        sx={{
+                          height: 20, fontSize: 10, fontWeight: 800, letterSpacing: 0.5,
+                          // Subtle pulse so the eye catches a new arrival.
+                          animation: 'support-new-pulse 1.4s ease-in-out infinite',
+                          '@keyframes support-new-pulse': {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: 0.55 },
+                          },
+                        }}
+                      />
+                    )}
                     {conv.current_route && (
                       <Tooltip title={t('support.customerOn', { route: conv.current_route })}>
                         <Typography sx={{ fontSize: 10, color: 'text.secondary', fontFamily: 'monospace' }} noWrap>

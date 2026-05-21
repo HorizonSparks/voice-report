@@ -394,6 +394,7 @@
     "noConversations": "Sin conversaciones de soporte",
     "noConversationsHint": "Cuando un cliente envíe un mensaje desde el chat flotante, aparecerá aquí.",
     "markResolved": "Marcar como resuelta",
+    "new": "NUEVO",
     "customerOn": "El cliente está en: {{route}}",
     "refresh": "Actualizar",
     "time": {
