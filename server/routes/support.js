@@ -260,14 +260,13 @@ router.post('/send', requireAuth, sendRateLimiter, async (req, res) => {
     }
 
     const isOffline = activeAgents === 0 && !isBusinessHoursNow();
-    // When operators are online (hybrid mode), the AI does NOT auto-send.
-    // Instead it generates a draft attached to the customer's message
-    // (support_messages.ai_suggested_reply). The operator reviews via
-    // /accept-suggestion. This gives human-in-the-loop control without
-    // sacrificing AI assistance — the operator just clicks Accept/Edit.
-    const isDraftMode = !isOffline;
+    // AI ALWAYS auto-sends a reply to the customer — there is no draft mode.
+    // A human operator's reply (via /reply/:id or /accept-suggestion) pauses
+    // the AI for AUTO_REPLY_HUMAN_BACKOFF_MINUTES; after that window passes,
+    // the AI resumes. The `isOffline` flag below only shapes the AI's tone
+    // (acknowledge offline vs. acknowledge online), not whether it sends.
 
-    // Trigger async AI response (auto-send when offline, draft when online)
+    // Trigger async AI auto-reply
     setImmediate(async () => {
       try {
         // Human takeover check: skip auto-reply if a human operator (not Sparks
@@ -284,25 +283,22 @@ router.post('/send', requireAuth, sendRateLimiter, async (req, res) => {
           return;
         }
 
-        // Build context for Claude. Prompt diverges based on whether this
-        // will be auto-sent (offline) or shown to an operator as a draft.
+        // Build context for Claude. Single prompt — the AI always sends the
+        // reply directly to the customer. Online/offline only shapes the
+        // acknowledgement wording, not whether the reply is sent.
         const confidenceFooter = `
 
 After your reply, on its OWN final line, output exactly:
 CONFIDENCE: 0.XX
-where 0.XX is your self-rated confidence (0.00-1.00) that the reply is accurate and complete given the available context. The operator UI uses this to flag low-confidence drafts for closer review.`;
-        const systemPrompt = (isDraftMode
-          ? `You are Sparks AI, the technical support assistant for Horizon Sparks. A human support operator is currently online and will REVIEW your response before it is sent to the customer. Write a polished, ready-to-send reply that the operator can accept as-is or edit lightly.
-Do NOT include scaffolding like "Here is a draft" or "You could say" — write only the message the operator would send.
-Answer the customer's question using your general engineering and Horizon Sparks knowledge. If context (P&ID, drawing number, current route) is provided, incorporate it.
-Detect the user's language and respond in the same language.
-Be concise, accurate, and on-brand. Standard bold/italics are fine, but no markdown that requires special rendering.`
-          : `You are Sparks AI, the helpful technical support assistant for Horizon Sparks.
-The human support operators are currently OFFLINE (outside business hours or away). Acknowledge that support is currently offline and their message has been queued for human review.
-Then, answer their question as best as you can using your general engineering and Horizon Sparks knowledge based on their query.
-If they provided context like a P&ID, drawing number, or a specific page/URL, take that into account!
-Detect the user's language and respond in the same language (e.g., reply in Spanish if the user writes in Spanish, or English if they write in English).
-Keep your response concise, clear, and reassuring. Do not use markdown syntax that requires rendering features not supported in simple text blocks, but standard bold/italics are fine.`) + confidenceFooter;
+where 0.XX is your self-rated confidence (0.00-1.00) that the reply is accurate and complete given the available context. The operator dashboard uses this to flag low-confidence answers for review.`;
+        const operatorStatusLine = isOffline
+          ? 'The human support operators are currently OFFLINE (outside business hours or away). Acknowledge that support is currently offline and a human will follow up.'
+          : 'The human support operators are currently ONLINE and may jump in to take over the conversation at any moment. Reassure the customer that a human can intervene, but answer their question immediately so they are not blocked waiting.';
+        const systemPrompt = `You are Sparks AI, the helpful technical support assistant for Horizon Sparks.
+${operatorStatusLine}
+Answer their question using your general engineering and Horizon Sparks knowledge. If they provided context like a P&ID, drawing number, or a specific page/URL, incorporate it.
+Detect the user's language and respond in the same language (e.g. reply in Spanish if the user writes in Spanish, English if they write English).
+Keep your response concise, clear, and reassuring. Standard bold/italics are fine, but no markdown that requires special rendering.` + confidenceFooter;
 
           // Load conversation history (including the message just sent)
           const { rows: history } = await DB.db.query(
@@ -388,30 +384,8 @@ Keep your response concise, clear, and reassuring. Do not use markdown syntax th
 
             const { confidence: ai_confidence, cleanText } = extractAiConfidence(result.text);
 
-            if (isDraftMode) {
-              // Attach as suggestion to the customer message that triggered
-              // this AI call. The operator UI surfaces it with Accept/Edit
-              // controls + a confidence badge. No support_messages row is
-              // created, no notification is sent to the customer.
-              //
-              // Clear any older drafts on prior customer messages in this
-              // conversation first — the operator UI only shows the latest,
-              // and the latest draft already incorporates full history, so
-              // older drafts would be dead state if left attached.
-              await DB.db.query(
-                `UPDATE support_messages SET ai_suggested_reply = NULL, ai_confidence = NULL
-                  WHERE conversation_id = $1
-                    AND sender_type = 'customer'
-                    AND id != $2
-                    AND ai_suggested_reply IS NOT NULL`,
-                [conversation_id, msg_id]
-              );
-              await DB.db.query(
-                "UPDATE support_messages SET ai_suggested_reply = $1, ai_confidence = $2 WHERE id = $3",
-                [cleanText, ai_confidence, msg_id]
-              );
-            } else {
-              // Offline: AI auto-sends and we record it as a real message.
+            {
+              // AI always sends directly to the customer as a new support_messages row.
               const replyMsgId = 'smsg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
               await DB.db.query(
                 `INSERT INTO support_messages (id, conversation_id, company_id, person_id, person_name, sender_type, content, message_type, is_ai, ai_confidence, created_at)
