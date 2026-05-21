@@ -5,7 +5,7 @@
  * AI features (Whisper, Claude, TTS) always require internet.
  */
 
-const CACHE_NAME = 'voice-report-v1779390083';
+const CACHE_NAME = 'voice-report-v1779390469';
 
 // App shell — pre-cached on install for offline fallback
 const APP_SHELL = [

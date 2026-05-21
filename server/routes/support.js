@@ -109,6 +109,38 @@ const AUTO_REPLY_HUMAN_BACKOFF_MINUTES = Math.max(
   parseInt(process.env.SUPPORT_AI_BACKOFF_MINUTES, 10) || 3
 );
 
+// AI cost throttling.
+//
+// SUPPORT_AI_HISTORY_LIMIT caps how many prior messages are sent to Claude
+// per call. Without this, long conversations balloon token usage on every
+// new message (full history is re-sent each time). 20 messages = enough
+// context for continuity, ~80% cost reduction on long threads.
+//
+// SUPPORT_AI_TRIVIAL_THRESHOLD: messages this short or shorter (after trim,
+// with no question mark and no digits) are answered with a canned "👍"
+// instead of calling Claude. Default 3 catches "ok", "ya", "thx" etc.
+// Set to 0 to disable (every message goes to Claude).
+const AI_HISTORY_LIMIT = Math.max(
+  4,
+  parseInt(process.env.SUPPORT_AI_HISTORY_LIMIT, 10) || 20
+);
+const AI_TRIVIAL_THRESHOLD = Math.max(
+  0,
+  parseInt(process.env.SUPPORT_AI_TRIVIAL_THRESHOLD, 10) ?? 3
+);
+
+// Heuristic: does this message warrant a real Claude call?
+// We skip very short messages with no question mark and no digits — those
+// are typically acknowledgements ("ok", "ya", "thx 👍") where a canned reply
+// is indistinguishable from an LLM response but costs nothing.
+function isTrivialAck(content) {
+  if (AI_TRIVIAL_THRESHOLD <= 0) return false;
+  const trimmed = (content || '').trim();
+  if (trimmed.length > AI_TRIVIAL_THRESHOLD) return false;
+  if (/[?¿0-9]/.test(trimmed)) return false;
+  return true;
+}
+
 // Defense-in-depth: the integration key currently mints an admin-equivalent
 // session (see middleware/sessionAuth.js loadSession), which is broader than
 // the support-chat use case requires. This guard blocks integration callers
@@ -284,6 +316,7 @@ router.post('/send', requireAuth, sendRateLimiter, async (req, res) => {
     // (acknowledge offline vs. acknowledge online), not whether it sends.
 
     // Trigger async AI auto-reply
+    const trivialAck = isTrivialAck(content);
     setImmediate(async () => {
       try {
         // Human takeover check: skip auto-reply if a human operator (not Sparks
@@ -297,6 +330,24 @@ router.post('/send', requireAuth, sendRateLimiter, async (req, res) => {
           [conversation_id, AUTO_REPLY_HUMAN_BACKOFF_MINUTES]
         );
         if (takeoverPre.length > 0) {
+          return;
+        }
+
+        // Cost-throttle: trivial acks ("ok", "thx", "ya") get a canned reply
+        // — same "AI always intervenes" UX, but zero Claude tokens. We still
+        // stamp is_ai=true and ai_confidence=1.0 so the row is identifiable
+        // as an AI-generated response in audit/analytics.
+        if (trivialAck) {
+          const ackId = 'smsg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          await DB.db.query(
+            `INSERT INTO support_messages (id, conversation_id, company_id, person_id, person_name, sender_type, content, message_type, is_ai, ai_confidence, created_at)
+             VALUES ($1, $2, $3, $4, $5, 'support', $6, 'text', true, 1.0, NOW())`,
+            [ackId, conversation_id, company_id, person_id, 'Sparks AI', '👍']
+          );
+          await DB.db.query(
+            "UPDATE support_conversations SET last_message = $1, last_message_at = NOW(), updated_at = NOW(), status = 'waiting' WHERE id = $2",
+            ['👍', conversation_id]
+          );
           return;
         }
 
@@ -317,11 +368,16 @@ Answer their question using your general engineering and Horizon Sparks knowledg
 Detect the user's language and respond in the same language (e.g. reply in Spanish if the user writes in Spanish, English if they write English).
 Keep your response concise, clear, and reassuring. Standard bold/italics are fine, but no markdown that requires special rendering.` + confidenceFooter;
 
-          // Load conversation history (including the message just sent)
-          const { rows: history } = await DB.db.query(
-            "SELECT sender_type, content, message_type FROM support_messages WHERE conversation_id = $1 ORDER BY created_at ASC",
-            [conversation_id]
+          // Load conversation history (including the message just sent),
+          // capped to the last AI_HISTORY_LIMIT messages. Selecting DESC + reverse
+          // ensures we get the MOST RECENT slice; without the limit, a long-
+          // running conversation would re-send hundreds of messages to Claude
+          // on every new customer turn, ballooning token cost linearly.
+          const { rows: historyDesc } = await DB.db.query(
+            "SELECT sender_type, content, message_type FROM support_messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT $2",
+            [conversation_id, AI_HISTORY_LIMIT]
           );
+          const history = historyDesc.reverse();
 
           // Get screen context from the conversation itself
           // NOTE: The column storing UI context is named `screen_context_json` in the DB.
