@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Dialog, DialogContent, DialogActions, Alert, Paper } from '@mui/material';
 import TabView from '../components/TabView.jsx';
 import { safeMarkdown } from '../utils/helpers.js';
+import { apiPost, apiPut, ApiError } from '../lib/apiClient.js';
 
 export default function RecordView({ user, onSaved, readOnly }) {
   const { t, i18n } = useTranslation();
@@ -36,6 +37,72 @@ export default function RecordView({ user, onSaved, readOnly }) {
   const audioUnlocked = useRef(false); // track if iOS audio context is unlocked
   const chatEndRef = useRef(null);
 
+  // ── Draft autosave ──────────────────────────────────────────────
+  // A field worker on a 7" tablet can lose state to: browser tabs being
+  // killed for memory pressure, the screen locking and the SW dropping
+  // the page, an accidental swipe-back, or just a battery cut. Without
+  // persistence, the entire conversation transcript (potentially many
+  // minutes of work) vanishes between idle and submit.
+  //
+  // We snapshot the post-recording state (turns, verbatim, structured,
+  // photos consumed, addressed message IDs) keyed by person_id so two
+  // workers sharing a tablet don't see each other's drafts. Drafts are
+  // cleared on successful submit OR on explicit reset.
+  //
+  // What we deliberately don't persist:
+  //   - The audio blob itself (huge; would need IndexedDB; the AI
+  //     transcript is the durable artifact anyway)
+  //   - Live transcript while recording (changes too fast; persisting
+  //     on every chunk would thrash localStorage and gain nothing)
+  const draftKey = user?.person_id ? `report_draft_${user.person_id}` : null;
+
+  const clearDraft = () => {
+    if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
+  };
+
+  // Restore any in-progress draft from a prior session on mount
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      // 24 h ceiling — stale drafts past a shift change are noise, not
+      // recovery. The worker can always re-record if they really need to.
+      if (draft.savedAt && Date.now() - draft.savedAt > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(draftKey);
+        return;
+      }
+      if (draft.turns) setTurns(draft.turns);
+      if (draft.verbatim) setVerbatim(draft.verbatim);
+      if (draft.structured) setStructured(draft.structured);
+      if (draft.reportId) setReportId(draft.reportId);
+      // Resume on the structured page so the worker sees their work
+      // immediately and can edit/submit without re-recording.
+      if (draft.structured || draft.verbatim) setStage('done');
+    } catch {
+      try { localStorage.removeItem(draftKey); } catch {}
+    }
+  }, [draftKey]);
+
+  // Persist on meaningful state change. Debounced via the React render
+  // cycle — we only write when actual content changes, not on every
+  // recording tick.
+  useEffect(() => {
+    if (!draftKey) return;
+    if (!verbatim && !structured && turns.length === 0) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        savedAt: Date.now(),
+        turns,
+        verbatim,
+        structured,
+        reportId,
+      }));
+    } catch {}
+  }, [draftKey, turns, verbatim, structured, reportId]);
+  // ────────────────────────────────────────────────────────────────
+
   // Load messages for this person on mount
   useEffect(() => {
     if (user.person_id) {
@@ -44,7 +111,8 @@ export default function RecordView({ user, onSaved, readOnly }) {
         setPendingMessages(unaddressed);
       }).catch(() => {});
     }
-    setReportId(new Date().toISOString().replace(/[:.]/g, '-').replace('Z', ''));
+    // Only seed reportId if we didn't restore one from a draft
+    setReportId(prev => prev || new Date().toISOString().replace(/[:.]/g, '-').replace('Z', ''));
   }, []);
 
   // Auto-scroll chat
@@ -391,24 +459,28 @@ export default function RecordView({ user, onSaved, readOnly }) {
     };
 
     try {
-      await fetch('/api/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-      });
+      // queueOnOffline: writes survive lost signal — apiClient enqueues to
+      // IndexedDB and drains on reconnect. The user gets the same UX
+      // either way (returns immediately with { queued: true } when offline).
+      const result = await apiPost('/api/reports', report, { queueOnOffline: true });
 
-      // Mark messages as addressed
       if (pendingMessages.length > 0 && user.person_id) {
-        await fetch(`/api/messages/${user.person_id}/mark-addressed`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message_ids: pendingMessages.map(m => m.id), report_id: reportId }),
-        });
+        await apiPut(
+          `/api/messages/${user.person_id}/mark-addressed`,
+          { message_ids: pendingMessages.map(m => m.id), report_id: reportId },
+          { queueOnOffline: true }
+        );
       }
 
+      clearDraft();
       reset();
-      onSaved();
-    } catch (err) { setError('Failed to save report'); }
+      onSaved(result?.queued ? { queued: true } : undefined);
+    } catch (err) {
+      const msg = err instanceof ApiError && err.status > 0
+        ? t('record.saveFailedWithStatus', { status: err.status, message: err.message })
+        : t('record.saveFailed');
+      setError(msg);
+    }
   };
 
   const reset = () => {
@@ -420,6 +492,7 @@ export default function RecordView({ user, onSaved, readOnly }) {
     setElapsed(0); setError(''); setAudioFilenames([]); setLiveText('');
     setContextPackage(null); setTotalDuration(0); fullTranscript.current = ''; audioFilenamesRef.current = [];
     setReportId(new Date().toISOString().replace(/[:.]/g, '-').replace('Z', ''));
+    clearDraft();
   };
 
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;

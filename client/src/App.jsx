@@ -4,7 +4,7 @@ import {
   AppBar, Toolbar, IconButton, Typography, Drawer, Box, Button, Avatar, Divider,
   List, ListItemButton, ListItemIcon, ListItemText, Checkbox, FormControlLabel,
   Alert, Collapse, ToggleButton, ToggleButtonGroup, TextField,
-  Dialog, DialogTitle, DialogContent, DialogActions, Chip
+  Dialog, DialogTitle, DialogContent, DialogActions, Chip, Snackbar
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
@@ -38,6 +38,7 @@ import SupportChat from './components/SupportChat.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
 import { apiPost, ApiError } from './lib/apiClient.js';
 import { installAutoDrain } from './lib/offlineQueue.js';
+import { getPushState, isSubscribed as isPushSubscribed, enablePush, disablePush } from './lib/push.js';
 
 const ALL_TRADES_KEYS = [
   { key: 'Electrical', icon: '⚡', tradeKey: 'trades.electrical' },
@@ -67,6 +68,10 @@ export default function App() {
   const agentAudioChunks = useRef([]);
   const agentCameraInput = useRef(null);
   const [agentAttachedImage, setAgentAttachedImage] = useState(null); // { dataUrl, mimeType, name }
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushFeedback, setPushFeedback] = useState(null); // { severity, message }
   const [safetyPanelOpen, setSafetyPanelOpen] = useState(false);
   const [companySettings, setCompanySettings] = useState(null);
   const [activeRoleLevels, setActiveRoleLevels] = useState({}); // { "Pipe Fitting": [1,2,4,5], ... }
@@ -152,6 +157,55 @@ export default function App() {
 
   // Load starred trades and restore last active trade when user logs in
   useEffect(() => { installAutoDrain(); }, []);
+
+  // Probe push state when the user logs in. We never auto-prompt — the
+  // user has to click the toggle in the drawer — but we do want the
+  // toggle to reflect the real current subscription.
+  useEffect(() => {
+    if (!user) return;
+    const state = getPushState();
+    setPushSupported(state.supported && state.permission !== 'denied');
+    if (state.supported) {
+      isPushSubscribed().then(setPushEnabled).catch(() => setPushEnabled(false));
+    }
+  }, [user]);
+
+  const togglePush = async () => {
+    if (pushBusy) return;
+    setPushBusy(true);
+    let feedback = null;
+    try {
+      if (pushEnabled) {
+        await disablePush();
+        feedback = { severity: 'info', message: t('push.deactivated') };
+      } else {
+        const res = await enablePush();
+        if (res.ok) {
+          feedback = { severity: 'success', message: t('push.activated') };
+        } else {
+          const key = {
+            denied: 'push.failedDenied',
+            unsupported: 'push.failedUnsupported',
+            not_configured: 'push.failedNotConfigured',
+          }[res.reason] || 'push.failedUnknown';
+          feedback = { severity: 'warning', message: t(key) };
+          if (res.reason === 'denied') setPushSupported(false);
+        }
+      }
+    } catch (err) {
+      feedback = { severity: 'error', message: err.message || t('push.failedUnknown') };
+      console.warn('[push] toggle failed:', err);
+    }
+    // Re-sync from browser state so the toggle reflects reality even if
+    // the user accepted the browser prompt but server registration failed
+    // (or any other mid-flow hiccup).
+    try {
+      const actuallySubscribed = await isPushSubscribed();
+      setPushEnabled(actuallySubscribed);
+    } catch {}
+    setPushBusy(false);
+    setPushFeedback(feedback);
+  };
 
   useEffect(() => {
     if (user) {
@@ -378,14 +432,14 @@ export default function App() {
     e.target.value = ''; // Allow re-selecting the same file later
     if (!file) return;
     if (file.size > 8 * 1024 * 1024) {
-      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'La imagen es muy grande (máx. 8 MB).', error: true }]);
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: t('agent.imageTooLarge'), error: true }]);
       return;
     }
     try {
       const dataUrl = await fileToDataUrl(file);
       setAgentAttachedImage({ dataUrl, mimeType: file.type || 'image/jpeg', name: file.name || 'image.jpg' });
     } catch (err) {
-      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'No se pudo leer la imagen.', error: true }]);
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: t('agent.imageReadFailed'), error: true }]);
     }
   };
 
@@ -395,11 +449,11 @@ export default function App() {
     if ((!msg && !image) || globalAgentLoading) return;
     setGlobalAgentInput('');
     setAgentAttachedImage(null);
-    setGlobalAgentMessages(prev => [...prev, { role: 'user', content: msg || (image ? '[imagen]' : ''), image: image?.dataUrl }]);
+    setGlobalAgentMessages(prev => [...prev, { role: 'user', content: msg || (image ? t('agent.imageMarker') : ''), image: image?.dataUrl }]);
     setGlobalAgentLoading(true);
     try {
       const payload = {
-        message: msg || 'Analiza esta imagen.',
+        message: msg || t('agent.imagePromptDefault'),
         contactName: simulatingCompany?.name || '',
         companyName: simulatingCompany?.name || '',
         conversationContext: globalAgentMessages.slice(-6).map(m => m.role + ': ' + m.content.substring(0, 200)).join('\n'),
@@ -430,7 +484,7 @@ export default function App() {
       }
     } catch (err) {
       const msg = err instanceof ApiError
-        ? (err.status === 0 ? 'Sin conexión — el agente requiere internet.' : `Error ${err.status}: ${err.message}`)
+        ? (err.status === 0 ? t('agent.offlineRequiresInternet') : `Error ${err.status}: ${err.message}`)
         : ('Connection error: ' + err.message);
       setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
     }
@@ -750,6 +804,14 @@ export default function App() {
         </Box>
 
         <List sx={{ px: 1 }}>
+          {pushSupported && (
+            <ListItemButton onClick={togglePush} disabled={pushBusy}>
+              <ListItemText
+                primary={(pushEnabled ? '🔔 ' : '🔕 ') + t(pushEnabled ? 'push.enabled' : 'push.enable')}
+                slotProps={{ primary: { sx: { color: 'text.primary' } } }}
+              />
+            </ListItemButton>
+          )}
           <ListItemButton onClick={() => { showConfirm(t('nav.logout'), t('nav.confirmLogout'), () => { closeDialog(); logout(); }, t('nav.logout'), t('common.cancel')); }}>
             <ListItemText primary={'⏻ ' + t('nav.logout')} slotProps={{ primary: { sx: { color: 'text.primary' } } }} />
           </ListItemButton>
@@ -883,6 +945,23 @@ export default function App() {
 
       <InstallBanner />
       <OfflineBanner />
+      <Snackbar
+        open={!!pushFeedback}
+        autoHideDuration={4000}
+        onClose={() => setPushFeedback(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        {pushFeedback ? (
+          <Alert
+            severity={pushFeedback.severity}
+            variant="filled"
+            onClose={() => setPushFeedback(null)}
+            sx={{ width: '100%' }}
+          >
+            {pushFeedback.message}
+          </Alert>
+        ) : <span />}
+      </Snackbar>
       {user && currentWorld === 'voice-report' && user.sparks_role && (
         <PinModal
           visible={showPinModal}

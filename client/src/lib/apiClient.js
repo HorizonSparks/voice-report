@@ -128,6 +128,10 @@ export function apiPatch(path, body, options = {}) {
   return apiFetch(path, { ...options, method: 'PATCH', body });
 }
 
+export function apiPut(path, body, options = {}) {
+  return apiFetch(path, { ...options, method: 'PUT', body });
+}
+
 export function apiDelete(path, options = {}) {
   return apiFetch(path, { ...options, method: 'DELETE' });
 }

@@ -222,6 +222,34 @@
     "stopWorkSent": "Alerta de Parar Trabajo enviada.",
     "emergencyDesc": "Seguridad del sitio, 911, control de envenenamiento"
   },
+  "offline": {
+    "noConnectionWithQueue": "Sin conexión — los envíos se reintentarán al reconectar ({{count}} en cola)",
+    "noConnection": "Sin conexión — los envíos se reintentarán al reconectar",
+    "pendingSync_one": "{{count}} envío pendiente de sincronizar",
+    "pendingSync_other": "{{count}} envíos pendientes de sincronizar",
+    "retryNow": "Reintentar ahora"
+  },
+  "push": {
+    "enable": "Activar notificaciones",
+    "enabled": "Notificaciones activas — toca para desactivar",
+    "activated": "Notificaciones activadas",
+    "deactivated": "Notificaciones desactivadas",
+    "failedDenied": "Permiso de notificaciones bloqueado en este navegador.",
+    "failedUnsupported": "Este navegador no soporta notificaciones push.",
+    "failedNotConfigured": "El servidor no tiene VAPID configurado. Reinicia el server o revisa el .env.",
+    "failedUnknown": "No se pudieron activar las notificaciones."
+  },
+  "agent": {
+    "imageMarker": "[imagen]",
+    "imagePromptDefault": "Analiza esta imagen.",
+    "imageTooLarge": "La imagen es muy grande (máx. 8 MB).",
+    "imageReadFailed": "No se pudo leer la imagen.",
+    "offlineRequiresInternet": "Sin conexión — el agente requiere internet."
+  },
+  "record": {
+    "saveFailed": "No se pudo guardar el reporte",
+    "saveFailedWithStatus": "No se pudo guardar el reporte ({{status}}): {{message}}"
+  },
   "common": {
     "select": "-- Seleccionar --",
     "yes": "Sí",

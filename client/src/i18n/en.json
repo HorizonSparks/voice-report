@@ -222,6 +222,34 @@
     "stopWorkSent": "Stop Work alert sent.",
     "emergencyDesc": "Site safety, 911, poison control"
   },
+  "offline": {
+    "noConnectionWithQueue": "Offline — pending writes will retry when reconnected ({{count}} queued)",
+    "noConnection": "Offline — pending writes will retry when reconnected",
+    "pendingSync_one": "{{count}} write pending sync",
+    "pendingSync_other": "{{count}} writes pending sync",
+    "retryNow": "Retry now"
+  },
+  "push": {
+    "enable": "Enable notifications",
+    "enabled": "Notifications on — tap to disable",
+    "activated": "Notifications enabled",
+    "deactivated": "Notifications disabled",
+    "failedDenied": "Notifications are blocked in this browser.",
+    "failedUnsupported": "This browser doesn't support push notifications.",
+    "failedNotConfigured": "Server has no VAPID keys. Restart the server or check .env.",
+    "failedUnknown": "Couldn't enable notifications."
+  },
+  "agent": {
+    "imageMarker": "[image]",
+    "imagePromptDefault": "Analyze this image.",
+    "imageTooLarge": "Image too large (max 8 MB).",
+    "imageReadFailed": "Couldn't read the image.",
+    "offlineRequiresInternet": "Offline — the agent requires internet."
+  },
+  "record": {
+    "saveFailed": "Failed to save report",
+    "saveFailedWithStatus": "Failed to save report ({{status}}): {{message}}"
+  },
   "common": {
     "select": "-- Select --",
     "yes": "Yes",

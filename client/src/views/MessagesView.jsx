@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Dialog, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import VoiceMessagePlayer from '../components/VoiceMessagePlayer.jsx';
+import { apiPost } from '../lib/apiClient.js';
 
 export default function MessagesView({ user, readOnly, initialContact, onBack, embedded, showAiAssist }) {
   const { t } = useTranslation();
@@ -104,16 +105,15 @@ export default function MessagesView({ user, readOnly, initialContact, onBack, e
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeChat) return;
     try {
-      await fetch('/api/v2/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from_id: personId,
-          to_id: activeChat,
-          content: newMessage.trim(),
-          type: 'text',
-        }),
-      });
+      // queueOnOffline: text messages survive lost connectivity. Voice
+      // and photo paths above stay as raw fetch because multipart bodies
+      // aren't queueable (see lib/offlineQueue.js for why).
+      await apiPost('/api/v2/messages', {
+        from_id: personId,
+        to_id: activeChat,
+        content: newMessage.trim(),
+        type: 'text',
+      }, { queueOnOffline: true });
       setNewMessage('');
       loadChat(activeChat, false);
     } catch(e) { showAlert(t('messages.sendFailed')); }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Snackbar, Alert, Button } from '@mui/material';
 import { subscribe, drain } from '../lib/offlineQueue.js';
 
@@ -12,6 +13,7 @@ import { subscribe, drain } from '../lib/offlineQueue.js';
  * Renders nothing in the common case (online + empty queue).
  */
 export default function OfflineBanner() {
+  const { t } = useTranslation();
   const [pending, setPending] = useState(0);
   const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
@@ -32,8 +34,10 @@ export default function OfflineBanner() {
 
   const severity = !online ? 'warning' : 'info';
   const message = !online
-    ? `Sin conexión — los envíos se reintentarán al reconectar${pending > 0 ? ` (${pending} en cola)` : ''}`
-    : `${pending} envío${pending === 1 ? '' : 's'} pendiente${pending === 1 ? '' : 's'} de sincronizar`;
+    ? (pending > 0
+        ? t('offline.noConnectionWithQueue', { count: pending })
+        : t('offline.noConnection'))
+    : t('offline.pendingSync', { count: pending });
 
   return (
     <Snackbar
@@ -46,7 +50,7 @@ export default function OfflineBanner() {
         variant="filled"
         action={online && pending > 0 ? (
           <Button color="inherit" size="small" onClick={() => drain()}>
-            Reintentar ahora
+            {t('offline.retryNow')}
           </Button>
         ) : null}
         sx={{ width: '100%' }}
