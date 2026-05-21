@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const DB = require('../../database/db');
 const { requireAuth, requireSparksRole } = require('../middleware/sessionAuth');
 const { uploadLimiter } = require('../middleware/rateLimiters');
@@ -28,10 +28,11 @@ const sendRateLimiter = rateLimit({
   // literal 'integration', so we'd throttle all tenants into the same bucket.
   // Prefer the customer-supplied as_person_id to isolate per real customer.
   keyGenerator: (req) => {
+    // IPv6 hardening — see [[rateLimiters]] for why we wrap req.ip.
     if (req.auth && req.auth.isIntegration) {
-      return (req.body && req.body.as_person_id) || (req.query && req.query.as_person_id) || req.ip;
+      return (req.body && req.body.as_person_id) || (req.query && req.query.as_person_id) || ipKeyGenerator(req.ip);
     }
-    return (req.auth && req.auth.person_id) || req.ip;
+    return (req.auth && req.auth.person_id) || ipKeyGenerator(req.ip);
   },
   message: { error: 'Too many messages — please slow down and try again in a minute.' },
 });

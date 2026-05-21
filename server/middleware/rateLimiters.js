@@ -11,13 +11,17 @@
  * isolation pattern as sendRateLimiter in routes/support.js.
  */
 
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
+// IPv6 hardening: wrapping req.ip with ipKeyGenerator collapses each
+// client's /64 into a single bucket. Without it, an attacker on IPv6 can
+// trivially evade per-IP limits by cycling through addresses in their
+// own subnet (each device is typically handed a /64).
 function authedOrIpKey(req) {
   if (req.auth && req.auth.isIntegration) {
-    return (req.body && req.body.as_person_id) || (req.query && req.query.as_person_id) || req.ip;
+    return (req.body && req.body.as_person_id) || (req.query && req.query.as_person_id) || ipKeyGenerator(req.ip);
   }
-  return (req.auth && req.auth.person_id) || req.ip;
+  return (req.auth && req.auth.person_id) || ipKeyGenerator(req.ip);
 }
 
 // Login: 5 FAILED attempts per 5 minutes per IP. Tight — PIN auth has only
@@ -30,7 +34,7 @@ const loginLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
   skipSuccessfulRequests: true,
   message: { error: 'Too many failed login attempts. Try again in 5 minutes.' },
 });
@@ -64,7 +68,7 @@ const webauthnLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
   message: { error: 'Too many WebAuthn attempts.' },
 });
 

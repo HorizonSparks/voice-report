@@ -35,6 +35,9 @@ import InstallBanner from './components/InstallBanner.jsx';
 import PinModal from './components/PinModal.jsx';
 import SparksCommandCenter from './views/SparksCommandCenter.jsx';
 import SupportChat from './components/SupportChat.jsx';
+import OfflineBanner from './components/OfflineBanner.jsx';
+import { apiPost, ApiError } from './lib/apiClient.js';
+import { installAutoDrain } from './lib/offlineQueue.js';
 
 const ALL_TRADES_KEYS = [
   { key: 'Electrical', icon: '⚡', tradeKey: 'trades.electrical' },
@@ -62,6 +65,8 @@ export default function App() {
   const [agentRecording, setAgentRecording] = useState(false);
   const agentMediaRecorder = useRef(null);
   const agentAudioChunks = useRef([]);
+  const agentCameraInput = useRef(null);
+  const [agentAttachedImage, setAgentAttachedImage] = useState(null); // { dataUrl, mimeType, name }
   const [safetyPanelOpen, setSafetyPanelOpen] = useState(false);
   const [companySettings, setCompanySettings] = useState(null);
   const [activeRoleLevels, setActiveRoleLevels] = useState({}); // { "Pipe Fitting": [1,2,4,5], ... }
@@ -146,6 +151,8 @@ export default function App() {
   }, [view, currentWorld, simulatingCompany?.id, activeTrade]);
 
   // Load starred trades and restore last active trade when user logs in
+  useEffect(() => { installAutoDrain(); }, []);
+
   useEffect(() => {
     if (user) {
       const userKey = user.person_id || user.id || 'admin';
@@ -357,25 +364,55 @@ export default function App() {
   if (!user) return <LoginView onLogin={handleLogin} />;
 
   const openReport = (id) => { setSelectedReport(id); navigateTo('detail'); };
+
+  // File → base64 data URL. Used by the agent camera attachment.
+  const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  const onAgentCameraPick = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // Allow re-selecting the same file later
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'La imagen es muy grande (máx. 8 MB).', error: true }]);
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setAgentAttachedImage({ dataUrl, mimeType: file.type || 'image/jpeg', name: file.name || 'image.jpg' });
+    } catch (err) {
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'No se pudo leer la imagen.', error: true }]);
+    }
+  };
+
   const sendGlobalAgent = async () => {
     const msg = globalAgentInput.trim();
-    if (!msg || globalAgentLoading) return;
+    const image = agentAttachedImage;
+    if ((!msg && !image) || globalAgentLoading) return;
     setGlobalAgentInput('');
-    setGlobalAgentMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setAgentAttachedImage(null);
+    setGlobalAgentMessages(prev => [...prev, { role: 'user', content: msg || (image ? '[imagen]' : ''), image: image?.dataUrl }]);
     setGlobalAgentLoading(true);
     try {
-      const res = await fetch('/api/agent/chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: msg,
-          contactName: simulatingCompany?.name || '',
-          companyName: simulatingCompany?.name || '',
-          conversationContext: globalAgentMessages.slice(-6).map(m => m.role + ': ' + m.content.substring(0, 200)).join('\n'),
-          currentScreen: view,
-          currentWorld: currentWorld || 'voice-report',
-        }),
-      });
-      const data = await res.json();
+      const payload = {
+        message: msg || 'Analiza esta imagen.',
+        contactName: simulatingCompany?.name || '',
+        companyName: simulatingCompany?.name || '',
+        conversationContext: globalAgentMessages.slice(-6).map(m => m.role + ': ' + m.content.substring(0, 200)).join('\n'),
+        currentScreen: view,
+        currentWorld: currentWorld || 'voice-report',
+      };
+      if (image) {
+        // Strip the `data:<mime>;base64,` prefix — server forwards the
+        // raw base64 to Claude's image content block.
+        payload.imageBase64 = image.dataUrl.split(',')[1] || '';
+        payload.imageMediaType = image.mimeType;
+      }
+      const data = await apiPost('/api/agent/chat', payload);
       setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: data.response || data.error || 'No response', model: data.model, tools: data.tool_calls, error: !data.response }]);
       // Handle navigation instructions from the Agent
       if (data.navigation) {
@@ -392,7 +429,10 @@ export default function App() {
         }, 300);
       }
     } catch (err) {
-      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'Connection error: ' + err.message, error: true }]);
+      const msg = err instanceof ApiError
+        ? (err.status === 0 ? 'Sin conexión — el agente requiere internet.' : `Error ${err.status}: ${err.message}`)
+        : ('Connection error: ' + err.message);
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
     }
     setGlobalAgentLoading(false);
   };
@@ -842,6 +882,7 @@ export default function App() {
       </Drawer>
 
       <InstallBanner />
+      <OfflineBanner />
       {user && currentWorld === 'voice-report' && user.sparks_role && (
         <PinModal
           visible={showPinModal}
@@ -952,6 +993,18 @@ export default function App() {
 
           {/* Input area — gray strip with white bubble */}
           <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid #E0E0E0', bgcolor: '#E8E8E8', flexShrink: 0 }}>
+            {agentAttachedImage && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, p: 1, bgcolor: '#FFF', borderRadius: 2, border: '1px solid #E0E0E0' }}>
+                <Box component="img" src={agentAttachedImage.dataUrl} alt="adjunto"
+                  sx={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 1 }} />
+                <Typography variant="caption" sx={{ flex: 1, color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {agentAttachedImage.name}
+                </Typography>
+                <IconButton size="small" onClick={() => setAgentAttachedImage(null)} sx={{ color: '#888' }}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: '#FFFFFF', borderRadius: '24px', px: 2, py: 0.75, border: '1px solid #E0E0E0' }}>
               <TextField
                 multiline placeholder="Ask Sparks AI anything..." value={globalAgentInput}
@@ -961,8 +1014,8 @@ export default function App() {
                 slotProps={{ input: { disableUnderline: true } }}
                 sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#333' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(0,0,0,0.35)', opacity: 1 } } }}
               />
-              {/* WhatsApp pattern: mic + camera when empty, send when typing */}
-              {globalAgentInput.trim() ? (
+              {/* WhatsApp pattern: mic + camera when empty, send when typing OR image attached */}
+              {(globalAgentInput.trim() || agentAttachedImage) ? (
                 <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading} sx={{
                   width: 36, height: 36, bgcolor: '#F99440', color: 'white', mb: 0.25,
                   '&:hover': { bgcolor: '#E8822A' },
@@ -971,12 +1024,20 @@ export default function App() {
                 </IconButton>
               ) : (
                 <>
-                  {/* Camera button */}
+                  {/* Camera button — opens native camera on mobile, file picker on desktop */}
                   <IconButton size="small" disabled={globalAgentLoading}
-                    onClick={() => { /* TODO: camera/image capture */ }}
+                    onClick={() => agentCameraInput.current?.click()}
                     sx={{ width: 36, height: 36, mb: 0.25, color: '#888', '&:hover': { bgcolor: 'rgba(0,0,0,0.05)' } }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                   </IconButton>
+                  <input
+                    ref={agentCameraInput}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={onAgentCameraPick}
+                    style={{ display: 'none' }}
+                  />
                   {/* Mic button — hold to record */}
                   <IconButton size="small"
                     onMouseDown={startAgentRecording} onMouseUp={stopAgentRecording} onMouseLeave={stopAgentRecording}

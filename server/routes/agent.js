@@ -1843,8 +1843,20 @@ router.post('/chat', requireAuth, async (req, res) => {
     }
 
     agentInflight.add(flightKey);
-    const { message, conversationContext, contactName, contactRole, companyName, currentScreen, currentWorld: clientWorld } = req.body;
-    if (!message) return res.status(400).json({ error: 'message required' });
+    const { message, conversationContext, contactName, contactRole, companyName, currentScreen, currentWorld: clientWorld, imageBase64, imageMediaType } = req.body;
+    if (!message && !imageBase64) return res.status(400).json({ error: 'message or imageBase64 required' });
+    // Defensive cap on inline image size — express.json already enforces a
+    // 50MB body limit upstream, but a 10MB raw image is a sensible per-call
+    // ceiling before Claude rejects it (or charges absurdly for it).
+    if (imageBase64 && imageBase64.length > 14_000_000) { // ~10MB after base64 inflation
+      agentInflight.delete(flightKey);
+      return res.status(413).json({ error: 'Image too large (max ~10 MB).' });
+    }
+    const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+    if (imageBase64 && !ALLOWED_IMAGE_MIME.has(imageMediaType)) {
+      agentInflight.delete(flightKey);
+      return res.status(400).json({ error: 'Unsupported image type. Use JPEG, PNG, GIF or WEBP.' });
+    }
     const isAdmin = actor.is_admin || actor.role_level >= 5;
     const model = isAdmin ? 'claude-opus-4-7' : 'claude-sonnet-4-6';
     // Prometheus: track agent session
@@ -1854,7 +1866,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       const { rows } = await DB.db.query("SELECT id FROM people WHERE sparks_role = 'admin' LIMIT 1");
       if (rows[0]) personId = rows[0].id;
     }
-    const knowledge = loadRelevantKnowledge(message);
+    const knowledge = loadRelevantKnowledge(message || '');
 
     const trimmedMessage = String(message || '').trim();
     const directPromptMatchers = [
@@ -2041,7 +2053,19 @@ ENGAGEMENT RULES:
     // Tool use loop — Claude may call tools, we execute and send results back
     // Filter tools by user's role level — workers can't access PM/admin tools
     const userTools = getToolsForRole(actor.role_level || 1, actor.is_admin, req.auth?.sparks_role);
-    let messages = [{ role: 'user', content: message }];
+    // When the user attaches an image (camera button in the agent panel),
+    // build a multi-part content block so Claude's vision can see it.
+    // Text-only is still a plain string for backward compatibility.
+    let messages;
+    if (imageBase64) {
+      const contentBlocks = [
+        { type: 'image', source: { type: 'base64', media_type: imageMediaType, data: imageBase64 } },
+      ];
+      if (message) contentBlocks.push({ type: 'text', text: message });
+      messages = [{ role: 'user', content: contentBlocks }];
+    } else {
+      messages = [{ role: 'user', content: message }];
+    }
     let finalText = '';
     let totalUsage = { input_tokens: 0, output_tokens: 0 };
     let loops = 0;
@@ -2128,9 +2152,12 @@ ENGAGEMENT RULES:
     // ---- MEMORY: Save conversation to database ----
     try {
       const sessionId = req.auth?.sessionId || `agent_${Date.now()}`;
+      // Image-only requests have no text; persist a marker so the conversation
+      // history still shows the user turn instead of skipping it.
+      const userContent = message ? message.substring(0, 5000) : '[image]';
       await DB.db.query(
         'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
-        [personId, sessionId, 'user', message.substring(0, 5000)]
+        [personId, sessionId, 'user', userContent]
       );
       if (finalText) {
         await DB.db.query(
