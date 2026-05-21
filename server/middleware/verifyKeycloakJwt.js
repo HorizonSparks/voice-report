@@ -76,6 +76,34 @@ function extractCompanyId(claims) {
   return null;
 }
 
+// Map Keycloak resource_access.app.roles → voicereport.people.role_level.
+// Picks the HIGHEST matching role so a user with both `user` and `pm_admin`
+// lands at role_level=5 (admin), not 1 (worker). Unknown roles are ignored.
+// Adjust this table if the Keycloak realm adds new roles that should map.
+const KEYCLOAK_ROLE_TO_LEVEL = {
+  pm_admin:  5,  // tenant admin in PIDS — admin in VR too
+  pm_editor: 3,  // project editor — equivalent to supervisor / PM
+  pm_viewer: 3,  // read-only viewer — above worker, below editor.
+                 // NOTE: VR routes that gate at >= 3 (e.g. loopfolders-
+                 // intelligence /api/sparks-ai chat) are not reachable by
+                 // pm_viewer with this mapping. If viewers should be able
+                 // to ask Sparks AI, either bump this to 3 or lower the
+                 // gate on the relevant endpoint.
+  editor:    3,
+  supervisor: 3,
+  foreman:   3,
+  user:      1,  // baseline worker
+};
+function deriveRoleLevel(claims) {
+  const appRoles = (claims && claims.resource_access && claims.resource_access.app && claims.resource_access.app.roles) || [];
+  let max = 1;
+  for (const r of appRoles) {
+    const lvl = KEYCLOAK_ROLE_TO_LEVEL[r];
+    if (typeof lvl === 'number' && lvl > max) max = lvl;
+  }
+  return max;
+}
+
 // Build a default display name from JWT claims. We try name, then given+family,
 // then preferred_username, then sub. Always returns a non-empty string.
 function deriveName(claims) {
@@ -172,6 +200,12 @@ async function resolvePersonFromClaims(claims) {
 
   const newId = 'person_' + crypto.randomUUID().slice(0, 12);
   const newName = deriveName(claims);
+  const newRoleLevel = deriveRoleLevel(claims);
+  // role_title is a human label — pick a sensible default that matches the
+  // numeric level so the UI doesn't show "User" for a role_level=5 admin.
+  const newRoleTitle = newRoleLevel >= 5 ? 'Administrator'
+                     : newRoleLevel >= 3 ? 'Project Manager'
+                     : 'User';
   // Generate an unguessable PIN so legacy PIN-login fails for auto-provisioned
   // users — they must always authenticate via Keycloak. 32 hex chars exceeds
   // any practical PIN-entry surface area.
@@ -182,12 +216,13 @@ async function resolvePersonFromClaims(claims) {
       `INSERT INTO voicereport.people (id, name, pin, role_title, role_level, company_id,
                                        keycloak_user_id, keycloak_username, status,
                                        created_at, updated_at)
-       VALUES ($1, $2, $3, 'User', 1, $4, $5, $6, 'active', NOW(), NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', NOW(), NOW())
        RETURNING ${PEOPLE_COLUMNS}`,
-      [newId, newName, sentinelPin, company_id, sub, username]
+      [newId, newName, sentinelPin, newRoleTitle, newRoleLevel, company_id, sub, username]
     );
     console.log('[verifyKeycloakJwt] auto-provisioned new user', {
       id: r.rows[0].id, sub, username, company_id, name: newName,
+      role_level: newRoleLevel, role_title: newRoleTitle,
     });
     return r.rows[0];
   } catch (err) {
