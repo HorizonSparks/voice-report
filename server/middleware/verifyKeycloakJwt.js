@@ -128,8 +128,11 @@ async function resolvePersonFromClaims(claims) {
     }
   }
 
-  // Auto-provision path. Requires a derivable company_id from the JWT —
-  // without it the new row would be useless (most queries scope by company).
+  // Auto-provision path. Requires a derivable company_id — either from the
+  // JWT, or from KEYCLOAK_AUTO_PROVISION_DEFAULT_COMPANY env as a fallback
+  // for realms that haven't yet been configured with a company_id claim
+  // mapping. Without a default and no claim, the new row would be useless
+  // (most queries scope by company), so we return null instead.
   //
   // SECURITY MODEL: trust in the company_id claim depends on the Keycloak
   // realm configuration. The realm admin MUST map company_id from an
@@ -137,8 +140,15 @@ async function resolvePersonFromClaims(claims) {
   // attribute), NOT a self-service attribute. If users can set their own
   // company_id, this code would let any user join any tenant. We defense-
   // in-depth this by verifying the company exists, but the primary defense
-  // is Keycloak-side. See deploy/keycloak/README if it exists.
-  const company_id = extractCompanyId(claims);
+  // is Keycloak-side. See docs/KEYCLOAK_COMPANY_CLAIM_SETUP.md.
+  //
+  // The env fallback is INTENTIONALLY a separate knob — when set, it means
+  // "every authenticated Keycloak user with no explicit company assignment
+  // lands in this default company". Set it to a sandbox/demo tenant, NOT
+  // your main production tenant, unless you trust every Keycloak user.
+  const claimedCompanyId = extractCompanyId(claims);
+  const defaultCompanyId = process.env.KEYCLOAK_AUTO_PROVISION_DEFAULT_COMPANY || null;
+  const company_id = claimedCompanyId || defaultCompanyId;
   if (!sub || !company_id) return null;
 
   // Reject phantom company_ids — the claim must reference a real tenant.
