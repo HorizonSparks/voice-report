@@ -27,16 +27,60 @@ const { createRemoteJWKSet, jwtVerify } = require('jose');
 const crypto = require('crypto');
 const DB = require('../../database/db');
 
-const ISSUER = process.env.KEYCLOAK_ISSUER;
+// Multi-issuer support. KEYCLOAK_ISSUER may be a single URL or a
+// comma-separated list — e.g.
+//   KEYCLOAK_ISSUER=https://keycloak.horizonsparks.ai/realms/app,\
+//                   https://keycloakprod.horizonsparks.ai/realms/app
+// so we can accept tokens from both dev and prod Keycloak instances at the
+// same time. Each issuer keeps its own remote JWKS (different signing keys).
+// At verification time we peek at the unverified `iss` claim from the JWT to
+// pick the matching JWKS, then jwtVerify enforces signature + issuer.
+const ISSUER_LIST = (process.env.KEYCLOAK_ISSUER || '')
+  .split(',')
+  .map((s) => s.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 const AUDIENCE = process.env.KEYCLOAK_AUDIENCE;
-const JWKS_URL = process.env.KEYCLOAK_JWKS_URL ||
-  (ISSUER ? ISSUER.replace(/\/$/, '') + '/protocol/openid-connect/certs' : null);
 
-let JWKS = null;
-function getJWKS() {
-  if (!JWKS_URL) return null;
-  if (!JWKS) JWKS = createRemoteJWKSet(new URL(JWKS_URL));
-  return JWKS;
+// Optional explicit override. Same shape — comma-separated, indexed by
+// position to ISSUER_LIST. If omitted, each JWKS_URL is derived from the
+// corresponding issuer.
+const JWKS_URL_OVERRIDE_LIST = (process.env.KEYCLOAK_JWKS_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const ISSUER_TO_JWKS_URL = new Map();
+ISSUER_LIST.forEach((iss, i) => {
+  const override = JWKS_URL_OVERRIDE_LIST[i];
+  ISSUER_TO_JWKS_URL.set(iss, override || `${iss}/protocol/openid-connect/certs`);
+});
+
+const jwksCache = new Map();
+function getJWKSForIssuer(iss) {
+  if (!iss) return null;
+  const normalized = String(iss).replace(/\/$/, '');
+  const url = ISSUER_TO_JWKS_URL.get(normalized);
+  if (!url) return null;
+  if (!jwksCache.has(normalized)) {
+    jwksCache.set(normalized, createRemoteJWKSet(new URL(url)));
+  }
+  return { jwks: jwksCache.get(normalized), issuer: normalized };
+}
+
+// Unverified decode of just the payload — used only to look up which JWKS to
+// trust. The subsequent jwtVerify call enforces signature + issuer, so a
+// hostile caller cannot leverage this to pick a friendlier JWKS.
+function peekUnverifiedIssuer(token) {
+  try {
+    const parts = String(token).split('.');
+    if (parts.length < 2) return null;
+    const padded = parts[1] + '='.repeat((4 - (parts[1].length % 4)) % 4);
+    const json = Buffer.from(padded.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const payload = JSON.parse(json);
+    return typeof payload.iss === 'string' ? payload.iss.replace(/\/$/, '') : null;
+  } catch {
+    return null;
+  }
 }
 
 // Columns the resolver returns. Kept in one constant so the SELECT and the
@@ -267,7 +311,7 @@ function verifyKeycloakJwt() {
       return next();
     }
 
-    if (!ISSUER || !AUDIENCE) {
+    if (ISSUER_LIST.length === 0 || !AUDIENCE) {
       // Bearer token sent but server isn't configured for JWT verification.
       // Log loudly, refuse the request — caller is asking for stricter auth than
       // we can provide, so we MUST NOT silently fall back to integration key.
@@ -276,7 +320,19 @@ function verifyKeycloakJwt() {
     }
 
     const token = authHeader.slice(7).trim();
-    const jwks = getJWKS();
+
+    // Pick the JWKS matching the token's unverified `iss`. We don't trust the
+    // claim yet; we only use it to look up which trusted JWKS to verify
+    // against. jwtVerify below enforces signature + issuer for real.
+    const claimedIssuer = peekUnverifiedIssuer(token);
+    const match = getJWKSForIssuer(claimedIssuer);
+    if (!match) {
+      console.warn('[verifyKeycloakJwt] Token issuer not in trusted list', {
+        claimedIssuer,
+        trusted: ISSUER_LIST,
+      });
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
 
     try {
       // 2026-05-07: Removed the `audience` option from jwtVerify and instead
@@ -290,8 +346,8 @@ function verifyKeycloakJwt() {
       // token was issued for. If the realm later adds an Audience Mapper
       // putting "app" into the `aud` array, the fallback below picks that up
       // too without needing another code change.
-      const { payload } = await jwtVerify(token, jwks, {
-        issuer: ISSUER,
+      const { payload } = await jwtVerify(token, match.jwks, {
+        issuer: match.issuer,
         // audience intentionally omitted — verified manually below.
       });
 
@@ -351,7 +407,14 @@ function verifyKeycloakJwt() {
     } catch (err) {
       // Bearer token was sent but invalid (signature, expiry, audience, etc.).
       // Reject — do NOT fall through to a weaker auth path.
-      console.warn('[verifyKeycloakJwt] JWT verification failed:', err.code || err.message);
+      console.warn('[verifyKeycloakJwt] JWT verification failed', {
+        code: err && err.code,
+        name: err && err.name,
+        message: err && err.message,
+        claimedIssuer,
+        trustedIssuers: ISSUER_LIST,
+        jwksUrlChosen: match && ISSUER_TO_JWKS_URL.get(match.issuer),
+      });
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
   };

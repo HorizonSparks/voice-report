@@ -40,8 +40,11 @@ services:
       GRAFANA_URL: http://grafana:3000
       LOKI_URL: http://loki:3100
       GLITCHTIP_URL: http://glitchtip-web:8080
-      # Keycloak shared-auth integration (cross-app SSO)
-      KEYCLOAK_ISSUER: https://keycloak.horizonsparks.ai/realms/app
+      # Keycloak shared-auth integration (cross-app SSO).
+      # Comma-separated list — accepts tokens from BOTH dev (Spark) and prod
+      # (AWS/keycloakprod) so the same VR instance serves PIDS-app on
+      # app.horizonsparks.ai and meitec.horizonsparks.ai.
+      KEYCLOAK_ISSUER: https://keycloak.horizonsparks.ai/realms/app,https://keycloakprod.horizonsparks.ai/realms/app
       KEYCLOAK_AUDIENCE: app
       KEYCLOAK_OIDC_CLIENT_ID: app
       # KEYCLOAK_OIDC_CLIENT_SECRET set in .env (server-only secret)
