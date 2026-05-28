@@ -43,7 +43,7 @@ function buildUserContent(text) {
 
 const agent = defineAgent({
   name: 'voice.fieldCleanup.v1',
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-sonnet-4-6',
   // systemPrompt is a function so each call can supply its own customPrompt,
   // falling back to the default instruction when none is provided.
   systemPrompt: (ctx) => (ctx && ctx.customPrompt) || DEFAULT_CLEANUP_INSTRUCTION,

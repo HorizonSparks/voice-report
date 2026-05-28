@@ -1,0 +1,298 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "created": "2026-04-11",
+    "updated": "2026-04-11",
+    "verified_against": "ANSI/ISA-5.1-2009/2022/2024, cross-referenced with InstruNexus, control.com, Piping Designer, practitioner forums",
+    "purpose": "ISA 5.1 tag validation rules for Tag Validator agent, Sparks AI brain, and P&ID extraction. Enables instrumentation-aware validation and trade-level conversations.",
+    "usage": ["tag_validator_agent", "sparks_ai_chat", "pid_extraction_enrichment"]
+  },
+
+  "isa_first_letters": {
+    "description": "ISA 5.1 First Letter = Measured/Initiating Variable",
+    "letters": {
+      "A": { "variable": "Analysis", "examples": ["AT (Analyzer Transmitter)", "AIC (Analyzer Controller)", "AE (Analyzer Element)"] },
+      "B": { "variable": "Burner/Combustion", "examples": ["BT (Burner Transmitter)", "BSL (Burner Switch Low)"] },
+      "C": { "variable": "User Choice (Conductivity common)", "examples": ["CT (Conductivity Transmitter)"] },
+      "D": { "variable": "User Choice (Density common)", "examples": ["DT (Density Transmitter)", "DIC (Density Controller)"] },
+      "E": { "variable": "Voltage", "examples": ["EI (Voltage Indicator)"] },
+      "F": { "variable": "Flow", "examples": ["FE (Flow Element)", "FIT (Flow Indicating Transmitter)", "FIC (Flow Controller)", "FV (Flow Valve)", "FY (Flow Relay)"] },
+      "G": { "variable": "User Choice (Gauging common)", "examples": ["GI (Gauge Indicator)"] },
+      "H": { "variable": "Hand (Manual)", "examples": ["HC (Hand Controller)", "HIC (Hand Indicating Controller)", "HV (Hand Valve)"] },
+      "I": { "variable": "Current (Electrical)", "examples": ["II (Current Indicator)"] },
+      "J": { "variable": "Power", "examples": ["JI (Power Indicator)"] },
+      "K": { "variable": "Time/Schedule", "examples": ["KIC (Time Controller)"] },
+      "L": { "variable": "Level", "examples": ["LT (Level Transmitter)", "LIC (Level Controller)", "LV (Level Valve)", "LG (Level Gauge)", "LSLL (Level Switch Low-Low)"] },
+      "M": { "variable": "User Choice (Moisture common)", "examples": ["MT (Moisture Transmitter)"] },
+      "N": { "variable": "User Choice", "examples": [] },
+      "O": { "variable": "User Choice", "examples": [] },
+      "P": { "variable": "Pressure", "examples": ["PT (Pressure Transmitter)", "PIC (Pressure Controller)", "PV (Pressure Valve)", "PI (Pressure Indicator)", "PSV (Pressure Safety Valve)", "PSH (Pressure Switch High)"] },
+      "Q": { "variable": "Quantity/Event", "examples": ["QE (Quantity Element)", "QI (Quantity Indicator)"] },
+      "R": { "variable": "Radiation", "examples": ["RT (Radiation Transmitter)"] },
+      "S": { "variable": "Speed/Frequency", "examples": ["ST (Speed Transmitter)", "SIC (Speed Controller)"] },
+      "T": { "variable": "Temperature", "examples": ["TE (Temperature Element)", "TT (Temperature Transmitter)", "TIC (Temperature Controller)", "TV (Temperature Valve)", "TSH (Temperature Switch High)", "TAHH (Temperature Alarm High-High)"] },
+      "U": { "variable": "Multivariable", "examples": ["UT (Multivariable Transmitter)"] },
+      "V": { "variable": "Vibration", "examples": ["VT (Vibration Transmitter)", "VSH (Vibration Switch High)"] },
+      "W": { "variable": "Weight/Force", "examples": ["WT (Weight Transmitter)", "WIC (Weight Controller)"] },
+      "X": { "variable": "Unclassified (On/Off common)", "examples": ["XV (On/Off Valve)", "XY (Solenoid Relay)", "XA (Alarm)"] },
+      "Y": { "variable": "Event/State", "examples": ["YI (Event Indicator)"] },
+      "Z": { "variable": "Position/Dimension", "examples": ["ZSC (Position Switch Closed)", "ZSO (Position Switch Open)", "ZT (Position Transmitter)", "ZI (Position Indicator)"] }
+    }
+  },
+
+  "isa_succeeding_letters": {
+    "description": "ISA 5.1 Succeeding Letters = Readout/Output Function",
+    "letters": {
+      "A": "Alarm",
+      "C": "Controller",
+      "D": "Differential (modifier)",
+      "E": "Element/Sensor (primary)",
+      "G": "Glass/Gauge/Viewing",
+      "H": "High (modifier)",
+      "I": "Indicator/Indicate",
+      "K": "Control Station",
+      "L": "Low (modifier) / Light",
+      "N": "Normal (modifier)",
+      "O": "Open (modifier — as in ZSO)",
+      "R": "Record/Recorder",
+      "S": "Switch",
+      "T": "Transmitter",
+      "V": "Valve/Final Element",
+      "X": "Unclassified",
+      "U": "Multifunction (combined readout or output)",
+      "V": "Valve/Final Element",
+      "X": "Unclassified",
+      "Y": "Relay/Compute/Convert",
+      "Z": "Driver/Actuator/Final Element"
+    },
+    "categories": {
+      "readout_passive": ["A", "D", "E", "G", "I", "L", "N", "O", "P", "R", "U", "X"],
+      "output_active": ["C", "K", "N", "S", "T", "U", "V", "X", "Y", "Z"],
+      "modifiers": ["C", "D", "F", "H", "J", "K", "L", "M", "N", "O", "Q", "R", "S", "X", "Y", "Z"]
+    },
+    "ordering_rule": "In a tag, modifiers come immediately after the letter they modify. Readout functions come before output functions. C (control) must precede V (valve) when both appear."
+  },
+
+  "function_modifiers": {
+    "description": "Modifiers that appear after function letters. These are NOT OCR errors — they are valid ISA designations.",
+    "modifiers": {
+      "H": { "meaning": "High", "examples": ["PSH (Pressure Switch High)", "TSH (Temperature Switch High)", "LSH (Level Switch High)"] },
+      "HH": { "meaning": "High-High (safety alarm level)", "examples": ["PAHH (Pressure Alarm High-High)", "TAHH (Temperature Alarm High-High)", "LAHH (Level Alarm High-High)"] },
+      "L": { "meaning": "Low", "examples": ["PSL (Pressure Switch Low)", "TSL (Temperature Switch Low)", "LSL (Level Switch Low)", "FSL (Flow Switch Low)"] },
+      "LL": { "meaning": "Low-Low (safety alarm level)", "examples": ["PALL (Pressure Alarm Low-Low)", "TALL (Temperature Alarm Low-Low)", "LALL (Level Alarm Low-Low)"] },
+      "C": { "meaning": "Closed (position state)", "examples": ["ZSC (Position Switch Closed)"], "note": "NOT an OCR error when on Z-type switches" },
+      "O": { "meaning": "Open (position state)", "examples": ["ZSO (Position Switch Open)"], "note": "NOT an OCR error when on Z-type switches" },
+      "D": { "meaning": "Differential", "examples": ["PDT (Pressure Differential Transmitter)", "PDIC (Pressure Differential Controller)"] },
+      "N": { "meaning": "Normal", "examples": ["NC (Normally Closed)", "NO (Normally Open)"] }
+    },
+    "validation_rule": "Double letters HH and LL are valid ISA designations for safety-level alarms. Do NOT flag as typos or duplicates."
+  },
+
+  "loop_composition_templates": {
+    "description": "Standard instrument groupings by process variable. A 'complete' loop has most of these. Missing instruments are informational flags, not errors.",
+    "templates": {
+      "flow_control": {
+        "description": "Flow measurement and control loop",
+        "primary_controller": "FIC",
+        "typical_instruments": ["FE (Flow Element — orifice plate, venturi, etc.)", "FT (Flow Transmitter — DP cell)", "FIT (Flow Indicating Transmitter)", "FIC (Flow Indicating Controller)", "FV (Flow Control Valve)", "FY (Flow Relay/Converter)"],
+        "tag_loop_number_rule": "All instruments in the loop share the same loop number. TAG LOOP NUMBER uses the primary controller: FE-2131 → FIC-2131"
+      },
+      "pressure_control": {
+        "description": "Pressure measurement and control loop",
+        "primary_controller": "PIC",
+        "typical_instruments": ["PT (Pressure Transmitter)", "PI (Pressure Indicator)", "PIC (Pressure Controller)", "PV (Pressure Valve)", "PG (Pressure Gauge — local, often not in DCS)"]
+      },
+      "temperature_control": {
+        "description": "Temperature measurement and control loop",
+        "primary_controller": "TIC",
+        "typical_instruments": ["TE (Temperature Element — RTD or TC)", "TT (Temperature Transmitter)", "TI (Temperature Indicator)", "TIC (Temperature Controller)", "TV (Temperature Valve)", "TW (Thermowell)"]
+      },
+      "level_control": {
+        "description": "Level measurement and control loop",
+        "primary_controller": "LIC",
+        "typical_instruments": ["LT (Level Transmitter)", "LI (Level Indicator)", "LG (Level Gauge — sight glass)", "LIC (Level Controller)", "LV (Level Valve)"]
+      },
+      "on_off_valve": {
+        "description": "On/Off (block/isolation) valve assembly — XV loop",
+        "primary_controller": "XV",
+        "typical_instruments": ["XV (On/Off Valve — the valve body)", "XY (Solenoid/Relay — actuates the valve)", "ZSC (Position Switch Closed — confirms valve is closed)", "ZSO (Position Switch Open — confirms valve is open)"],
+        "critical_rule": "ZSC and ZSO are a MATCHED PAIR — both are valid, both should exist. Do NOT flag as duplicates or OCR errors.",
+        "note": "Some loops also include ZI (Position Indicator) or ZT (Position Transmitter) for analog position feedback."
+      },
+      "safety_shutdown": {
+        "description": "Emergency Shutdown / Safety Instrumented System (SIS) loop",
+        "primary_controller": "varies",
+        "typical_instruments": ["PSH/PSL (Pressure Safety Switch)", "TSH/TSL (Temperature Safety Switch)", "LSHH/LSLL (Level Safety Switch High-High/Low-Low)", "XV (Shutdown Valve)", "PSV (Pressure Safety/Relief Valve)", "SDV (Shutdown Valve — alias for XV in safety context)"],
+        "note": "Safety loops often have redundant instruments (2oo3 voting). Multiple PSH tags in the same loop is valid."
+      },
+      "motor_control": {
+        "description": "Motor/pump control and monitoring",
+        "primary_controller": "varies",
+        "typical_instruments": ["HS (Hand Switch — start/stop)", "XY (Solenoid/Starter relay)", "YS (Motor Starter)", "II (Current Indicator)", "SI (Speed Indicator)", "VT (Vibration Transmitter)", "TSH (Temperature Switch High — bearing/winding)"],
+        "note": "HS tags often come in pairs (HS-102A start, HS-102B stop) or with letter suffixes. This is NOT duplication."
+      },
+      "analyzer": {
+        "description": "Process analyzer loop",
+        "primary_controller": "AIC",
+        "typical_instruments": ["AE (Analyzer Element/Sensor)", "AT (Analyzer Transmitter)", "AI (Analyzer Indicator)", "AIC (Analyzer Controller)", "AY (Analyzer Relay)"]
+      }
+    }
+  },
+
+  "tag_suffix_rules": {
+    "description": "Rules for the suffix portion of instrument tags (the number after the loop number)",
+    "rules": [
+      "Suffixes are typically 2-digit sequential numbers: -01, -02, -03",
+      "Suffix indicates the instance number of that instrument type in the loop",
+      "Gap in suffix sequence (01, 03 — missing 02) MAY indicate a removed or missed instrument, but is informational only",
+      "Letter suffixes (A, B) on non-Z instruments usually indicate physical location or function variant: HS-102A (start), HS-102B (stop)",
+      "Single-digit suffixes (just -1 instead of -01) are valid in some project conventions"
+    ]
+  },
+
+  "prefix_rules": {
+    "description": "Rules for area/unit prefix codes",
+    "rules": [
+      "All instruments on the same P&ID drawing typically share the same prefix (area code)",
+      "Prefix format varies by project: 201C, 509A, 3, 5, LO, etc.",
+      "A tag with a DIFFERENT prefix than all others on the same drawing is suspicious — could be OCR error OR a cross-referenced instrument from another area",
+      "Numeric-only prefixes (3, 5) are valid — these are short area codes",
+      "Alphanumeric prefixes (201C, 509A, LO) are common in larger facilities"
+    ]
+  },
+
+  "ocr_confusion_in_context": {
+    "description": "OCR errors that are specific to instrument tags — where the ISA context helps disambiguate",
+    "patterns": [
+      {
+        "confusion": "ZSC vs Z5C",
+        "rule": "S is the correct letter (Switch). 5 is an OCR misread. In ISA context, there is no function letter 5.",
+        "confidence_boost": 0.95
+      },
+      {
+        "confusion": "ZSO vs Z50",
+        "rule": "S is the correct letter (Switch), O is the correct modifier (Open). 50 would make no sense as ISA function letters.",
+        "confidence_boost": 0.95
+      },
+      {
+        "confusion": "XV vs XU",
+        "rule": "V = Valve. U is not a standard ISA succeeding letter. XU is almost certainly XV with OCR confusion.",
+        "confidence_boost": 0.90
+      },
+      {
+        "confusion": "FIC vs F1C",
+        "rule": "I = Indicator. 1 is an OCR misread. In ISA, function letters are always alphabetic.",
+        "confidence_boost": 0.95
+      },
+      {
+        "confusion": "PIC vs P1C",
+        "rule": "Same as FIC/F1C. I is Indicator, not digit 1.",
+        "confidence_boost": 0.95
+      },
+      {
+        "confusion": "TIC vs T1C",
+        "rule": "Same pattern. I = Indicator.",
+        "confidence_boost": 0.95
+      },
+      {
+        "confusion": "LIC vs L1C",
+        "rule": "Same pattern. I = Indicator.",
+        "confidence_boost": 0.95
+      },
+      {
+        "confusion": "TAHH vs TAHM",
+        "rule": "HH = High-High (safety alarm). The second H could be misread as M. Double-H is a standard ISA safety designation.",
+        "confidence_boost": 0.85
+      },
+      {
+        "confusion": "PSV vs P5V",
+        "rule": "S = Safety. 5 is OCR confusion. PSV = Pressure Safety Valve (relief valve).",
+        "confidence_boost": 0.95
+      },
+      {
+        "confusion": "HV vs HU",
+        "rule": "V = Valve. U is not standard. HV = Hand Valve.",
+        "confidence_boost": 0.90
+      }
+    ],
+    "general_rule": "In ISA tag TYPE fields, ALL characters should be letters. Any digit in the TYPE position (between prefix-dash and loop-dash) is almost certainly an OCR error: I→1, S→5, O→0, B→8, Z→2."
+  },
+
+  "tags_that_look_wrong_but_are_correct": {
+    "description": "Common false positives that the agent should NOT flag",
+    "examples": [
+      {
+        "tag": "ZSC / ZSO pair",
+        "explanation": "Position Switch Closed and Position Switch Open. Both valid, both needed in XV loops. NOT duplicates."
+      },
+      {
+        "tag": "TAHH / TALL / PAHH / LALL",
+        "explanation": "Double letters HH and LL are safety alarm levels (High-High, Low-Low). NOT typos."
+      },
+      {
+        "tag": "HS-102A / HS-102B",
+        "explanation": "Letter suffixes A/B on Hand Switches indicate Start/Stop or different physical locations. NOT duplicates."
+      },
+      {
+        "tag": "PDT (two letters after first letter)",
+        "explanation": "PD = Pressure Differential. D is a modifier, T is Transmitter. Three-letter function codes are valid."
+      },
+      {
+        "tag": "Multiple PSH tags in one loop",
+        "explanation": "Safety loops often have redundant sensors for voting (2oo3). Multiple pressure switches in one loop = valid."
+      },
+      {
+        "tag": "FE with no prefix",
+        "explanation": "Some projects use short tags without area prefixes. FE-2131 (no prefix) is valid if the project convention allows it."
+      },
+      {
+        "tag": "LO- prefix",
+        "explanation": "LO is a valid area prefix (e.g., Lube Oil system). NOT a partial tag or OCR error."
+      }
+    ]
+  },
+
+  "non_standard_industry_tags": {
+    "description": "Tags that are NOT ISA 5.1 standard but appear on real P&IDs constantly, especially in oil and gas. The system MUST recognize these even though they are not ISA-compliant.",
+    "principle": "ISA 5.1 tags describe FUNCTION (what the instrument does). Industry tags like MOV, SOV, BDV describe CONSTRUCTION (how it's built). Both appear on real drawings.",
+    "tags": {
+      "SDV": { "meaning": "Shutdown Valve", "isa_equivalent": "XV", "industry": "Oil & Gas, Petrochemical" },
+      "ESDV": { "meaning": "Emergency Shutdown Valve", "isa_equivalent": "XV", "industry": "Oil & Gas" },
+      "ESV": { "meaning": "Emergency Shutdown Valve", "isa_equivalent": "XV", "industry": "Oil & Gas" },
+      "MOV": { "meaning": "Motor Operated Valve", "isa_equivalent": "depends on function (LV, PV, FV, or XV)", "industry": "All" },
+      "SOV": { "meaning": "Solenoid Operated Valve", "isa_equivalent": "XY or YV", "industry": "All" },
+      "BDV": { "meaning": "Blowdown Valve", "isa_equivalent": "PV or XV", "industry": "Oil & Gas" },
+      "BV": { "meaning": "Ball Valve / Block Valve", "isa_equivalent": "XV (if on/off) or HV (if manual)", "industry": "All" },
+      "CV": { "meaning": "Control Valve (generic)", "isa_equivalent": "FCV, PCV, TCV, LCV (with first letter)", "industry": "All" },
+      "PRV": { "meaning": "Pressure Relief Valve", "isa_equivalent": "PSV", "industry": "All" }
+    },
+    "validation_note": "Do NOT flag these as invalid tags. They are real instruments on real drawings. Recognize them and understand what they mean."
+  },
+
+  "zsc_zso_clarification": {
+    "description": "Important distinction for ZSC/ZSO tagging conventions",
+    "strict_isa": "ISA 5.1 Table 4.1 defines H (High) and L (Low) as the standard position modifiers. Strictly speaking, ZSH = Position Switch High (fully open), ZSL = Position Switch Low (fully closed).",
+    "industry_practice": "ZSC (Position Switch Closed) and ZSO (Position Switch Open) are universally used in industry because they are more explicit and self-documenting. Most engineers consider them effectively standard.",
+    "both_valid": "The system should accept BOTH conventions: ZSH/ZSL (strict ISA) and ZSC/ZSO (industry standard). Neither is wrong.",
+    "do_not_flag": "Never flag ZSC or ZSO as errors. Never flag ZSH or ZSL as errors. Both are correct."
+  },
+
+  "loop_composition_source_note": {
+    "description": "ISA 5.1 does NOT define loop composition rules. It only defines how to identify individual instruments. Loop composition templates in this file are industry practice — near-universal but not formally standardized.",
+    "implication": "When flagging missing instruments in a loop, always mark as INFORMATIONAL, never as ERROR. A loop without an FY (relay) is not wrong — it might use a direct DCS output."
+  },
+
+  "validation_priorities": {
+    "description": "What to check first, in order of impact on data quality",
+    "order": [
+      "1. OCR character substitution in TYPE field (digits where letters should be)",
+      "2. Prefix consistency across the same P&ID drawing",
+      "3. Loop number format consistency (all numeric, consistent digit count)",
+      "4. Suffix sequence gaps (informational only)",
+      "5. Loop completeness (informational only — missing instruments)",
+      "6. Duplicate fullTag values (exact duplicates = likely missed detection)",
+      "7. Tag type validity against ISA function letters",
+      "8. Missing components (empty prefix, type, loop, or suffix)"
+    ]
+  }
+}

@@ -53,7 +53,7 @@ function buildUserContent({ jsa_task_description, task_title, task_description }
 
 const agent = defineAgent({
   name: 'voice.jsaMatchCheck.v1',
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-opus-4-7',
   systemPrompt: JSA_SYSTEM_PROMPT,
   tools: [],
   mcpServers: [],

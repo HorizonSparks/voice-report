@@ -3,6 +3,7 @@
  * Sends automated safety alerts via the existing messaging system
  */
 const DB = require('../../database/db');
+const push = require('../services/push');
 
 /**
  * Send a safety alert message to a person
@@ -10,7 +11,7 @@ const DB = require('../../database/db');
  */
 async function sendSafetyAlert(toPersonId, content, metadata = {}) {
   try {
-    return await DB.messages.create({
+    const msg = await DB.messages.create({
       from_id: 'system_safety',
       to_id: toPersonId,
       from_name: 'Safety System',
@@ -19,6 +20,19 @@ async function sendSafetyAlert(toPersonId, content, metadata = {}) {
       content,
       metadata,
     });
+    // Best-effort push. A safety alert that only lives in the inbox
+    // defeats the purpose — the whole point is the worker sees it now.
+    // Failure to push is logged but never raised; the inbox row is
+    // already persisted so a re-fetch will still surface it.
+    push.sendToPerson(toPersonId, {
+      title: '⚠️ Safety Alert',
+      body: typeof content === 'string'
+        ? (content.length > 200 ? content.slice(0, 197) + '…' : content)
+        : 'Safety alert — open the app for details.',
+      url: '/messages',
+      tag: `safety-${toPersonId}`,
+    }).catch((err) => console.warn('[push] safety alert notify failed:', err.message));
+    return msg;
   } catch (err) {
     console.error('Failed to send safety alert:', err.message);
     return null;

@@ -37,14 +37,35 @@ function parseCookies(req) {
 function setSessionCookie(res, sessionId, maxAge, req) {
   // Only set Secure flag when actually on HTTPS — HTTP cookies with Secure won't be sent back
   const isSecure = req ? (req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
+  const age = maxAge || 7 * 24 * 60 * 60; // 7 days
+  // Cross-domain cookie: when COOKIE_DOMAIN env is set (e.g. .horizonsparks.ai)
+  // the same hs_session works across all .horizonsparks.ai subdomains
+  // and any subdomain — required for true SSO. Unset = host-only cookie (today).
+  const cookieDomain = process.env.COOKIE_DOMAIN || null;
   res.setHeader('Set-Cookie', [
-    `${COOKIE_NAME}=${sessionId}`,
-    'HttpOnly',
-    isSecure ? 'Secure' : '',
-    'SameSite=Lax',
-    'Path=/',
-    `Max-Age=${maxAge || 7 * 24 * 60 * 60}`, // 7 days
-  ].filter(Boolean).join('; '));
+    // HttpOnly session token — not readable by JS. Priority=High asks
+    // browsers to keep this cookie if storage eviction kicks in (the
+    // companion presence flag is OK to lose, the session id is not).
+    [
+      `${COOKIE_NAME}=${sessionId}`,
+      'HttpOnly',
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      cookieDomain ? `Domain=${cookieDomain}` : '',
+      `Max-Age=${age}`,
+      'Priority=High',
+    ].filter(Boolean).join('; '),
+    // Companion presence flag — readable by JS so client can skip /api/me when no session exists
+    [
+      `${COOKIE_NAME}_present=1`,
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      cookieDomain ? `Domain=${cookieDomain}` : '',
+      `Max-Age=${age}`,
+    ].filter(Boolean).join('; '),
+  ]);
 }
 
 /**
@@ -52,14 +73,25 @@ function setSessionCookie(res, sessionId, maxAge, req) {
  */
 function clearSessionCookie(res, req) {
   const isSecure = req ? (req.secure || req.headers['x-forwarded-proto'] === 'https') : false;
+  const cookieDomain = process.env.COOKIE_DOMAIN || null;
   res.setHeader('Set-Cookie', [
-    `${COOKIE_NAME}=`,
-    'HttpOnly',
-    isSecure ? 'Secure' : '',
-    'SameSite=Lax',
-    'Path=/',
-    'Max-Age=0',
-  ].filter(Boolean).join('; '));
+    [
+      `${COOKIE_NAME}=`,
+      'HttpOnly',
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      cookieDomain ? `Domain=${cookieDomain}` : '',
+      'Max-Age=0',
+    ].filter(Boolean).join('; '),
+    [
+      `${COOKIE_NAME}_present=`,
+      isSecure ? 'Secure' : '',
+      'SameSite=Lax',
+      'Path=/',
+      'Max-Age=0',
+    ].filter(Boolean).join('; '),
+  ]);
 }
 
 /**
@@ -70,9 +102,17 @@ function clearSessionCookie(res, req) {
 async function loadSession(req, res, next) {
   req.auth = null;
 
-    // Integration key auth — for cross-origin calls from LoopFolders
+    // Integration key auth — accepts EITHER:
+    //   INTEGRATION_KEY         (legacy; also used by LoopFolders sparks-ai-chat
+    //                            which inlines it via NEXT_PUBLIC_, so it leaks
+    //                            into client JS — schedule for refactor)
+    //   INTEGRATION_KEY_SUPPORT (server-only key for the PIDS-app support proxy;
+    //                            never exposed to a browser)
+    // Multi-key acceptance lets us rotate the support path independently of the
+    // still-leaked LoopFolders path without breaking either.
     const integrationKey = req.headers['x-integration-key'];
-    if (integrationKey && process.env.INTEGRATION_KEY && integrationKey === process.env.INTEGRATION_KEY) {
+    const acceptedKeys = [process.env.INTEGRATION_KEY, process.env.INTEGRATION_KEY_SUPPORT].filter(Boolean);
+    if (integrationKey && acceptedKeys.includes(integrationKey)) {
       req.auth = {
         sessionId: 'integration_' + Date.now(),
         person_id: 'integration',
@@ -87,9 +127,17 @@ async function loadSession(req, res, next) {
     }
 
   try {
-    // Integration key auth — for cross-origin calls from LoopFolders
+    // Integration key auth — accepts EITHER:
+    //   INTEGRATION_KEY         (legacy; also used by LoopFolders sparks-ai-chat
+    //                            which inlines it via NEXT_PUBLIC_, so it leaks
+    //                            into client JS — schedule for refactor)
+    //   INTEGRATION_KEY_SUPPORT (server-only key for the PIDS-app support proxy;
+    //                            never exposed to a browser)
+    // Multi-key acceptance lets us rotate the support path independently of the
+    // still-leaked LoopFolders path without breaking either.
     const integrationKey = req.headers['x-integration-key'];
-    if (integrationKey && process.env.INTEGRATION_KEY && integrationKey === process.env.INTEGRATION_KEY) {
+    const acceptedKeys = [process.env.INTEGRATION_KEY, process.env.INTEGRATION_KEY_SUPPORT].filter(Boolean);
+    if (integrationKey && acceptedKeys.includes(integrationKey)) {
       req.auth = {
         sessionId: 'integration_' + Date.now(),
         person_id: 'integration',
@@ -220,7 +268,8 @@ function tenantFilter(req, res, next) {
  * Role hierarchy: admin(4) > support(3) > collaborator(2) > advisor(1)
  */
 function requireSparksRole(minRole) {
-  const roleLevel = { admin: 4, support: 3, collaborator: 2, advisor: 1 };
+  // annotator(0) is the lowest tier — formally defined so unknown values don't silently pass gates.
+  const roleLevel = { admin: 4, support: 3, collaborator: 2, advisor: 1, annotator: 0 };
   const minLevel = roleLevel[minRole] || 0;
 
   return (req, res, next) => {

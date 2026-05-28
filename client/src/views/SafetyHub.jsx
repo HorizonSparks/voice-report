@@ -5,17 +5,9 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import SafetyObservationForm from '../components/SafetyObservationForm.jsx';
+import PPERequestForm from '../components/PPERequestForm.jsx';
 
-// PPERequestForm placeholder - will be defined inline if needed
-function PPERequestForm({ user, onBack, onSaved }) {
-  const { t } = useTranslation();
-  return (
-    <Box sx={{ padding: '20px' }}>
-      <Button onClick={onBack}>&larr; Back</Button>
-      <Typography>{t('common.ppeComingSoon')}</Typography>
-    </Box>
-  );
-}
+// PPERequestForm now lives in ../components/PPERequestForm.jsx (real DB-backed form)
 
 export default function SafetyHub({ user, goHome }) {
   const { t } = useTranslation();

@@ -1,5 +1,5 @@
 /**
- * Agent Registry — Phase 1 Milestone B
+ * Agent Registry — Phase 2
  *
  * Central export for all agent definitions. Routes should import agents from
  * here so migrations are discoverable via grep.
@@ -12,6 +12,7 @@ const jsaAnalyzer = require('./jsaAnalyzer');
 const sparksChat = require('./sparksChat');
 const fieldCleanup = require('./fieldCleanup');
 const pidVerifier = require('./pidVerifier');
+const projectIntelligence = require('./projectIntelligence');
 
 module.exports = {
   voiceStructure,
@@ -21,4 +22,5 @@ module.exports = {
   sparksChat,
   fieldCleanup,
   pidVerifier,
+  projectIntelligence,
 };

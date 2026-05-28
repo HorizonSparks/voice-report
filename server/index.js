@@ -1,4 +1,5 @@
 require('dotenv').config({ override: true });
+require('./lib/validateEnv').validateEnv();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -13,6 +14,44 @@ const { requestLogger } = require('./services/logger');
 errorTracking.initialize();
 
 const app = express();
+
+// Trust proxy configuration — controls how req.ip and req.secure resolve when
+// the request comes through Cloudflare/nginx. Env-configurable so a topology
+// change doesn't require a code change:
+//
+//   TRUST_PROXY=1                  one hop (default; matches Cloudflare → app)
+//   TRUST_PROXY=2                  two hops (Cloudflare → nginx → app)
+//   TRUST_PROXY=loopback           only localhost (development)
+//   TRUST_PROXY=1.2.3.4,5.6.7.8/16 explicit CIDR allowlist (most secure)
+//   TRUST_PROXY=false              ignore XFF entirely
+//
+// Wrong value = either spoofed req.ip (too permissive) or req.secure stuck at
+// false behind HTTPS proxies (too strict). Affects login rate limit + cookie
+// Secure flag.
+const trustProxyRaw = process.env.TRUST_PROXY || '1';
+const trustProxyParsed = (() => {
+  if (trustProxyRaw === 'true' || trustProxyRaw === 'false') return trustProxyRaw === 'true';
+  const n = Number(trustProxyRaw);
+  return Number.isFinite(n) ? n : trustProxyRaw;
+})();
+app.set('trust proxy', trustProxyParsed);
+
+// Legacy-domain 301 redirect — sends any request hitting a retired hostname
+// to the canonical hostname, preserving path + query string. Configured via env:
+//   LEGACY_HOSTS               (CSV, e.g. "voice-report.ai,www.voice-report.ai")
+//   CANONICAL_HOST             (e.g. "horizonsparks.com")
+// Defaults retire voice-report.ai → horizonsparks.com without needing env vars.
+const LEGACY_HOSTS = (process.env.LEGACY_HOSTS || 'voice-report.ai,www.voice-report.ai')
+  .split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
+const CANONICAL_HOST = (process.env.CANONICAL_HOST || 'horizonsparks.com').trim();
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase().split(':')[0];
+  if (LEGACY_HOSTS.includes(host)) {
+    return res.redirect(301, 'https://' + CANONICAL_HOST + req.originalUrl);
+  }
+  next();
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Ensure directories exist
@@ -54,12 +93,25 @@ app.use(metrics.metricsMiddleware);
 app.use(requestLogger);
 
 // Middleware
+// === STRIPE WEBHOOK (2026-05-15) ===
+// MUST be mounted before express.json — webhook needs the raw request body
+// for signature verification. Its own router uses express.raw() internally.
+const { buildStripeWebhookRouter } = require("./routes/billing_stripe");
+app.use("/api/billing/webhook", buildStripeWebhookRouter());
+
 app.use(express.json({ limit: '50mb' }));
 app.use('/api', analytics.middleware);
 
 // Session auth — loads req.auth from cookie on every request
 const { loadSession, tenantFilter, attachCompanyDb } = require('./middleware/sessionAuth');
+const { verifyKeycloakJwt } = require('./middleware/verifyKeycloakJwt');
 app.use(loadSession);
+// Keycloak JWT auth — additive. If Authorization: Bearer <jwt> is present and
+// verifies, JWT-derived identity OVERRIDES whatever loadSession populated
+// (cookie or integration key). If absent, this middleware is a no-op. If
+// present but invalid, returns 401 instead of falling through to weaker auth.
+// Mount AFTER loadSession so we can override; BEFORE tenant/company guards.
+app.use(verifyKeycloakJwt());
 app.use(tenantFilter);
 app.use(attachCompanyDb);
 
@@ -97,12 +149,19 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 
 // Mount routes
-// AI cost guard on Claude-calling routes
-app.use('/api/agent', aiCostGuard);
-app.use('/api/structure', aiCostGuard);
-app.use('/api/refine', aiCostGuard);
-app.use('/api/converse', aiCostGuard);
-app.use('/api/refine-speak', aiCostGuard);
+// AI guards on Claude-calling routes, in this order:
+//   1. aiCostGuard         — per-user request rate (60 calls / 10 min)
+//   2. aiBudgetGuard       — per-company daily USD cap (env-configurable)
+//   3. aiHeavyLimiter      — per-user min/max per minute (lower-level burst)
+// Each is independent — failing any of them returns a 429 without reaching the route.
+const { aiHeavyLimiter, webauthnLimiter } = require('./middleware/rateLimiters');
+const { aiBudgetGuard } = require('./middleware/aiBudgetGuard');
+app.use('/api/agent', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/loopfolders/intelligence', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/structure', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/refine', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/converse', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
+app.use('/api/refine-speak', aiCostGuard, aiBudgetGuard, aiHeavyLimiter);
 
 app.use('/api', require('./routes/auth'));
 app.use('/api/templates', require('./routes/templates'));
@@ -117,14 +176,20 @@ app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/jsa', require('./routes/jsa')(require('../database/db').db));
 app.use('/api/punch-list', require('./routes/punchList'));
 app.use('/api/analytics', require('./routes/analytics'));
-app.use('/api/webauthn', require('./routes/webauthn'));
+app.use('/api/webauthn', webauthnLimiter, require('./routes/webauthn'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/sparks', require('./routes/sparks'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api', require('./routes/files'));
 app.use('/api/folders', require('./routes/sharedFolders'));
+// Keycloak SSO redirect/callback routes (additive — PIN flow at /api/auth/login still works)
+app.use('/auth/sso', require('./routes/sso'));
+app.use('/api/loopfolders/intelligence', require('./routes/loopfolders-intelligence'));
 app.use('/api/agent', require('./routes/agent'));
+app.use('/api/support', require('./routes/support'));
+app.use('/api/ppe', require('./routes/ppe'));
+app.use('/api/push', require('./routes/push'));
 
 // Grafana reverse proxy — authenticated, Sparks role required, streamed responses
 const GRAFANA_INTERNAL = process.env.GRAFANA_URL || 'http://grafana:3000';
@@ -163,6 +228,12 @@ app.use('/grafana', (req, res, next) => {
 
 // Error tracking middleware (AFTER all routes — catches unhandled errors)
 app.use(errorTracking.errorHandler);
+
+// Unknown /api/* paths must return JSON 404, not the SPA index.html.
+// Placed BEFORE the static handler so unknown API paths never fall through.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found', path: req.originalUrl });
+});
 
 // In production, serve built client files
 // In dev mode, Vite handles the client

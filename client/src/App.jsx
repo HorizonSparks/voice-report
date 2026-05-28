@@ -4,7 +4,7 @@ import {
   AppBar, Toolbar, IconButton, Typography, Drawer, Box, Button, Avatar, Divider,
   List, ListItemButton, ListItemIcon, ListItemText, Checkbox, FormControlLabel,
   Alert, Collapse, ToggleButton, ToggleButtonGroup, TextField,
-  Dialog, DialogTitle, DialogContent, DialogActions, Chip
+  Dialog, DialogTitle, DialogContent, DialogActions, Chip, Snackbar
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
@@ -35,6 +35,10 @@ import InstallBanner from './components/InstallBanner.jsx';
 import PinModal from './components/PinModal.jsx';
 import SparksCommandCenter from './views/SparksCommandCenter.jsx';
 import SupportChat from './components/SupportChat.jsx';
+import OfflineBanner from './components/OfflineBanner.jsx';
+import { apiPost, ApiError } from './lib/apiClient.js';
+import { installAutoDrain } from './lib/offlineQueue.js';
+import { getPushState, isSubscribed as isPushSubscribed, enablePush, disablePush } from './lib/push.js';
 
 const ALL_TRADES_KEYS = [
   { key: 'Electrical', icon: '⚡', tradeKey: 'trades.electrical' },
@@ -62,6 +66,12 @@ export default function App() {
   const [agentRecording, setAgentRecording] = useState(false);
   const agentMediaRecorder = useRef(null);
   const agentAudioChunks = useRef([]);
+  const agentCameraInput = useRef(null);
+  const [agentAttachedImage, setAgentAttachedImage] = useState(null); // { dataUrl, mimeType, name }
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushFeedback, setPushFeedback] = useState(null); // { severity, message }
   const [safetyPanelOpen, setSafetyPanelOpen] = useState(false);
   const [companySettings, setCompanySettings] = useState(null);
   const [activeRoleLevels, setActiveRoleLevels] = useState({}); // { "Pipe Fitting": [1,2,4,5], ... }
@@ -74,6 +84,7 @@ export default function App() {
   const [pinError, setPinError] = useState('');
   const readOnly = !!simulatingCompany && !editModeEnabled;
   const [supportChatOpen, setSupportChatOpen] = useState(false); // 'customer' or 'support'
+  const [selectedSupportConvId, setSelectedSupportConvId] = useState(null); // Sparks-side: conversation row clicked from SupportInbox
   const [currentWorld, setCurrentWorld] = useState(null); // 'control-center' | 'voice-report' | null
   const [dialogConfig, setDialogConfig] = useState(null); // { title, message, onConfirm, confirmText, cancelText }
 
@@ -145,6 +156,57 @@ export default function App() {
   }, [view, currentWorld, simulatingCompany?.id, activeTrade]);
 
   // Load starred trades and restore last active trade when user logs in
+  useEffect(() => { installAutoDrain(); }, []);
+
+  // Probe push state when the user logs in. We never auto-prompt — the
+  // user has to click the toggle in the drawer — but we do want the
+  // toggle to reflect the real current subscription.
+  useEffect(() => {
+    if (!user) return;
+    const state = getPushState();
+    setPushSupported(state.supported && state.permission !== 'denied');
+    if (state.supported) {
+      isPushSubscribed().then(setPushEnabled).catch(() => setPushEnabled(false));
+    }
+  }, [user]);
+
+  const togglePush = async () => {
+    if (pushBusy) return;
+    setPushBusy(true);
+    let feedback = null;
+    try {
+      if (pushEnabled) {
+        await disablePush();
+        feedback = { severity: 'info', message: t('push.deactivated') };
+      } else {
+        const res = await enablePush();
+        if (res.ok) {
+          feedback = { severity: 'success', message: t('push.activated') };
+        } else {
+          const key = {
+            denied: 'push.failedDenied',
+            unsupported: 'push.failedUnsupported',
+            not_configured: 'push.failedNotConfigured',
+          }[res.reason] || 'push.failedUnknown';
+          feedback = { severity: 'warning', message: t(key) };
+          if (res.reason === 'denied') setPushSupported(false);
+        }
+      }
+    } catch (err) {
+      feedback = { severity: 'error', message: err.message || t('push.failedUnknown') };
+      console.warn('[push] toggle failed:', err);
+    }
+    // Re-sync from browser state so the toggle reflects reality even if
+    // the user accepted the browser prompt but server registration failed
+    // (or any other mid-flow hiccup).
+    try {
+      const actuallySubscribed = await isPushSubscribed();
+      setPushEnabled(actuallySubscribed);
+    } catch {}
+    setPushBusy(false);
+    setPushFeedback(feedback);
+  };
+
   useEffect(() => {
     if (user) {
       const userKey = user.person_id || user.id || 'admin';
@@ -345,25 +407,55 @@ export default function App() {
   if (!user) return <LoginView onLogin={handleLogin} />;
 
   const openReport = (id) => { setSelectedReport(id); navigateTo('detail'); };
+
+  // File → base64 data URL. Used by the agent camera attachment.
+  const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  const onAgentCameraPick = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // Allow re-selecting the same file later
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: t('agent.imageTooLarge'), error: true }]);
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setAgentAttachedImage({ dataUrl, mimeType: file.type || 'image/jpeg', name: file.name || 'image.jpg' });
+    } catch (err) {
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: t('agent.imageReadFailed'), error: true }]);
+    }
+  };
+
   const sendGlobalAgent = async () => {
     const msg = globalAgentInput.trim();
-    if (!msg || globalAgentLoading) return;
+    const image = agentAttachedImage;
+    if ((!msg && !image) || globalAgentLoading) return;
     setGlobalAgentInput('');
-    setGlobalAgentMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setAgentAttachedImage(null);
+    setGlobalAgentMessages(prev => [...prev, { role: 'user', content: msg || (image ? t('agent.imageMarker') : ''), image: image?.dataUrl }]);
     setGlobalAgentLoading(true);
     try {
-      const res = await fetch('/api/agent/chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: msg,
-          contactName: simulatingCompany?.name || '',
-          companyName: simulatingCompany?.name || '',
-          conversationContext: globalAgentMessages.slice(-6).map(m => m.role + ': ' + m.content.substring(0, 200)).join('\n'),
-          currentScreen: view,
-          currentWorld: currentWorld || 'voice-report',
-        }),
-      });
-      const data = await res.json();
+      const payload = {
+        message: msg || t('agent.imagePromptDefault'),
+        contactName: simulatingCompany?.name || '',
+        companyName: simulatingCompany?.name || '',
+        conversationContext: globalAgentMessages.slice(-6).map(m => m.role + ': ' + m.content.substring(0, 200)).join('\n'),
+        currentScreen: view,
+        currentWorld: currentWorld || 'voice-report',
+      };
+      if (image) {
+        // Strip the `data:<mime>;base64,` prefix — server forwards the
+        // raw base64 to Claude's image content block.
+        payload.imageBase64 = image.dataUrl.split(',')[1] || '';
+        payload.imageMediaType = image.mimeType;
+      }
+      const data = await apiPost('/api/agent/chat', payload);
       setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: data.response || data.error || 'No response', model: data.model, tools: data.tool_calls, error: !data.response }]);
       // Handle navigation instructions from the Agent
       if (data.navigation) {
@@ -380,7 +472,10 @@ export default function App() {
         }, 300);
       }
     } catch (err) {
-      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: 'Connection error: ' + err.message, error: true }]);
+      const msg = err instanceof ApiError
+        ? (err.status === 0 ? t('agent.offlineRequiresInternet') : `Error ${err.status}: ${err.message}`)
+        : ('Connection error: ' + err.message);
+      setGlobalAgentMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
     }
     setGlobalAgentLoading(false);
   };
@@ -547,7 +642,7 @@ export default function App() {
               background: 'rgba(249,148,64,0.2)',
               color: 'var(--primary)',
               fontSize: 12, fontWeight: 800, textTransform: 'none',
-              borderRadius: '20px', px: 1.5, py: 0.4, minWidth: 'auto',
+              borderRadius: '8px', px: 1.5, py: 0.4, minWidth: 'auto',
               '&:hover': { background: 'rgba(249,148,64,0.35)' },
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
@@ -580,8 +675,10 @@ export default function App() {
               sx={{ mb: 1, justifyContent: 'flex-start', borderColor: 'primary.main', border: '2px solid', fontSize: 14 }}>
               Voice Report
             </Button>
-            <Button fullWidth disabled sx={{ mb: 1, justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
-              LoopFolders <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>
+            <Button fullWidth variant="outlined" color="secondary"
+              onClick={() => window.open('https://app.horizonsparks.ai/', '_blank', 'noopener,noreferrer')}
+              sx={{ mb: 1, justifyContent: 'flex-start', fontSize: 14 }}>
+              LoopFolders
             </Button>
             <Button fullWidth disabled sx={{ justifyContent: 'flex-start', fontSize: 14, opacity: 0.6 }}>
               Sparks <Typography component="span" sx={{ fontSize: 10, opacity: 0.5, ml: 1 }}>coming soon</Typography>
@@ -696,18 +793,23 @@ export default function App() {
         </Box>
 
         <List sx={{ px: 1 }}>
+          {pushSupported && (
+            <ListItemButton onClick={togglePush} disabled={pushBusy}>
+              <ListItemText
+                primary={(pushEnabled ? '🔔 ' : '🔕 ') + t(pushEnabled ? 'push.enabled' : 'push.enable')}
+                slotProps={{ primary: { sx: { color: 'text.primary' } } }}
+              />
+            </ListItemButton>
+          )}
           <ListItemButton onClick={() => { showConfirm(t('nav.logout'), t('nav.confirmLogout'), () => { closeDialog(); logout(); }, t('nav.logout'), t('common.cancel')); }}>
             <ListItemText primary={'⏻ ' + t('nav.logout')} slotProps={{ primary: { sx: { color: 'text.primary' } } }} />
           </ListItemButton>
         </List>
       </Drawer>
 
-      {/* Sub-header with back button */}
-      {view !== 'home' && (
-        <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.default', borderBottom: 'none' }}>
-          <Button startIcon={<ArrowBackIcon />} onClick={goBack} size="small" color="secondary" sx={{ fontWeight: 700 }}>
-            {t('nav.back')}
-          </Button>
+      {/* Sub-header with user info — hidden on home and sparks (has own nav) */}
+      {view !== 'home' && view !== 'sparks' && (
+        <Box className="sub-header" sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: 2, py: 1, bgcolor: 'background.default', borderBottom: 'none' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {user.photo && <Avatar src={`/api/photos/${user.photo}`} sx={{ width: 28, height: 28 }} />}
             <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary' }}>{user.name}</Typography>
@@ -773,7 +875,7 @@ export default function App() {
         {view === 'taskdetail' && <TaskDetailView readOnly={readOnly} user={user} taskId={selectedTaskId} goBack={goBack} onNavigate={navigateTo} activeTrade={activeTrade} />}
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
-        {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} agentOpen={globalAgentOpen} />}
+        {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} agentOpen={globalAgentOpen} onSupportConvOpen={(convId) => { setSelectedSupportConvId(convId); setSupportChatOpen(true); }} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>
@@ -831,16 +933,50 @@ export default function App() {
       </Drawer>
 
       <InstallBanner />
+      <OfflineBanner />
+      <Snackbar
+        open={!!pushFeedback}
+        autoHideDuration={4000}
+        onClose={() => setPushFeedback(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        {pushFeedback ? (
+          <Alert
+            severity={pushFeedback.severity}
+            variant="filled"
+            onClose={() => setPushFeedback(null)}
+            sx={{ width: '100%' }}
+          >
+            {pushFeedback.message}
+          </Alert>
+        ) : <span />}
+      </Snackbar>
       {user && currentWorld === 'voice-report' && user.sparks_role && (
-        <><PinModal
+        <PinModal
           visible={showPinModal}
           companyName={simulatingCompany?.name || ''}
           onSubmit={handleEnableEditing}
           onCancel={() => { setShowPinModal(false); setPinError(''); }}
           error={pinError}
         />
-        {/* SupportChat removed — replaced by Messages panel + Agent sidebar */}
-        </>
+      )}
+
+      {/*
+        SupportChat — floating chat bubble for tech support
+        Gate: any logged-in user with role_level >= 2 (Foreman+) OR any Sparks team member.
+        Customers (foremen+) see the customer-side widget; Sparks ops see the
+        operator-side widget when an Inbox row is clicked (drives `activeConversation`).
+        Phone users (helpers, role_level 1) use full-screen messaging instead.
+      */}
+      {user && (user.sparks_role || (user.role_level || 0) >= 2) && (
+        <SupportChat
+          user={user}
+          simulatingCompany={simulatingCompany}
+          externalOpen={supportChatOpen}
+          onExternalOpenChange={setSupportChatOpen}
+          activeConversation={selectedSupportConvId}
+          onConversationChange={setSelectedSupportConvId}
+        />
       )}
 
       {/* RD2 Sidebar — Claude/ChatGPT style, full viewport height */}
@@ -925,6 +1061,18 @@ export default function App() {
 
           {/* Input area — gray strip with white bubble */}
           <Box sx={{ px: 2, py: 1.5, borderTop: '1px solid #E0E0E0', bgcolor: '#E8E8E8', flexShrink: 0 }}>
+            {agentAttachedImage && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, p: 1, bgcolor: '#FFF', borderRadius: 2, border: '1px solid #E0E0E0' }}>
+                <Box component="img" src={agentAttachedImage.dataUrl} alt="adjunto"
+                  sx={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 1 }} />
+                <Typography variant="caption" sx={{ flex: 1, color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {agentAttachedImage.name}
+                </Typography>
+                <IconButton size="small" onClick={() => setAgentAttachedImage(null)} sx={{ color: '#888' }}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', bgcolor: '#FFFFFF', borderRadius: '24px', px: 2, py: 0.75, border: '1px solid #E0E0E0' }}>
               <TextField
                 multiline placeholder="Ask Sparks AI anything..." value={globalAgentInput}
@@ -934,8 +1082,8 @@ export default function App() {
                 slotProps={{ input: { disableUnderline: true } }}
                 sx={{ flex: 1, '& .MuiInputBase-root': { py: 0.5, fontSize: 14, color: '#333' }, '& .MuiInputBase-input': { resize: 'none', '&::placeholder': { color: 'rgba(0,0,0,0.35)', opacity: 1 } } }}
               />
-              {/* WhatsApp pattern: mic + camera when empty, send when typing */}
-              {globalAgentInput.trim() ? (
+              {/* WhatsApp pattern: mic + camera when empty, send when typing OR image attached */}
+              {(globalAgentInput.trim() || agentAttachedImage) ? (
                 <IconButton size="small" onClick={sendGlobalAgent} disabled={globalAgentLoading} sx={{
                   width: 36, height: 36, bgcolor: '#F99440', color: 'white', mb: 0.25,
                   '&:hover': { bgcolor: '#E8822A' },
@@ -944,12 +1092,20 @@ export default function App() {
                 </IconButton>
               ) : (
                 <>
-                  {/* Camera button */}
+                  {/* Camera button — opens native camera on mobile, file picker on desktop */}
                   <IconButton size="small" disabled={globalAgentLoading}
-                    onClick={() => { /* TODO: camera/image capture */ }}
+                    onClick={() => agentCameraInput.current?.click()}
                     sx={{ width: 36, height: 36, mb: 0.25, color: '#888', '&:hover': { bgcolor: 'rgba(0,0,0,0.05)' } }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                   </IconButton>
+                  <input
+                    ref={agentCameraInput}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={onAgentCameraPick}
+                    style={{ display: 'none' }}
+                  />
                   {/* Mic button — hold to record */}
                   <IconButton size="small"
                     onMouseDown={startAgentRecording} onMouseUp={stopAgentRecording} onMouseLeave={stopAgentRecording}

@@ -222,6 +222,34 @@
     "stopWorkSent": "Alerta de Parar Trabajo enviada.",
     "emergencyDesc": "Seguridad del sitio, 911, control de envenenamiento"
   },
+  "offline": {
+    "noConnectionWithQueue": "Sin conexión — los envíos se reintentarán al reconectar ({{count}} en cola)",
+    "noConnection": "Sin conexión — los envíos se reintentarán al reconectar",
+    "pendingSync_one": "{{count}} envío pendiente de sincronizar",
+    "pendingSync_other": "{{count}} envíos pendientes de sincronizar",
+    "retryNow": "Reintentar ahora"
+  },
+  "push": {
+    "enable": "Activar notificaciones",
+    "enabled": "Notificaciones activas — toca para desactivar",
+    "activated": "Notificaciones activadas",
+    "deactivated": "Notificaciones desactivadas",
+    "failedDenied": "Permiso de notificaciones bloqueado en este navegador.",
+    "failedUnsupported": "Este navegador no soporta notificaciones push.",
+    "failedNotConfigured": "El servidor no tiene VAPID configurado. Reinicia el server o revisa el .env.",
+    "failedUnknown": "No se pudieron activar las notificaciones."
+  },
+  "agent": {
+    "imageMarker": "[imagen]",
+    "imagePromptDefault": "Analiza esta imagen.",
+    "imageTooLarge": "La imagen es muy grande (máx. 8 MB).",
+    "imageReadFailed": "No se pudo leer la imagen.",
+    "offlineRequiresInternet": "Sin conexión — el agente requiere internet."
+  },
+  "record": {
+    "saveFailed": "No se pudo guardar el reporte",
+    "saveFailedWithStatus": "No se pudo guardar el reporte ({{status}}): {{message}}"
+  },
   "common": {
     "select": "-- Seleccionar --",
     "yes": "Sí",
@@ -341,5 +369,85 @@
     "asFoundOutput": "Salida Encontrada",
     "calibratedOutput": "Salida Calibrada",
     "dcsReading": "Lectura DCS"
+  },
+  "folders": {
+    "newFolder": "Nueva Carpeta",
+    "editFolder": "Renombrar Carpeta",
+    "folderName": "Nombre de carpeta",
+    "nameRequired": "El nombre es requerido",
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "deleteConfirmTitle": "Eliminar Carpeta",
+    "deleteConfirmMessage": "¿Estás seguro de eliminar \"{{name}}\"? Esta acción no se puede deshacer."
+  },
+  "support": {
+    "inbox": "Bandeja de Soporte",
+    "back": "Atrás",
+    "unread": "{{count}} sin leer",
+    "filterAll": "Todas ({{n}})",
+    "filterOpen": "Abiertas ({{n}})",
+    "filterWaiting": "En espera ({{n}})",
+    "filterVoiceReport": "Voice Report ({{n}})",
+    "filterPidsApp": "P&IDS ({{n}})",
+    "noConversations": "Sin conversaciones de soporte",
+    "noConversationsHint": "Cuando un cliente envíe un mensaje desde el chat flotante, aparecerá aquí.",
+    "markResolved": "Marcar como resuelta",
+    "new": "NUEVO",
+    "customerOn": "El cliente está en: {{route}}",
+    "refresh": "Actualizar",
+    "time": {
+      "justNow": "ahora",
+      "minutesAgo": "hace {{n}}m",
+      "hoursAgo": "hace {{n}}h",
+      "daysAgo": "hace {{n}}d"
+    },
+    "sla": {
+      "avgFirstResponse": "Tiempo de primera respuesta",
+      "resolution": "Resolución",
+      "csat": "CSAT",
+      "noData": "Sin datos aún",
+      "noRatings": "sin calificaciones"
+    },
+    "chat": {
+      "title": "Soporte Horizon Sparks",
+      "titleOperator": "Chat de Soporte",
+      "typeMessage": "Escribe tu mensaje...",
+      "replyCustomer": "Responder al cliente...",
+      "openConvToReply": "Abre una conversación para responder",
+      "openFromInbox": "Abre una conversación desde la Bandeja de Soporte para responder.",
+      "welcome": "¡Hola! ¿En qué podemos ayudarte hoy? Describe tu problema y nuestro equipo te responderá pronto.",
+      "sendFailed": "No se pudo enviar el mensaje. Inténtalo de nuevo."
+    },
+    "aiSuggestion": {
+      "label": "Sparks AI sugiere",
+      "accept": "Aceptar y enviar",
+      "edit": "Editar",
+      "dismiss": "Descartar",
+      "confidence": "Confianza"
+    },
+    "ai": {
+      "paused": "IA en pausa — el operador respondió hace poco",
+      "release": "Liberar IA ahora"
+    },
+    "notes": {
+      "label": "Notas internas (solo operador)",
+      "placeholder": "Notas visibles solo para el equipo de soporte…",
+      "saving": "guardando…",
+      "saved": "guardado"
+    },
+    "csat": {
+      "prompt": "Esta conversación se resolvió. ¿Cómo fue tu experiencia?",
+      "thanks": "¡Gracias por tu retroalimentación!",
+      "veryDissatisfied": "Muy insatisfecho",
+      "dissatisfied": "Insatisfecho",
+      "neutral": "Neutral",
+      "satisfied": "Satisfecho",
+      "verySatisfied": "Muy satisfecho"
+    },
+    "attachment": {
+      "downloadFile": "Descargar archivo"
+    }
   }
 }

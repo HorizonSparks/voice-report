@@ -1,0 +1,30 @@
+# Staging overlay for docker-compose.
+# Used together with the base file: docker compose -f docker-compose.yml -f docker-compose.staging.yml <command>
+#
+# Differences from production:
+#   - App container is named voice-report-staging-app-1 (distinct from prod's
+#     voice-report-app-1 so both can coexist on the same host)
+#   - Different host ports so prod is undisturbed (3071/3514 vs prod's 3070/3513)
+#   - env_file points to .env.staging which holds the staging connection
+#     strings, Keycloak realm, Stripe TEST keys, etc.
+#
+# This file is intentionally not committed in production deploy scripts —
+# the prod deploy.sh uses ONLY docker-compose.yml.
+
+services:
+  app:
+    container_name: voice-report-staging-app-1
+    image: voice-report-staging-app
+    env_file:
+      - .env.staging
+    ports:
+      - "${STAGING_PORT:-3071}:${STAGING_PORT:-3071}"
+      - "${STAGING_HTTPS_PORT:-3514}:${STAGING_HTTPS_PORT:-3514}"
+    environment:
+      # Staging uses the same shared Postgres but a DIFFERENT database name
+      # (voicereport_staging) so prod data is never touched. The schema
+      # must be applied to that DB separately — see deploy-staging.sh.
+      PG_DATABASE: horizon_staging
+      PORT: ${STAGING_PORT:-3071}
+      HTTPS_PORT: ${STAGING_HTTPS_PORT:-3514}
+      PUBLIC_BASE_URL: https://staging.horizonsparks.com

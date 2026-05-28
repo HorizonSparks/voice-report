@@ -5,8 +5,26 @@ const fs = require('fs');
 const DB = require('../../database/db');
 const {requireAuth, requireRoleLevel, requireSparksEditMode} = require('../middleware/sessionAuth');
 const { getActor, canMessage } = require('../auth/authz');
+const push = require('../services/push');
 
 const router = Router();
+
+// Fire-and-forget push notification for a new message. Truncate the body
+// so push providers don't reject oversized payloads (~4KB limit on FCM)
+// and the user sees something readable on a lock screen. Returns a
+// resolved promise either way — push must never block the message send.
+function notifyMessageRecipient({ toId, fromName, content, type }) {
+  if (!toId) return Promise.resolve();
+  const body = type === 'text' && content
+    ? (content.length > 140 ? content.slice(0, 137) + '…' : content)
+    : `[${type || 'mensaje'}]`;
+  return push.sendToPerson(toId, {
+    title: fromName ? `Nuevo mensaje de ${fromName}` : 'Nuevo mensaje',
+    body,
+    url: '/messages',
+    tag: `msg-${toId}`, // collapses a burst of messages into one alert
+  }).catch((err) => console.warn('[push] message notify failed:', err.message));
+}
 
 // Resolve __admin__ sentinel to real person_id for Sparks team messaging
 async function resolveAdminId(actorPersonId, bodyFromId, reqDb) {
@@ -114,11 +132,18 @@ router.post('/v2/messages', requireAuth, requireSparksEditMode, async (req, res)
     }
     const fromPerson = from_id ? (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [from_id])).rows[0] : null;
     const toPerson = (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [to_id])).rows[0];
-    res.json(await (req.db || DB).messages.create({
+    const result = await (req.db || DB).messages.create({
       from_id, to_id, from_name: fromPerson?.name || (actor.is_admin ? 'Admin' : ''), to_name: toPerson?.name || '',
       content, type: type || 'text', audio_file: req.body.audio_file || null,
       photo: req.body.photo || null, metadata: req.body.metadata || {},
-    }));
+    });
+    notifyMessageRecipient({
+      toId: to_id,
+      fromName: fromPerson?.name || (actor.is_admin ? 'Admin' : ''),
+      content,
+      type: type || 'text',
+    });
+    res.json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

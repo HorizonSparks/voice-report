@@ -52,8 +52,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </ThemeProvider>
 );
 
-// Register service worker in production — with update detection
-if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
+// Register service worker. Previously skipped on localhost to avoid HMR
+// conflicts, but the SW we ship goes network-first for /api/ and
+// cache: 'no-store' for .js/.css — Vite HMR is unaffected. Registering
+// in dev is required for web push (PushManager.subscribe() needs a
+// registered SW) and for testing offline behavior end-to-end.
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => {

@@ -35,3 +35,4 @@ schema_analysis.js
 schema_analysis2.js
 migration_step1_companies.js
 migration_step2_gatekeeper.js
+_ops_backup/

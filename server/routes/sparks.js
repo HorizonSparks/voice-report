@@ -64,6 +64,100 @@ router.post('/companies', requireSparksRole('admin'), async (req, res) => {
   }
 });
 
+// POST /api/sparks/companies/onboard — Single-call onboarding.
+// Creates a new company AND its first admin person in one atomic transaction,
+// so a partial failure leaves nothing dangling. Optionally seeds products
+// and trades the customer plans to use.
+//
+// Body shape:
+//   {
+//     company: { name (required), slug?, tier?, notes? },
+//     admin:   { name (required), pin (required), role_title? },
+//     products?: ['voice_report', 'pids', ...],
+//     trades?:   ['Electrical', 'Instrumentation', ...]
+//   }
+//
+// Returns { company, admin } — the admin object includes the assigned
+// person_id but NEVER echoes the PIN back (caller already knows it).
+router.post('/companies/onboard', requireSparksRole('admin'), async (req, res) => {
+  const { company, admin, products, trades } = req.body || {};
+  if (!company || typeof company.name !== 'string' || !company.name.trim()) {
+    return res.status(400).json({ error: 'company.name required' });
+  }
+  if (!admin || typeof admin.name !== 'string' || !admin.name.trim()) {
+    return res.status(400).json({ error: 'admin.name required' });
+  }
+  if (!admin.pin || typeof admin.pin !== 'string' || admin.pin.length < 4) {
+    return res.status(400).json({ error: 'admin.pin required (min 4 chars)' });
+  }
+
+  const companyId = 'company_' + (company.slug || company.name.toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+  const companySlug = company.slug || company.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const adminId = 'person_' + crypto.randomUUID().slice(0, 12);
+
+  const client = await DB.db.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `INSERT INTO companies (id, name, slug, status, tier, notes, created_by, created_at, updated_at)
+       VALUES ($1, $2, $3, 'active', $4, $5, $6, NOW(), NOW())`,
+      [companyId, company.name.trim(), companySlug, company.tier || 'small', company.notes || null, req.auth.person_id]
+    );
+
+    await client.query(
+      `INSERT INTO people (id, name, pin, role_title, role_level, company_id, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 5, $5, 'active', NOW(), NOW())`,
+      [adminId, admin.name.trim(), admin.pin, admin.role_title || 'Administrator', companyId]
+    );
+
+    if (Array.isArray(products) && products.length) {
+      for (const p of products) {
+        if (typeof p === 'string' && p.trim()) {
+          await client.query(
+            `INSERT INTO company_products (company_id, product) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            [companyId, p.trim()]
+          );
+        }
+      }
+    }
+    if (Array.isArray(trades) && trades.length) {
+      for (const t of trades) {
+        if (typeof t === 'string' && t.trim()) {
+          await client.query(
+            `INSERT INTO company_trades (company_id, trade) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            [companyId, t.trim()]
+          );
+        }
+      }
+    }
+
+    await client.query(
+      `INSERT INTO sparks_audit_log (id, person_id, action, resource_type, resource_id, details, created_at)
+       VALUES ($1, $2, 'onboarded_company', 'company', $3, $4, NOW())`,
+      [crypto.randomUUID(), req.auth.person_id, companyId,
+       JSON.stringify({ company_name: company.name, admin_name: admin.name, admin_id: adminId })]
+    );
+
+    await client.query('COMMIT');
+
+    const { rows: companyRows } = await client.query('SELECT * FROM companies WHERE id = $1', [companyId]);
+    res.status(201).json({
+      company: companyRows[0],
+      admin: { id: adminId, name: admin.name, role_title: admin.role_title || 'Administrator', role_level: 5, company_id: companyId },
+    });
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch {}
+    if (err && err.code === '23505') {
+      return res.status(409).json({ error: 'Company slug or person id already exists' });
+    }
+    console.error('Onboard company error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
 // GET /api/sparks/companies/:id — Company detail
 router.get('/companies/:id', requireSparksRole('support'), async (req, res) => {
   try {
@@ -147,6 +241,17 @@ router.put('/companies/:id', requireSparksRole('admin'), async (req, res) => {
   } catch (err) {
     console.error('Update company error:', err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/sparks/companies/:id — Delete company (admin only)
+router.delete('/companies/:id', requireSparksRole('admin'), async (req, res) => {
+  try {
+    await DB.db.query('DELETE FROM companies WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete company error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

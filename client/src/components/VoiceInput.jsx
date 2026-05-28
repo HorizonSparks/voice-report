@@ -39,50 +39,58 @@ export default function VoiceInput({ value, onChange, placeholder, rows }) {
   const stopVoice = async () => {
     setRecording(false);
     setProcessing(true);
-    if (recorderRef.current?.state !== 'inactive') recorderRef.current.stop();
 
-    setTimeout(async () => {
-      try {
-        const mimeType = recorderRef.current?.mimeType || 'audio/webm';
-        const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        const formData = new FormData();
-        formData.append('audio', blob, `field_recording.${ext}`);
-        formData.append('report_id', 'field_' + Date.now());
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      await new Promise((resolve) => {
+        const prevOnStop = recorderRef.current.onstop;
+        recorderRef.current.onstop = () => {
+          if (prevOnStop) prevOnStop();
+          resolve();
+        };
+        recorderRef.current.stop();
+      });
+    }
 
-        const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
-        if (res.ok) {
-          const data = await res.json();
-          const spoken = data.transcript;
-          setOriginalText(spoken);
+    try {
+      const mimeType = recorderRef.current?.mimeType || 'audio/webm';
+      const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+      const blob = new Blob(chunksRef.current, { type: mimeType });
+      const formData = new FormData();
+      formData.append('audio', blob, `field_recording.${ext}`);
+      formData.append('report_id', 'field_' + Date.now());
 
-          try {
-            const aiRes = await fetch('/api/structure', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ transcript: spoken, field_cleanup: true }),
-            });
-            if (aiRes.ok) {
-              const aiData = await aiRes.json();
-              const cleaned = aiData.cleaned || spoken;
-              if (cleaned !== spoken) {
-                setAiText(cleaned);
-                setShowAiVersion(true);
-              } else {
-                onChange(spoken);
-              }
+      const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        const spoken = data.transcript;
+        setOriginalText(spoken);
+
+        try {
+          const aiRes = await fetch('/api/structure', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transcript: spoken, field_cleanup: true }),
+          });
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            const cleaned = aiData.cleaned || spoken;
+            if (cleaned !== spoken) {
+              setAiText(cleaned);
+              setShowAiVersion(true);
             } else {
               onChange(spoken);
             }
-          } catch(e) {
+          } else {
             onChange(spoken);
           }
+        } catch(e) {
+          onChange(spoken);
         }
-      } catch(e) {
-        showAlert('Recording failed. Try again.');
       }
-      setProcessing(false);
-    }, 500);
+    } catch(e) {
+      showAlert('Recording failed. Try again.');
+    }
+    setProcessing(false);
   };
 
   const acceptAi = () => { onChange(aiText); setShowAiVersion(false); setAiText(''); };

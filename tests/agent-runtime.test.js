@@ -17,7 +17,7 @@ describe('Agent Runtime — defineAgent', () => {
     test('returns a frozen agent with defaults applied', () => {
       const agent = defineAgent({
         name: 'test.basic.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'You are a test agent.',
       });
       expect(Object.isFrozen(agent)).toBe(true);
@@ -38,7 +38,7 @@ describe('Agent Runtime — defineAgent', () => {
       const fn = (ctx) => `Hello ${ctx.name}`;
       const agent = defineAgent({
         name: 'test.fn.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: fn,
       });
       expect(agent.systemPrompt).toBe(fn);
@@ -47,7 +47,7 @@ describe('Agent Runtime — defineAgent', () => {
     test('accepts tools with proper schema', () => {
       const agent = defineAgent({
         name: 'test.tools.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         tools: [
           { name: 'foo', description: 'does foo', input_schema: { type: 'object', properties: {} } },
@@ -59,7 +59,7 @@ describe('Agent Runtime — defineAgent', () => {
     test('accepts dynamicTools flag', () => {
       const agent = defineAgent({
         name: 'test.dyn.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         dynamicTools: true,
       });
@@ -69,7 +69,7 @@ describe('Agent Runtime — defineAgent', () => {
     test('accepts guardrails overrides', () => {
       const agent = defineAgent({
         name: 'test.guards.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         guardrails: {
           enabled: true,
@@ -94,7 +94,7 @@ describe('Agent Runtime — defineAgent', () => {
 
     test('throws on missing name', () => {
       expect(() =>
-        defineAgent({ model: 'claude-sonnet-4-20250514', systemPrompt: 'x' })
+        defineAgent({ model: 'claude-sonnet-4-6', systemPrompt: 'x' })
       ).toThrow(AgentValidationError);
     });
 
@@ -118,7 +118,7 @@ describe('Agent Runtime — defineAgent', () => {
 
     test('throws on missing systemPrompt', () => {
       expect(() =>
-        defineAgent({ name: 'test.sp.v1', model: 'claude-sonnet-4-20250514' })
+        defineAgent({ name: 'test.sp.v1', model: 'claude-sonnet-4-6' })
       ).toThrow(/systemPrompt is required/);
     });
 
@@ -126,7 +126,7 @@ describe('Agent Runtime — defineAgent', () => {
       expect(() =>
         defineAgent({
           name: 'test.sp.v1',
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           systemPrompt: 123,
         })
       ).toThrow(/must be a string or function/);
@@ -136,7 +136,7 @@ describe('Agent Runtime — defineAgent', () => {
       expect(() =>
         defineAgent({
           name: 'test.t.v1',
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           systemPrompt: 'x',
           tools: [{ name: 'foo' }], // missing description, input_schema
         })
@@ -147,7 +147,7 @@ describe('Agent Runtime — defineAgent', () => {
       expect(() =>
         defineAgent({
           name: 'test.mt.v1',
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           systemPrompt: 'x',
           guardrails: { maxTokens: 0 },
         })
@@ -156,7 +156,7 @@ describe('Agent Runtime — defineAgent', () => {
       expect(() =>
         defineAgent({
           name: 'test.mt2.v1',
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6',
           systemPrompt: 'x',
           guardrails: { maxTokens: 999999 },
         })
@@ -184,7 +184,7 @@ describe('Agent Runtime — runAgent', () => {
     jest.doMock('../server/services/ai/anthropicClient', () => ({
       callClaude: callClaudeMock,
       CLAUDE_URL: 'https://api.anthropic.com/v1/messages',
-      DEFAULT_MODEL: 'claude-sonnet-4-20250514',
+      DEFAULT_MODEL: 'claude-sonnet-4-6',
     }));
 
     // Mock metrics so we don't need a real Prometheus registry
@@ -208,7 +208,7 @@ describe('Agent Runtime — runAgent', () => {
     test('resolves string systemPrompt and calls callClaude', async () => {
       const agent = defineAgent({
         name: 'test.hp.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'You are a test.',
       });
       const result = await runAgent(agent, {
@@ -217,18 +217,18 @@ describe('Agent Runtime — runAgent', () => {
       expect(callClaudeMock).toHaveBeenCalledTimes(1);
       const args = callClaudeMock.mock.calls[0][0];
       expect(args.systemPrompt).toBe('You are a test.');
-      expect(args.model).toBe('claude-sonnet-4-20250514');
+      expect(args.model).toBe('claude-sonnet-4-6');
       expect(args.maxTokens).toBe(1000);
       expect(result.text).toBe('Hello world');
       expect(result.agent.name).toBe('test.hp.v1');
-      expect(result.agent.model).toBe('claude-sonnet-4-20250514');
+      expect(result.agent.model).toBe('claude-sonnet-4-6');
       expect(result.agent.durationMs).toBeGreaterThanOrEqual(0);
     });
 
     test('resolves function systemPrompt with context', async () => {
       const agent = defineAgent({
         name: 'test.fn.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: (ctx) => `Hello ${ctx.name}`,
       });
       await runAgent(agent, {
@@ -241,7 +241,7 @@ describe('Agent Runtime — runAgent', () => {
     test('resolves async function systemPrompt', async () => {
       const agent = defineAgent({
         name: 'test.async.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: async (ctx) => {
           await new Promise(r => setTimeout(r, 5));
           return `Async ${ctx.val}`;
@@ -257,7 +257,7 @@ describe('Agent Runtime — runAgent', () => {
     test('forwards agent_name and project_id into tracking.extra', async () => {
       const agent = defineAgent({
         name: 'test.track.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await runAgent(agent, {
@@ -278,7 +278,7 @@ describe('Agent Runtime — runAgent', () => {
     test('defaults project_id to "default" if not provided', async () => {
       const agent = defineAgent({
         name: 'test.def.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await runAgent(agent, { messages: [{ role: 'user', content: 'hi' }] });
@@ -289,7 +289,7 @@ describe('Agent Runtime — runAgent', () => {
     test('returns superset shape including agent metadata', async () => {
       const agent = defineAgent({
         name: 'test.ret.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       const result = await runAgent(agent, { messages: [{ role: 'user', content: 'hi' }] });
@@ -310,7 +310,7 @@ describe('Agent Runtime — runAgent', () => {
     test('clamps maxTokens to guardrails.maxTokens even if override tries higher', async () => {
       const agent = defineAgent({
         name: 'test.clamp.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         guardrails: { maxTokens: 500 },
       });
@@ -324,14 +324,14 @@ describe('Agent Runtime — runAgent', () => {
     test('allows model override via overrides.model', async () => {
       const agent = defineAgent({
         name: 'test.mo.v1',
-        model: 'claude-opus-4-20250514',
+        model: 'claude-opus-4-7',
         systemPrompt: 'x',
       });
       await runAgent(agent, {
         messages: [{ role: 'user', content: 'hi' }],
-        overrides: { model: 'claude-sonnet-4-20250514' },
+        overrides: { model: 'claude-sonnet-4-6' },
       });
-      expect(callClaudeMock.mock.calls[0][0].model).toBe('claude-sonnet-4-20250514');
+      expect(callClaudeMock.mock.calls[0][0].model).toBe('claude-sonnet-4-6');
     });
   });
 
@@ -339,7 +339,7 @@ describe('Agent Runtime — runAgent', () => {
     test('throws AgentGuardrailError when enabled=false', async () => {
       const agent = defineAgent({
         name: 'test.disabled.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         guardrails: { enabled: false },
       });
@@ -352,7 +352,7 @@ describe('Agent Runtime — runAgent', () => {
     test('throws AgentGuardrailError when costLimitPerCallCents estimate exceeded', async () => {
       const agent = defineAgent({
         name: 'test.cost.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         guardrails: { maxTokens: 200000, costLimitPerCallCents: 1 }, // 1¢ is unreasonably low
       });
@@ -367,7 +367,7 @@ describe('Agent Runtime — runAgent', () => {
     test('accepts calls under costLimitPerCallCents', async () => {
       const agent = defineAgent({
         name: 'test.ok.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         guardrails: { costLimitPerCallCents: 10000 }, // $100
       });
@@ -379,7 +379,7 @@ describe('Agent Runtime — runAgent', () => {
     test('dynamicTools=true requires overrides.tools', async () => {
       const agent = defineAgent({
         name: 'test.dyn.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         dynamicTools: true,
       });
@@ -391,7 +391,7 @@ describe('Agent Runtime — runAgent', () => {
     test('non-dynamic agent rejects overrides.tools', async () => {
       const agent = defineAgent({
         name: 'test.static.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await expect(
@@ -416,7 +416,7 @@ describe('Agent Runtime — runAgent', () => {
       });
       const agent = defineAgent({
         name: 'test.json.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'Analyze the input. Return ONLY valid JSON (no markdown).',
       });
       const result = await runAgent(agent, { messages: [{ role: 'user', content: 'hi' }] });
@@ -434,7 +434,7 @@ describe('Agent Runtime — runAgent', () => {
       });
       const agent = defineAgent({
         name: 'test.jsonbad.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'Return ONLY valid JSON.',
       });
       const result = await runAgent(agent, { messages: [{ role: 'user', content: 'hi' }] });
@@ -452,7 +452,7 @@ describe('Agent Runtime — runAgent', () => {
       });
       const agent = defineAgent({
         name: 'test.jsonmd.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'Return ONLY valid JSON (no markdown).',
       });
       const result = await runAgent(agent, { messages: [{ role: 'user', content: 'hi' }] });
@@ -462,7 +462,7 @@ describe('Agent Runtime — runAgent', () => {
     test('does NOT auto-parse when systemPrompt has no JSON instruction', async () => {
       const agent = defineAgent({
         name: 'test.nojson.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'You are a helpful assistant.',
       });
       const result = await runAgent(agent, { messages: [{ role: 'user', content: 'hi' }] });
@@ -476,7 +476,7 @@ describe('Agent Runtime — runAgent', () => {
       callClaudeMock.mockRejectedValueOnce(new Error('Claude API failed: 500'));
       const agent = defineAgent({
         name: 'test.err.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await expect(
@@ -487,7 +487,7 @@ describe('Agent Runtime — runAgent', () => {
     test('validates opts.messages is an array', async () => {
       const agent = defineAgent({
         name: 'test.badmsg.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await expect(
@@ -507,7 +507,7 @@ describe('Agent Runtime — runAgent', () => {
     test('rejects invalid overrides.maxTokens (0)', async () => {
       const agent = defineAgent({
         name: 'test.mt0.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await expect(
@@ -521,7 +521,7 @@ describe('Agent Runtime — runAgent', () => {
     test('rejects invalid overrides.maxTokens (negative)', async () => {
       const agent = defineAgent({
         name: 'test.mtneg.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await expect(
@@ -535,7 +535,7 @@ describe('Agent Runtime — runAgent', () => {
     test('rejects invalid overrides.maxTokens (NaN)', async () => {
       const agent = defineAgent({
         name: 'test.mtnan.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await expect(
@@ -555,7 +555,7 @@ describe('Agent Runtime — runAgent', () => {
       });
       const agent = defineAgent({
         name: 'test.timeout.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
       });
       await expect(
@@ -568,7 +568,7 @@ describe('Agent Runtime — runAgent', () => {
     test('tool objects cannot be mutated after defineAgent', () => {
       const agent = defineAgent({
         name: 'test.frozen.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         tools: [
           { name: 'foo', description: 'd', input_schema: { type: 'object', properties: {} } },
@@ -590,7 +590,7 @@ describe('Agent Runtime — runAgent', () => {
     test('mcpServers entries are deep-frozen', () => {
       const agent = defineAgent({
         name: 'test.mcpfrozen.v1',
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt: 'x',
         mcpServers: [{ name: 'hasura', url: 'http://localhost:8080' }],
       });

@@ -16,22 +16,23 @@
 const { Pool } = require('pg');
 
 const PG_BASE = {
-  host: process.env.PG_HOST || 'localhost',
-  port: process.env.PG_PORT || 5433,
-  user: process.env.PG_USER || 'horizon_spark',
-  password: process.env.PG_PASSWORD || '8oS4oc2hyYhyq698CPSqXbA1',
+  host: process.env.PG_HOST,
+  port: process.env.PG_PORT,
+  user: process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
 };
 
 // Company → database name mapping
 // Companies NOT listed here use the shared pool (horizon)
 const COMPANY_DB_MAP = {
-  'company_pacific_mechanical': 'horizon_pacific_mechanical',
-  'company_summit_electrical': 'horizon_summit_electrical',
-  'company_horizon_sparks': 'horizon_sparks',
-  // Add new companies here as they're onboarded
+  // In production, each company has its own DB:
+  // 'company_pacific_mechanical': 'horizon_pacific_mechanical',
+  // 'company_summit_electrical': 'horizon_summit_electrical',
+  // 'company_horizon_sparks': 'horizon_sparks',
+  // In dev, all companies use the shared 'horizon' DB (leave this map empty)
 };
 
-const SHARED_DB = process.env.PG_DATABASE || 'horizon';
+const SHARED_DB = process.env.PG_DATABASE;
 
 // Pool cache — lazily created
 const pools = new Map();

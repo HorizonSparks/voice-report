@@ -2,13 +2,17 @@ import { useState, useEffect, useLayoutEffect, useRef, forwardRef, useImperative
 import {
   Box, Typography, Button, Paper, Chip, Alert, CircularProgress,
   Card, CardContent, CardActionArea, TextField, Select, MenuItem,
-  Grid, Dialog, DialogTitle, DialogContent, DialogActions
+  Grid, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar,
+  IconButton,
 } from '@mui/material';
 import AnalyticsView from './AnalyticsView.jsx';
 import MessagesView from './MessagesView.jsx';
 import TeamChatPanel from '../components/TeamChatPanel.jsx';
 import CompanyChatPanel from '../components/CompanyChatPanel.jsx';
 import MessagesChatPanel from '../components/MessagesChatPanel.jsx';
+import SupportInboxPanel from '../components/SupportInboxPanel.jsx';
+import PPEInboxPanel from '../components/PPEInboxPanel.jsx';
+import LoopFoldersPanel from '../components/LoopFoldersPanel.jsx';
 import SystemHealthPanel from '../components/SystemHealthPanel.jsx';
 import PeopleView from './PeopleView.jsx';
 import ReportsView from './ReportsView.jsx';
@@ -23,7 +27,7 @@ import SafetyHub from './SafetyHub.jsx';
  * Control Center — the operating system for Horizon Sparks.
  * Only visible to users with a sparks_role.
  */
-export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, agentOpen }, ref) {
+export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, agentOpen, onSupportConvOpen }, ref) {
   const [screen, setScreen] = useState('dashboard');
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -32,6 +36,9 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [splitChatPerson, setSplitChatPerson] = useState(null);
   const [splitPanelWidth, setSplitPanelWidth] = useState(40);
   const [splitRightView, setSplitRightView] = useState('home');
+  // Right-pane app toggle: 'voicereport' (existing) | 'loopfolders' (iframe to PIDS-app).
+  // See docs/SPARKS_SUPPORT_MODE.md for the architecture.
+  const [rightPaneApp, setRightPaneApp] = useState('voicereport');
 
   // Reset window scroll for internal Control Center navigation.
   useLayoutEffect(() => {
@@ -46,6 +53,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
   const [revenue, setRevenue] = useState(null);
   const [companyBilling, setCompanyBilling] = useState(null);
   const [allPlans, setAllPlans] = useState([]);
@@ -54,7 +62,11 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
   const [invoiceForm, setInvoiceForm] = useState({ amount: '', description: '', due_date: '' });
   const [showCreateCompany, setShowCreateCompany] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', tier: 'standard', notes: '' });
+  const [newCompanyNameError, setNewCompanyNameError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null); // { id, name, status, tier, notes }
+  const [editCompanyNameError, setEditCompanyNameError] = useState('');
+  const [deletingCompany, setDeletingCompany] = useState(null); // { id, name }
   const [dialogConfig, setDialogConfig] = useState(null);
   const [teamConversations, setTeamConversations] = useState({});
 
@@ -181,6 +193,58 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     }
   }
 
+  async function createCompany() {
+    if (!newCompany.name.trim()) { setNewCompanyNameError('Name is required'); return; }
+    try {
+      setCreating(true);
+      const res = await fetch('/api/sparks/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCompany.name.trim(), tier: newCompany.tier, notes: newCompany.notes }),
+      });
+      if (!res.ok) throw new Error('Failed to create company');
+      setShowCreateCompany(false);
+      setNewCompany({ name: '', tier: 'standard', notes: '' });
+      setNewCompanyNameError('');
+      setSuccessMsg('Company created');
+      loadCompanies();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function updateCompany() {
+    if (!editingCompany?.name?.trim()) { setEditCompanyNameError('Name is required'); return; }
+    try {
+      const res = await fetch('/api/sparks/companies/' + editingCompany.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingCompany.name.trim(), status: editingCompany.status, tier: editingCompany.tier, notes: editingCompany.notes }),
+      });
+      if (!res.ok) throw new Error('Failed to update company');
+      setEditingCompany(null);
+      setEditCompanyNameError('');
+      setSuccessMsg('Company updated');
+      loadCompanies();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function deleteCompany(id) {
+    try {
+      const res = await fetch('/api/sparks/companies/' + id, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete company');
+      setDeletingCompany(null);
+      setSuccessMsg('Company deleted');
+      loadCompanies();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   const [aiSpending, setAiSpending] = useState(null);
 
   async function loadAiSpending() {
@@ -206,22 +270,18 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     finally { setLoading(false); }
   }
 
-  async function loadCompanyDetail(companyId, opts = {}) {
+  async function loadCompanyDetail(companyId, { keepScreen = false } = {}) {
     try {
       setLoading(true);
       const res = await fetch('/api/sparks/companies/' + companyId);
       if (!res.ok) throw new Error('Failed to load company');
       const data = await res.json();
       setSelectedCompany(data);
-      if (!opts.refreshOnly) {
-        setCompanyScreen('overview');
-        // Default to first licensed trade for this company
-        const trades = (data.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean);
-        setCompanyTrade(trades[0] || null);
-        setScreen('company-detail');
-        loadCompanyBilling(companyId);
-        loadCompanyAnalytics(companyId);
-      }
+      if (!keepScreen) setCompanyScreen('overview');
+      // Default to first licensed trade for this company
+      const trades = (data.trades || []).map(t => typeof t === 'object' ? t.trade : t).filter(Boolean);
+      setCompanyTrade(trades[0] || null);
+      setScreen('company-detail');
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -278,14 +338,16 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     try {
       if (currentStatus === 'active') {
         await fetch('/api/sparks/companies/' + companyId + '/trades/' + encodeURIComponent(trade), { method: 'DELETE' });
+        setSuccessMsg(`Trade "${trade}" removed`);
       } else {
         await fetch('/api/sparks/companies/' + companyId + '/trades', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ trade }),
         });
+        setSuccessMsg(`Trade "${trade}" enabled`);
       }
-      loadCompanyDetail(companyId, { refreshOnly: true });
+      loadCompanyDetail(companyId, { keepScreen: true });
     } catch (err) {
       setError(err.message);
     }
@@ -295,14 +357,16 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
     try {
       if (currentStatus === 'active') {
         await fetch('/api/sparks/companies/' + companyId + '/products/' + product, { method: 'DELETE' });
+        setSuccessMsg(`Product "${product}" removed`);
       } else {
         await fetch('/api/sparks/companies/' + companyId + '/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product }),
         });
+        setSuccessMsg(`Product "${product}" enabled`);
       }
-      loadCompanyDetail(companyId, { refreshOnly: true });
+      loadCompanyDetail(companyId, { keepScreen: true });
     } catch (err) {
       setError(err.message);
     }
@@ -385,6 +449,12 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
       {error && (
         <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>
       )}
+
+      <Snackbar open={!!successMsg} autoHideDuration={3000} onClose={() => setSuccessMsg(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="success" onClose={() => setSuccessMsg(null)} sx={{ fontWeight: 600 }}>
+          {successMsg}
+        </Alert>
+      </Snackbar>
 
       {/* DASHBOARD SCREEN */}
       {screen === 'dashboard' && dashboard && (
@@ -514,6 +584,8 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                   { label: 'Team', icon: '\uD83D\uDC65', action: loadTeam, show: true },
                   { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
                   { label: 'Messages', icon: '\uD83D\uDCAC', action: loadMessages, show: true },
+                  { label: 'Support', icon: '\uD83D\uDEE0\uFE0F', action: () => setScreen('support'), show: ['admin', 'support'].includes(user.sparks_role) },
+                  { label: 'PPE', icon: '\uD83E\uDD7D', action: () => setScreen('ppe'), show: ['admin', 'support', 'advisor'].includes(user.sparks_role) },
                   { label: 'AI Spending', icon: '\uD83E\uDDE0', action: loadAiSpending, show: ['admin', 'support'].includes(user.sparks_role) },
                   { label: 'System Health', icon: '\uD83D\uDCCA', action: () => setScreen('system-health'), show: ['admin', 'support'].includes(user.sparks_role) },
                 ].filter(t => t.show).map((tile, i) => (
@@ -565,18 +637,44 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
       {/* COMPANIES LIST SCREEN */}
       {screen === 'companies' && (
         <>
-          <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
-            All Companies ({companies.length})
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="h6" sx={{ fontSize: 18, fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>
+              All Companies ({companies.length})
+            </Typography>
+            {user.sparks_role === 'admin' && (
+              <Button size="small" variant="contained" onClick={() => { setNewCompany({ name: '', tier: 'standard', notes: '' }); setNewCompanyNameError(''); setShowCreateCompany(true); }}
+                sx={{ fontWeight: 700, fontSize: 12, textTransform: 'none', borderRadius: 2 }}>
+                + New Company
+              </Button>
+            )}
+          </Box>
           {companies.map(c => (
-            <Card key={c.id} variant="outlined" sx={{ mb: 1, borderRadius: 2.5, cursor: 'pointer' }}
-              onClick={() => loadCompanyDetail(c.id)}>
+            <Card key={c.id} variant="outlined" sx={{ mb: 1, borderRadius: 2.5, '&:hover .company-actions': { opacity: 1 } }}>
               <CardContent sx={{ py: 1.75, '&:last-child': { pb: 1.75 } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: 16 }}>{c.name}</Typography>
-                  <Chip label={c.status} size="small" sx={{ bgcolor: statusColors[c.status] || '#ccc', color: 'white', fontWeight: 700, fontSize: 11 }} />
+                  <Typography
+                    sx={{ fontWeight: 700, color: 'text.primary', fontSize: 16, cursor: 'pointer', flex: 1 }}
+                    onClick={() => loadCompanyDetail(c.id)}
+                  >
+                    {c.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Chip label={c.status} size="small" sx={{ bgcolor: statusColors[c.status] || '#ccc', color: 'white', fontWeight: 700, fontSize: 11 }} />
+                    {user.sparks_role === 'admin' && (
+                      <Box className="company-actions" sx={{ display: 'flex', gap: 0.25, opacity: 0, transition: 'opacity 0.15s', ml: 0.5 }}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditCompanyNameError(''); setEditingCompany({ id: c.id, name: c.name, status: c.status, tier: c.tier || 'standard', notes: c.notes || '' }); }}
+                          sx={{ color: 'text.secondary', p: 0.5 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </IconButton>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); setDeletingCompany({ id: c.id, name: c.name }); }}
+                          sx={{ color: '#e74c3c', p: 0.5 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        </IconButton>
+                      </Box>
+                    )}
+                  </Box>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => loadCompanyDetail(c.id)}>
                   {(c.products || []).map(p => (
                     <Chip key={p} label={p === 'voice_report' ? 'Voice Report' : 'Relation Data / LoopFolders'} size="small"
                       sx={{ bgcolor: 'secondary.main', color: 'primary.main', fontWeight: 600, fontSize: 10 }} />
@@ -585,7 +683,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                     <Chip key={t} label={t} size="small" variant="outlined" sx={{ fontWeight: 600, fontSize: 10 }} />
                   ))}
                 </Box>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75 }}>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75, cursor: 'pointer' }} onClick={() => loadCompanyDetail(c.id)}>
                   {c.people_count} people {'\u00B7'} {c.report_count} reports
                 </Typography>
               </CardContent>
@@ -677,11 +775,32 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
 
               {/* RIGHT: Customer view — navigable */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* Right header: company + trade + navigation tabs */}
+                {/* Right header: app toggle + company + trade + navigation tabs */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 0.75, bgcolor: 'rgba(249,148,64,0.06)', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, flexWrap: 'wrap', gap: 0.5 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
-                    {selectedCompany.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* App toggle: which product am I viewing for this customer? */}
+                    <Box sx={{ display: 'flex', gap: 0.25, p: 0.25, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                      <Button size="small"
+                        variant={rightPaneApp === 'voicereport' ? 'contained' : 'text'}
+                        onClick={() => setRightPaneApp('voicereport')}
+                        sx={{ fontSize: 10, fontWeight: 800, textTransform: 'none', px: 1, py: 0.25, minWidth: 'auto', borderRadius: 1,
+                          ...(rightPaneApp === 'voicereport' ? { bgcolor: 'primary.main', color: 'white' } : { color: 'text.secondary' }),
+                        }}>
+                        Voice Report
+                      </Button>
+                      <Button size="small"
+                        variant={rightPaneApp === 'loopfolders' ? 'contained' : 'text'}
+                        onClick={() => setRightPaneApp('loopfolders')}
+                        sx={{ fontSize: 10, fontWeight: 800, textTransform: 'none', px: 1, py: 0.25, minWidth: 'auto', borderRadius: 1,
+                          ...(rightPaneApp === 'loopfolders' ? { bgcolor: 'primary.main', color: 'white' } : { color: 'text.secondary' }),
+                        }}>
+                        LoopFolders
+                      </Button>
+                    </Box>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
+                      {selectedCompany.name}
+                    </Typography>
+                  </Box>
                   <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                     {(selectedCompany.trades || []).map(t => {
                       const tradeName = typeof t === 'object' ? t.trade : t;
@@ -703,6 +822,29 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                     </Button>
                   </Box>
                 </Box>
+                {/* RIGHT-PANE APP SWAP — see docs/SPARKS_SUPPORT_MODE.md */}
+                {rightPaneApp === 'loopfolders' ? (
+                  /* LoopFolders iframe view: PIDS-app embedded for the same company. */
+                  <LoopFoldersPanel
+                    company={selectedCompany}
+                    supportThreadId={splitChatPerson?.support_thread_id || null}
+                    onAction={(msg) => {
+                      // Operator did a write action inside PIDS-app (e.g. re-process file).
+                      // TODO Phase 4 wiring: post a system message into the support_conversations
+                      // thread so the customer sees a transparent audit trail.
+                      // For now we just log so the dev team can verify the bridge fires.
+                      // eslint-disable-next-line no-console
+                      console.log('[sparks-support] action from iframe:', msg);
+                    }}
+                    onExit={() => {
+                      // Operator clicked "Exit support" in the iframe banner.
+                      // Flip the right pane back to Voice Report view.
+                      setRightPaneApp('voicereport');
+                    }}
+                  />
+                ) : (
+                  /* Voice Report view (existing nav tabs + view content) */
+                  <>
                 {/* Navigation tabs */}
                 <Box sx={{ display: 'flex', gap: 0.5, px: 2, py: 0.75, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0, bgcolor: 'background.paper' }}>
                   {[
@@ -775,6 +917,8 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                     <FormsHub user={user} readOnly={true} activeTrade={companyTrade} goHome={() => setSplitRightView('home')} />
                   )}
                 </Box>
+                  </>
+                )}
               </Box>
             </Box>
           )}
@@ -1217,6 +1361,24 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
         />
       )}
 
+      {/* SUPPORT INBOX — open `support_conversations` rows; click to pop the
+          floating SupportChat widget (lifted state in App.jsx) on the chosen row */}
+      {screen === 'support' && (
+        <SupportInboxPanel
+          user={user}
+          onBack={() => setScreen('dashboard')}
+          onOpenConversation={(id) => { if (onSupportConvOpen) onSupportConvOpen(id); }}
+        />
+      )}
+
+      {/* PPE INBOX — open ppe_requests for Sparks safety/support to fulfill */}
+      {screen === 'ppe' && (
+        <PPEInboxPanel
+          user={user}
+          onBack={() => setScreen('dashboard')}
+        />
+      )}
+
       {/* AI SPENDING DASHBOARD */}
       {screen === 'ai-spending' && (
         <Box>
@@ -1362,6 +1524,111 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
             <Button onClick={() => setDialogConfig(null)}>Cancel</Button>
           )}
           <Button onClick={() => { setDialogConfig(null); if (dialogConfig?.onConfirm) dialogConfig.onConfirm(); }}>OK</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* CREATE COMPANY DIALOG */}
+      <Dialog open={showCreateCompany} onClose={() => setShowCreateCompany(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>New Company</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+          <TextField
+            label="Company Name"
+            value={newCompany.name}
+            onChange={(e) => { setNewCompany(p => ({ ...p, name: e.target.value })); if (e.target.value.trim()) setNewCompanyNameError(''); }}
+            error={!!newCompanyNameError}
+            helperText={newCompanyNameError}
+            size="small"
+            autoFocus
+            fullWidth
+          />
+          <Select
+            value={newCompany.tier}
+            onChange={(e) => setNewCompany(p => ({ ...p, tier: e.target.value }))}
+            size="small"
+            fullWidth
+          >
+            <MenuItem value="small">Small</MenuItem>
+            <MenuItem value="standard">Standard</MenuItem>
+            <MenuItem value="enterprise">Enterprise</MenuItem>
+          </Select>
+          <TextField
+            label="Notes (optional)"
+            value={newCompany.notes}
+            onChange={(e) => setNewCompany(p => ({ ...p, notes: e.target.value }))}
+            size="small"
+            multiline
+            rows={2}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCreateCompany(false)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={createCompany} disabled={creating} variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>
+            {creating ? 'Creating…' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* EDIT COMPANY DIALOG */}
+      <Dialog open={!!editingCompany} onClose={() => setEditingCompany(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Edit Company</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+          <TextField
+            label="Company Name"
+            value={editingCompany?.name || ''}
+            onChange={(e) => { setEditingCompany(p => ({ ...p, name: e.target.value })); if (e.target.value.trim()) setEditCompanyNameError(''); }}
+            error={!!editCompanyNameError}
+            helperText={editCompanyNameError}
+            size="small"
+            autoFocus
+            fullWidth
+          />
+          <Select
+            value={editingCompany?.status || 'active'}
+            onChange={(e) => setEditingCompany(p => ({ ...p, status: e.target.value }))}
+            size="small"
+            fullWidth
+          >
+            <MenuItem value="active">Active</MenuItem>
+            <MenuItem value="trial">Trial</MenuItem>
+            <MenuItem value="suspended">Suspended</MenuItem>
+            <MenuItem value="churned">Churned</MenuItem>
+          </Select>
+          <Select
+            value={editingCompany?.tier || 'standard'}
+            onChange={(e) => setEditingCompany(p => ({ ...p, tier: e.target.value }))}
+            size="small"
+            fullWidth
+          >
+            <MenuItem value="small">Small</MenuItem>
+            <MenuItem value="standard">Standard</MenuItem>
+            <MenuItem value="enterprise">Enterprise</MenuItem>
+          </Select>
+          <TextField
+            label="Notes (optional)"
+            value={editingCompany?.notes || ''}
+            onChange={(e) => setEditingCompany(p => ({ ...p, notes: e.target.value }))}
+            size="small"
+            multiline
+            rows={2}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingCompany(null)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={updateCompany} variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* DELETE COMPANY CONFIRM DIALOG */}
+      <Dialog open={!!deletingCompany} onClose={() => setDeletingCompany(null)}>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 16 }}>Delete Company</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete <strong>{deletingCompany?.name}</strong>? This cannot be undone.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingCompany(null)} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button onClick={() => deleteCompany(deletingCompany.id)} color="error" variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>Delete</Button>
         </DialogActions>
       </Dialog>
     </Box>
