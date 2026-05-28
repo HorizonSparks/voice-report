@@ -3,9 +3,9 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: horizon_spark
-      POSTGRES_PASSWORD: ${PG_PASSWORD:-8oS4oc2hyYhyq698CPSqXbA1}
-      POSTGRES_DB: horizon
+      POSTGRES_USER: ${PG_USER:?PG_USER must be set in .env (see .env.example)}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?PG_PASSWORD must be set in .env (see .env.example)}
+      POSTGRES_DB: ${PG_DATABASE:?PG_DATABASE must be set in .env (see .env.example)}
     ports:
       - "5434:5432"
     volumes:
@@ -30,11 +30,11 @@ services:
     env_file:
       - .env
     environment:
-      PG_HOST: postgress_horizonsparks
-      PG_PORT: 5432
-      PG_DATABASE: horizon
-      PG_USER: horizon_spark
-      PG_PASSWORD: ${PG_PASSWORD:-8oS4oc2hyYhyq698CPSqXbA1}
+      PG_HOST: ${PG_HOST:?PG_HOST must be set in .env (see .env.example)}
+      PG_PORT: ${PG_PORT:?PG_PORT must be set in .env (see .env.example)}
+      PG_DATABASE: ${PG_DATABASE:?PG_DATABASE must be set in .env (see .env.example)}
+      PG_USER: ${PG_USER:?PG_USER must be set in .env (see .env.example)}
+      PG_PASSWORD: ${PG_PASSWORD:?PG_PASSWORD must be set in .env (see .env.example)}
       SENTRY_DSN_BACKEND: http://81de2477f74f468fabf764232a0c119a@glitchtip-web:8080/1
       PROMETHEUS_URL: http://prometheus:9090
       GRAFANA_URL: http://grafana:3000
@@ -44,9 +44,9 @@ services:
       # Comma-separated list — accepts tokens from BOTH dev (Spark) and prod
       # (AWS/keycloakprod) so the same VR instance serves PIDS-app on
       # app.horizonsparks.ai and meitec.horizonsparks.ai.
-      KEYCLOAK_ISSUER: https://keycloak.horizonsparks.ai/realms/app,https://keycloakprod.horizonsparks.ai/realms/app
-      KEYCLOAK_AUDIENCE: app
-      KEYCLOAK_OIDC_CLIENT_ID: app
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:?KEYCLOAK_ISSUER must be set in .env (comma-separated list of trusted realms; see .env.example)}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:?KEYCLOAK_AUDIENCE must be set in .env (see .env.example)}
+      KEYCLOAK_OIDC_CLIENT_ID: ${KEYCLOAK_OIDC_CLIENT_ID:?KEYCLOAK_OIDC_CLIENT_ID must be set in .env (see .env.example)}
       # KEYCLOAK_OIDC_CLIENT_SECRET set in .env (server-only secret)
       # COOKIE_DOMAIN set to .horizonsparks.ai once DNS unifies under that apex
     volumes:
