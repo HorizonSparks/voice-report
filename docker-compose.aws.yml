@@ -1,0 +1,70 @@
+# AWS production docker-compose. STANDALONE — does not extend docker-compose.yml.
+# Apply with:
+#   docker compose -f docker-compose.aws.yml up -d --build app
+#
+# Mirrors docker-compose.yml (dev/DGX) but with AWS-specific adjustments:
+#   - No inline postgres service. AWS uses the existing postgress_horizonsparks
+#     container (already provisioned + backed up).
+#   - PG_HOST/PG_PORT are forced to use the host network instead of a docker
+#     bridge name. .env on AWS is unchanged.
+#   - Networks: only a local bridge `app-net`. The dev-only external networks
+#     `hasura_app-network-hasura` and `observability_observability` are NOT
+#     referenced — they don't exist on AWS.
+#   - All other env vars come from the same .env via :?required failsafes.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3070}:${PORT:-3070}"
+      - "${HTTPS_PORT:-3513}:${HTTPS_PORT:-3513}"
+    env_file:
+      - .env
+    environment:
+      # PG_HOST overridden inline — postgress_horizonsparks is reachable on
+      # the host's loopback at port 5433 (its host-exposed port). Keeps .env
+      # identical to dev for everything else.
+      PG_HOST: host.docker.internal
+      PG_PORT: "5433"
+      PG_DATABASE: ${PG_DATABASE:?PG_DATABASE must be set in .env (see .env.example)}
+      PG_USER: ${PG_USER:?PG_USER must be set in .env (see .env.example)}
+      PG_PASSWORD: ${PG_PASSWORD:?PG_PASSWORD must be set in .env (see .env.example)}
+      SENTRY_DSN_BACKEND: http://81de2477f74f468fabf764232a0c119a@glitchtip-web:8080/1
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      LOKI_URL: http://loki:3100
+      GLITCHTIP_URL: http://glitchtip-web:8080
+      # Keycloak shared-auth (cross-app SSO).
+      # Comma-separated list — accepts tokens from BOTH dev (Spark) and prod
+      # (AWS/keycloakprod) so the same VR instance can serve PIDS-app on
+      # app.horizonsparks.ai and meitec.horizonsparks.ai.
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:?KEYCLOAK_ISSUER must be set in .env (comma-separated list of trusted realms; see .env.example)}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:?KEYCLOAK_AUDIENCE must be set in .env (see .env.example)}
+      KEYCLOAK_OIDC_CLIENT_ID: ${KEYCLOAK_OIDC_CLIENT_ID:?KEYCLOAK_OIDC_CLIENT_ID must be set in .env (see .env.example)}
+      # KEYCLOAK_OIDC_CLIENT_SECRET set in .env (server-only secret)
+      # COOKIE_DOMAIN set to .horizonsparks.ai once DNS unifies under that apex
+    extra_hosts:
+      # Lets the container resolve host.docker.internal to the host's
+      # gateway IP, so PG_HOST above + any other localhost-exposed service
+      # (keycloak on 8081, hasura on 8070, minio on 9010/9011) is reachable.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - uploads_audio:/app/audio
+      - uploads_photos:/app/photos
+      - uploads_msg_audio:/app/message-audio
+      - uploads_msg_photos:/app/message-photos
+      - ./cert.pem:/app/cert.pem:ro
+      - ./key.pem:/app/key.pem:ro
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  uploads_audio:
+  uploads_photos:
+  uploads_msg_audio:
+  uploads_msg_photos:
