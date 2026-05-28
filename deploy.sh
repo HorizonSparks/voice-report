@@ -3,10 +3,17 @@
 # Voice Report — Deploy & Verify Script
 # Run this after every change. Do NOT tell the user "it's done"
 # unless this script passes.
+#
+# 2026-05-02: rewritten. The old script ran `npx vite build` and `pm2 restart`
+# on the host, neither of which is the actual deploy path. Voice Report runs
+# inside a docker container; the container's CMD is `node server/index.js` and
+# the source is BAKED INTO the image at build time (Dockerfile COPY directives).
+# So the real deploy is: docker compose build app + docker compose up -d app.
+# Vite build runs INSIDE the docker build (multi-stage Dockerfile), no host npm
+# needed. PM2 has never been installed in the container — those steps were dead.
 # ============================================================
 
 set -e
-export PATH=/home/horizonsparks/.nvm/versions/node/v22.22.2/bin:$PATH
 cd /home/horizonsparks/voice-report
 
 echo ""
@@ -14,35 +21,48 @@ echo "=========================================="
 echo "  DEPLOY & VERIFY — Voice Report"
 echo "=========================================="
 
-# Step 1: Bump service worker cache
+# Step 1: Bump service worker cache (forces clients to re-fetch)
 echo ""
 echo "[1/6] Bumping service worker cache..."
-sed -i "s/voice-report-v[0-9]*/voice-report-v$(date +%s)/" client/public/sw.js
-echo "  ✓ Cache version bumped"
+if [ -f client/public/sw.js ]; then
+  sed -i "s/voice-report-v[0-9]*/voice-report-v$(date +%s)/" client/public/sw.js
+  echo "  ✓ Cache version bumped"
+else
+  echo "  ⚠ client/public/sw.js not found — skipping"
+fi
 
-# Step 2: Build
+# Step 2: Build docker image (multi-stage; runs vite build inside the build container)
 echo ""
-echo "[2/6] Building with Vite..."
-BUILD_OUTPUT=$(npx vite build 2>&1)
-if echo "$BUILD_OUTPUT" | grep -q "built"; then
+echo "[2/6] Building docker image (npm ci + vite build inside container)..."
+BUILD_LOG=$(mktemp)
+if docker compose build app > "$BUILD_LOG" 2>&1; then
   echo "  ✓ Build successful"
 else
-  echo "  ✗ BUILD FAILED"
-  echo "$BUILD_OUTPUT"
+  echo "  ✗ BUILD FAILED — last 30 lines of build log:"
+  tail -30 "$BUILD_LOG"
+  rm -f "$BUILD_LOG"
+  exit 1
+fi
+rm -f "$BUILD_LOG"
+
+# Step 3: Restart container (docker compose up -d recreates the container with the new image)
+echo ""
+echo "[3/6] Recreating container..."
+docker compose up -d app > /dev/null 2>&1
+echo "  ✓ Container recreated"
+
+# Step 4: Wait for container to come up + check boot logs for FATAL errors
+echo ""
+echo "[4/6] Waiting for boot + checking server errors..."
+sleep 6
+CONTAINER_STATE=$(docker inspect -f '{{.State.Status}}' voice-report-app-1 2>/dev/null || echo 'missing')
+if [ "$CONTAINER_STATE" != "running" ]; then
+  echo "  ✗ Container is not running (state: $CONTAINER_STATE)"
+  docker logs voice-report-app-1 --tail 30 2>&1
   exit 1
 fi
 
-# Step 3: Restart PM2
-echo ""
-echo "[3/6] Restarting PM2..."
-npx pm2 restart voice-report --silent 2>/dev/null
-sleep 3
-echo "  ✓ PM2 restarted"
-
-# Step 4: Check PM2 logs for errors
-echo ""
-echo "[4/6] Checking for server errors..."
-ERROR_LOG=$(npx pm2 logs voice-report --lines 10 --nostream 2>&1 | grep -i 'SyntaxError|Cannot find module|MODULE_NOT_FOUND|ENOENT' || true)
+ERROR_LOG=$(docker logs voice-report-app-1 --tail 60 2>&1 | grep -iE 'FATAL|SyntaxError|Cannot find module|MODULE_NOT_FOUND|ENOENT|UnhandledPromiseRejection' | head -10 || true)
 if [ -n "$ERROR_LOG" ]; then
   echo "  ✗ SERVER ERRORS DETECTED:"
   echo "$ERROR_LOG"
@@ -51,14 +71,13 @@ else
   echo "  ✓ No server errors"
 fi
 
-# Step 5: API Health Check (using cookie jar files for correct session handling)
+# Step 5: API health checks (PIN auth — still the primary login path)
 echo ""
 echo "[5/6] Running API health checks..."
 FAIL=0
 ADMIN_JAR=/tmp/deploy_admin_cookie.txt
 ELLERY_JAR=/tmp/deploy_ellery_cookie.txt
 
-# Login as admin
 ADMIN_RESP=$(curl -s -c "$ADMIN_JAR" -X POST http://localhost:3070/api/login \
   -H "Content-Type: application/json" \
   -d '{"pin":"12345678"}' 2>/dev/null)
@@ -66,71 +85,47 @@ ADMIN_RESP=$(curl -s -c "$ADMIN_JAR" -X POST http://localhost:3070/api/login \
 if echo "$ADMIN_RESP" | grep -q '"is_admin":true'; then
   echo "  ✓ Admin login OK"
 
-  # Check reports
   REPORT_COUNT=$(curl -s -b "$ADMIN_JAR" http://localhost:3070/api/reports 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-  if [ "$REPORT_COUNT" -gt 0 ] 2>/dev/null; then
-    echo "  ✓ Reports: $REPORT_COUNT"
-  else
-    echo "  ✗ Reports: EMPTY or ERROR"
-    FAIL=1
-  fi
+  [ "$REPORT_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ Reports: $REPORT_COUNT" || { echo "  ✗ Reports: EMPTY/ERROR"; FAIL=1; }
 
-  # Check people
   PEOPLE_COUNT=$(curl -s -b "$ADMIN_JAR" http://localhost:3070/api/people 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-  if [ "$PEOPLE_COUNT" -gt 0 ] 2>/dev/null; then
-    echo "  ✓ People: $PEOPLE_COUNT"
-  else
-    echo "  ✗ People: EMPTY or ERROR"
-    FAIL=1
-  fi
+  [ "$PEOPLE_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ People: $PEOPLE_COUNT" || { echo "  ✗ People: EMPTY/ERROR"; FAIL=1; }
 
-  # Check projects
   PROJ_COUNT=$(curl -s -b "$ADMIN_JAR" http://localhost:3070/api/projects 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-  if [ "$PROJ_COUNT" -gt 0 ] 2>/dev/null; then
-    echo "  ✓ Projects: $PROJ_COUNT"
-  else
-    echo "  ✗ Projects: EMPTY or ERROR"
-    FAIL=1
-  fi
+  [ "$PROJ_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ Projects: $PROJ_COUNT" || { echo "  ✗ Projects: EMPTY/ERROR"; FAIL=1; }
 
-  # Check templates (Sparks should exist)
   TMPL_COUNT=$(curl -s -b "$ADMIN_JAR" http://localhost:3070/api/templates 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(len([t for t in d if 'sparks' in t.get('id','').lower()]))" 2>/dev/null || echo "0")
-  if [ "$TMPL_COUNT" -gt 0 ] 2>/dev/null; then
-    echo "  ✓ Sparks templates: $TMPL_COUNT"
-  else
-    echo "  ✗ Sparks templates: MISSING"
-    FAIL=1
-  fi
+  [ "$TMPL_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ Sparks templates: $TMPL_COUNT" || { echo "  ✗ Sparks templates: MISSING"; FAIL=1; }
 else
   echo "  ✗ Admin login FAILED"
   FAIL=1
 fi
 
-# Login as Ellery
 ELLERY_RESP=$(curl -s -c "$ELLERY_JAR" -X POST http://localhost:3070/api/login \
   -H "Content-Type: application/json" \
   -d '{"pin":"1234"}' 2>/dev/null)
 
 if echo "$ELLERY_RESP" | grep -q '"name"'; then
   echo "  ✓ Ellery login OK"
-
-  # Verify Ellery can see people
   ELLERY_PEOPLE=$(curl -s -b "$ELLERY_JAR" http://localhost:3070/api/people 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-  if [ "$ELLERY_PEOPLE" -gt 0 ] 2>/dev/null; then
-    echo "  ✓ Ellery sees people: $ELLERY_PEOPLE"
-  else
-    echo "  ✗ Ellery sees NO people"
-    FAIL=1
-  fi
+  [ "$ELLERY_PEOPLE" -gt 0 ] 2>/dev/null && echo "  ✓ Ellery sees people: $ELLERY_PEOPLE" || { echo "  ✗ Ellery sees NO people"; FAIL=1; }
 else
   echo "  ✗ Ellery login FAILED"
   FAIL=1
 fi
 
-# Cleanup
 rm -f "$ADMIN_JAR" "$ELLERY_JAR"
 
-# Step 6: Final verdict
+# Step 6: External health checks (legacy redirect + canonical 200)
+echo ""
+echo "[6/6] Edge / canonical sanity..."
+LEGACY_CODE=$(curl -sk -o /dev/null -w '%{http_code}' https://voice-report.ai/ 2>/dev/null || echo '000')
+[ "$LEGACY_CODE" = "301" ] && echo "  ✓ voice-report.ai → 301 redirect live" || echo "  ⚠ voice-report.ai HTTP $LEGACY_CODE (expected 301)"
+
+CANON_CODE=$(curl -sk -o /dev/null -w '%{http_code}' https://horizonsparks.com/ 2>/dev/null || echo '000')
+[ "$CANON_CODE" = "200" ] && echo "  ✓ horizonsparks.com → 200 OK" || { echo "  ✗ horizonsparks.com HTTP $CANON_CODE"; FAIL=1; }
+
+# Final verdict
 echo ""
 echo "=========================================="
 if [ "$FAIL" -eq 0 ]; then
