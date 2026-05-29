@@ -5,7 +5,16 @@
 --   3. Provenance tracking ("Analyzed on [date]")
 --
 -- Safe to re-run: uses IF NOT EXISTS guards.
+--
+-- NOTE: this migration places the table in the `horizonsparks` schema
+-- (PIDS data), NOT `voicereport`. It depends on horizonsparks.projects
+-- and horizonsparks.files existing. On a Voice-Report-only deploy without
+-- the PIDS schema, the CREATE TABLE will fail loud on the missing FK
+-- targets. That's intentional — VR alone doesn't use this cache.
 
+-- Ensure the parent schema exists so `SET search_path` doesn't fail with
+-- "no schema has been selected to create in" on a fresh DB.
+CREATE SCHEMA IF NOT EXISTS horizonsparks;
 SET search_path TO horizonsparks;
 
 CREATE TABLE IF NOT EXISTS ai_analysis_cache (

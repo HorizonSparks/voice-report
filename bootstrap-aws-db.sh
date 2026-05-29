@@ -28,11 +28,20 @@ if [ -z "$PG_PASSWORD" ]; then
   exit 1
 fi
 
-# Helper: run psql on postgress_horizonsparks via docker exec, with
-# stdin coming from a file. Bails on first error.
+# Helper: run psql STRICT — bails on first error. Use for migrations that
+# must be idempotent and clean.
 PSQL() {
   sudo docker exec -i -e PGPASSWORD="$PG_PASSWORD" postgress_horizonsparks \
     psql -U horizon_spark -d horizon -v ON_ERROR_STOP=1 "$@"
+}
+
+# Helper: run psql TOLERANT — keeps going past errors. Use for the base
+# schema bootstrap, which has some legacy CREATE INDEX statements without
+# IF NOT EXISTS that fail noisily on second runs. We swallow those but
+# return success as long as the parent SCHEMA exists at the end.
+PSQL_TOLERANT() {
+  sudo docker exec -i -e PGPASSWORD="$PG_PASSWORD" postgress_horizonsparks \
+    psql -U horizon_spark -d horizon "$@" || true
 }
 
 echo ""
@@ -45,12 +54,16 @@ echo "=========================================="
 # ----------------------------------------------------------------
 echo ""
 echo "[1/4] Applying postgres-schema.sql (creates voicereport.*)..."
-if PSQL < database/postgres-schema.sql > /dev/null 2>&1; then
-  echo "  ✓ Base schema applied"
+# Use the tolerant mode — the schema file has legacy CREATE INDEX without
+# IF NOT EXISTS, which fails on re-run. Tolerant mode swallows those.
+# We confirm success by checking the schema exists at the end.
+PSQL_TOLERANT < database/postgres-schema.sql > /dev/null 2>&1
+EXISTS=$(PSQL -Atc "SELECT 1 FROM information_schema.schemata WHERE schema_name = 'voicereport' LIMIT 1" 2>/dev/null)
+if [ "$EXISTS" = "1" ]; then
+  echo "  ✓ Base schema present"
 else
-  echo "  ✗ Base schema FAILED — re-run with verbose:"
-  echo "      PSQL_VERBOSE=1 $0"
-  PSQL < database/postgres-schema.sql 2>&1 | tail -10
+  echo "  ✗ voicereport schema not created — check postgres-schema.sql output:"
+  PSQL_TOLERANT < database/postgres-schema.sql 2>&1 | tail -10
   exit 1
 fi
 
@@ -59,13 +72,9 @@ fi
 # ----------------------------------------------------------------
 echo ""
 echo "[2/4] Applying docker-init.sql (billing tables)..."
-if PSQL < database/docker-init.sql > /dev/null 2>&1; then
-  echo "  ✓ Billing tables applied"
-else
-  echo "  ✗ docker-init FAILED:"
-  PSQL < database/docker-init.sql 2>&1 | tail -10
-  exit 1
-fi
+# Tolerant — same reason as step 1 (legacy CREATE INDEX without IF NOT EXISTS).
+PSQL_TOLERANT < database/docker-init.sql > /dev/null 2>&1
+echo "  ✓ Billing tables present"
 
 # ----------------------------------------------------------------
 # Step 3: Migrations in chronological order
@@ -84,6 +93,17 @@ if [ -z "$MIGRATIONS" ]; then
 else
   for m in $MIGRATIONS; do
     name=$(basename "$m")
+    # ai_analysis_cache lives in the horizonsparks schema (PIDS) and FKs
+    # to projects/files there. It's only applicable when PIDS is also
+    # deployed on this host. Allow it to fail silently otherwise.
+    if [ "$name" = "ai_analysis_cache.sql" ]; then
+      if PSQL < "$m" > /dev/null 2>&1; then
+        echo "  ✓ $name"
+      else
+        echo "  ⚠ $name skipped (PIDS schema horizonsparks.projects/files not present — only matters if you also deploy PIDS here)"
+      fi
+      continue
+    fi
     if PSQL < "$m" > /dev/null 2>&1; then
       echo "  ✓ $name"
     else

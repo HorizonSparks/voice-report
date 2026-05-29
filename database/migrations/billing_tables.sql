@@ -55,28 +55,36 @@ VALUES
   ('plan_enterprise', 'Enterprise', 59900, 'monthly', 99, 9999, 999, TRUE, TRUE, TRUE, 'Full platform for large organizations. Unlimited trades, people, and projects. All features including Relation Data.', 'active')
 ON CONFLICT (id) DO NOTHING;
 
--- SEED: Pacific Mechanical Corp with Professional plan
-INSERT INTO company_subscriptions (id, company_id, plan_id, status, started_at, current_period_start, current_period_end, next_billing_date)
-VALUES (
-  'sub_pacific_mech_001',
-  'company_pacific_mechanical',
-  'plan_professional',
-  'active',
-  '2026-01-01T00:00:00Z',
-  '2026-03-01T00:00:00Z',
-  '2026-03-31T23:59:59Z',
-  '2026-04-01T00:00:00Z'
-) ON CONFLICT (id) DO NOTHING;
+-- SEED: Pacific Mechanical Corp with Professional plan.
+-- This is dev sample data. Conditional on the target company existing so
+-- a fresh AWS install doesn't fail on the FK constraint to companies.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM companies WHERE id = 'company_pacific_mechanical') THEN
+    INSERT INTO company_subscriptions (id, company_id, plan_id, status, started_at, current_period_start, current_period_end, next_billing_date)
+    VALUES (
+      'sub_pacific_mech_001',
+      'company_pacific_mechanical',
+      'plan_professional',
+      'active',
+      '2026-01-01T00:00:00Z',
+      '2026-03-01T00:00:00Z',
+      '2026-03-31T23:59:59Z',
+      '2026-04-01T00:00:00Z'
+    ) ON CONFLICT (id) DO NOTHING;
 
--- SEED: March 2026 paid invoice
-INSERT INTO invoices (id, company_id, subscription_id, amount_cents, status, description, due_date, paid_at)
-VALUES (
-  'inv_pacific_mech_2026_03',
-  'company_pacific_mechanical',
-  'sub_pacific_mech_001',
-  29900,
-  'paid',
-  'Professional Plan — March 2026',
-  '2026-03-01T00:00:00Z',
-  '2026-03-01T08:00:00Z'
-) ON CONFLICT (id) DO NOTHING;
+    INSERT INTO invoices (id, company_id, subscription_id, amount_cents, status, description, due_date, paid_at)
+    VALUES (
+      'inv_pacific_mech_2026_03',
+      'company_pacific_mechanical',
+      'sub_pacific_mech_001',
+      29900,
+      'paid',
+      'Professional Plan — March 2026',
+      '2026-03-01T00:00:00Z',
+      '2026-03-01T08:00:00Z'
+    ) ON CONFLICT (id) DO NOTHING;
+  ELSE
+    RAISE NOTICE 'Skipping Pacific Mechanical seed — company_pacific_mechanical not present.';
+  END IF;
+END $$;
