@@ -72,9 +72,13 @@ fi
 # ----------------------------------------------------------------
 echo ""
 echo "[3/4] Applying migrations..."
-# Order: oldest first. ls -tr orders by mtime ascending — same as
-# chronological creation order. Falls back to alphabetical if mtime is uniform.
-MIGRATIONS=$(ls -tr database/migrations/*.sql 2>/dev/null)
+# Order: alphabetical. The support_chat_phase_{a,b,c,d,e} series MUST run
+# in alphabetical order (phase_a creates tables that phase_e references),
+# and that order also satisfies all other migration dependencies.
+#
+# Do NOT use ls -tr (mtime): rsync onto AWS preserves order weakly and the
+# files end up with near-identical timestamps, scrambling the sequence.
+MIGRATIONS=$(ls -1 database/migrations/*.sql 2>/dev/null | sort)
 if [ -z "$MIGRATIONS" ]; then
   echo "  ⚠ No migrations found in database/migrations/"
 else
