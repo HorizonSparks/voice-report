@@ -54,8 +54,10 @@ services:
       - uploads_photos:/app/photos
       - uploads_msg_audio:/app/message-audio
       - uploads_msg_photos:/app/message-photos
-      - ./cert.pem:/app/cert.pem:ro
-      - ./key.pem:/app/key.pem:ro
+      # cert.pem + key.pem NOT mounted on AWS — Cloudflare handles TLS
+      # termination, the container only serves HTTP on PORT (3070).
+      # If we bind-mount missing files, Docker creates them as empty
+      # directories, and server/index.js EISDIRs trying to read them.
     networks:
       - app-net
 
