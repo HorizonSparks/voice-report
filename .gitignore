@@ -36,3 +36,9 @@ schema_analysis2.js
 migration_step1_companies.js
 migration_step2_gatekeeper.js
 _ops_backup/
+
+# Knowledge self-improvement loop — runtime state (not source)
+knowledge/_pending.json
+knowledge/_audit_notes.json
+knowledge/_backups/
+knowledge/_queue.lock

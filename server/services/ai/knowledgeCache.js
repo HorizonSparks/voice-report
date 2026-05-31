@@ -24,7 +24,7 @@ function initialize() {
       return;
     }
 
-    const files = fs.readdirSync(KNOWLEDGE_DIR).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(KNOWLEDGE_DIR).filter(f => f.endsWith('.json') && !f.startsWith('_'));
     for (const file of files) {
       try {
         const filePath = path.join(KNOWLEDGE_DIR, file);
@@ -78,4 +78,14 @@ function stats() {
   return { size: cache.size, initialized, keys: Array.from(cache.keys()) };
 }
 
-module.exports = { initialize, get, has, keys, stats };
+/**
+ * Reload all knowledge files from disk (called after an approved knowledge write).
+ */
+function reload() {
+  cache.clear();
+  initialized = false;
+  initialize();
+  return cache.size;
+}
+
+module.exports = { initialize, get, has, keys, stats, reload };

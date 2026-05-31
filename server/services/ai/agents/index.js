@@ -13,6 +13,7 @@ const sparksChat = require('./sparksChat');
 const fieldCleanup = require('./fieldCleanup');
 const pidVerifier = require('./pidVerifier');
 const projectIntelligence = require('./projectIntelligence');
+const knowledgeSelfAudit = require('./knowledgeSelfAudit');
 
 module.exports = {
   voiceStructure,
@@ -23,4 +24,5 @@ module.exports = {
   fieldCleanup,
   pidVerifier,
   projectIntelligence,
+  knowledgeSelfAudit,
 };

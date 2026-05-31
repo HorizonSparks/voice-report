@@ -23,6 +23,14 @@ const ROOT = path.join(__dirname, '../..');
 const agentRateMap = new Map(); // personId -> { count5m, count1h, reset5m, reset1h }
 const agentInflight = new Set(); // personIds currently processing
 
+// Two-step human confirmation for knowledge merges. approve_knowledge_proposal
+// only STAGES here; the canonical-knowledge merge fires solely when the human
+// types the exact "CONFIRM-MERGE <code>" phrase (see /chat). The model can read
+// the code but cannot forge a human turn, so it can never self-approve a merge.
+const knowledgeApprovalStaging = new Map(); // personId -> { id, code, expiresAt }
+const KNOWLEDGE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function genConfirmCode() { return require('crypto').randomBytes(4).toString('hex'); }
+
 const AGENT_RATE_5M = 30;
 const AGENT_RATE_1H = 200;
 
@@ -487,6 +495,40 @@ const AGENT_TOOLS = [
       required: ['insight_type', 'content'],
     },
   },
+  {
+    name: 'list_knowledge_proposals',
+    description: 'List pending self-improvement proposals waiting for human review - candidate lessons mined from field reports or flagged by the knowledge self-audit. Owner only. Use when asked what the system wants to learn or what is pending review.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Filter by status: pending (default), approved, rejected' },
+        limit: { type: 'number', description: 'Max proposals to return (default: 20)' },
+      },
+    },
+  },
+  {
+    name: 'approve_knowledge_proposal',
+    description: 'Stage a pending knowledge proposal for merge. Does NOT merge immediately — it returns a one-time confirmation code; the human must type "CONFIRM-MERGE <code>" to actually merge into the canonical knowledge base. Owner only. Always show the proposal with list_knowledge_proposals first.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'The proposal id to approve' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'reject_knowledge_proposal',
+    description: 'Reject a pending knowledge proposal by id so it is not merged into the knowledge base. Owner only.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'The proposal id to reject' },
+        reason: { type: 'string', description: 'Why it was rejected (optional)' },
+      },
+      required: ['id'],
+    },
+  },
 ];
 
 // ---- TOOL ACCESS LEVELS ----
@@ -498,6 +540,9 @@ const TOOL_MIN_LEVEL = {
   search_logs: 'sparks',
   get_error_issues: 'sparks',
   get_system_status: 'sparks',
+  list_knowledge_proposals: 'sparks_admin',
+  approve_knowledge_proposal: 'sparks_admin',
+  reject_knowledge_proposal: 'sparks_admin',
   // PM+ (level 5) or admin — company-wide / cross-platform analytics
   lookup_company: 5,
   get_company_analytics: 5,
@@ -528,10 +573,20 @@ const TOOL_MIN_LEVEL = {
  * Filter AGENT_TOOLS by the user's role_level.
  * Returns only tools the user is authorized to use.
  */
-function getToolsForRole(roleLevel, isAdmin, sparksRole) {
-  if (isAdmin || sparksRole === 'admin') return AGENT_TOOLS;
+// True ONLY for the Horizon Sparks platform owner/admin tier. Deliberately
+// excludes customer PMs (role_level >= 5) and the integration-key service path,
+// both of which set is_admin. Gates the destructive knowledge-approval tools.
+function isSparksOwner(sparksRole, isIntegration) {
+  return sparksRole === 'admin' && !isIntegration;
+}
+
+function getToolsForRole(roleLevel, isAdmin, sparksRole, isIntegration) {
   return AGENT_TOOLS.filter(tool => {
     const minLevel = TOOL_MIN_LEVEL[tool.name];
+    // sparks_admin is the narrow owner-only tier — checked BEFORE the broad
+    // is_admin short-circuit so role_level>=5 / integration callers can't reach it.
+    if (minLevel === 'sparks_admin') return isSparksOwner(sparksRole, isIntegration);
+    if (isAdmin || sparksRole === 'admin') return true;
     if (minLevel === undefined) return true; // No restriction
     if (minLevel === 'sparks') return sparksRole === 'admin' || sparksRole === 'support';
     return roleLevel >= minLevel;
@@ -542,9 +597,11 @@ function getToolsForRole(roleLevel, isAdmin, sparksRole) {
  * Check if a specific tool execution is allowed for the user's role.
  * Belt-and-suspenders: even if Claude tries to call a filtered tool, block it.
  */
-function isToolAllowed(toolName, roleLevel, isAdmin, sparksRole) {
-  if (isAdmin || sparksRole === 'admin') return true;
+function isToolAllowed(toolName, roleLevel, isAdmin, sparksRole, isIntegration) {
   const minLevel = TOOL_MIN_LEVEL[toolName];
+  // sparks_admin checked BEFORE the broad is_admin short-circuit (see above).
+  if (minLevel === 'sparks_admin') return isSparksOwner(sparksRole, isIntegration);
+  if (isAdmin || sparksRole === 'admin') return true;
   if (minLevel === undefined) return true;
   if (minLevel === 'sparks') return sparksRole === 'admin' || sparksRole === 'support';
   return roleLevel >= minLevel;
@@ -1778,6 +1835,46 @@ async function executeTool(toolName, toolInput) {
         );
         return `Insight saved: [${toolInput.insight_type}] ${toolInput.content}`;
       }
+      case 'list_knowledge_proposals': {
+        const knowledgeWriter = require('../services/ai/knowledgeWriter');
+        const VALID_STATUS = new Set(['pending', 'approved', 'rejected']);
+        const status = VALID_STATUS.has(toolInput.status) ? toolInput.status : 'pending';
+        let limit = parseInt(toolInput.limit, 10);
+        if (!Number.isFinite(limit) || limit < 1) limit = 20;
+        limit = Math.min(limit, 50);
+        const rows = knowledgeWriter.listProposals({ status, limit });
+        if (rows.length === 0) return `No ${status} knowledge proposals.`;
+        return JSON.stringify({ total: rows.length, proposals: rows });
+      }
+      case 'approve_knowledge_proposal': {
+        // STAGE ONLY. The real merge requires the human to type CONFIRM-MERGE
+        // <code> (handled in /chat). The model cannot complete the merge itself.
+        const knowledgeWriter = require('../services/ai/knowledgeWriter');
+        const personId = toolInput._personId || null;
+        const propId = typeof toolInput.id === 'string' ? toolInput.id.trim() : '';
+        if (!KNOWLEDGE_UUID_RE.test(propId)) return 'Invalid proposal id.';
+        const proposal = knowledgeWriter.getProposal(propId);
+        if (!proposal) return `No proposal found with id ${propId}.`;
+        if (proposal.status !== 'pending') return `Proposal ${propId} is already ${proposal.status}.`;
+        const code = genConfirmCode();
+        knowledgeApprovalStaging.set(personId, { id: propId, code, expiresAt: Date.now() + 10 * 60 * 1000 });
+        const it = (proposal.candidate && Array.isArray(proposal.candidate.items) && proposal.candidate.items[0]) || {};
+        const section = proposal.candidate && proposal.candidate.section;
+        return `This will MERGE a new lesson into canonical knowledge (section: ${section}) — human confirmation required.\n` +
+          `\u2022 cause: ${it.cause}\n\u2022 prevention: ${it.prevention}\n` +
+          `\u2022 evidence: ${(proposal.evidence || []).length} report(s), confidence ${proposal.confidence}\n\n` +
+          `To confirm the merge, reply with EXACTLY:\nCONFIRM-MERGE ${code}\n\n` +
+          `Nothing is written unless you send that phrase (valid 10 minutes). Reply anything else to cancel.`;
+      }
+      case 'reject_knowledge_proposal': {
+        const knowledgeWriter = require('../services/ai/knowledgeWriter');
+        const approver = toolInput._personId || null;
+        const propId = typeof toolInput.id === 'string' ? toolInput.id.trim() : '';
+        if (!KNOWLEDGE_UUID_RE.test(propId)) return 'Invalid proposal id.';
+        const reason = typeof toolInput.reason === 'string' ? toolInput.reason.slice(0, 500) : '';
+        await knowledgeWriter.reject(propId, approver, reason);
+        return `Proposal ${propId} rejected.`;
+      }
       default:
         return `Unknown tool: ${toolName}`;
     }
@@ -1869,6 +1966,42 @@ router.post('/chat', requireAuth, async (req, res) => {
     const knowledge = loadRelevantKnowledge(message || '');
 
     const trimmedMessage = String(message || '').trim();
+
+    // ---- Two-step human confirmation for knowledge merges (CRITICAL gate) ----
+    // The model can only STAGE an approval; the canonical-knowledge merge happens
+    // ONLY here, and ONLY when the real human types "CONFIRM-MERGE <code>".
+    const confirmMatch = trimmedMessage.match(/^CONFIRM-MERGE\s+([a-f0-9]{6,32})$/i);
+    if (confirmMatch) {
+      let confirmText;
+      if (!isSparksOwner(req.auth?.sparks_role, req.auth?.isIntegration)) {
+        confirmText = 'You are not authorized to approve knowledge changes.';
+      } else {
+        const staged = knowledgeApprovalStaging.get(personId);
+        if (!staged || staged.code.toLowerCase() !== confirmMatch[1].toLowerCase()) {
+          confirmText = 'No matching pending approval, or the confirmation code is wrong. Run the approval again to get a fresh code.';
+        } else if (Date.now() > staged.expiresAt) {
+          knowledgeApprovalStaging.delete(personId);
+          confirmText = 'That approval confirmation expired. Please re-approve to get a fresh code.';
+        } else {
+          knowledgeApprovalStaging.delete(personId);
+          try {
+            const knowledgeWriter = require('../services/ai/knowledgeWriter');
+            const result = await knowledgeWriter.applyApproved(staged.id, personId);
+            confirmText = `\u2705 Merged into ${result.target_file}: ${result.applied} added, ${result.skipped} duplicate(s) skipped. Backup: ${result.backup}.`;
+          } catch (e) {
+            confirmText = `Merge failed: ${e.message}`;
+          }
+        }
+      }
+      agentInflight.delete(flightKey);
+      try {
+        const sessionId = req.auth?.sessionId || `agent_${Date.now()}`;
+        await DB.db.query('INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)', [personId, sessionId, 'user', trimmedMessage.substring(0, 5000)]);
+        await DB.db.query('INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)', [personId, sessionId, 'assistant', confirmText.substring(0, 5000)]);
+      } catch (e) {}
+      return res.json({ response: confirmText, model: 'Direct', usage: { input_tokens: 0, output_tokens: 0 }, tool_calls: 1 });
+    }
+
     const directPromptMatchers = [
       { regex: /^show me everything about\s+(.+?)\??$/i, tool: 'trace_company_everything', map: m => ({ company_name: m[1].trim() }) },
       { regex: /^what has\s+(.+?)\s+been working on\??$/i, tool: 'get_person_work_summary', map: m => ({ person_name: m[1].trim(), days: 30 }) },
@@ -1880,6 +2013,10 @@ router.post('/chat', requireAuth, async (req, res) => {
     for (const matcher of directPromptMatchers) {
       const match = trimmedMessage.match(matcher.regex);
       if (!match) continue;
+      // SECURITY: this fast-path bypasses the tool-loop gate. Re-check the
+      // caller role before running a restricted tool; if denied, abandon the
+      // shortcut and fall through to the normal (gated) agent flow below.
+      if (!isToolAllowed(matcher.tool, actor.role_level || 1, actor.is_admin, req.auth?.sparks_role, req.auth?.isIntegration)) break;
       const directToolResult = await executeTool(matcher.tool, matcher.map(match));
       const directResponse = buildToolFallbackText(matcher.tool, directToolResult, trimmedMessage);
       const response = {
@@ -2052,7 +2189,7 @@ ENGAGEMENT RULES:
 - Think in RELATIONSHIPS — everything connects to something else. That's your superpower.`;
     // Tool use loop — Claude may call tools, we execute and send results back
     // Filter tools by user's role level — workers can't access PM/admin tools
-    const userTools = getToolsForRole(actor.role_level || 1, actor.is_admin, req.auth?.sparks_role);
+    const userTools = getToolsForRole(actor.role_level || 1, actor.is_admin, req.auth?.sparks_role, req.auth?.isIntegration);
     // When the user attaches an image (camera button in the agent panel),
     // build a multi-part content block so Claude's vision can see it.
     // Text-only is still a plain string for backward compatibility.
@@ -2115,9 +2252,9 @@ ENGAGEMENT RULES:
           if (toolUseBlock.name === 'navigate_to') {
             navigation = toolUseBlock.input;
           }
-          if (['recall_conversation', 'save_insight'].includes(toolUseBlock.name)) toolUseBlock.input._personId = personId;
+          if (['recall_conversation', 'save_insight', 'approve_knowledge_proposal', 'reject_knowledge_proposal'].includes(toolUseBlock.name)) toolUseBlock.input._personId = personId;
           // Belt-and-suspenders: block tool execution if role doesn't allow it
-          if (!isToolAllowed(toolUseBlock.name, actor.role_level || 1, actor.is_admin, req.auth?.sparks_role)) {
+          if (!isToolAllowed(toolUseBlock.name, actor.role_level || 1, actor.is_admin, req.auth?.sparks_role, req.auth?.isIntegration)) {
             const toolResult = `Access denied: "${toolUseBlock.name}" requires a higher role level.`;
             messages.push({ role: 'assistant', content: result.content });
             messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: toolResult, is_error: true }] });

@@ -56,6 +56,10 @@ services:
       - uploads_msg_photos:/app/message-photos
       - ./cert.pem:/app/cert.pem:ro
       - ./key.pem:/app/key.pem:ro
+      # Knowledge corpus + self-improvement queue. Bind-mounted so the
+      # self-audit proposals (_pending.json) and approved lessons persist
+      # across image rebuilds instead of living only inside the container.
+      - ./knowledge:/app/knowledge
     networks:
       - app-net
       - hasura-network
