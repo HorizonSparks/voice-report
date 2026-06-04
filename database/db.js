@@ -477,30 +477,50 @@ const reports = {
     return { success: true, id };
   },
 
-  // Full-text search across all reports
+  // Full-text search across all reports.
+  // Primary path uses the maintained search_vector GIN index (idx_reports_search) via
+  // plainto_tsquery, which is crash-safe on punctuation/hyphens — unlike raw to_tsquery
+  // (see the 2026-06-03 Hermes FTS postmortem). Falls back to ILIKE substring match only
+  // when FTS returns nothing (partial words / instrument tags the lexer splits apart).
   async search(query, viewerId, companyId) {
-    // Use ILIKE fallback instead of FTS5 MATCH
-    const searchPattern = `%${query}%`;
-    let sql = `
+    // Shared visibility + company scope; appends to params, returns the SQL fragment.
+    const scope = (params, startIdx) => {
+      let clause = '';
+      let idx = startIdx;
+      if (viewerId) {
+        clause += ` AND r.person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${idx++})`;
+        params.push(viewerId);
+      }
+      if (companyId) {
+        clause += ` AND r.company_id = $${idx++}`;
+        params.push(companyId);
+      }
+      return clause;
+    };
+
+    // Primary: full-text search (indexed, ranked).
+    const ftsParams = [query];
+    let ftsSql = `
+      SELECT r.id, r.person_name, r.role_title, r.created_at, r.trade,
+        substring(r.transcript_raw from 1 for 200) as preview,
+        ts_rank(r.search_vector, plainto_tsquery('english', $1)) as rank
+      FROM reports r
+      WHERE r.search_vector @@ plainto_tsquery('english', $1)`;
+    ftsSql += scope(ftsParams, 2);
+    ftsSql += ' ORDER BY rank DESC, r.created_at DESC LIMIT 50';
+    const ftsRes = await (this._pool || pool).query(ftsSql, ftsParams);
+    if (ftsRes.rows.length > 0) return ftsRes.rows;
+
+    // Fallback: ILIKE substring (only when FTS found nothing).
+    const likeParams = [`%${query}%`];
+    let likeSql = `
       SELECT r.id, r.person_name, r.role_title, r.created_at, r.trade,
         substring(r.transcript_raw from 1 for 200) as preview
       FROM reports r
-      WHERE (r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1 OR r.markdown_verbatim ILIKE $1)
-    `;
-    const params = [searchPattern];
-    let paramIdx = 2;
-
-    if (viewerId) {
-      sql += ` AND r.person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
-      params.push(viewerId);
-    }
-    if (companyId) {
-      sql += ` AND r.company_id = $${paramIdx++}`;
-      params.push(companyId);
-    }
-
-    sql += ' ORDER BY r.created_at DESC LIMIT 50';
-    const { rows } = await (this._pool || pool).query(sql, params);
+      WHERE (r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1 OR r.markdown_verbatim ILIKE $1)`;
+    likeSql += scope(likeParams, 2);
+    likeSql += ' ORDER BY r.created_at DESC LIMIT 50';
+    const { rows } = await (this._pool || pool).query(likeSql, likeParams);
     return rows;
   },
 };
