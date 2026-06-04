@@ -442,6 +442,18 @@ const reports = {
       sql += ` AND company_id = $${paramIdx++}`;
       params.push(filters.company_id);
     }
+    if (filters.project_id) {
+      sql += ` AND project_id = $${paramIdx++}`;
+      params.push(filters.project_id);
+    }
+    if (filters.from) {
+      sql += ` AND created_at >= $${paramIdx++}`;
+      params.push(filters.from);
+    }
+    if (filters.to) {
+      sql += ` AND created_at <= $${paramIdx++}`;
+      params.push(filters.to);
+    }
 
     sql += ' ORDER BY created_at DESC';
 
