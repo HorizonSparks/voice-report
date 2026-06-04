@@ -7,6 +7,9 @@ const analytics = require('../../../database/analytics');
 
 const WHISPER_URL = 'https://api.openai.com/v1/audio/transcriptions';
 const TTS_URL = 'https://api.openai.com/v1/audio/speech';
+const EMBED_URL = 'https://api.openai.com/v1/embeddings';
+const EMBED_MODEL = 'text-embedding-3-small';
+const EMBED_DIMS = 512; // compact (3-small supports the dimensions param) — good recall, small storage
 
 const MIME_MAP = {
   m4a: 'audio/mp4',
@@ -124,9 +127,42 @@ async function textToSpeechBase64(text, opts = {}) {
   };
 }
 
+/**
+ * Embed one or more texts via OpenAI. Returns an array of float[] aligned to the input order.
+ * 512 dims for compact storage. Used by the per-tenant report memory (Phase 3).
+ */
+async function embed(input, opts = {}) {
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+  const inputs = (Array.isArray(input) ? input : [input]).filter((s) => typeof s === 'string' && s.trim() !== '');
+  if (inputs.length === 0) return [];
+  const res = await fetch(EMBED_URL, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: EMBED_MODEL, input: inputs, dimensions: EMBED_DIMS }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Embeddings API failed: ${err}`);
+  }
+  const data = await res.json();
+  try {
+    const chars = inputs.reduce((a, s) => a + s.length, 0);
+    analytics.trackAiCost({
+      request_id: opts.requestId, person_id: opts.personId || null,
+      provider: 'openai', service: 'embed', model: EMBED_MODEL,
+      estimated_cost_cents: Math.max(1, Math.round((chars / 4) * 0.02 / 10000)), // ~$0.02/1M tokens
+      success: 1,
+    });
+  } catch (e) { /* cost tracking is best-effort */ }
+  return (data.data || []).slice().sort((a, b) => a.index - b.index).map((d) => d.embedding);
+}
+
 module.exports = {
   MIME_MAP,
   transcribe,
   textToSpeech,
   textToSpeechBase64,
+  embed,
+  EMBED_MODEL,
+  EMBED_DIMS,
 };

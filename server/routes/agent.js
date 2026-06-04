@@ -449,6 +449,17 @@ const AGENT_TOOLS = [
     },
   },
   {
+    name: 'recall_reports',
+    description: 'SEMANTICALLY recall relevant past field reports from memory — by MEANING, not just keywords. Returns the most relevant report excerpts you are allowed to see. Use to remember prior work, what happened before, decisions, or context on a person/instrument/issue. Prefer this over search_reports when the user asks "what do we know about…", "remind me…", or anything needing understanding rather than an exact keyword.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What to recall, in natural language' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'get_team_messages',
     description: 'Get recent team messages and conversations. Use when asked about team communication, what was discussed, or message history.',
     input_schema: {
@@ -573,6 +584,7 @@ const TOOL_MIN_LEVEL = {
   get_punch_items: 3,
   get_jsa_details: 3,
   search_reports: 3,
+  recall_reports: 3,
   relate_data: 3,
   get_team_messages: 3,
   // All users: search_knowledge, navigate_to, recall_conversation, read_shared_file,
@@ -1961,6 +1973,23 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         if (rows.length === 0) return `No reports found mentioning "${toolInput.query}" in the last ${days} days.`;
         return JSON.stringify({ total: rows.length, query: toolInput.query, reports: rows });
       }
+      case 'recall_reports': {
+        // Semantic recall over per-tenant report memory. The wall (company + see-down
+        // visible set) is enforced INSIDE recall() from authContext — never from the model.
+        const reportMemory = require('../services/reportMemory');
+        const hits = await reportMemory.recall(authContext.db || DB, authContext, toolInput.query, { k: 6 });
+        if (!hits.length) return 'No relevant reports in memory (or none you are allowed to see).';
+        return JSON.stringify({
+          total: hits.length,
+          recalled: hits.map((h) => ({
+            report_id: h.report_id,
+            person_id: h.person_id,
+            date: h.created_at,
+            relevance: Math.round((h.score || 0) * 100) / 100,
+            excerpt: (h.content || '').slice(0, 400),
+          })),
+        });
+      }
       case 'get_team_messages': {
         const limit = Math.min(toolInput.limit || 20, 50);
         let sql = `SELECT m.id, m.content, m.created_at, m.message_type,
@@ -2176,6 +2205,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       is_admin: !!actor.is_admin,
       sparks_role: req.auth?.sparks_role || null,
       visiblePersonIds,
+      db: req.db || DB, // request-scoped pool, so memory recall reads the same DB writes/index use
     };
 
     const knowledge = loadRelevantKnowledge(message || '');

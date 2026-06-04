@@ -23,10 +23,20 @@ router.post('/', requireAuth, requireSparksEditMode, async (req, res) => {
   try {
     const report = req.body;
     if (!report.id) return res.status(400).json({ error: 'Report must have an id' });
-    // ALWAYS derive person_id from session — caller cannot create on behalf of others
+    // ALWAYS derive person_id + tenant from session — caller cannot create on behalf of others
+    // nor stamp a foreign company. report.company_id from the body is IGNORED; when null,
+    // reports.create + indexReport both derive it from the owning person (server truth).
     const actor = getActor(req);
     report.person_id = actor.person_id;
+    report.company_id = req.companyId || null;
     await (req.db || DB).reports.create(report);
+    // Phase 3: index into per-tenant semantic memory. Fire-and-forget — embedding latency or
+    // an OpenAI hiccup must NEVER block or fail the report save.
+    try {
+      const reportMemory = require('../services/reportMemory');
+      reportMemory.indexReport(req.db || DB, { ...report, company_id: req.companyId || null })
+        .catch((e) => console.warn('[reportMemory] index failed:', e.message));
+    } catch (e) { /* memory indexing is best-effort */ }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -216,6 +226,11 @@ router.delete('/:id', requireAuth, requireSparksEditMode, async (req, res) => {
     }
 
     await (req.db || DB).db.query('DELETE FROM reports WHERE id = $1', [req.params.id]);
+    // keep memory consistent — drop the report's chunks too (best-effort)
+    try {
+      const reportMemory = require('../services/reportMemory');
+      await reportMemory.removeReport(req.db || DB, req.params.id);
+    } catch (e) { /* best-effort */ }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
