@@ -847,27 +847,50 @@ function buildToolFallbackText(toolName, toolResult, prompt) {
   }
 }
 // ---- TOOL EXECUTORS ----
-async function executeTool(toolName, toolInput) {
+async function executeTool(toolName, toolInput, authContext = {}) {
+  // ---- Phase 1.1 scope-lock: server-derived authorization context ----
+  // company_id + identity come from the authenticated session (see /chat), NEVER
+  // from the model's tool input. is_admin is the TRUE platform-admin flag — customer
+  // PMs are role_level 5 but is_admin=false, so they stay company-locked. Tools that
+  // read tenant data FORCE these filters; the model cannot widen them. visibleIds is
+  // the see-down chain (report_visibility WHERE viewer_id=actor): actor + descendants.
+  const _isAdmin = !!authContext.is_admin;
+  const _companyId = authContext.company_id || null;
+  const _personId = authContext.person_id || toolInput._personId || null;
+  const _visibleIds = (Array.isArray(authContext.visiblePersonIds) && authContext.visiblePersonIds.length)
+    ? authContext.visiblePersonIds
+    : (_personId ? [_personId] : []);
   try {
     switch (toolName) {
       case 'lookup_person': {
-        const { rows } = await DB.db.query(
-          `SELECT p.id, p.name, p.role_title, p.role_level, p.trade, p.status, p.company_id, c.name as company_name,
-            (SELECT COUNT(*)::int FROM reports r WHERE r.person_id = p.id) as report_count
+        const params = [`%${toolInput.name}%`];
+        // report_count is correlated to the person's OWN company so the aggregate can
+        // never reveal report volume a person accrued under a different tenant.
+        let sql = `SELECT p.id, p.name, p.role_title, p.role_level, p.trade, p.status, p.company_id, c.name as company_name,
+            (SELECT COUNT(*)::int FROM reports r WHERE r.person_id = p.id AND r.company_id = p.company_id) as report_count
            FROM people p LEFT JOIN companies c ON c.id = p.company_id
-           WHERE p.name ILIKE $1 ORDER BY p.role_level DESC LIMIT 5`,
-          [`%${toolInput.name}%`]
-        );
+           WHERE p.name ILIKE $1`;
+        if (!_isAdmin) {
+          if (!_companyId) return `No person found matching "${toolInput.name}"`;
+          params.push(_companyId); sql += ` AND p.company_id = $${params.length}`;
+          params.push(_visibleIds); sql += ` AND p.id = ANY($${params.length})`;
+        }
+        sql += ` ORDER BY p.role_level DESC LIMIT 5`;
+        const { rows } = await DB.db.query(sql, params);
         return rows.length > 0 ? JSON.stringify(rows) : `No person found matching "${toolInput.name}"`;
       }
       case 'lookup_company': {
-        const { rows } = await DB.db.query(
-          `SELECT c.*,
+        const params = [`%${toolInput.name}%`];
+        let sql = `SELECT c.*,
             (SELECT COUNT(*)::int FROM people p WHERE p.company_id = c.id AND p.status = 'active') as people_count,
             (SELECT COUNT(*)::int FROM reports r WHERE r.company_id = c.id) as report_count
-           FROM companies c WHERE c.name ILIKE $1 LIMIT 3`,
-          [`%${toolInput.name}%`]
-        );
+           FROM companies c WHERE c.name ILIKE $1`;
+        if (!_isAdmin) {
+          if (!_companyId) return `No company found matching "${toolInput.name}"`;
+          params.push(_companyId); sql += ` AND c.id = $${params.length}`;
+        }
+        sql += ` LIMIT 3`;
+        const { rows } = await DB.db.query(sql, params);
         if (rows.length === 0) return `No company found matching "${toolInput.name}"`;
         // Also get products and trades
         for (const co of rows) {
@@ -879,17 +902,21 @@ async function executeTool(toolName, toolInput) {
         return JSON.stringify(rows);
       }
       case 'get_company_analytics': {
+        // Force company from the session for non-admins; only Sparks admins may
+        // target another company via the model-supplied company_id.
+        const companyId = _isAdmin ? (toolInput.company_id || _companyId) : _companyId;
+        if (!companyId) return 'No company context available for analytics.';
         const { rows: summary } = await DB.db.query(
           `SELECT COUNT(*)::int as total_calls, SUM(estimated_cost_cents)::int as total_cost_cents,
             COUNT(DISTINCT person_id)::int as unique_users
            FROM ai_usage_log WHERE company_id = $1`,
-          [toolInput.company_id]
+          [companyId]
         );
         const { rows: topUsers } = await DB.db.query(
           `SELECT p.name, SUM(a.estimated_cost_cents)::int as cost, COUNT(*)::int as calls
            FROM ai_usage_log a JOIN people p ON p.id = a.person_id
            WHERE a.company_id = $1 GROUP BY p.name ORDER BY cost DESC LIMIT 5`,
-          [toolInput.company_id]
+          [companyId]
         );
         return JSON.stringify({ summary: summary[0], top_users: topUsers });
       }
@@ -901,11 +928,17 @@ async function executeTool(toolName, toolInput) {
           params.push(`%${toolInput.person_name}%`);
           sql += ` AND p.name ILIKE $${params.length}`;
         }
-        if (toolInput.company_id) {
+        if (!_isAdmin) {
+          if (!_companyId) return 'No reports found';
+          params.push(_companyId); sql += ` AND r.company_id = $${params.length}`;
+          params.push(_visibleIds); sql += ` AND r.person_id = ANY($${params.length})`;
+        } else if (toolInput.company_id) {
           params.push(toolInput.company_id);
           sql += ` AND r.company_id = $${params.length}`;
         }
-        sql += ` ORDER BY r.created_at DESC LIMIT ${toolInput.limit || 10}`;
+        const recentLimit = Math.min(parseInt(toolInput.limit, 10) || 10, 50);
+        params.push(recentLimit);
+        sql += ` ORDER BY r.created_at DESC LIMIT $${params.length}`;
         const { rows } = await DB.db.query(sql, params);
         return rows.length > 0 ? JSON.stringify(rows) : 'No reports found';
       }
@@ -1185,7 +1218,7 @@ async function executeTool(toolName, toolInput) {
       case 'recall_conversation': {
         const limit = Math.min(toolInput.limit || 20, 50);
         let sql = `SELECT role, content, created_at FROM ai_conversations WHERE person_id = $1`;
-        const params = [toolInput._personId || 'unknown'];
+        const params = [_personId || 'unknown'];
         if (toolInput.search) { params.push(`%${toolInput.search}%`); sql += ` AND content ILIKE $${params.length}`; }
         sql += ` ORDER BY created_at DESC LIMIT ${limit}`;
         const { rows } = await DB.db.query(sql, params);
@@ -1201,6 +1234,10 @@ async function executeTool(toolName, toolInput) {
           "SELECT * FROM companies WHERE name ILIKE $1 LIMIT 1", [`%${name}%`]
         );
         if (!company) return `No company found matching "${name}" in Voice Report.`;
+        // Non-admins may only trace their OWN company — never another tenant.
+        if (!_isAdmin && (!_companyId || company.id !== _companyId)) {
+          return `No company found matching "${name}" in your scope.`;
+        }
         result.voice_report.company = { id: company.id, name: company.name, status: company.status, tier: company.tier };
         // Voice Report: people, reports, projects
         const [people, reports, projects, jsas, punchItems] = await Promise.all([
@@ -1252,27 +1289,34 @@ async function executeTool(toolName, toolInput) {
           associated_files: folder.associated_files,
           excel_matches: folder.excel_matches,
         }));
-        const { rows: reportMentions } = await DB.db.query(
-          `SELECT r.id, r.created_at, p.name as person_name, p.trade,
+        // Scope report mentions to the actor's company + see-down chain.
+        const rmParams = [`%${tag}%`];
+        let rmSql = `SELECT r.id, r.created_at, p.name as person_name, p.trade,
             substring(COALESCE(r.transcript_raw, r.markdown_structured, ''), 1, 240) as transcript_preview
            FROM reports r
            JOIN people p ON p.id = r.person_id
-           WHERE r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1
-           ORDER BY r.created_at DESC LIMIT 10`,
-          [`%${tag}%`]
-        );
+           WHERE (r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1)`;
+        if (!_isAdmin) {
+          rmParams.push(_companyId || '__none__'); rmSql += ` AND r.company_id = $${rmParams.length}`;
+          rmParams.push(_visibleIds); rmSql += ` AND r.person_id = ANY($${rmParams.length})`;
+        }
+        rmSql += ` ORDER BY r.created_at DESC LIMIT 10`;
+        const { rows: reportMentions } = await DB.db.query(rmSql, rmParams);
         result.voice_report.report_mentions = reportMentions;
-        const { rows: formMentions } = await DB.db.query(
-          `SELECT fs.id, fs.submitted_at, p.name as person_name, ft.name as form_name,
+        // Forms carry no company_id column — scope by the submitter's visibility chain.
+        const fmParams = [`%${tag}%`];
+        let fmSql = `SELECT fs.id, fs.submitted_at, p.name as person_name, ft.name as form_name,
             COALESCE(fs.tag_number, fl.tag_number) as tag_number, fl.loop_type, fl.service
            FROM form_submissions fs
            LEFT JOIN form_loops fl ON fl.id = fs.loop_id
            LEFT JOIN people p ON p.id = fs.person_id
            LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
-           WHERE fs.tag_number ILIKE $1 OR fl.tag_number ILIKE $1
-           ORDER BY fs.submitted_at DESC LIMIT 10`,
-          [`%${tag}%`]
-        ).catch(() => ({ rows: [] }));
+           WHERE (fs.tag_number ILIKE $1 OR fl.tag_number ILIKE $1)`;
+        if (!_isAdmin) {
+          fmParams.push(_visibleIds); fmSql += ` AND fs.person_id = ANY($${fmParams.length})`;
+        }
+        fmSql += ` ORDER BY fs.submitted_at DESC LIMIT 10`;
+        const { rows: formMentions } = await DB.db.query(fmSql, fmParams).catch(() => ({ rows: [] }));
         result.voice_report.form_submissions = formMentions;
         result.summary = `Found ${folders.length} loop folder match(es), ${reportMentions.length} report mention(s), ${formMentions.length} form submission(s) for "${tag}".`;
         return JSON.stringify(result);
@@ -1280,44 +1324,70 @@ async function executeTool(toolName, toolInput) {
       case 'get_person_work_summary': {
         const days = toolInput.days || 30;
         const result = { person: null, reports: [], tasks: [], jsas: [], forms: [], instruments_mentioned: [] };
-        // Find person
-        const { rows: [person] } = await DB.db.query(
-          `SELECT p.id, p.name, p.role_title, p.trade, p.status, c.name as company_name
+        // Find person — scoped to the actor's company + see-down chain for non-admins
+        // so a customer can never summarize someone outside their command/tenant.
+        const pwsParams = [`%${toolInput.person_name}%`];
+        let pwsSql = `SELECT p.id, p.name, p.role_title, p.trade, p.status, c.name as company_name
            FROM people p LEFT JOIN companies c ON c.id = p.company_id
-           WHERE p.name ILIKE $1 LIMIT 1`, [`%${toolInput.person_name}%`]
-        );
+           WHERE p.name ILIKE $1`;
+        if (!_isAdmin) {
+          if (!_companyId) return `No person found matching "${toolInput.person_name}".`;
+          pwsParams.push(_companyId); pwsSql += ` AND p.company_id = $${pwsParams.length}`;
+          pwsParams.push(_visibleIds); pwsSql += ` AND p.id = ANY($${pwsParams.length})`;
+        }
+        pwsSql += ` LIMIT 1`;
+        const { rows: [person] } = await DB.db.query(pwsSql, pwsParams);
         if (!person) return `No person found matching "${toolInput.person_name}".`;
         result.person = person;
-        // Recent reports
-        const { rows: reports } = await DB.db.query(
-          `SELECT id, created_at, trade, substring(transcript_raw, 1, 200) as preview
-           FROM reports WHERE person_id = $1 AND created_at > NOW() - INTERVAL '${days} days'
-           ORDER BY created_at DESC LIMIT 15`, [person.id]
-        );
+        // Recent reports — company-scoped for non-admins so a person who changed
+        // companies never surfaces prior-tenant reports inside this tenant summary.
+        const repParams = [person.id];
+        let repSql = `SELECT id, created_at, trade, substring(transcript_raw, 1, 200) as preview
+           FROM reports WHERE person_id = $1 AND created_at > NOW() - INTERVAL '${days} days'`;
+        if (!_isAdmin) { repParams.push(_companyId); repSql += ` AND company_id = $${repParams.length}`; }
+        repSql += ` ORDER BY created_at DESC LIMIT 15`;
+        const { rows: reports } = await DB.db.query(repSql, repParams);
         result.reports = reports;
-        // Active tasks
-        const { rows: tasks } = await DB.db.query(
-          `SELECT dpt.id, dpt.title, dpt.description, dpt.trade, dpt.status, dpt.location, dpt.start_date, dpt.target_end_date
-           FROM daily_plan_tasks dpt WHERE dpt.assigned_to = $1 AND dpt.status != 'completed'
-           ORDER BY dpt.start_date DESC LIMIT 10`, [person.id]
-        );
+        // Active tasks. daily_plan_tasks.company_id exists but is not reliably populated,
+        // so we scope via the plan owner's company (daily_plans.created_by -> people),
+        // which IS reliable — this drops a transferred person's prior-company tasks while
+        // keeping all of their current-tenant tasks.
+        const taskParams = [person.id];
+        let taskSql = `SELECT dpt.id, dpt.title, dpt.description, dpt.trade, dpt.status, dpt.location, dpt.start_date, dpt.target_end_date
+           FROM daily_plan_tasks dpt`;
+        if (!_isAdmin) {
+          taskSql += `
+           JOIN daily_plans dp ON dp.id = dpt.plan_id
+           JOIN people plan_owner ON plan_owner.id = dp.created_by`;
+        }
+        taskSql += ` WHERE dpt.assigned_to = $1 AND dpt.status != 'completed'`;
+        if (!_isAdmin) { taskParams.push(_companyId); taskSql += ` AND plan_owner.company_id = $${taskParams.length}`; }
+        taskSql += ` ORDER BY dpt.start_date DESC LIMIT 10`;
+        const { rows: tasks } = await DB.db.query(taskSql, taskParams);
         result.tasks = tasks;
-        // Recent JSAs
-        const { rows: jsas } = await DB.db.query(
-          `SELECT id, date, trade, form_data
-           FROM jsa_records WHERE person_id = $1 AND NULLIF(date, '')::date > CURRENT_DATE - INTERVAL '${days} days'
-           ORDER BY date DESC LIMIT 5`, [person.id]
-        );
+        // Recent JSAs — same company-scope guard for transferred people.
+        const jsaParams = [person.id];
+        let jsaSql = `SELECT id, date, trade, form_data
+           FROM jsa_records WHERE person_id = $1 AND NULLIF(date, '')::date > CURRENT_DATE - INTERVAL '${days} days'`;
+        if (!_isAdmin) { jsaParams.push(_companyId); jsaSql += ` AND company_id = $${jsaParams.length}`; }
+        jsaSql += ` ORDER BY date DESC LIMIT 5`;
+        const { rows: jsas } = await DB.db.query(jsaSql, jsaParams);
         result.jsas = jsas;
-        // Form submissions
-        const { rows: forms } = await DB.db.query(
-          `SELECT fs.id, fs.submitted_at, ft.name as form_name, fl.tag_number, fl.loop_type
-           FROM form_submissions fs
-           LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
-           LEFT JOIN form_loops fl ON fl.id = fs.loop_id
-           WHERE fs.person_id = $1 AND fs.submitted_at > NOW() - INTERVAL '${days} days'
-           ORDER BY fs.submitted_at DESC LIMIT 10`, [person.id]
-        ).catch(() => ({ rows: [] }));
+        // Form submissions — form_submissions has NO tenant column (no reliable
+        // company_id / FK), so for a person who changed companies this could surface
+        // another tenant's test/calibration data. Until forms carry an immutable
+        // company_id (Phase 2), non-admins get no form rows here (fail closed).
+        let forms = [];
+        if (_isAdmin) {
+          ({ rows: forms } = await DB.db.query(
+            `SELECT fs.id, fs.submitted_at, ft.name as form_name, fl.tag_number, fl.loop_type
+             FROM form_submissions fs
+             LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
+             LEFT JOIN form_loops fl ON fl.id = fs.loop_id
+             WHERE fs.person_id = $1 AND fs.submitted_at > NOW() - INTERVAL '${days} days'
+             ORDER BY fs.submitted_at DESC LIMIT 10`, [person.id]
+          ).catch(() => ({ rows: [] })));
+        }
         result.forms = forms;
         // Extract instrument tags from reports and match to LoopFolders
         const tagPattern = /\b\d{3}[A-Z]?-[A-Z]{2,4}-\d{3,5}/g;
@@ -1374,13 +1444,28 @@ async function executeTool(toolName, toolInput) {
           if (companyPeople[0]) entityB = { type: 'person', reference: toolInput.entity_b, ...companyPeople[0] };
         }
 
+        // Scope-lock: for non-admins, redact any resolved entity outside their
+        // tenant/visibility before building paths or running match queries. People
+        // outside the see-down chain and other companies become "unknown" so no
+        // cross-tenant relationship or count is ever revealed. (LoopFolders project/
+        // instrument entities are scoped in a later pass — see P1.1b.)
+        const visibleEntity = (e) => {
+          if (!e || _isAdmin) return e;
+          if (e.type === 'company') return (e.id === _companyId) ? e : { type: 'unknown', reference: e.reference };
+          if (e.type === 'person') return (e.company_id === _companyId && _visibleIds.includes(e.id)) ? e : { type: 'unknown', reference: e.reference };
+          return e;
+        };
+        entityA = visibleEntity(entityA);
+        entityB = visibleEntity(entityB);
         const path = buildRelationshipPath(entityA, entityB);
         const direct_matches = [];
         if (entityA?.type === 'person' && entityB?.type === 'company' && entityA.company_id === entityB.id) {
-          const { rows: personReports } = await DB.db.query(
-            `SELECT COUNT(*)::int as report_count FROM reports WHERE person_id = $1`,
-            [entityA.id]
-          );
+          // Count only reports within the related company so the aggregate can't
+          // reveal a (transferred) person's report volume at another tenant.
+          const prParams = [entityA.id];
+          let prSql = `SELECT COUNT(*)::int as report_count FROM reports WHERE person_id = $1`;
+          if (!_isAdmin) { prParams.push(entityB.id); prSql += ` AND company_id = $${prParams.length}`; }
+          const { rows: personReports } = await DB.db.query(prSql, prParams);
           direct_matches.push({ kind: 'voice_report_person_company', report_count: personReports[0]?.report_count || 0 });
         }
         if (entityA?.type === 'company' && entityB?.type === 'instrument') {
@@ -1390,12 +1475,12 @@ async function executeTool(toolName, toolInput) {
           }
         }
         if (entityA?.type === 'person' && entityB?.type === 'instrument') {
-          const { rows: reportMentions } = await DB.db.query(
-            `SELECT COUNT(*)::int as mention_count
+          const rmParams2 = [entityA.id, `%${toolInput.entity_b}%`];
+          let rmSql2 = `SELECT COUNT(*)::int as mention_count
              FROM reports
-             WHERE person_id = $1 AND (transcript_raw ILIKE $2 OR markdown_structured ILIKE $2)`,
-            [entityA.id, `%${toolInput.entity_b}%`]
-          );
+             WHERE person_id = $1 AND (transcript_raw ILIKE $2 OR markdown_structured ILIKE $2)`;
+          if (!_isAdmin) { rmParams2.push(_companyId); rmSql2 += ` AND company_id = $${rmParams2.length}`; }
+          const { rows: reportMentions } = await DB.db.query(rmSql2, rmParams2);
           if ((reportMentions[0]?.mention_count || 0) > 0) {
             direct_matches.push({ kind: 'voice_report_report_mentions', mention_count: reportMentions[0].mention_count });
           }
@@ -1716,7 +1801,13 @@ async function executeTool(toolName, toolInput) {
           WHERE j.date > NOW() - INTERVAL '${days} days'`;
         const params = [];
         if (toolInput.person_name) { params.push('%' + toolInput.person_name + '%'); sql += ` AND p.name ILIKE $${params.length}`; }
-        if (toolInput.company_id) { params.push(toolInput.company_id); sql += ` AND j.company_id = $${params.length}`; }
+        if (!_isAdmin) {
+          if (!_companyId) return 'No JSA records found for the specified criteria.';
+          params.push(_companyId); sql += ` AND j.company_id = $${params.length}`;
+          params.push(_visibleIds); sql += ` AND j.person_id = ANY($${params.length})`;
+        } else if (toolInput.company_id) {
+          params.push(toolInput.company_id); sql += ` AND j.company_id = $${params.length}`;
+        }
         sql += ' ORDER BY j.date DESC LIMIT 15';
         const { rows } = await DB.db.query(sql, params);
         if (rows.length === 0) return 'No JSA records found for the specified criteria.';
@@ -1734,6 +1825,12 @@ async function executeTool(toolName, toolInput) {
         if (toolInput.person_name) { params.push('%' + toolInput.person_name + '%'); sql += ` AND p.name ILIKE $${params.length}`; }
         if (toolInput.trade) { params.push(toolInput.trade); sql += ` AND dp.trade = $${params.length}`; }
         if (toolInput.date) { params.push(toolInput.date); sql += ` AND dp.date::date = $${params.length}::date`; }
+        // daily_plans has no company_id — scope via the creator (people.company_id) + chain.
+        if (!_isAdmin) {
+          if (!_companyId) return JSON.stringify({ total_plans: 0, plans: [] });
+          params.push(_companyId); sql += ` AND p.company_id = $${params.length}`;
+          params.push(_visibleIds); sql += ` AND dp.created_by = ANY($${params.length})`;
+        }
         sql += ' ORDER BY dp.date DESC LIMIT 10';
         const { rows: plans } = await DB.db.query(sql, params);
         // Get tasks for each plan
@@ -1759,7 +1856,12 @@ async function executeTool(toolName, toolInput) {
           WHERE 1=1`;
         const params = [];
         if (status !== 'all') { params.push(status); sql += ` AND pi.status = $${params.length}`; }
-        if (toolInput.company_id) { params.push(toolInput.company_id); sql += ` AND pi.company_id = $${params.length}`; }
+        if (!_isAdmin) {
+          if (!_companyId) return JSON.stringify({ summary: { total: 0, open: 0, closed: 0 }, punch_items: [] });
+          params.push(_companyId); sql += ` AND pi.company_id = $${params.length}`;
+        } else if (toolInput.company_id) {
+          params.push(toolInput.company_id); sql += ` AND pi.company_id = $${params.length}`;
+        }
         if (toolInput.assigned_to) { params.push('%' + toolInput.assigned_to + '%'); sql += ` AND pa.name ILIKE $${params.length}`; }
         sql += ' ORDER BY pi.created_at DESC LIMIT 20';
         const { rows } = await DB.db.query(sql, params);
@@ -1779,7 +1881,13 @@ async function executeTool(toolName, toolInput) {
           AND r.created_at > NOW() - INTERVAL '${days} days'`;
         const params = [toolInput.query, '%' + toolInput.query + '%'];
         if (toolInput.person_name) { params.push('%' + toolInput.person_name + '%'); sql += ` AND p.name ILIKE $${params.length}`; }
-        if (toolInput.company_id) { params.push(toolInput.company_id); sql += ` AND r.company_id = $${params.length}`; }
+        if (!_isAdmin) {
+          if (!_companyId) return `No reports found mentioning "${toolInput.query}" in the last ${days} days.`;
+          params.push(_companyId); sql += ` AND r.company_id = $${params.length}`;
+          params.push(_visibleIds); sql += ` AND r.person_id = ANY($${params.length})`;
+        } else if (toolInput.company_id) {
+          params.push(toolInput.company_id); sql += ` AND r.company_id = $${params.length}`;
+        }
         if (toolInput.trade) { params.push(toolInput.trade); sql += ` AND r.trade = $${params.length}`; }
         sql += ` ORDER BY r.created_at DESC LIMIT ${limit}`;
         const { rows } = await DB.db.query(sql, params);
@@ -1795,6 +1903,12 @@ async function executeTool(toolName, toolInput) {
           LEFT JOIN people pt ON pt.id = m.to_id
           WHERE 1=1`;
         const params = [];
+        // Messages are private: the schema states ONLY from_id/to_id may read a row.
+        // Non-admins therefore only ever see messages they sent or received.
+        if (!_isAdmin) {
+          if (!_personId) return 'No team messages found.';
+          params.push(_personId); sql += ` AND (m.from_id = $${params.length} OR m.to_id = $${params.length})`;
+        }
         if (toolInput.person_name) {
           params.push('%' + toolInput.person_name + '%');
           sql += ` AND (pf.name ILIKE $${params.length} OR pt.name ILIKE $${params.length})`;
@@ -1808,6 +1922,12 @@ async function executeTool(toolName, toolInput) {
         const limit = Math.min(toolInput.limit || 20, 50);
         let sql = `SELECT id, person_id, insight_type, content, context, created_at FROM agent_insights WHERE 1=1`;
         const params = [];
+        // agent_insights is per-user memory (no company_id column). Scope to the
+        // actor's own insights — never surface another user's/tenant's saved notes.
+        if (!_isAdmin) {
+          if (!_personId) return 'No saved insights found.';
+          params.push(_personId); sql += ` AND person_id = $${params.length}`;
+        }
         if (toolInput.insight_type) { params.push(toolInput.insight_type); sql += ` AND insight_type = $${params.length}`; }
         if (toolInput.search) { params.push('%' + toolInput.search + '%'); sql += ` AND content ILIKE $${params.length}`; }
         sql += ` ORDER BY created_at DESC LIMIT ${limit}`;
@@ -1828,7 +1948,7 @@ async function executeTool(toolName, toolInput) {
         return JSON.stringify({ total: rows.length, templates: rows });
       }
       case 'save_insight': {
-        const personId = toolInput._personId || null;
+        const personId = _personId;
         await DB.db.query(
           `INSERT INTO agent_insights (person_id, insight_type, content, context) VALUES ($1, $2, $3, $4)`,
           [personId, toolInput.insight_type, toolInput.content, toolInput.context || null]
@@ -1850,7 +1970,7 @@ async function executeTool(toolName, toolInput) {
         // STAGE ONLY. The real merge requires the human to type CONFIRM-MERGE
         // <code> (handled in /chat). The model cannot complete the merge itself.
         const knowledgeWriter = require('../services/ai/knowledgeWriter');
-        const personId = toolInput._personId || null;
+        const personId = _personId;
         const propId = typeof toolInput.id === 'string' ? toolInput.id.trim() : '';
         if (!KNOWLEDGE_UUID_RE.test(propId)) return 'Invalid proposal id.';
         const proposal = knowledgeWriter.getProposal(propId);
@@ -1868,7 +1988,7 @@ async function executeTool(toolName, toolInput) {
       }
       case 'reject_knowledge_proposal': {
         const knowledgeWriter = require('../services/ai/knowledgeWriter');
-        const approver = toolInput._personId || null;
+        const approver = _personId;
         const propId = typeof toolInput.id === 'string' ? toolInput.id.trim() : '';
         if (!KNOWLEDGE_UUID_RE.test(propId)) return 'Invalid proposal id.';
         const reason = typeof toolInput.reason === 'string' ? toolInput.reason.slice(0, 500) : '';
@@ -1963,6 +2083,34 @@ router.post('/chat', requireAuth, async (req, res) => {
       const { rows } = await DB.db.query("SELECT id FROM people WHERE sparks_role = 'admin' LIMIT 1");
       if (rows[0]) personId = rows[0].id;
     }
+
+    // ---- Phase 1.1 scope-lock: build the server-derived authorization context ----
+    // Every executeTool() call receives this. Tools FORCE company_id + the see-down
+    // visibility set from here and ignore any company/person the model supplies.
+    //  - company_id comes from tenantFilter (session-derived; NOT client-controllable
+    //    for non-Sparks users — the ?company_id override is admin/support only).
+    //  - is_admin is the TRUE platform-admin flag from getActor (customer PMs are
+    //    role_level 5 but is_admin=false → they stay company-locked).
+    //  - visiblePersonIds = report_visibility WHERE viewer_id=actor (actor + the
+    //    people below them in the chain). Fails closed to self-only on error.
+    let visiblePersonIds = [personId];
+    if (!actor.is_admin) {
+      try {
+        const { rows: vis } = await DB.db.query(
+          'SELECT person_id FROM report_visibility WHERE viewer_id = $1', [personId]
+        );
+        visiblePersonIds = Array.from(new Set([personId, ...vis.map(v => v.person_id)]));
+      } catch (e) { visiblePersonIds = [personId]; }
+    }
+    const authContext = {
+      person_id: personId,
+      company_id: req.companyId || null,
+      role_level: actor.role_level || 1,
+      is_admin: !!actor.is_admin,
+      sparks_role: req.auth?.sparks_role || null,
+      visiblePersonIds,
+    };
+
     const knowledge = loadRelevantKnowledge(message || '');
 
     const trimmedMessage = String(message || '').trim();
@@ -2017,7 +2165,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       // caller role before running a restricted tool; if denied, abandon the
       // shortcut and fall through to the normal (gated) agent flow below.
       if (!isToolAllowed(matcher.tool, actor.role_level || 1, actor.is_admin, req.auth?.sparks_role, req.auth?.isIntegration)) break;
-      const directToolResult = await executeTool(matcher.tool, matcher.map(match));
+      const directToolResult = await executeTool(matcher.tool, matcher.map(match), authContext);
       const directResponse = buildToolFallbackText(matcher.tool, directToolResult, trimmedMessage);
       const response = {
         response: directResponse,
@@ -2260,7 +2408,7 @@ ENGAGEMENT RULES:
             messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: toolResult, is_error: true }] });
             continue;
           }
-          const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input);
+          const toolResult = await executeTool(toolUseBlock.name, toolUseBlock.input, authContext);
           lastToolName = toolUseBlock.name;
           lastToolResult = toolResult;
           const toolSuccess = !toolResult.startsWith('Tool error:') && !toolResult.startsWith('Unknown tool:');
