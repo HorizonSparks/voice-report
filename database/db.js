@@ -787,15 +787,24 @@ const ppeRequests = {
 // SAFETY OBSERVATIONS
 // ============================================
 const safetyObservations = {
+  // Idempotent column ensure (company_id for tenant isolation; form_data to preserve the
+  // full rich observation card verbatim). Safe to call repeatedly.
+  async ensureSchema() {
+    const db = (this._pool || pool);
+    await db.query("ALTER TABLE safety_observations ADD COLUMN IF NOT EXISTS company_id TEXT");
+    await db.query("ALTER TABLE safety_observations ADD COLUMN IF NOT EXISTS form_data TEXT");
+  },
+
   async create(data) {
-    const id = 'safety_' + Date.now();
+    const id = data.id || ('safety_' + Date.now());
     await (this._pool || pool).query(`
-      INSERT INTO safety_observations (id, person_id, person_name, type, severity,
-        description, location, photo, assigned_to)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [id, data.person_id, data.person_name || '', data.type || 'observation',
-      data.severity || 'low', data.description, data.location || null,
-      data.photo || null, data.assigned_to || null]);
+      INSERT INTO safety_observations (id, person_id, person_name, company_id, type, severity,
+        description, location, photo, assigned_to, form_data, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE($12, NOW()))
+    `, [id, data.person_id, data.person_name || '', data.company_id || null,
+      data.type || 'observation', data.severity || 'low', data.description || null,
+      data.location || null, data.photo || null, data.assigned_to || null,
+      data.form_data || null, data.created_at || null]);
     return { success: true, id };
   },
 
@@ -805,6 +814,12 @@ const safetyObservations = {
     let paramIdx = 1;
     if (filters.status) { sql += ` AND status = $${paramIdx++}`; params.push(filters.status); }
     if (filters.type) { sql += ` AND type = $${paramIdx++}`; params.push(filters.type); }
+    // Tenant isolation + see-down visibility (mirrors reports). Only set by the route.
+    if (filters.company_id) { sql += ` AND company_id = $${paramIdx++}`; params.push(filters.company_id); }
+    if (filters.viewer_id) {
+      sql += ` AND person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
+      params.push(filters.viewer_id);
+    }
     sql += ' ORDER BY created_at DESC';
     const { rows } = await (this._pool || pool).query(sql, params);
     return rows;
