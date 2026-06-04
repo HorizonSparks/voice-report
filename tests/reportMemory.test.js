@@ -57,7 +57,7 @@ describe('reportMemory.recall — the walls', () => {
     expect(out.map((h) => h.report_id)).toEqual(['r1', 'r2']);
   });
 
-  test('admin: company filter applied, NO person (see-down) filter', async () => {
+  test('admin: company filter applied, NO person (see-down) filter, NO project filter', async () => {
     let select = null;
     const db = makeDb(async (sql) => {
       if (/SELECT report_id/.test(sql)) { select = { sql }; return { rows: [] }; }
@@ -66,6 +66,32 @@ describe('reportMemory.recall — the walls', () => {
     await reportMemory.recall(db, { is_admin: true, company_id: 'CompanyA', visiblePersonIds: [] }, 'q');
     expect(select.sql).toMatch(/company_id = \$1/);
     expect(select.sql).not.toMatch(/person_id = ANY/);
+    expect(select.sql).not.toMatch(/project_id IS NULL OR project_id/);
+  });
+
+  test('PROJECT axis (strict): a non-cross-project worker is filtered to accessible projects (+ null/default)', async () => {
+    let select = null;
+    const db = makeDb(async (sql, params) => {
+      if (/SELECT report_id/.test(sql)) { select = { sql, params }; return { rows: [] }; }
+      return { rows: [] };
+    });
+    await reportMemory.recall(db,
+      { is_admin: false, company_id: 'A', visiblePersonIds: ['p1'], canCrossProject: false, accessibleProjectIds: ['projA'] }, 'q');
+    expect(select.sql).toMatch(/person_id = ANY\(\$2\)/);
+    expect(select.sql).toMatch(/project_id IS NULL OR project_id = 'default' OR project_id = ANY\(\$3\)/);
+    expect(select.params[2]).toEqual(['projA']);
+  });
+
+  test('PROJECT axis: PM/CEO tier (canCrossProject) has NO project filter', async () => {
+    let select = null;
+    const db = makeDb(async (sql) => {
+      if (/SELECT report_id/.test(sql)) { select = { sql }; return { rows: [] }; }
+      return { rows: [] };
+    });
+    await reportMemory.recall(db,
+      { is_admin: false, company_id: 'A', visiblePersonIds: ['p1'], canCrossProject: true, accessibleProjectIds: [] }, 'q');
+    expect(select.sql).toMatch(/person_id = ANY/);
+    expect(select.sql).not.toMatch(/project_id IS NULL OR project_id/);
   });
 });
 

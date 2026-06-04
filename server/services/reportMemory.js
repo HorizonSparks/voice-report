@@ -120,6 +120,14 @@ async function recall(db, authContext = {}, query, opts = {}) {
   let sql = 'SELECT report_id, person_id, project_id, content, embedding, created_at FROM report_memory WHERE 1=1';
   if (companyId) { params.push(companyId); sql += ` AND company_id = $${params.length}`; }
   if (!isAdmin) { params.push(visibleIds); sql += ` AND person_id = ANY($${params.length})`; } // the see-down wall
+  // Project axis (strict): non-cross-project actors (below the PM/CEO tier) only recall reports on
+  // their own projects; reports with no real project (null/'default') fall through to the chain.
+  // Admins + the PM/CEO tier (canCrossProject) are cross-project.
+  if (!isAdmin && !authContext.canCrossProject) {
+    const projIds = Array.isArray(authContext.accessibleProjectIds) ? authContext.accessibleProjectIds : [];
+    params.push(projIds);
+    sql += ` AND (project_id IS NULL OR project_id = 'default' OR project_id = ANY($${params.length}))`;
+  }
   const candCap = Math.min(opts.candidateCap || 500, 2000);
   params.push(candCap);
   sql += ` ORDER BY created_at DESC LIMIT $${params.length}`;

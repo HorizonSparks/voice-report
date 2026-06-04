@@ -2198,6 +2198,20 @@ router.post('/chat', requireAuth, async (req, res) => {
         visiblePersonIds = Array.from(new Set([personId, ...vis.map(v => v.person_id)]));
       } catch (e) { visiblePersonIds = [personId]; }
     }
+    // Project axis (Ellery's STRICT rule, 2026-06-04): only the PM/CEO tier (role_level>=5) or
+    // platform admins watch ACROSS projects; everyone else (incl. foremen/supers) is limited to
+    // their own project memberships. Reports with no real project (null/'default') fall through
+    // to the chain. This gates ON TOP of the see-down chain.
+    const canCrossProject = !!actor.is_admin || (actor.role_level || 1) >= 5;
+    let accessibleProjectIds = [];
+    if (!canCrossProject) {
+      try {
+        const { rows: pm } = await DB.db.query(
+          'SELECT project_id FROM project_members WHERE person_id = $1', [personId]
+        );
+        accessibleProjectIds = pm.map((r) => r.project_id);
+      } catch (e) { accessibleProjectIds = []; }
+    }
     const authContext = {
       person_id: personId,
       company_id: req.companyId || null,
@@ -2205,6 +2219,8 @@ router.post('/chat', requireAuth, async (req, res) => {
       is_admin: !!actor.is_admin,
       sparks_role: req.auth?.sparks_role || null,
       visiblePersonIds,
+      canCrossProject,
+      accessibleProjectIds,
       db: req.db || DB, // request-scoped pool, so memory recall reads the same DB writes/index use
     };
 
