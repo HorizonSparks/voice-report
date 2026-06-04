@@ -56,7 +56,7 @@ router.get('/messages/:person_id', requireAuth, async (req, res) => {
     const actor = getActor(req);
     // Own inbox, admin, or a supervisor strictly ABOVE this person (ancestor) — NOT a flat
     // role proxy, and NOT a peer (messaging is private to the two parties + their chain up).
-    if (actor.person_id !== req.params.person_id && !actor.is_admin
+    if (actor.person_id !== req.params.person_id && !actor.is_sparks
         && !(await isAncestorOf(req.db, actor.person_id, req.params.person_id))) {
       return res.status(403).json({ error: 'Not authorized' });
     }
@@ -69,7 +69,7 @@ router.post('/messages/:person_id', requireAuth, requireSparksEditMode, async (r
     const actor = getActor(req);
     // A legacy message is a supervisor directive — the sender must be admin or strictly
     // ABOVE the recipient in the chain (never a peer, never themselves).
-    if (!actor.is_admin && !(await isAncestorOf(req.db, actor.person_id, req.params.person_id))) {
+    if (!actor.is_sparks && !(await isAncestorOf(req.db, actor.person_id, req.params.person_id))) {
       return res.status(403).json({ error: 'Not authorized' });
     }
     let msgs = await (req.db || DB).legacyMessages.getForPerson(req.params.person_id);
@@ -90,7 +90,7 @@ router.put('/messages/:person_id/mark-addressed', requireAuth, requireSparksEdit
   try {
     const actor = getActor(req);
     // The recipient (own), admin, or a supervisor strictly above them (ancestor) — not a peer.
-    if (actor.person_id !== req.params.person_id && !actor.is_admin
+    if (actor.person_id !== req.params.person_id && !actor.is_sparks
         && !(await isAncestorOf(req.db, actor.person_id, req.params.person_id))) {
       return res.status(403).json({ error: 'Not authorized to mark these messages' });
     }
@@ -107,7 +107,7 @@ router.get('/v2/contacts/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     // Use actor's own person_id for contacts (ignore URL param for self, allow admin override)
-    const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const targetId = actor.is_sparks ? req.params.person_id : actor.person_id;
     res.json(await (req.db || DB).contacts.getForPerson(targetId));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -115,7 +115,7 @@ router.get('/v2/contacts/:person_id', requireAuth, async (req, res) => {
 router.get('/v2/conversations/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
-    const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const targetId = actor.is_sparks ? req.params.person_id : actor.person_id;
     res.json(await (req.db || DB).contacts.getConversationList(targetId));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -124,7 +124,7 @@ router.get('/v2/messages/:person_id/:contact_id', requireAuth, async (req, res) 
   try {
     const actor = getActor(req);
     // Actor must be one of the parties in the conversation (or admin)
-    if (!actor.is_admin && actor.person_id !== req.params.person_id) {
+    if (!actor.is_sparks && actor.person_id !== req.params.person_id) {
       return res.status(403).json({ error: 'Not authorized to view this conversation' });
     }
     if (!(await (req.db || DB).contacts.canMessage(req.params.person_id, req.params.contact_id))) {
@@ -269,7 +269,7 @@ router.post('/v2/messages/voice', requireAuth, requireSparksEditMode, msgAudioUp
 router.get('/v2/unread/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
-    const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const targetId = actor.is_sparks ? req.params.person_id : actor.person_id;
     res.json({ count: (await (req.db || DB).messages.getUnread(targetId)).length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -283,7 +283,7 @@ router.delete('/v2/messages/:message_id', requireAuth, requireSparksEditMode, as
     if (!message) return res.status(404).json({ error: 'Message not found' });
 
     // Only sender, admin, or supervisor can delete
-    if (message.from_id !== actor.person_id && !actor.is_admin && actor.role_level < 3) {
+    if (message.from_id !== actor.person_id && !actor.is_sparks && actor.role_level < 3) {
       return res.status(403).json({ error: 'Not authorized to delete this message' });
     }
 

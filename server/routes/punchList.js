@@ -21,7 +21,7 @@ router.get('/person/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     // Only self, admin, or supervisor+ can view another person's punch list
-    if (actor.person_id !== req.params.person_id && !actor.is_admin && actor.role_level < 3) {
+    if (actor.person_id !== req.params.person_id && !actor.is_sparks && actor.role_level < 3) {
       return res.status(403).json({ error: 'Not authorized to view this punch list' });
     }
     res.json(await (req.db || DB).punchList.getForPerson(req.params.person_id));
@@ -57,7 +57,7 @@ router.put('/:id', requireAuth, requireSparksEditMode, async (req, res) => {
     const item = (await (req.db || DB).db.query('SELECT * FROM punch_items WHERE id = $1', [req.params.id])).rows[0];
     if (!item) return res.status(404).json({ error: 'Punch list item not found' });
     // Only creator, supervisor+, or admin can update
-    if (item.created_by !== actor.person_id && !actor.is_admin && actor.role_level < 3) {
+    if (item.created_by !== actor.person_id && !actor.is_sparks && actor.role_level < 3) {
       return res.status(403).json({ error: 'Not authorized to update this punch list item' });
     }
     res.json(await (req.db || DB).punchList.update(req.params.id, req.body));
@@ -70,8 +70,9 @@ router.delete('/:id', requireAuth, requireSparksEditMode, requireRoleLevel(3), a
     const actor = getActor(req);
     const item = (await (req.db || DB).db.query('SELECT * FROM punch_items WHERE id = $1', [req.params.id])).rows[0];
     if (!item) return res.status(404).json({ error: 'Punch list item not found' });
-    // Company scoping: if caller has a company, item must belong to same company
-    if (req.companyId && item.company_id && item.company_id !== req.companyId && !actor.is_admin) {
+    // Company scoping: if caller has a company, item must belong to same company. Only SPARKS
+    // staff may cross companies — NOT a role-5 customer (is_admin is polluted).
+    if (req.companyId && item.company_id && item.company_id !== req.companyId && !actor.is_sparks) {
       return res.status(403).json({ error: 'Not authorized to delete this punch list item' });
     }
     res.json(await (req.db || DB).punchList.delete(req.params.id));

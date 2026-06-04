@@ -19,9 +19,16 @@ const DB = require('../../database/db');
  */
 function getActor(req) {
   if (!req.auth) return null;
+  const sparksRole = req.auth.sparks_role || null;
   return {
     person_id: req.auth.person_id,
-    is_admin: req.auth.is_admin || req.auth.sparks_role === 'admin',
+    // ⚠️ is_admin is POLLUTED: req.auth.is_admin is computed as role_level>=5 (verifyKeycloakJwt),
+    // so it includes customer PMs/CEOs. NEVER use it to cross a tenant boundary. Use is_sparks for
+    // cross-tenant decisions and is_company_admin for within-company admin powers.
+    is_admin: req.auth.is_admin || sparksRole === 'admin',
+    is_sparks: sparksRole === 'admin' || sparksRole === 'support', // Horizon Sparks platform staff (cross-tenant)
+    is_company_admin: (req.auth.role_level || 0) >= 5,             // within-company admin tier (PM/CEO)
+    sparks_role: sparksRole,
     role_level: req.auth.role_level,
     trade: req.auth.trade,
   };
@@ -129,7 +136,7 @@ async function canApproveJsa(actor, jsa, reqDb) {
  */
 async function canMessage(actor, targetPersonId, reqDb) {
   if (!actor) return false;
-  if (actor.is_admin) return true;
+  if (actor.is_sparks) return true; // cross-tenant messaging is Sparks-only (NOT role>=5 customers)
   if (actor.person_id === targetPersonId) return false; // No self-messaging
 
   try {

@@ -34,7 +34,7 @@ async function resolvePersonId(actor, reqDb) {
 // id" cross-tenant hole on the member/file/link/download routes.
 async function canAccessFolder(folderId, actor, personId, companyId) {
   if (!folderId) return false;
-  if (actor.is_admin) return true;
+  if (actor.is_sparks) return true; // cross-tenant bypass is Sparks-staff-only (not role>=5)
   if (!personId) return false;
   const { rows } = await DB.db.query(
     `SELECT 1 FROM shared_folders f
@@ -50,7 +50,7 @@ async function canAccessFolder(folderId, actor, personId, companyId) {
 
 // Managing membership / destructive folder ops require owner or admin.
 async function isFolderOwnerOrAdmin(folderId, actor, personId) {
-  if (actor.is_admin) return true;
+  if (actor.is_sparks) return true; // cross-tenant bypass is Sparks-staff-only (not role>=5)
   if (!folderId || !personId) return false;
   const folder = await DB.sharedFolders.getById(folderId);
   return !!folder && folder.created_by === personId;
@@ -83,7 +83,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Folder name required' });
     const ctype = context_type || 'team';
     // Non-admins cannot create a company folder pointed at another tenant.
-    if (!actor.is_admin && ctype === 'company') context_id = req.companyId;
+    if (!actor.is_sparks && ctype === 'company') context_id = req.companyId;
     const folder = await DB.sharedFolders.create({
       name, description, created_by: personId,
       context_type: ctype, context_id,
@@ -92,7 +92,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (members && Array.isArray(members)) {
       for (const m of members) {
         if (m.person_id === personId) continue;
-        if (!actor.is_admin && !(await memberInActorCompany(m.person_id, req.companyId, req.db))) continue;
+        if (!actor.is_sparks && !(await memberInActorCompany(m.person_id, req.companyId, req.db))) continue;
         await DB.sharedFolders.addMember(folder.id, m.person_id, m.role || 'viewer');
       }
     }
@@ -105,7 +105,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   try {
     const personId = await resolvePersonId(getActor(req), req.db);
     const actor = getActor(req);
-    if (!actor.is_admin && !(await DB.sharedFolders.isMember(req.params.id, personId))) {
+    if (!actor.is_sparks && !(await DB.sharedFolders.isMember(req.params.id, personId))) {
       return res.status(403).json({ error: 'Not a member of this folder' });
     }
     const folder = await DB.sharedFolders.getById(req.params.id);
@@ -124,7 +124,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     const { name } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Folder name required' });
     const actor = getActor(req);
-    if (!actor.is_admin) {
+    if (!actor.is_sparks) {
       const personId = await resolvePersonId(actor, req.db);
       const folder = await DB.sharedFolders.getById(req.params.id);
       if (!folder || folder.created_by !== personId) return res.status(403).json({ error: 'Only the owner can rename' });
@@ -138,7 +138,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
-    if (!actor.is_admin) {
+    if (!actor.is_sparks) {
       const personId = await resolvePersonId(actor, req.db);
       const folder = await DB.sharedFolders.getById(req.params.id);
       if (!folder || folder.created_by !== personId) return res.status(403).json({ error: 'Only the owner can delete' });
@@ -158,7 +158,7 @@ router.post('/:id/members', requireAuth, async (req, res) => {
     if (!(await isFolderOwnerOrAdmin(req.params.id, actor, personId))) {
       return res.status(403).json({ error: 'Only the folder owner can manage members' });
     }
-    if (!actor.is_admin && !(await memberInActorCompany(person_id, req.companyId, req.db))) {
+    if (!actor.is_sparks && !(await memberInActorCompany(person_id, req.companyId, req.db))) {
       return res.status(403).json({ error: 'Can only add members from your own company' });
     }
     await DB.sharedFolders.addMember(req.params.id, person_id, role || 'viewer');

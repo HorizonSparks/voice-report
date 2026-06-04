@@ -10,8 +10,9 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     let rows;
-    if (actor.is_admin || actor.role_level >= 3) {
-      // PM/admin sees all projects in their company
+    if (actor.is_sparks || (actor.role_level || 0) >= 6) {
+      // Sparks staff or the company CEO (role 6) see ALL projects in the company; a PM (role 5)
+      // and everyone below see only their member projects (the else branch) — strict isolation.
       const trade = req.query.trade;
       if (req.companyId) {
         if (trade) {
@@ -50,7 +51,7 @@ router.get('/:id', requireAuth, async (req, res) => {
     // Authorization: same company, project member, or admin
     const sameCompany = req.companyId && project.company_id === req.companyId;
     const isMember = (await (req.db || DB).db.query('SELECT 1 FROM project_members WHERE project_id = $1 AND person_id = $2', [req.params.id, actor.person_id])).rows.length > 0;
-    if (!actor.is_admin && !sameCompany && !isMember) {
+    if (!actor.is_sparks && !sameCompany && !isMember) {
       return res.status(403).json({ error: 'Not authorized to view this project' });
     }
 
@@ -101,7 +102,7 @@ router.put('/:id', requireAuth, requireSparksEditMode, requireRoleLevel(3), asyn
 
     // Authorization: same company or admin
     const sameCompany = req.companyId && project.company_id === req.companyId;
-    if (!actor.is_admin && !sameCompany) {
+    if (!actor.is_sparks && !sameCompany) {
       return res.status(403).json({ error: 'Not authorized to modify this project' });
     }
 
@@ -130,7 +131,7 @@ router.delete('/:id', requireAuth, requireSparksEditMode, requireRoleLevel(3), a
 
     // Authorization: same company or admin
     const sameCompany = req.companyId && project.company_id === req.companyId;
-    if (!actor.is_admin && !sameCompany) {
+    if (!actor.is_sparks && !sameCompany) {
       return res.status(403).json({ error: 'Not authorized to delete this project' });
     }
 
@@ -148,7 +149,7 @@ router.post('/:id/members', requireAuth, requireSparksEditMode, requireRoleLevel
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
     const sameCompany = req.companyId && project.company_id === req.companyId;
-    if (!actor.is_admin && !sameCompany) {
+    if (!actor.is_sparks && !sameCompany) {
       return res.status(403).json({ error: 'Not authorized to modify this project' });
     }
 
@@ -174,7 +175,7 @@ router.delete('/:id/members/:person_id', requireAuth, requireSparksEditMode, req
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
     const sameCompany = req.companyId && project.company_id === req.companyId;
-    if (!actor.is_admin && !sameCompany) {
+    if (!actor.is_sparks && !sameCompany) {
       return res.status(403).json({ error: 'Not authorized to modify this project' });
     }
 

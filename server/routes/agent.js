@@ -2205,11 +2205,12 @@ router.post('/chat', requireAuth, async (req, res) => {
         visiblePersonIds = Array.from(new Set([personId, ...vis.map(v => v.person_id)]));
       } catch (e) { visiblePersonIds = [personId]; }
     }
-    // Project axis (Ellery's STRICT rule, 2026-06-04): cross-project (see ALL company projects)
-    // is Sparks-only for now. Customer CEO vs PM cannot be distinguished at role_level 5 (both
-    // ARE role 5), so PMs correctly see only their MEMBER projects; giving the CEO "all projects"
-    // needs a dedicated CEO/owner marker (flagged to Ellery). This gates ON TOP of the see-down chain.
-    const canCrossProject = isSparks;
+    // Project axis (Ellery's STRICT rule, 2026-06-04): "see ALL company projects" = the company
+    // CEO (role_level 6) within their own company, OR Sparks staff (cross-tenant). A Project
+    // Manager (role 5) sees only their MEMBER projects. role 6 = the CEO marker that distinguishes
+    // CEO from PM (once CEOs are re-tagged 5->6; until then no customer auto-sees-all). This gates
+    // ON TOP of the see-down chain.
+    const canCrossProject = isSparks || (actor.role_level || 1) >= 6;
     let accessibleProjectIds = [];
     if (!canCrossProject) {
       try {
@@ -2284,7 +2285,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       // SECURITY: this fast-path bypasses the tool-loop gate. Re-check the
       // caller role before running a restricted tool; if denied, abandon the
       // shortcut and fall through to the normal (gated) agent flow below.
-      if (!isToolAllowed(matcher.tool, actor.role_level || 1, actor.is_admin, req.auth?.sparks_role, req.auth?.isIntegration)) break;
+      if (!isToolAllowed(matcher.tool, actor.role_level || 1, actor.is_sparks, req.auth?.sparks_role, req.auth?.isIntegration)) break;
       const directToolResult = await executeTool(matcher.tool, matcher.map(match), authContext);
       const directResponse = buildToolFallbackText(matcher.tool, directToolResult, trimmedMessage);
       const response = {
@@ -2473,7 +2474,7 @@ ENGAGEMENT RULES:
 - Think in RELATIONSHIPS — everything connects to something else. That's your superpower.`;
     // Tool use loop — Claude may call tools, we execute and send results back
     // Filter tools by user's role level — workers can't access PM/admin tools
-    const userTools = getToolsForRole(actor.role_level || 1, actor.is_admin, req.auth?.sparks_role, req.auth?.isIntegration);
+    const userTools = getToolsForRole(actor.role_level || 1, actor.is_sparks, req.auth?.sparks_role, req.auth?.isIntegration);
     // When the user attaches an image (camera button in the agent panel),
     // build a multi-part content block so Claude's vision can see it.
     // Text-only is still a plain string for backward compatibility.
@@ -2538,7 +2539,7 @@ ENGAGEMENT RULES:
           }
           if (['recall_conversation', 'save_insight', 'approve_knowledge_proposal', 'reject_knowledge_proposal'].includes(toolUseBlock.name)) toolUseBlock.input._personId = personId;
           // Belt-and-suspenders: block tool execution if role doesn't allow it
-          if (!isToolAllowed(toolUseBlock.name, actor.role_level || 1, actor.is_admin, req.auth?.sparks_role, req.auth?.isIntegration)) {
+          if (!isToolAllowed(toolUseBlock.name, actor.role_level || 1, actor.is_sparks, req.auth?.sparks_role, req.auth?.isIntegration)) {
             const toolResult = `Access denied: "${toolUseBlock.name}" requires a higher role level.`;
             messages.push({ role: 'assistant', content: result.content });
             messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: toolResult, is_error: true }] });

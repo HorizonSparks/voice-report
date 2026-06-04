@@ -166,8 +166,9 @@ router.patch('/submissions/:id/review', requireAuth, requireSparksEditMode, asyn
     )).rows[0];
     if (!sub) return res.status(404).json({ error: 'Submission not found' });
 
-    if (!actor.is_admin) {
-      // A non-admin reviewer must have a resolved identity.
+    if (!actor.is_sparks) {
+      // A non-Sparks reviewer must have a resolved identity (cross-tenant review is Sparks-only;
+      // a role-5 customer must NOT bypass the submitter-company tenant wall below).
       if (!actor.person_id) return res.status(403).json({ error: 'Not authorized' });
       // Tenant wall.
       if (!req.companyId || sub.submitter_company !== req.companyId) {
