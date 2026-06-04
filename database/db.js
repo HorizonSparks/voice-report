@@ -1175,17 +1175,20 @@ const punchList = {
     return rows;
   },
 
-  async getForPerson(personId) {
+  async getForPerson(personId, companyId) {
+    const params = [personId];
+    let companyClause = '';
+    if (companyId) { params.push(companyId); companyClause = ` AND p.company_id = $${params.length}`; }
     const { rows } = await (this._pool || pool).query(`
       SELECT p.*, creator.name as created_by_name, assignee.name as assigned_to_name
       FROM punch_items p
       LEFT JOIN people creator ON creator.id = p.created_by
       LEFT JOIN people assignee ON assignee.id = p.assigned_to
-      WHERE p.created_by = $1 OR p.assigned_to = $1
+      WHERE (p.created_by = $1 OR p.assigned_to = $1)${companyClause}
       ORDER BY CASE p.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'ready_recheck' THEN 2 WHEN 'closed' THEN 3 END,
       CASE p.priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 WHEN 'low' THEN 3 END,
       p.created_at DESC
-    `, [personId]);
+    `, params);
     return rows;
   },
 
