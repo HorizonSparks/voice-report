@@ -304,8 +304,9 @@ const people = {
       await (this._pool || pool).query(`UPDATE people SET ${setClauses}, updated_at = $${paramIdx++} WHERE id = $${paramIdx}`, values);
     }
 
-    // Rebuild visibility if supervisor changed
-    if (data.supervisor_id !== undefined) {
+    // Rebuild visibility if anything that shapes the graph changed: supervisor (see-down),
+    // role_level or status (same-team peer edges are workers-only / active-only).
+    if (data.supervisor_id !== undefined || data.role_level !== undefined || data.status !== undefined) {
       await this._rebuildAllVisibility();
     }
 
@@ -322,8 +323,10 @@ const people = {
     // Soft delete — deactivate instead. Reports stay in the system.
     const now = new Date().toISOString();
     await (this._pool || pool).query(`UPDATE people SET status = 'inactive', deactivated_at = $1, updated_at = $2 WHERE id = $3`, [now, now, id]);
-    // Remove from visibility chain (they're inactive, reports should still be searchable)
-    await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1', [id]);
+    // Remove from the visibility graph on BOTH sides (no longer sees, nor is seen via
+    // stale peer/chain edges). Reports remain in the system and re-appear on reactivation
+    // (update(status) triggers _rebuildAllVisibility).
+    await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1 OR viewer_id = $1', [id]);
     return { success: true, type: 'deactivated' };
   },
 
@@ -343,13 +346,19 @@ const people = {
     return rows[0] || null;
   },
 
-  // Rebuild visibility chain for one person
+  // Rebuild visibility chain for one person.
+  // Semantics of report_visibility(person_id, viewer_id): "viewer_id may see person_id's
+  // reports." Two rules are encoded:
+  //   (a) SEE-DOWN, never up: a viewer sees a person iff the viewer is that person or an
+  //       ancestor in the supervisor chain (walk supervisor_id UP from the person).
+  //   (b) SAME-TEAM PEERS: workers (role_level <= 2) sharing the SAME direct supervisor (one
+  //       crew under one foreman) see EACH OTHER's reports. Different crews do not.
   async _rebuildVisibility(personId) {
     await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1', [personId]);
     // Self can always see own
     await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, personId]);
-    // Walk up supervisor chain
-    const { rows } = await (this._pool || pool).query('SELECT supervisor_id FROM people WHERE id = $1', [personId]);
+    // Walk up supervisor chain (see-down)
+    const { rows } = await (this._pool || pool).query('SELECT supervisor_id, role_level, status FROM people WHERE id = $1', [personId]);
     const person = rows[0];
     if (!person) return;
     let currentSup = person.supervisor_id;
@@ -361,21 +370,48 @@ const people = {
       const sup = supRows[0];
       currentSup = sup ? sup.supervisor_id : null;
     }
+    // Same-team peers (workers under the same supervisor). Add BOTH directions for this
+    // (possibly newly-created) person; any supervisor CHANGE triggers _rebuildAllVisibility,
+    // which recomputes everything, so these incremental edges never go stale.
+    if (person.supervisor_id && (person.role_level || 1) <= 2 && person.status === 'active') {
+      const { rows: crew } = await (this._pool || pool).query(
+        "SELECT id FROM people WHERE supervisor_id = $1 AND id != $2 AND status = 'active' AND COALESCE(role_level, 1) <= 2",
+        [person.supervisor_id, personId]
+      );
+      for (const c of crew) {
+        await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, c.id]); // c sees personId
+        await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [c.id, personId]); // personId sees c
+      }
+    }
   },
 
-  // Rebuild all visibility (when supervisor changes)
+  // Rebuild all visibility (authoritative full recompute; runs when any supervisor changes).
+  // Encodes the same two rules as _rebuildVisibility: see-down (never up) + same-team peers
+  // (workers sharing a direct supervisor). All graph walks are in-memory off allPeople.
   async _rebuildAllVisibility() {
     await (this._pool || pool).query('DELETE FROM report_visibility');
-    const { rows: allPeople } = await (this._pool || pool).query('SELECT id, supervisor_id FROM people');
+    const { rows: allPeople } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level, status FROM people');
+    const ins = (personId, viewerId) =>
+      (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, viewerId]);
     for (const p of allPeople) {
-      await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, p.id]);
+      await ins(p.id, p.id); // self
+      // see-down: every ancestor may see p
       let currentSup = p.supervisor_id;
       const visited = new Set();
       while (currentSup && !visited.has(currentSup)) {
         visited.add(currentSup);
-        await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, currentSup]);
+        await ins(p.id, currentSup);
         const sup = allPeople.find(x => x.id === currentSup);
         currentSup = sup ? sup.supervisor_id : null;
+      }
+      // same-team peers: workers under the same supervisor see each other. We add the
+      // "peer may see p" edge here; the reverse edge is added during the peer's own pass.
+      if (p.supervisor_id && (p.role_level || 1) <= 2 && p.status === 'active') {
+        for (const peer of allPeople) {
+          if (peer.id !== p.id && peer.supervisor_id === p.supervisor_id && (peer.role_level || 1) <= 2 && peer.status === 'active') {
+            await ins(p.id, peer.id);
+          }
+        }
       }
     }
   },
