@@ -543,17 +543,28 @@ const TOOL_MIN_LEVEL = {
   list_knowledge_proposals: 'sparks_admin',
   approve_knowledge_proposal: 'sparks_admin',
   reject_knowledge_proposal: 'sparks_admin',
-  // PM+ (level 5) or admin — company-wide / cross-platform analytics
+  // PM+ (level 5) or admin — company-wide Voice Report analytics (now tenant-scoped)
   lookup_company: 5,
   get_company_analytics: 5,
   trace_company_everything: 5,
-  analyze_extraction_quality: 5,
-  get_pipeline_status: 5,
-  get_box_completeness: 5,
-  get_loop_folder_funnel: 5,
-  get_extraction_performance: 5,
-  compare_extraction_models: 5,
-  get_tag_quality_report: 5,
+  // Sparks staff only — LoopFolders/extraction ops. No reliable per-customer tenant link
+  // (see CROSS_CUSTOMER_OPS_TOOLS), so these are gated to admin/support at the role layer
+  // too — keeping them out of customers' tool list entirely (defense in depth with the
+  // executeTool fail-closed guard). Previously level-5 or unrestricted.
+  analyze_extraction_quality: 'sparks',
+  get_pipeline_status: 'sparks',
+  get_box_completeness: 'sparks',
+  get_loop_folder_funnel: 'sparks',
+  get_extraction_performance: 'sparks',
+  compare_extraction_models: 'sparks',
+  get_tag_quality_report: 'sparks',
+  get_loopfolders_projects: 'sparks',
+  get_loopfolders_status: 'sparks',
+  get_loopfolders_summary: 'sparks',
+  query_pid_results: 'sparks',
+  get_instrument_details: 'sparks',
+  get_cropped_instruments: 'sparks',
+  list_project_files: 'sparks',
   // Foreman+ (level 3) — crew management, cross-person data
   lookup_person: 3,
   get_recent_reports: 3,
@@ -565,9 +576,24 @@ const TOOL_MIN_LEVEL = {
   relate_data: 3,
   get_team_messages: 3,
   // All users: search_knowledge, navigate_to, recall_conversation, read_shared_file,
-  //            query_pid_results, get_instrument_details, get_cropped_instruments,
-  //            list_project_files, get_form_templates, save_insight, read_insights
+  //            get_form_templates, save_insight, read_insights
 };
+
+// ---- P1.1b: cross-customer LoopFolders / extraction-ops tools ----
+// These read the horizonsparks (LoopFolders) schema, which has NO reliable tenant
+// link to Voice Report companies: horizonsparks.projects.company_id is a uuid in the
+// LoopFolders app's own namespace, unrelated to voicereport.companies.id (varchar) —
+// the code only ever fuzzy-matched on company NAME. Several return data across ALL
+// customers (e.g. get_loopfolders_summary). Until a real VR->LoopFolders project
+// mapping ships, they are Sparks-staff-only at the executeTool layer (fail closed
+// for customers). The customer-facing path is the separately-scoped projectIntelligence.
+const CROSS_CUSTOMER_OPS_TOOLS = new Set([
+  'get_loopfolders_projects', 'get_loopfolders_status', 'get_loopfolders_summary',
+  'query_pid_results', 'get_instrument_details', 'get_cropped_instruments', 'list_project_files',
+  'analyze_extraction_quality', 'get_pipeline_status', 'get_box_completeness',
+  'get_loop_folder_funnel', 'get_extraction_performance', 'compare_extraction_models',
+  'get_tag_quality_report',
+]);
 
 /**
  * Filter AGENT_TOOLS by the user's role_level.
@@ -856,10 +882,18 @@ async function executeTool(toolName, toolInput, authContext = {}) {
   // the see-down chain (report_visibility WHERE viewer_id=actor): actor + descendants.
   const _isAdmin = !!authContext.is_admin;
   const _companyId = authContext.company_id || null;
-  const _personId = authContext.person_id || toolInput._personId || null;
+  // Identity is ALWAYS server-derived — never the model-supplied toolInput._personId.
+  const _personId = authContext.person_id || null;
   const _visibleIds = (Array.isArray(authContext.visiblePersonIds) && authContext.visiblePersonIds.length)
     ? authContext.visiblePersonIds
     : (_personId ? [_personId] : []);
+  // Sparks staff (platform admin OR support) may use cross-customer ops tools and see
+  // LoopFolders data. Customers (sparks_role null) never can.
+  const _isSparksStaff = _isAdmin || authContext.sparks_role === 'support';
+  // Fail closed: the unscopable LoopFolders/extraction ops tools are staff-only.
+  if (CROSS_CUSTOMER_OPS_TOOLS.has(toolName) && !_isSparksStaff) {
+    return 'That cross-platform LoopFolders/extraction view is restricted to Horizon Sparks staff. Per-customer LoopFolders access will return once project-level tenant scoping ships.';
+  }
   try {
     switch (toolName) {
       case 'lookup_person': {
@@ -1096,7 +1130,26 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         return rows.length > 0 ? JSON.stringify(rows) : 'No files found';
       }
       case 'read_shared_file': {
+        // Folder access: Sparks admin bypasses; otherwise the actor must OWN the folder,
+        // be an explicit member, or it must be a company folder for their own company.
+        // Closes the "read any folder/file by id" cross-tenant exposure.
+        const canAccessFolder = async (folderId) => {
+          if (!folderId) return false;
+          if (_isAdmin) return true;
+          if (!_personId) return false;
+          const { rows } = await DB.db.query(
+            `SELECT 1 FROM shared_folders f
+             WHERE f.id = $1 AND (
+               f.created_by = $2
+               OR (f.context_type = 'company' AND f.context_id = $3)
+               OR EXISTS (SELECT 1 FROM shared_folder_members m WHERE m.folder_id = f.id AND m.person_id = $2)
+             ) LIMIT 1`,
+            [folderId, _personId, _companyId]
+          );
+          return rows.length > 0;
+        };
         if (toolInput.folder_id) {
+          if (!(await canAccessFolder(toolInput.folder_id))) return 'No files in this folder';
           // List files in a shared folder
           const { rows } = await DB.db.query(
             `SELECT sf.id, sf.name, sf.type, sf.filename, sf.original_name, sf.url, sf.size_bytes, sf.mime_type, p.name as uploaded_by
@@ -1116,6 +1169,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           );
           if (rows.length === 0) return 'File not found';
           const file = rows[0];
+          if (!(await canAccessFolder(file.folder_id))) return 'File not found';
           if (file.type === 'link') return JSON.stringify({ ...file, access_url: file.url });
           // For actual files, check if readable
           const filePath = path.join(ROOT, 'shared-files', file.filename);
@@ -1252,34 +1306,42 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         result.voice_report.projects = projects.rows;
         result.voice_report.jsa_records = jsas.rows[0];
         result.voice_report.punch_items = punchItems.rows[0];
-        // LoopFolders: find projects by company_id (solid link) or name match (fallback)
-        const { rows: lfProjects } = await DB.db.query(
-          `SELECT p.id, p.name, p.company, p.company_id, p.deadline, pr.name as priority,
-            (SELECT COUNT(*)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as folder_count,
-            (SELECT COUNT(*)::int FROM horizonsparks.files f WHERE f.project_id = p.id) as file_count,
-            (SELECT COUNT(CASE WHEN lf.status IN ('completed','done') THEN 1 END)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as completed_folders
-           FROM horizonsparks.projects p LEFT JOIN horizonsparks.priority pr ON pr.id = p.priority_id
-           WHERE p.company_id = $1 OR p.company ILIKE $2`, [company.id, `%${name}%`]
-        );
-        result.loopfolders.projects = lfProjects;
-        // LoopFolders: total instruments and P&IDs
-        if (lfProjects.length > 0) {
-          const projectIds = lfProjects.map(p => p.id);
-          const { rows: [lfSummary] } = await DB.db.query(`
-            SELECT COUNT(DISTINCT lf.id)::int as total_instruments,
-              COUNT(DISTINCT f.id)::int as total_files
-            FROM horizonsparks.loopfolder lf
-            LEFT JOIN horizonsparks.files f ON f.project_id = lf.project_id
-            WHERE lf.project_id = ANY($1)`, [projectIds]
+        // LoopFolders cross-platform view: the company link is a fuzzy NAME match (no
+        // reliable id FK — see CROSS_CUSTOMER_OPS_TOOLS note), so it can surface another
+        // customer's projects on a name collision. Staff-only until proper mapping ships.
+        if (_isSparksStaff) {
+          const { rows: lfProjects } = await DB.db.query(
+            `SELECT p.id, p.name, p.company, p.company_id, p.deadline, pr.name as priority,
+              (SELECT COUNT(*)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as folder_count,
+              (SELECT COUNT(*)::int FROM horizonsparks.files f WHERE f.project_id = p.id) as file_count,
+              (SELECT COUNT(CASE WHEN lf.status IN ('completed','done') THEN 1 END)::int FROM horizonsparks.loopfolder lf WHERE lf.project_id = p.id) as completed_folders
+             FROM horizonsparks.projects p LEFT JOIN horizonsparks.priority pr ON pr.id = p.priority_id
+             WHERE p.company_id = $1 OR p.company ILIKE $2`, [company.id, `%${name}%`]
           );
-          result.loopfolders.summary = lfSummary;
+          result.loopfolders.projects = lfProjects;
+          // LoopFolders: total instruments and P&IDs
+          if (lfProjects.length > 0) {
+            const projectIds = lfProjects.map(p => p.id);
+            const { rows: [lfSummary] } = await DB.db.query(`
+              SELECT COUNT(DISTINCT lf.id)::int as total_instruments,
+                COUNT(DISTINCT f.id)::int as total_files
+              FROM horizonsparks.loopfolder lf
+              LEFT JOIN horizonsparks.files f ON f.project_id = lf.project_id
+              WHERE lf.project_id = ANY($1)`, [projectIds]
+            );
+            result.loopfolders.summary = lfSummary;
+          }
+        } else {
+          result.loopfolders.note = 'LoopFolders cross-platform data is restricted to Horizon Sparks staff.';
         }
         return JSON.stringify(result);
       }
       case 'trace_instrument_history': {
         const tag = toolInput.tag_number;
         const result = { loopfolders: {}, voice_report: {} };
-        const folders = await findLoopfoldersByTag(tag, 10);
+        // LoopFolders matches are cross-customer (no reliable tenant link) — staff only.
+        const folders = _isSparksStaff ? await findLoopfoldersByTag(tag, 10) : [];
+        if (!_isSparksStaff) result.loopfolders.note = 'LoopFolders cross-platform data is restricted to Horizon Sparks staff.';
         result.loopfolders.folders = folders.map(folder => ({
           loop_number: folder.loop_number,
           status: folder.status,
@@ -1399,7 +1461,10 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         for (const f of forms) {
           if (f.tag_number) mentionedTags.add(f.tag_number);
         }
-        if (mentionedTags.size > 0) {
+        // Instrument enrichment reads LoopFolders (horizonsparks) which has no reliable
+        // per-customer tenant link — staff only, else it would surface other customers'
+        // loop folders that happen to share a loop_number with this person's tags.
+        if (_isSparksStaff && mentionedTags.size > 0) {
           const tags = [...mentionedTags];
           const conditions = tags.map((_, i) => `lf.loop_number ILIKE $${i + 1}`).join(' OR ');
           const { rows: instruments } = await DB.db.query(
@@ -1453,6 +1518,8 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           if (!e || _isAdmin) return e;
           if (e.type === 'company') return (e.id === _companyId) ? e : { type: 'unknown', reference: e.reference };
           if (e.type === 'person') return (e.company_id === _companyId && _visibleIds.includes(e.id)) ? e : { type: 'unknown', reference: e.reference };
+          // LoopFolders entities (instrument/project) have no reliable tenant link — staff only.
+          if (e.type === 'instrument' || e.type === 'project') return _isSparksStaff ? e : { type: 'unknown', reference: e.reference };
           return e;
         };
         entityA = visibleEntity(entityA);
