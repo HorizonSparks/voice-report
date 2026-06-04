@@ -56,10 +56,16 @@ router.get('/:id', requireAuth, async (req, res) => {
     if (req.companyId && r.company_id && r.company_id !== req.companyId) {
       return res.status(404).json({ error: 'Report not found' });
     }
-    // Visibility scope — owner, supervisor (role_level >= 3), or admin
+    // Visibility scope — owner, admin, or someone above the author in the see-down
+    // chain (report_visibility), NOT a flat role_level proxy. Closes the sideways/up leak
+    // where any foreman+ could read ANY report in the company.
     const actor = getActor(req);
-    if (r.person_id !== actor.person_id && !actor.is_admin && actor.role_level < 3) {
-      return res.status(403).json({ error: 'Not authorized' });
+    if (r.person_id !== actor.person_id && !actor.is_admin) {
+      const { rows: vis } = await (req.db || DB).db.query(
+        'SELECT 1 FROM report_visibility WHERE viewer_id = $1 AND person_id = $2 LIMIT 1',
+        [actor.person_id, r.person_id]
+      );
+      if (vis.length === 0) return res.status(403).json({ error: 'Not authorized' });
     }
     res.json(r);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -76,8 +82,14 @@ router.delete('/:id', requireAuth, requireSparksEditMode, async (req, res) => {
     const report = (await (req.db || DB).db.query(delQuery, delParams)).rows[0];
     if (!report) return res.status(404).json({ error: 'Report not found' });
 
-    if (report.person_id !== actor.person_id && !actor.is_admin && actor.role_level < 3) {
-      return res.status(403).json({ error: 'Not authorized' });
+    // Delete authority — owner, admin, or a supervisor above the author in the chain
+    // (report_visibility), NOT a flat role_level proxy.
+    if (report.person_id !== actor.person_id && !actor.is_admin) {
+      const { rows: vis } = await (req.db || DB).db.query(
+        'SELECT 1 FROM report_visibility WHERE viewer_id = $1 AND person_id = $2 LIMIT 1',
+        [actor.person_id, report.person_id]
+      );
+      if (vis.length === 0) return res.status(403).json({ error: 'Not authorized' });
     }
 
     await (req.db || DB).db.query('DELETE FROM reports WHERE id = $1', [req.params.id]);
