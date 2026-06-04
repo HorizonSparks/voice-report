@@ -122,6 +122,46 @@ router.get('/export/bundle', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /archive/tree — the report archive as a navigable folder tree (project -> person ->
+// date -> reports), scoped to what the actor can see (reuses the see-down + company wall via
+// reports.getAll viewer_id). Each folder node pairs with /export/bundle to download it.
+router.get('/archive/tree', requireAuth, async (req, res) => {
+  try {
+    const actor = getActor(req);
+    const filters = { limit: 5000 }; // archive index — bounded
+    if (req.companyId) filters.company_id = req.companyId;
+    if (!actor.is_admin) filters.viewer_id = actor.person_id; // the wall
+    if (req.query.project_id) filters.project_id = req.query.project_id;
+    const rows = await (req.db || DB).reports.getSummaries(filters); // lean: no SELECT */JSON parse
+
+    // null-proto maps so user-derived keys (project_id, person_id, date) can't pollute prototypes
+    const tree = Object.create(null);
+    for (const r of rows) {
+      const proj = r.project_id || 'default';
+      const pid = r.person_id || 'unknown'; // group by ID, not display name (avoids merging namesakes)
+      let date = 'nodate';
+      try { if (r.created_at) date = new Date(r.created_at).toISOString().slice(0, 10); } catch (e) {}
+      if (!tree[proj]) tree[proj] = { project_id: proj, count: 0, people: Object.create(null) };
+      const P = tree[proj];
+      if (!P.people[pid]) P.people[pid] = { person_id: pid, person: r.person_name || 'Unknown', count: 0, dates: Object.create(null) };
+      const PE = P.people[pid];
+      if (!PE.dates[date]) PE.dates[date] = { date, reports: [] };
+      P.count++; PE.count++;
+      PE.dates[date].reports.push({
+        id: r.id, person_id: r.person_id, status: r.status, created_at: r.created_at, preview: r.preview || '',
+      });
+    }
+    const projects = Object.values(tree).map((p) => ({
+      project_id: p.project_id, count: p.count,
+      people: Object.values(p.people).map((pe) => ({
+        person_id: pe.person_id, person: pe.person, count: pe.count,
+        dates: Object.values(pe.dates).sort((a, b) => String(b.date).localeCompare(String(a.date))),
+      })).sort((a, b) => b.count - a.count),
+    })).sort((a, b) => b.count - a.count);
+    res.json({ total: rows.length, projects });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/search/:query', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);

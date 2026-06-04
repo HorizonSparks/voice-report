@@ -472,6 +472,25 @@ const reports = {
     }));
   },
 
+  // Lightweight archive index — summary columns only (NO SELECT * / JSON parse), same
+  // scoping as getAll (viewer_id = the see-down wall + company + optional project_id).
+  async getSummaries(filters = {}) {
+    let sql = `SELECT id, person_id, person_name, role_title, trade, project_id, status, created_at,
+               substring(transcript_raw from 1 for 120) AS preview FROM reports WHERE 1=1`;
+    const params = [];
+    let paramIdx = 1;
+    if (filters.viewer_id) {
+      sql += ` AND person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
+      params.push(filters.viewer_id);
+    }
+    if (filters.company_id) { sql += ` AND company_id = $${paramIdx++}`; params.push(filters.company_id); }
+    if (filters.project_id) { sql += ` AND project_id = $${paramIdx++}`; params.push(filters.project_id); }
+    sql += ' ORDER BY created_at DESC';
+    if (filters.limit) { sql += ` LIMIT $${paramIdx++}`; params.push(filters.limit); }
+    const { rows } = await (this._pool || pool).query(sql, params);
+    return rows;
+  },
+
   async getById(id) {
     const { rows } = await (this._pool || pool).query('SELECT * FROM reports WHERE id = $1', [id]);
     const r = rows[0];
