@@ -29,6 +29,18 @@ router.post('/', requireAuth, requireSparksEditMode, async (req, res) => {
     const actor = getActor(req);
     report.person_id = actor.person_id;
     report.company_id = req.companyId || null;
+    // Data quality: tag the report with a REAL project when unambiguous (the author belongs to
+    // exactly one project) instead of the 'default' catch-all, so strict project isolation has a
+    // real boundary. Multi-/no-project authors keep what they sent (or 'default') — a UX prompt to
+    // pick the project is the follow-up. Never trust a client-sent project beyond this.
+    if (!report.project_id || report.project_id === 'default') {
+      try {
+        const { rows: pm } = await (req.db || DB).db.query(
+          'SELECT DISTINCT project_id FROM project_members WHERE person_id = $1', [actor.person_id]
+        );
+        if (pm.length === 1 && pm[0].project_id) report.project_id = pm[0].project_id;
+      } catch (e) { /* leave as-is */ }
+    }
     await (req.db || DB).reports.create(report);
     // Phase 3: index into per-tenant semantic memory. Fire-and-forget — embedding latency or
     // an OpenAI hiccup must NEVER block or fail the report save.

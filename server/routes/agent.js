@@ -2189,8 +2189,15 @@ router.post('/chat', requireAuth, async (req, res) => {
     //    role_level 5 but is_admin=false → they stay company-locked).
     //  - visiblePersonIds = report_visibility WHERE viewer_id=actor (actor + the
     //    people below them in the chain). Fails closed to self-only on error.
+    // 🔒 CROSS-TENANT GATE: company- and project-crossing are SPARKS-STAFF-ONLY. getActor's
+    // is_admin is POLLUTED — verifyKeycloakJwt sets is_admin = (role_level>=5), which includes
+    // customer PMs and CEOs. Using it to bypass the company wall would let a role-5 CUSTOMER
+    // reach another tenant. So the scope-lock uses the Sparks-staff flag instead. Customer
+    // role-5 users (CEO/PM) stay company + chain scoped — and a CEO still sees their WHOLE
+    // company because they are the ROOT of the supervisor chain (see-down covers everyone below).
+    const isSparks = req.auth?.sparks_role === 'admin' || req.auth?.sparks_role === 'support';
     let visiblePersonIds = [personId];
-    if (!actor.is_admin) {
+    if (!isSparks) {
       try {
         const { rows: vis } = await DB.db.query(
           'SELECT person_id FROM report_visibility WHERE viewer_id = $1', [personId]
@@ -2198,11 +2205,11 @@ router.post('/chat', requireAuth, async (req, res) => {
         visiblePersonIds = Array.from(new Set([personId, ...vis.map(v => v.person_id)]));
       } catch (e) { visiblePersonIds = [personId]; }
     }
-    // Project axis (Ellery's STRICT rule, 2026-06-04): only the PM/CEO tier (role_level>=5) or
-    // platform admins watch ACROSS projects; everyone else (incl. foremen/supers) is limited to
-    // their own project memberships. Reports with no real project (null/'default') fall through
-    // to the chain. This gates ON TOP of the see-down chain.
-    const canCrossProject = !!actor.is_admin || (actor.role_level || 1) >= 5;
+    // Project axis (Ellery's STRICT rule, 2026-06-04): cross-project (see ALL company projects)
+    // is Sparks-only for now. Customer CEO vs PM cannot be distinguished at role_level 5 (both
+    // ARE role 5), so PMs correctly see only their MEMBER projects; giving the CEO "all projects"
+    // needs a dedicated CEO/owner marker (flagged to Ellery). This gates ON TOP of the see-down chain.
+    const canCrossProject = isSparks;
     let accessibleProjectIds = [];
     if (!canCrossProject) {
       try {
@@ -2216,7 +2223,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       person_id: personId,
       company_id: req.companyId || null,
       role_level: actor.role_level || 1,
-      is_admin: !!actor.is_admin,
+      is_admin: isSparks, // SPARKS-only — the cross-company capability is NOT role>=5
       sparks_role: req.auth?.sparks_role || null,
       visiblePersonIds,
       canCrossProject,
