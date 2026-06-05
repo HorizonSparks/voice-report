@@ -29,7 +29,7 @@ const mkPool=(db)=>new Pool({...base,database:db,options:'-c search_path=voicere
 const results=[]; const check=(n,p)=>{results.push({n,p});console.log(`${p?'  PASS':'  FAIL'}  ${n}`);};
 
 async function admin(sql,db='postgres'){const c=new Client({...base,database:db});await c.connect();try{return await c.query(sql);}finally{await c.end();}}
-async function applySchema(db){const SCHEMA=fs.readFileSync(path.join(__dirname,'postgres-schema.sql'),'utf8');const c=new Client({...base,database:db});await c.connect();try{await c.query('CREATE SCHEMA IF NOT EXISTS voicereport');await c.query('SET search_path TO voicereport');await c.query(SCHEMA);}finally{await c.end();}}
+async function applySchema(db){const SCHEMA=fs.readFileSync(path.join(__dirname,'postgres-schema.sql'),'utf8');const MIG=fs.readFileSync(path.join(__dirname,'migrations','people_active_pin_unique.sql'),'utf8');const c=new Client({...base,database:db});await c.connect();try{await c.query('CREATE SCHEMA IF NOT EXISTS voicereport');await c.query('SET search_path TO voicereport');await c.query(SCHEMA);await c.query(MIG);}finally{await c.end();}}
 async function dropTestDbs(){for(const db of [A,B,SHARED]){if(!db.startsWith(PREFIX)){console.error('refuse drop '+db);continue;}try{await admin(`DROP DATABASE IF EXISTS ${db} WITH (FORCE)`);}catch(e){}}}
 
 (async()=>{
@@ -58,6 +58,13 @@ async function dropTestDbs(){for(const db of [A,B,SHARED]){if(!db.startsWith(PRE
 
   await dbA.people.delete('p_alpha');
   check('deactivated person cannot log in', !(await DB.people.getByPin('1111')));
+  check('deactivation marks SHARED identity inactive (fail-closed)', (await shared.query("SELECT status FROM people WHERE id='p_alpha'")).rows[0]?.status==='inactive');
+
+  // DB-enforced PIN uniqueness (the race guarantee): a direct duplicate active PIN is rejected by the index.
+  let idxBlocked=false;
+  try { await shared.query("INSERT INTO people (id,name,pin,role_title,role_level,status) VALUES ('p_dupe','Dupe','9999','X',1,'active')"); }
+  catch(e){ idxBlocked = /unique|duplicate/i.test(e.message); }
+  check('DB unique index blocks a duplicate active PIN', idxBlocked);
 
   await poolA.end(); await poolB.end(); await shared.end();
   const failed=results.filter(r=>!r.p).length;
