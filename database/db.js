@@ -1539,7 +1539,7 @@ function withPool(targetPool) {
     plans: plans,                                // ALWAYS shared — billing is platform-level
     subscriptions: subscriptions,                // ALWAYS shared
     invoices: invoicesMod,                       // ALWAYS shared
-    sharedFolders: sharedFolders,              // ALWAYS shared — tables only in shared DB
+    sharedFolders: sharedFolders,              // shared for now — per-company folder flip is a dedicated follow-up (needs the sharedFolders.js route refactored to req.db too). Decided per-company; sequenced after the core migration.
     withPool: withPool,                          // Allow chaining
   };
 }

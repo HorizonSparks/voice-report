@@ -57,7 +57,8 @@ async function provisionCompanyDb(companyId, { applySchema = true } = {}) {
   // 2. Apply the voicereport schema to the new DB (idempotent). The app's runtime ensureSchema also
   //    backfills anything missing on first use, so this is belt-and-suspenders.
   if (applySchema) {
-    const schemaPath = path.join(__dirname, 'schema.sql');
+    // Use the COMPLETE schema (43 tables incl. folders, forms, JSA) — not the partial schema.sql.
+    const schemaPath = path.join(__dirname, 'postgres-schema.sql');
     if (fs.existsSync(schemaPath)) {
       const sql = fs.readFileSync(schemaPath, 'utf8');
       const pool = new Pool({ ...PG_BASE, database: dbName });

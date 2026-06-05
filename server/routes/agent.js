@@ -1157,7 +1157,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           if (!folderId) return false;
           if (_isAdmin) return true;
           if (!_personId) return false;
-          const { rows } = await _actorDb.query(
+          const { rows } = await DB.db.query(
             `SELECT 1 FROM shared_folders f
              WHERE f.id = $1 AND (
                f.created_by = $2
@@ -1171,7 +1171,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         if (toolInput.folder_id) {
           if (!(await canAccessFolder(toolInput.folder_id))) return 'No files in this folder';
           // List files in a shared folder
-          const { rows } = await _actorDb.query(
+          const { rows } = await DB.db.query(
             `SELECT sf.id, sf.name, sf.type, sf.filename, sf.original_name, sf.url, sf.size_bytes, sf.mime_type, p.name as uploaded_by
              FROM shared_files sf LEFT JOIN people p ON p.id = sf.uploaded_by
              WHERE sf.folder_id = $1 ORDER BY sf.created_at DESC`,
@@ -1180,7 +1180,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           return rows.length > 0 ? JSON.stringify(rows) : 'No files in this folder';
         }
         if (toolInput.file_id) {
-          const { rows } = await _actorDb.query(
+          const { rows } = await DB.db.query(
             `SELECT sf.*, p.name as uploaded_by_name, shf.name as folder_name
              FROM shared_files sf LEFT JOIN people p ON p.id = sf.uploaded_by
              LEFT JOIN shared_folders shf ON shf.id = sf.folder_id
