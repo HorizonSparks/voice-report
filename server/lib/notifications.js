@@ -9,9 +9,9 @@ const push = require('../services/push');
  * Send a safety alert message to a person
  * Uses the existing messages table schema: from_id, to_id, from_name, to_name, type, content, metadata
  */
-async function sendSafetyAlert(toPersonId, content, metadata = {}) {
+async function sendSafetyAlert(toPersonId, content, metadata = {}, db = DB) {
   try {
-    const msg = await DB.messages.create({
+    const msg = await (db || DB).messages.create({
       from_id: 'system_safety',
       to_id: toPersonId,
       from_name: 'Safety System',
@@ -42,32 +42,39 @@ async function sendSafetyAlert(toPersonId, content, metadata = {}) {
 /**
  * Check JSA status for a person on a task and send alerts if needed
  */
-async function checkAndAlertJsaMismatch(personId, task, foremanId) {
+async function checkAndAlertJsaMismatch(personId, task, foremanId, opts = {}) {
+  // db = the actor's per-company pool (req.db); companyId scopes the lookups so a safety alert never
+  // crosses into another company (and JSAs are read from the tenant's own database, not shared).
+  const db = opts.db || DB;
+  const companyId = opts.companyId || null;
   try {
     const today = new Date().toISOString().split('T')[0];
-    const person = await DB.people.getById(personId);
+    const person = await db.people.getById(personId);
     if (!person) return;
 
-    // Find person's JSAs for today
-    const jsas = (await DB.db.query(
-      "SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected' AND (person_id = $2 OR crew_members LIKE $3)",
-      [today, personId, `%${personId}%`]
-    )).rows;
+    // Find person's JSAs for today — in the tenant's DB, scoped to their company.
+    let jsaSql = "SELECT * FROM jsa_records WHERE date = $1 AND status != 'rejected' AND (person_id = $2 OR crew_members LIKE $3)";
+    const jsaParams = [today, personId, `%${personId}%`];
+    if (companyId) { jsaParams.push(companyId); jsaSql += ` AND company_id = $${jsaParams.length}`; }
+    const jsas = (await db.db.query(jsaSql, jsaParams)).rows;
 
     if (jsas.length === 0) {
       const workerMsg = `⚠️ You have been assigned "${task.title}" but you don't have a JSA for today. Please complete your JSA before starting work.`;
       const foremanMsg = `⚠️ ${person.name} was assigned "${task.title}" but has no JSA for today.`;
 
-      await sendSafetyAlert(personId, workerMsg, { task_id: task.id, alert_type: 'no_jsa' });
+      await sendSafetyAlert(personId, workerMsg, { task_id: task.id, alert_type: 'no_jsa' }, db);
       if (foremanId && foremanId !== personId) {
-        await sendSafetyAlert(foremanId, foremanMsg, { task_id: task.id, alert_type: 'no_jsa', person_id: personId });
+        await sendSafetyAlert(foremanId, foremanMsg, { task_id: task.id, alert_type: 'no_jsa', person_id: personId }, db);
       }
 
-      // Alert safety supervisor(s)
+      // Alert safety supervisor(s) — ONLY within this company (never another tenant's safety staff).
       try {
-        const safetyPeople = (await DB.db.query("SELECT id FROM people WHERE LOWER(role_title) LIKE '%safety%'")).rows;
+        let spSql = "SELECT id FROM people WHERE LOWER(role_title) LIKE '%safety%' AND status = 'active'";
+        const spParams = [];
+        if (companyId) { spParams.push(companyId); spSql += ` AND company_id = $${spParams.length}`; }
+        const safetyPeople = (await db.db.query(spSql, spParams)).rows;
         for (const sp of safetyPeople) {
-          await sendSafetyAlert(sp.id, foremanMsg, { task_id: task.id, alert_type: 'no_jsa', person_id: personId });
+          await sendSafetyAlert(sp.id, foremanMsg, { task_id: task.id, alert_type: 'no_jsa', person_id: personId }, db);
         }
       } catch { /* no safety people found */ }
     }

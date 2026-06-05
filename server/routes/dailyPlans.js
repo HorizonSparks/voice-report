@@ -82,7 +82,7 @@ router.post('/:person_id/tasks', requireAuth, requireSparksEditMode, async (req,
     if (assignedTo) {
       const persons = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
       persons.forEach(pid => {
-        if (pid) checkAndAlertJsaMismatch(pid, { id: task.id, title: req.body.title, description: req.body.description }, creatorId);
+        if (pid) checkAndAlertJsaMismatch(pid, { id: task.id, title: req.body.title, description: req.body.description }, creatorId, { db: req.db, companyId: req.companyId });
       });
     }
 
