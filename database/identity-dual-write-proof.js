@@ -66,6 +66,12 @@ async function dropTestDbs(){for(const db of [A,B,SHARED]){if(!db.startsWith(PRE
   catch(e){ idxBlocked = /unique|duplicate/i.test(e.message); }
   check('DB unique index blocks a duplicate active PIN', idxBlocked);
 
+  // deactivation via update(status:'inactive') must ALSO be fail-closed (not only via delete())
+  await dbA.people.create({id:'p_gamma',name:'Gamma',pin:'3333',role_title:'Foreman',role_level:3,company_id:'company_a'});
+  await dbA.people.update('p_gamma',{status:'inactive'});
+  check('deactivation via update() is fail-closed (shared inactive + cannot log in)',
+    (await shared.query("SELECT status FROM people WHERE id='p_gamma'")).rows[0]?.status==='inactive' && !(await DB.people.getByPin('3333')));
+
   await poolA.end(); await poolB.end(); await shared.end();
   const failed=results.filter(r=>!r.p).length;
   // Leave the throwaway test DBs in place (next run drops+recreates them); dropping the shared one now

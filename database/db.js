@@ -340,6 +340,13 @@ const people = {
       if (clash.length) throw new Error('That PIN is already in use by another active user — choose a different one.');
     }
 
+    // Fail-closed: if this update DEACTIVATES the person, mark the SHARED login identity inactive FIRST
+    // (same rule as delete()) so a deactivated person can never still authenticate via the shared table,
+    // even if the per-company write or the later mirror fails.
+    if (this._pool && this._pool !== pool && updates.status && String(updates.status) !== 'active') {
+      await pool.query("UPDATE people SET status = $1 WHERE id = $2", [updates.status, id]);
+    }
+
     if (Object.keys(updates).length > 0) {
       const keys = Object.keys(updates);
       let paramIdx = 1;
