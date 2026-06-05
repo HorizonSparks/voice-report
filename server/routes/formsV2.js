@@ -143,6 +143,73 @@ router.post('/submissions', requireAuth, requireSparksEditMode, async (req, res)
   }
 });
 
+// PATCH /submissions/:id/review — QA sign-off (P2.3). A lead reviews a technician's
+// submitted form: approve -> 'reviewed', reject -> 'rejected'. Enforces the state machine
+// (only a 'submitted' form can be reviewed) and the forms tenant wall (the submitter's
+// company), plus QA authority (foreman+ and not your own submission). Reviewer identity is
+// derived server-side, never from the client.
+router.patch('/submissions/:id/review', requireAuth, requireSparksEditMode, async (req, res) => {
+  try {
+    const actor = getActor(req);
+    const { decision, notes } = req.body || {};
+    if (decision !== undefined && !['approved', 'rejected'].includes(decision)) {
+      return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
+    }
+    const target = decision === 'rejected' ? 'rejected' : 'reviewed';
+
+    // Load the submission with its submitter's company (forms are tenant-walled by the
+    // submitter's people.company_id — there is no company_id column on form_submissions).
+    const sub = (await (req.db || DB).db.query(
+      `SELECT s.id, s.status, s.person_id, p.company_id AS submitter_company
+       FROM form_submissions s LEFT JOIN people p ON p.id = s.person_id
+       WHERE s.id = $1`, [req.params.id]
+    )).rows[0];
+    if (!sub) return res.status(404).json({ error: 'Submission not found' });
+
+    if (!actor.is_sparks) {
+      // A non-Sparks reviewer must have a resolved identity (cross-tenant review is Sparks-only;
+      // a role-5 customer must NOT bypass the submitter-company tenant wall below).
+      if (!actor.person_id) return res.status(403).json({ error: 'Not authorized' });
+      // Tenant wall.
+      if (!req.companyId || sub.submitter_company !== req.companyId) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+      // QA authority: leads (foreman+) only, and never self-review.
+      if ((actor.role_level || 1) < 3) {
+        return res.status(403).json({ error: 'Reviewer must be a lead (foreman or above)' });
+      }
+      if (sub.person_id && sub.person_id === actor.person_id) {
+        return res.status(403).json({ error: 'You cannot review your own submission' });
+      }
+    }
+
+    // State machine: only a submitted form can be reviewed.
+    if (sub.status !== 'submitted') {
+      return res.status(409).json({ error: `Cannot review a submission in status '${sub.status}'` });
+    }
+
+    // Reviewer name is authoritative from the people record — never the client body.
+    let reviewerName = 'Reviewer';
+    try {
+      const pr = (await (req.db || DB).db.query('SELECT name FROM people WHERE id = $1', [actor.person_id])).rows[0];
+      if (pr && pr.name) reviewerName = pr.name;
+    } catch (e) { /* keep server default */ }
+
+    const reviewedAt = new Date().toISOString();
+    // Conditional update is the authoritative state guard — closes the check-then-write
+    // race so two concurrent reviewers cannot both succeed.
+    const upd = await (req.db || DB).db.query(
+      `UPDATE form_submissions SET status = $1, reviewer_name = $2, reviewed_at = $3, review_notes = $4
+       WHERE id = $5 AND status = 'submitted'`,
+      [target, reviewerName, reviewedAt, typeof notes === 'string' ? notes.slice(0, 2000) : null, req.params.id]
+    );
+    if (upd.rowCount === 0) {
+      return res.status(409).json({ error: 'Submission is no longer in a reviewable state' });
+    }
+    res.json({ id: req.params.id, status: target, reviewer_name: reviewerName, reviewed_at: reviewedAt });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // Reseed endpoint — wipe and reseed all 27 templates
 router.post("/reseed", requireAdmin, requireSparksEditMode, async (req, res) => {
   try {

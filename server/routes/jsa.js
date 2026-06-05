@@ -104,8 +104,10 @@ module.exports = function(db) {
         return crew.some(c => c.id === person_id || c.person_id === person_id);
       });
 
-      // My pending acknowledgments
-      const myAcks = (await (req.db || DB).db.query('SELECT a.*, j.date as jsa_date, j.form_data as jsa_form_data, j.person_name as creator_name FROM jsa_acknowledgments a JOIN jsa_records j ON a.jsa_id = j.id WHERE a.person_id = $1 ORDER BY a.created_at DESC LIMIT 20', [person_id])).rows;
+      // My pending acknowledgments — company-scoped via the joined JSA (no cross-tenant leak).
+      const acksSql = 'SELECT a.*, j.date as jsa_date, j.form_data as jsa_form_data, j.person_name as creator_name FROM jsa_acknowledgments a JOIN jsa_records j ON a.jsa_id = j.id WHERE a.person_id = $1'
+        + (req.companyId ? ' AND j.company_id = $2' : '') + ' ORDER BY a.created_at DESC LIMIT 20';
+      const myAcks = (await (req.db || DB).db.query(acksSql, req.companyId ? [person_id, req.companyId] : [person_id])).rows;
 
       const jsas = [];
       for (const j of own) {
@@ -161,7 +163,11 @@ module.exports = function(db) {
           pending = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE status = $1 ORDER BY date DESC', ['pending_safety'])).rows;
         }
       } else {
-        pending = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE status = $1 AND supervisor_id = $2 ORDER BY date DESC', ['pending_foreman', approver_id])).rows;
+        const fParams = ['pending_foreman', approver_id];
+        let fSql = 'SELECT * FROM jsa_records WHERE status = $1 AND supervisor_id = $2';
+        if (req.companyId) { fParams.push(req.companyId); fSql += ` AND company_id = $${fParams.length}`; }
+        fSql += ' ORDER BY date DESC';
+        pending = (await (req.db || DB).db.query(fSql, fParams)).rows;
       }
 
       const parsed = [];
@@ -247,9 +253,14 @@ module.exports = function(db) {
     const { form_data, crew_members, status } = req.body;
 
     try {
-      // SECURITY: Verify actor is creator, crew member, or supervisor+
-      const { rows: [existing] } = await (req.db || DB).db.query('SELECT person_id, crew_members FROM jsa_records WHERE id = $1', [id]);
+      // SECURITY: Verify actor is creator, crew member, or supervisor+ — AND that the JSA is in
+      // the actor's company (cross-tenant gate; only Sparks staff may reach another company's JSA).
+      const { rows: [existing] } = await (req.db || DB).db.query('SELECT person_id, crew_members, company_id FROM jsa_records WHERE id = $1', [id]);
       if (!existing) return res.status(404).json({ error: 'JSA not found' });
+      const isSparks = req.auth?.sparks_role === 'admin' || req.auth?.sparks_role === 'support';
+      if (!isSparks && req.companyId && existing.company_id !== req.companyId) { // null company fails closed
+        return res.status(404).json({ error: 'JSA not found' });
+      }
       const actorId = req.auth.person_id;
       const isCreator = existing.person_id === actorId;
       const isCrew = (() => { try { return JSON.parse(existing.crew_members || '[]').some(c => c.id === actorId || c.person_id === actorId); } catch { return false; } })();
@@ -297,8 +308,13 @@ module.exports = function(db) {
   router.post('/:id/submit', requireAuth, requireSparksEditMode, async (req, res) => {
     const { id } = req.params;
     try {
-      await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, updated_at = NOW() WHERE id = $2",
-        ['pending_foreman', id]);
+      // Company-scoped: a non-Sparks user can only submit a JSA in their own company.
+      const isSparks = req.auth?.sparks_role === 'admin' || req.auth?.sparks_role === 'support';
+      const params = ['pending_foreman', id];
+      let sql = "UPDATE jsa_records SET status = $1, updated_at = NOW() WHERE id = $2";
+      if (!isSparks && req.companyId) { params.push(req.companyId); sql += ` AND company_id = $${params.length}`; }
+      const r = await (req.db || DB).db.query(sql, params);
+      if (r.rowCount === 0) return res.status(404).json({ error: 'JSA not found' });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: 'Failed to submit JSA' });
@@ -312,13 +328,28 @@ module.exports = function(db) {
     const { ack_id, jsa_id, person_id, person_name, signature, signed_on_device } = req.body;
 
     try {
+      // Cross-tenant gate: the target JSA must be in the actor's company (Sparks bypass). Resolve
+      // the JSA either directly (jsa_id) or via the acknowledgment (ack_id).
+      const isSparks = req.auth?.sparks_role === 'admin' || req.auth?.sparks_role === 'support';
+      // Resolve the target JSA once (from jsa_id, or via the acknowledgment) — used for BOTH the
+      // tenant gate and the completion stats below.
+      let resolvedJsaId = jsa_id || null;
+      if (!resolvedJsaId && ack_id) {
+        resolvedJsaId = (await (req.db || DB).db.query('SELECT jsa_id FROM jsa_acknowledgments WHERE id = $1', [ack_id])).rows[0]?.jsa_id || null;
+      }
+      // Cross-tenant gate: the JSA must be in the actor's company (Sparks bypass; null fails closed).
+      if (!isSparks && req.companyId && resolvedJsaId) {
+        const j = (await (req.db || DB).db.query('SELECT company_id FROM jsa_records WHERE id = $1', [resolvedJsaId])).rows[0];
+        if (!j || j.company_id !== req.companyId) return res.status(404).json({ error: 'JSA not found' });
+      }
       if (ack_id) {
         // Sign existing record (crew member on their own phone)
-        await (req.db || DB).db.query(`
+        const upd = await (req.db || DB).db.query(`
           UPDATE jsa_acknowledgments
           SET signature = $1, signed_at = NOW(), signed_on_device = $2, status = 'signed'
           WHERE id = $3
         `, [signature || 'signed', signed_on_device || 'own', ack_id]);
+        if (upd.rowCount === 0) return res.status(404).json({ error: 'Acknowledgment not found' });
       } else {
         // Add and sign (foreman signing for someone on their phone)
         const newId = 'ack_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -328,10 +359,10 @@ module.exports = function(db) {
         `, [newId, jsa_id, person_id || 'manual', person_name || '', req.body.role_title || '', signature || 'signed', signed_on_device || 'foreman']);
       }
 
-      // Check if all crew members have signed
-      const jsa = (await (req.db || DB).db.query('SELECT * FROM jsa_records WHERE id = $1', [jsa_id])).rows[0];
+      // Check if all crew members have signed (use the RESOLVED JSA id, not just body jsa_id).
+      const jsa = resolvedJsaId ? (await (req.db || DB).db.query('SELECT id FROM jsa_records WHERE id = $1', [resolvedJsaId])).rows[0] : null;
       if (jsa) {
-        const allAcks = (await (req.db || DB).db.query('SELECT * FROM jsa_acknowledgments WHERE jsa_id = $1', [jsa_id])).rows;
+        const allAcks = (await (req.db || DB).db.query('SELECT status FROM jsa_acknowledgments WHERE jsa_id = $1', [resolvedJsaId])).rows;
         const completedCount = allAcks.filter(a => a.status === 'signed').length;
         const totalCount = allAcks.length;
 
@@ -356,6 +387,14 @@ module.exports = function(db) {
   router.get('/:id/acknowledgments', requireAuth, async (req, res) => {
     const { id } = req.params;
     try {
+      // Cross-tenant gate: only read acks for a JSA in the actor's company (Sparks bypass).
+      const isSparks = req.auth?.sparks_role === 'admin' || req.auth?.sparks_role === 'support';
+      if (!isSparks && req.companyId) {
+        const j = (await (req.db || DB).db.query('SELECT company_id FROM jsa_records WHERE id = $1', [id])).rows[0];
+        if (!j || j.company_id !== req.companyId) { // null company fails closed
+          return res.status(404).json({ error: 'JSA not found' });
+        }
+      }
       const acks = await getAcknowledgments(id);
       const completed = acks.filter(a => a.status === 'signed').length;
       res.json({ acknowledgments: acks, completed, total: acks.length });
@@ -427,8 +466,12 @@ module.exports = function(db) {
     const { role, reason } = req.body;
 
     try {
-      await (req.db || DB).db.query("UPDATE jsa_records SET status = $1, rejection_reason = $2, updated_at = NOW() WHERE id = $3",
-        ['rejected', reason || 'No reason provided', id]);
+      // Company-scoped: a non-Sparks approver can only reject a JSA in their own company.
+      const params = ['rejected', reason || 'No reason provided', id];
+      let sql = "UPDATE jsa_records SET status = $1, rejection_reason = $2, updated_at = NOW() WHERE id = $3";
+      if (!actor.is_sparks && req.companyId) { params.push(req.companyId); sql += ` AND company_id = $${params.length}`; }
+      const r = await (req.db || DB).db.query(sql, params);
+      if (r.rowCount === 0) return res.status(404).json({ error: 'JSA not found' });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: 'Failed to reject JSA' });

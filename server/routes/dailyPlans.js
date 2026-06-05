@@ -56,7 +56,7 @@ router.get('/my-tasks/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     // Derive person_id from session for own tasks
-    const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const targetId = actor.is_sparks ? req.params.person_id : actor.person_id;
     const date = req.query.date || new Date().toISOString().split('T')[0];
     const tasks = await (req.db || DB).dailyPlans.getTasksForPerson(targetId, date);
     const enriched = [];
@@ -73,7 +73,7 @@ router.post('/:person_id/tasks', requireAuth, requireSparksEditMode, async (req,
     const actor = getActor(req);
     const date = req.body.date || new Date().toISOString().split('T')[0];
     // Use actor as the plan creator
-    const creatorId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const creatorId = actor.is_sparks ? req.params.person_id : actor.person_id;
     const plan = await (req.db || DB).dailyPlans.getOrCreate(date, creatorId, req.body.trade);
     const task = await (req.db || DB).dailyPlans.addTask({ ...req.body, plan_id: plan.id });
 

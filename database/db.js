@@ -304,8 +304,9 @@ const people = {
       await (this._pool || pool).query(`UPDATE people SET ${setClauses}, updated_at = $${paramIdx++} WHERE id = $${paramIdx}`, values);
     }
 
-    // Rebuild visibility if supervisor changed
-    if (data.supervisor_id !== undefined) {
+    // Rebuild visibility if anything that shapes the graph changed: supervisor (see-down),
+    // role_level or status (same-team peer edges are workers-only / active-only).
+    if (data.supervisor_id !== undefined || data.role_level !== undefined || data.status !== undefined) {
       await this._rebuildAllVisibility();
     }
 
@@ -322,8 +323,10 @@ const people = {
     // Soft delete — deactivate instead. Reports stay in the system.
     const now = new Date().toISOString();
     await (this._pool || pool).query(`UPDATE people SET status = 'inactive', deactivated_at = $1, updated_at = $2 WHERE id = $3`, [now, now, id]);
-    // Remove from visibility chain (they're inactive, reports should still be searchable)
-    await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1', [id]);
+    // Remove from the visibility graph on BOTH sides (no longer sees, nor is seen via
+    // stale peer/chain edges). Reports remain in the system and re-appear on reactivation
+    // (update(status) triggers _rebuildAllVisibility).
+    await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1 OR viewer_id = $1', [id]);
     return { success: true, type: 'deactivated' };
   },
 
@@ -343,13 +346,19 @@ const people = {
     return rows[0] || null;
   },
 
-  // Rebuild visibility chain for one person
+  // Rebuild visibility chain for one person.
+  // Semantics of report_visibility(person_id, viewer_id): "viewer_id may see person_id's
+  // reports." Two rules are encoded:
+  //   (a) SEE-DOWN, never up: a viewer sees a person iff the viewer is that person or an
+  //       ancestor in the supervisor chain (walk supervisor_id UP from the person).
+  //   (b) SAME-TEAM PEERS: workers (role_level <= 2) sharing the SAME direct supervisor (one
+  //       crew under one foreman) see EACH OTHER's reports. Different crews do not.
   async _rebuildVisibility(personId) {
     await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1', [personId]);
     // Self can always see own
     await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, personId]);
-    // Walk up supervisor chain
-    const { rows } = await (this._pool || pool).query('SELECT supervisor_id FROM people WHERE id = $1', [personId]);
+    // Walk up supervisor chain (see-down)
+    const { rows } = await (this._pool || pool).query('SELECT supervisor_id, role_level, status FROM people WHERE id = $1', [personId]);
     const person = rows[0];
     if (!person) return;
     let currentSup = person.supervisor_id;
@@ -361,21 +370,48 @@ const people = {
       const sup = supRows[0];
       currentSup = sup ? sup.supervisor_id : null;
     }
+    // Same-team peers (workers under the same supervisor). Add BOTH directions for this
+    // (possibly newly-created) person; any supervisor CHANGE triggers _rebuildAllVisibility,
+    // which recomputes everything, so these incremental edges never go stale.
+    if (person.supervisor_id && (person.role_level || 1) <= 2 && person.status === 'active') {
+      const { rows: crew } = await (this._pool || pool).query(
+        "SELECT id FROM people WHERE supervisor_id = $1 AND id != $2 AND status = 'active' AND COALESCE(role_level, 1) <= 2",
+        [person.supervisor_id, personId]
+      );
+      for (const c of crew) {
+        await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, c.id]); // c sees personId
+        await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [c.id, personId]); // personId sees c
+      }
+    }
   },
 
-  // Rebuild all visibility (when supervisor changes)
+  // Rebuild all visibility (authoritative full recompute; runs when any supervisor changes).
+  // Encodes the same two rules as _rebuildVisibility: see-down (never up) + same-team peers
+  // (workers sharing a direct supervisor). All graph walks are in-memory off allPeople.
   async _rebuildAllVisibility() {
     await (this._pool || pool).query('DELETE FROM report_visibility');
-    const { rows: allPeople } = await (this._pool || pool).query('SELECT id, supervisor_id FROM people');
+    const { rows: allPeople } = await (this._pool || pool).query('SELECT id, supervisor_id, role_level, status FROM people');
+    const ins = (personId, viewerId) =>
+      (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [personId, viewerId]);
     for (const p of allPeople) {
-      await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, p.id]);
+      await ins(p.id, p.id); // self
+      // see-down: every ancestor may see p
       let currentSup = p.supervisor_id;
       const visited = new Set();
       while (currentSup && !visited.has(currentSup)) {
         visited.add(currentSup);
-        await (this._pool || pool).query('INSERT INTO report_visibility (person_id, viewer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [p.id, currentSup]);
+        await ins(p.id, currentSup);
         const sup = allPeople.find(x => x.id === currentSup);
         currentSup = sup ? sup.supervisor_id : null;
+      }
+      // same-team peers: workers under the same supervisor see each other. We add the
+      // "peer may see p" edge here; the reverse edge is added during the peer's own pass.
+      if (p.supervisor_id && (p.role_level || 1) <= 2 && p.status === 'active') {
+        for (const peer of allPeople) {
+          if (peer.id !== p.id && peer.supervisor_id === p.supervisor_id && (peer.role_level || 1) <= 2 && peer.status === 'active') {
+            await ins(p.id, peer.id);
+          }
+        }
       }
     }
   },
@@ -406,6 +442,18 @@ const reports = {
       sql += ` AND company_id = $${paramIdx++}`;
       params.push(filters.company_id);
     }
+    if (filters.project_id) {
+      sql += ` AND project_id = $${paramIdx++}`;
+      params.push(filters.project_id);
+    }
+    if (filters.from) {
+      sql += ` AND created_at >= $${paramIdx++}`;
+      params.push(filters.from);
+    }
+    if (filters.to) {
+      sql += ` AND created_at <= $${paramIdx++}`;
+      params.push(filters.to);
+    }
 
     sql += ' ORDER BY created_at DESC';
 
@@ -422,6 +470,25 @@ const reports = {
       photos: JSON.parse(r.photos || '[]'),
       messages_addressed: JSON.parse(r.messages_addressed || '[]'),
     }));
+  },
+
+  // Lightweight archive index — summary columns only (NO SELECT * / JSON parse), same
+  // scoping as getAll (viewer_id = the see-down wall + company + optional project_id).
+  async getSummaries(filters = {}) {
+    let sql = `SELECT id, person_id, person_name, role_title, trade, project_id, status, created_at,
+               substring(transcript_raw from 1 for 120) AS preview FROM reports WHERE 1=1`;
+    const params = [];
+    let paramIdx = 1;
+    if (filters.viewer_id) {
+      sql += ` AND person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
+      params.push(filters.viewer_id);
+    }
+    if (filters.company_id) { sql += ` AND company_id = $${paramIdx++}`; params.push(filters.company_id); }
+    if (filters.project_id) { sql += ` AND project_id = $${paramIdx++}`; params.push(filters.project_id); }
+    sql += ' ORDER BY created_at DESC';
+    if (filters.limit) { sql += ` LIMIT $${paramIdx++}`; params.push(filters.limit); }
+    const { rows } = await (this._pool || pool).query(sql, params);
+    return rows;
   },
 
   async getById(id) {
@@ -477,30 +544,50 @@ const reports = {
     return { success: true, id };
   },
 
-  // Full-text search across all reports
+  // Full-text search across all reports.
+  // Primary path uses the maintained search_vector GIN index (idx_reports_search) via
+  // plainto_tsquery, which is crash-safe on punctuation/hyphens — unlike raw to_tsquery
+  // (see the 2026-06-03 Hermes FTS postmortem). Falls back to ILIKE substring match only
+  // when FTS returns nothing (partial words / instrument tags the lexer splits apart).
   async search(query, viewerId, companyId) {
-    // Use ILIKE fallback instead of FTS5 MATCH
-    const searchPattern = `%${query}%`;
-    let sql = `
+    // Shared visibility + company scope; appends to params, returns the SQL fragment.
+    const scope = (params, startIdx) => {
+      let clause = '';
+      let idx = startIdx;
+      if (viewerId) {
+        clause += ` AND r.person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${idx++})`;
+        params.push(viewerId);
+      }
+      if (companyId) {
+        clause += ` AND r.company_id = $${idx++}`;
+        params.push(companyId);
+      }
+      return clause;
+    };
+
+    // Primary: full-text search (indexed, ranked).
+    const ftsParams = [query];
+    let ftsSql = `
+      SELECT r.id, r.person_name, r.role_title, r.created_at, r.trade,
+        substring(r.transcript_raw from 1 for 200) as preview,
+        ts_rank(r.search_vector, plainto_tsquery('english', $1)) as rank
+      FROM reports r
+      WHERE r.search_vector @@ plainto_tsquery('english', $1)`;
+    ftsSql += scope(ftsParams, 2);
+    ftsSql += ' ORDER BY rank DESC, r.created_at DESC LIMIT 50';
+    const ftsRes = await (this._pool || pool).query(ftsSql, ftsParams);
+    if (ftsRes.rows.length > 0) return ftsRes.rows;
+
+    // Fallback: ILIKE substring (only when FTS found nothing).
+    const likeParams = [`%${query}%`];
+    let likeSql = `
       SELECT r.id, r.person_name, r.role_title, r.created_at, r.trade,
         substring(r.transcript_raw from 1 for 200) as preview
       FROM reports r
-      WHERE (r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1 OR r.markdown_verbatim ILIKE $1)
-    `;
-    const params = [searchPattern];
-    let paramIdx = 2;
-
-    if (viewerId) {
-      sql += ` AND r.person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
-      params.push(viewerId);
-    }
-    if (companyId) {
-      sql += ` AND r.company_id = $${paramIdx++}`;
-      params.push(companyId);
-    }
-
-    sql += ' ORDER BY r.created_at DESC LIMIT 50';
-    const { rows } = await (this._pool || pool).query(sql, params);
+      WHERE (r.transcript_raw ILIKE $1 OR r.markdown_structured ILIKE $1 OR r.markdown_verbatim ILIKE $1)`;
+    likeSql += scope(likeParams, 2);
+    likeSql += ' ORDER BY r.created_at DESC LIMIT 50';
+    const { rows } = await (this._pool || pool).query(likeSql, likeParams);
     return rows;
   },
 };
@@ -767,15 +854,24 @@ const ppeRequests = {
 // SAFETY OBSERVATIONS
 // ============================================
 const safetyObservations = {
+  // Idempotent column ensure (company_id for tenant isolation; form_data to preserve the
+  // full rich observation card verbatim). Safe to call repeatedly.
+  async ensureSchema() {
+    const db = (this._pool || pool);
+    await db.query("ALTER TABLE safety_observations ADD COLUMN IF NOT EXISTS company_id TEXT");
+    await db.query("ALTER TABLE safety_observations ADD COLUMN IF NOT EXISTS form_data TEXT");
+  },
+
   async create(data) {
-    const id = 'safety_' + Date.now();
+    const id = data.id || ('safety_' + Date.now());
     await (this._pool || pool).query(`
-      INSERT INTO safety_observations (id, person_id, person_name, type, severity,
-        description, location, photo, assigned_to)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [id, data.person_id, data.person_name || '', data.type || 'observation',
-      data.severity || 'low', data.description, data.location || null,
-      data.photo || null, data.assigned_to || null]);
+      INSERT INTO safety_observations (id, person_id, person_name, company_id, type, severity,
+        description, location, photo, assigned_to, form_data, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE($12, NOW()))
+    `, [id, data.person_id, data.person_name || '', data.company_id || null,
+      data.type || 'observation', data.severity || 'low', data.description || null,
+      data.location || null, data.photo || null, data.assigned_to || null,
+      data.form_data || null, data.created_at || null]);
     return { success: true, id };
   },
 
@@ -785,6 +881,12 @@ const safetyObservations = {
     let paramIdx = 1;
     if (filters.status) { sql += ` AND status = $${paramIdx++}`; params.push(filters.status); }
     if (filters.type) { sql += ` AND type = $${paramIdx++}`; params.push(filters.type); }
+    // Tenant isolation + see-down visibility (mirrors reports). Only set by the route.
+    if (filters.company_id) { sql += ` AND company_id = $${paramIdx++}`; params.push(filters.company_id); }
+    if (filters.viewer_id) {
+      sql += ` AND person_id IN (SELECT person_id FROM report_visibility WHERE viewer_id = $${paramIdx++})`;
+      params.push(filters.viewer_id);
+    }
     sql += ' ORDER BY created_at DESC';
     const { rows } = await (this._pool || pool).query(sql, params);
     return rows;
@@ -1073,17 +1175,20 @@ const punchList = {
     return rows;
   },
 
-  async getForPerson(personId) {
+  async getForPerson(personId, companyId) {
+    const params = [personId];
+    let companyClause = '';
+    if (companyId) { params.push(companyId); companyClause = ` AND p.company_id = $${params.length}`; }
     const { rows } = await (this._pool || pool).query(`
       SELECT p.*, creator.name as created_by_name, assignee.name as assigned_to_name
       FROM punch_items p
       LEFT JOIN people creator ON creator.id = p.created_by
       LEFT JOIN people assignee ON assignee.id = p.assigned_to
-      WHERE p.created_by = $1 OR p.assigned_to = $1
+      WHERE (p.created_by = $1 OR p.assigned_to = $1)${companyClause}
       ORDER BY CASE p.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'ready_recheck' THEN 2 WHEN 'closed' THEN 3 END,
       CASE p.priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 WHEN 'low' THEN 3 END,
       p.created_at DESC
-    `, [personId]);
+    `, params);
     return rows;
   },
 

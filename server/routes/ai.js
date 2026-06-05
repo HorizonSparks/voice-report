@@ -26,7 +26,9 @@ function resolvePersonId(req) {
   const clientId = req.body && req.body.person_id || req.query && req.query.person_id;
   const sessionId = req.auth && req.auth.person_id;
   if (!clientId || clientId === sessionId) return sessionId;
-  if (req.auth && (req.auth.is_admin || req.auth.role_level >= 3 || req.auth.sparks_role)) return clientId;
+  // Loading ANOTHER person's report/worker context (their trade, supervisor, project, certs) can
+  // cross a tenant — restrict to Sparks staff. role>=5/role>=3 customers use their own session id.
+  if (req.auth && (req.auth.sparks_role === 'admin' || req.auth.sparks_role === 'support')) return clientId;
   return sessionId;
 }
 const PORT = process.env.PORT || 3000;
