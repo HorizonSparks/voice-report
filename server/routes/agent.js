@@ -16,6 +16,7 @@ const { agentToolCallsTotal, agentSessionsTotal, agentToolLoopsExhausted } = req
 const { captureError } = require('../services/errorTracking');
 const { agentLogger } = require('../services/logger');
 const { recallFromBridge, formatBridgeMemory } = require('../services/hermesBridge');
+const { buildExecutiveBrief } = require('../services/ai/executiveBrief');
 const router = Router();
 const ROOT = path.join(__dirname, '../..');
 // ---- AGENT RATE LIMITING & COST GUARD ----
@@ -2342,6 +2343,10 @@ router.post('/chat', requireAuth, async (req, res) => {
       );
       if (person) { userName = person.name?.split(' ')[0] || 'there'; userRole = person.role_title || ''; userTrade = person.trade || ''; }
     } catch {}
+    // Executive altitude overlay (CEO >=6 / PM ===5 / Superintendent ===4). Additive persona only —
+    // grants NO data access; the walls below + canCrossProject/accessibleProjectIds still bind. Empty
+    // for field roles (<=3), so their RD2 persona is unchanged. See services/ai/executiveBrief.js.
+    const executiveBrief = buildExecutiveBrief(actor?.role_level, { userName });
     const systemPrompt = `You are RD2 — Relation Data Intelligence — the AI brain of Horizon Sparks.
 You are talking to ${userName}${userRole ? ` (${userRole})` : ''}${userTrade ? `, ${userTrade} trade` : ''}.
 You have ${AGENT_TOOLS.length} TOOLS. ALWAYS use tools — never guess about data.
@@ -2361,6 +2366,7 @@ These bind every CUSTOMER user; only Horizon Sparks staff (admin/support) may op
   surface a private message to anyone else, peers AND supervisors included.
 If a user asks for something across a wall, do NOT invent or leak it — explain the rule plainly
 (e.g. "you can see your crew and everyone below you, but not above you").
+${executiveBrief}
 YOU ARE RD2 — RELATION DATA INTELLIGENCE:
 You don't just answer questions — you TRACE RELATIONSHIPS across both platforms.
 When someone asks about ANYTHING, think about what it CONNECTS to:
