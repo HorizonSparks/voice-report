@@ -903,6 +903,13 @@ async function executeTool(toolName, toolInput, authContext = {}) {
   // Sparks staff (platform admin OR support) may use cross-customer ops tools and see
   // LoopFolders data. Customers (sparks_role null) never can.
   const _isSparksStaff = _isAdmin || authContext.sparks_role === 'support';
+  // Per-company DB routing: company-OPERATIONAL queries go through the ACTOR's company pool
+  // (authContext.db = req.db) so that once data moves to per-company databases the agent reads the
+  // right one. For a customer (non-Sparks) this is ALWAYS their own company. PLATFORM-table queries
+  // (companies, plans, subscriptions, sessions...) intentionally keep using the bare shared `DB.db`.
+  // NOTE: Sparks cross-company tooling that resolves OTHER companies still reads the shared DB for now
+  // (separate follow-up) — that affects only Horizon Sparks staff views, never customer isolation.
+  const _actorDb = (authContext.db || DB).db;
   // Fail closed: the unscopable LoopFolders/extraction ops tools are staff-only.
   if (CROSS_CUSTOMER_OPS_TOOLS.has(toolName) && !_isSparksStaff) {
     return 'That cross-platform LoopFolders/extraction view is restricted to Horizon Sparks staff. Per-customer LoopFolders access will return once project-level tenant scoping ships.';
@@ -923,7 +930,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           params.push(_visibleIds); sql += ` AND p.id = ANY($${params.length})`;
         }
         sql += ` ORDER BY p.role_level DESC LIMIT 5`;
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         return rows.length > 0 ? JSON.stringify(rows) : `No person found matching "${toolInput.name}"`;
       }
       case 'lookup_company': {
@@ -941,8 +948,8 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         if (rows.length === 0) return `No company found matching "${toolInput.name}"`;
         // Also get products and trades
         for (const co of rows) {
-          const { rows: products } = await DB.db.query("SELECT product, status FROM company_products WHERE company_id = $1", [co.id]);
-          const { rows: trades } = await DB.db.query("SELECT trade, status FROM company_trades WHERE company_id = $1", [co.id]);
+          const { rows: products } = await _actorDb.query("SELECT product, status FROM company_products WHERE company_id = $1", [co.id]);
+          const { rows: trades } = await _actorDb.query("SELECT trade, status FROM company_trades WHERE company_id = $1", [co.id]);
           co.products = products;
           co.trades = trades;
         }
@@ -953,13 +960,13 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         // target another company via the model-supplied company_id.
         const companyId = _isAdmin ? (toolInput.company_id || _companyId) : _companyId;
         if (!companyId) return 'No company context available for analytics.';
-        const { rows: summary } = await DB.db.query(
+        const { rows: summary } = await _actorDb.query(
           `SELECT COUNT(*)::int as total_calls, SUM(estimated_cost_cents)::int as total_cost_cents,
             COUNT(DISTINCT person_id)::int as unique_users
            FROM ai_usage_log WHERE company_id = $1`,
           [companyId]
         );
-        const { rows: topUsers } = await DB.db.query(
+        const { rows: topUsers } = await _actorDb.query(
           `SELECT p.name, SUM(a.estimated_cost_cents)::int as cost, COUNT(*)::int as calls
            FROM ai_usage_log a JOIN people p ON p.id = a.person_id
            WHERE a.company_id = $1 GROUP BY p.name ORDER BY cost DESC LIMIT 5`,
@@ -986,7 +993,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         const recentLimit = Math.min(parseInt(toolInput.limit, 10) || 10, 50);
         params.push(recentLimit);
         sql += ` ORDER BY r.created_at DESC LIMIT $${params.length}`;
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         return rows.length > 0 ? JSON.stringify(rows) : 'No reports found';
       }
       case 'search_knowledge': {
@@ -1150,7 +1157,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           if (!folderId) return false;
           if (_isAdmin) return true;
           if (!_personId) return false;
-          const { rows } = await DB.db.query(
+          const { rows } = await _actorDb.query(
             `SELECT 1 FROM shared_folders f
              WHERE f.id = $1 AND (
                f.created_by = $2
@@ -1164,7 +1171,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         if (toolInput.folder_id) {
           if (!(await canAccessFolder(toolInput.folder_id))) return 'No files in this folder';
           // List files in a shared folder
-          const { rows } = await DB.db.query(
+          const { rows } = await _actorDb.query(
             `SELECT sf.id, sf.name, sf.type, sf.filename, sf.original_name, sf.url, sf.size_bytes, sf.mime_type, p.name as uploaded_by
              FROM shared_files sf LEFT JOIN people p ON p.id = sf.uploaded_by
              WHERE sf.folder_id = $1 ORDER BY sf.created_at DESC`,
@@ -1173,7 +1180,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           return rows.length > 0 ? JSON.stringify(rows) : 'No files in this folder';
         }
         if (toolInput.file_id) {
-          const { rows } = await DB.db.query(
+          const { rows } = await _actorDb.query(
             `SELECT sf.*, p.name as uploaded_by_name, shf.name as folder_name
              FROM shared_files sf LEFT JOIN people p ON p.id = sf.uploaded_by
              LEFT JOIN shared_folders shf ON shf.id = sf.folder_id
@@ -1288,7 +1295,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         const params = [_personId || 'unknown'];
         if (toolInput.search) { params.push(`%${toolInput.search}%`); sql += ` AND content ILIKE $${params.length}`; }
         sql += ` ORDER BY created_at DESC LIMIT ${limit}`;
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         if (rows.length === 0) return 'No previous conversations found with this user.';
         return JSON.stringify({ total: rows.length, messages: rows.reverse().map(r => ({ role: r.role, content: r.content.substring(0, 500), time: r.created_at })) });
       }
@@ -1376,7 +1383,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           rmParams.push(_visibleIds); rmSql += ` AND r.person_id = ANY($${rmParams.length})`;
         }
         rmSql += ` ORDER BY r.created_at DESC LIMIT 10`;
-        const { rows: reportMentions } = await DB.db.query(rmSql, rmParams);
+        const { rows: reportMentions } = await _actorDb.query(rmSql, rmParams);
         result.voice_report.report_mentions = reportMentions;
         // Forms carry no company_id column — scope by the submitter's visibility chain.
         const fmParams = [`%${tag}%`];
@@ -1391,7 +1398,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           fmParams.push(_visibleIds); fmSql += ` AND fs.person_id = ANY($${fmParams.length})`;
         }
         fmSql += ` ORDER BY fs.submitted_at DESC LIMIT 10`;
-        const { rows: formMentions } = await DB.db.query(fmSql, fmParams).catch(() => ({ rows: [] }));
+        const { rows: formMentions } = await _actorDb.query(fmSql, fmParams).catch(() => ({ rows: [] }));
         result.voice_report.form_submissions = formMentions;
         result.summary = `Found ${folders.length} loop folder match(es), ${reportMentions.length} report mention(s), ${formMentions.length} form submission(s) for "${tag}".`;
         return JSON.stringify(result);
@@ -1411,7 +1418,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           pwsParams.push(_visibleIds); pwsSql += ` AND p.id = ANY($${pwsParams.length})`;
         }
         pwsSql += ` LIMIT 1`;
-        const { rows: [person] } = await DB.db.query(pwsSql, pwsParams);
+        const { rows: [person] } = await _actorDb.query(pwsSql, pwsParams);
         if (!person) return `No person found matching "${toolInput.person_name}".`;
         result.person = person;
         // Recent reports — company-scoped for non-admins so a person who changed
@@ -1421,7 +1428,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
            FROM reports WHERE person_id = $1 AND created_at > NOW() - INTERVAL '${days} days'`;
         if (!_isAdmin) { repParams.push(_companyId); repSql += ` AND company_id = $${repParams.length}`; }
         repSql += ` ORDER BY created_at DESC LIMIT 15`;
-        const { rows: reports } = await DB.db.query(repSql, repParams);
+        const { rows: reports } = await _actorDb.query(repSql, repParams);
         result.reports = reports;
         // Active tasks. daily_plan_tasks.company_id exists but is not reliably populated,
         // so we scope via the plan owner's company (daily_plans.created_by -> people),
@@ -1438,7 +1445,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         taskSql += ` WHERE dpt.assigned_to = $1 AND dpt.status != 'completed'`;
         if (!_isAdmin) { taskParams.push(_companyId); taskSql += ` AND plan_owner.company_id = $${taskParams.length}`; }
         taskSql += ` ORDER BY dpt.start_date DESC LIMIT 10`;
-        const { rows: tasks } = await DB.db.query(taskSql, taskParams);
+        const { rows: tasks } = await _actorDb.query(taskSql, taskParams);
         result.tasks = tasks;
         // Recent JSAs — same company-scope guard for transferred people.
         const jsaParams = [person.id];
@@ -1446,7 +1453,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
            FROM jsa_records WHERE person_id = $1 AND NULLIF(date, '')::date > CURRENT_DATE - INTERVAL '${days} days'`;
         if (!_isAdmin) { jsaParams.push(_companyId); jsaSql += ` AND company_id = $${jsaParams.length}`; }
         jsaSql += ` ORDER BY date DESC LIMIT 5`;
-        const { rows: jsas } = await DB.db.query(jsaSql, jsaParams);
+        const { rows: jsas } = await _actorDb.query(jsaSql, jsaParams);
         result.jsas = jsas;
         // Form submissions — form_submissions has NO tenant column (no reliable
         // company_id / FK), so for a person who changed companies this could surface
@@ -1454,7 +1461,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         // company_id (Phase 2), non-admins get no form rows here (fail closed).
         let forms = [];
         if (_isAdmin) {
-          ({ rows: forms } = await DB.db.query(
+          ({ rows: forms } = await _actorDb.query(
             `SELECT fs.id, fs.submitted_at, ft.name as form_name, fl.tag_number, fl.loop_type
              FROM form_submissions fs
              LEFT JOIN form_templates_v2 ft ON ft.id = fs.template_id
@@ -1545,7 +1552,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           const prParams = [entityA.id];
           let prSql = `SELECT COUNT(*)::int as report_count FROM reports WHERE person_id = $1`;
           if (!_isAdmin) { prParams.push(entityB.id); prSql += ` AND company_id = $${prParams.length}`; }
-          const { rows: personReports } = await DB.db.query(prSql, prParams);
+          const { rows: personReports } = await _actorDb.query(prSql, prParams);
           direct_matches.push({ kind: 'voice_report_person_company', report_count: personReports[0]?.report_count || 0 });
         }
         if (entityA?.type === 'company' && entityB?.type === 'instrument') {
@@ -1560,7 +1567,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
              FROM reports
              WHERE person_id = $1 AND (transcript_raw ILIKE $2 OR markdown_structured ILIKE $2)`;
           if (!_isAdmin) { rmParams2.push(_companyId); rmSql2 += ` AND company_id = $${rmParams2.length}`; }
-          const { rows: reportMentions } = await DB.db.query(rmSql2, rmParams2);
+          const { rows: reportMentions } = await _actorDb.query(rmSql2, rmParams2);
           if ((reportMentions[0]?.mention_count || 0) > 0) {
             direct_matches.push({ kind: 'voice_report_report_mentions', mention_count: reportMentions[0].mention_count });
           }
@@ -1889,7 +1896,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           params.push(toolInput.company_id); sql += ` AND j.company_id = $${params.length}`;
         }
         sql += ' ORDER BY j.date DESC LIMIT 15';
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         if (rows.length === 0) return 'No JSA records found for the specified criteria.';
         return JSON.stringify({ total: rows.length, jsa_records: rows });
       }
@@ -1912,10 +1919,10 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           params.push(_visibleIds); sql += ` AND dp.created_by = ANY($${params.length})`;
         }
         sql += ' ORDER BY dp.date DESC LIMIT 10';
-        const { rows: plans } = await DB.db.query(sql, params);
+        const { rows: plans } = await _actorDb.query(sql, params);
         // Get tasks for each plan
         for (const plan of plans) {
-          const { rows: tasks } = await DB.db.query(
+          const { rows: tasks } = await _actorDb.query(
             `SELECT dpt.id, dpt.description, dpt.trade, dpt.status, dpt.location, dpt.start_date, dpt.target_end_date,
               pa.name as assigned_to_name
              FROM daily_plan_tasks dpt LEFT JOIN people pa ON pa.id = dpt.assigned_to
@@ -1944,7 +1951,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         }
         if (toolInput.assigned_to) { params.push('%' + toolInput.assigned_to + '%'); sql += ` AND pa.name ILIKE $${params.length}`; }
         sql += ' ORDER BY pi.created_at DESC LIMIT 20';
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         const summary = { total: rows.length, open: rows.filter(r => r.status === 'open').length, closed: rows.filter(r => r.status !== 'open').length };
         return JSON.stringify({ summary, punch_items: rows });
       }
@@ -1970,7 +1977,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         }
         if (toolInput.trade) { params.push(toolInput.trade); sql += ` AND r.trade = $${params.length}`; }
         sql += ` ORDER BY r.created_at DESC LIMIT ${limit}`;
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         if (rows.length === 0) return `No reports found mentioning "${toolInput.query}" in the last ${days} days.`;
         return JSON.stringify({ total: rows.length, query: toolInput.query, reports: rows });
       }
@@ -2011,7 +2018,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
           sql += ` AND (pf.name ILIKE $${params.length} OR pt.name ILIKE $${params.length})`;
         }
         sql += ` ORDER BY m.created_at DESC LIMIT ${limit}`;
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         if (rows.length === 0) return 'No team messages found.';
         return JSON.stringify({ total: rows.length, messages: rows.reverse() });
       }
@@ -2028,7 +2035,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
         if (toolInput.insight_type) { params.push(toolInput.insight_type); sql += ` AND insight_type = $${params.length}`; }
         if (toolInput.search) { params.push('%' + toolInput.search + '%'); sql += ` AND content ILIKE $${params.length}`; }
         sql += ` ORDER BY created_at DESC LIMIT ${limit}`;
-        const { rows } = await DB.db.query(sql, params);
+        const { rows } = await _actorDb.query(sql, params);
         if (rows.length === 0) return 'No saved insights found.';
         return JSON.stringify({ total: rows.length, insights: rows });
       }
@@ -2046,7 +2053,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
       }
       case 'save_insight': {
         const personId = _personId;
-        await DB.db.query(
+        await _actorDb.query(
           `INSERT INTO agent_insights (person_id, insight_type, content, context) VALUES ($1, $2, $3, $4)`,
           [personId, toolInput.insight_type, toolInput.content, toolInput.context || null]
         );
@@ -2200,7 +2207,7 @@ router.post('/chat', requireAuth, async (req, res) => {
     let visiblePersonIds = [personId];
     if (!isSparks) {
       try {
-        const { rows: vis } = await DB.db.query(
+        const { rows: vis } = await (req.db || DB).db.query(
           'SELECT person_id FROM report_visibility WHERE viewer_id = $1', [personId]
         );
         visiblePersonIds = Array.from(new Set([personId, ...vis.map(v => v.person_id)]));
@@ -2215,7 +2222,7 @@ router.post('/chat', requireAuth, async (req, res) => {
     let accessibleProjectIds = [];
     if (!canCrossProject) {
       try {
-        const { rows: pm } = await DB.db.query(
+        const { rows: pm } = await (req.db || DB).db.query(
           'SELECT project_id FROM project_members WHERE person_id = $1', [personId]
         );
         accessibleProjectIds = pm.map((r) => r.project_id);
@@ -2267,8 +2274,8 @@ router.post('/chat', requireAuth, async (req, res) => {
       agentInflight.delete(flightKey);
       try {
         const sessionId = req.auth?.sessionId || `agent_${Date.now()}`;
-        await DB.db.query('INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)', [personId, sessionId, 'user', trimmedMessage.substring(0, 5000)]);
-        await DB.db.query('INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)', [personId, sessionId, 'assistant', confirmText.substring(0, 5000)]);
+        await (req.db || DB).db.query('INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)', [personId, sessionId, 'user', trimmedMessage.substring(0, 5000)]);
+        await (req.db || DB).db.query('INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)', [personId, sessionId, 'assistant', confirmText.substring(0, 5000)]);
       } catch (e) {}
       return res.json({ response: confirmText, model: 'Direct', usage: { input_tokens: 0, output_tokens: 0 }, tool_calls: 1 });
     }
@@ -2299,11 +2306,11 @@ router.post('/chat', requireAuth, async (req, res) => {
 
       try {
         const sessionId = req.auth?.sessionId || `agent_${Date.now()}`;
-        await DB.db.query(
+        await (req.db || DB).db.query(
           'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
           [personId, sessionId, 'user', message.substring(0, 5000)]
         );
-        await DB.db.query(
+        await (req.db || DB).db.query(
           'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
           [personId, sessionId, 'assistant', directResponse.substring(0, 5000)]
         );
@@ -2314,7 +2321,7 @@ router.post('/chat', requireAuth, async (req, res) => {
     // ---- MEMORY: Load previous conversation context ----
     let memoryContext = '';
     try {
-      const { rows: history } = await DB.db.query(
+      const { rows: history } = await (req.db || DB).db.query(
         `SELECT role, content, created_at FROM ai_conversations
          WHERE person_id = $1 ORDER BY created_at DESC LIMIT 10`,
         [personId]
@@ -2330,7 +2337,7 @@ router.post('/chat', requireAuth, async (req, res) => {
     let userRole = '';
     let userTrade = '';
     try {
-      const { rows: [person] } = await DB.db.query(
+      const { rows: [person] } = await (req.db || DB).db.query(
         'SELECT name, role_title, trade FROM people WHERE id = $1', [personId]
       );
       if (person) { userName = person.name?.split(' ')[0] || 'there'; userRole = person.role_title || ''; userTrade = person.trade || ''; }
@@ -2580,12 +2587,12 @@ ENGAGEMENT RULES:
       // Image-only requests have no text; persist a marker so the conversation
       // history still shows the user turn instead of skipping it.
       const userContent = message ? message.substring(0, 5000) : '[image]';
-      await DB.db.query(
+      await (req.db || DB).db.query(
         'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
         [personId, sessionId, 'user', userContent]
       );
       if (finalText) {
-        await DB.db.query(
+        await (req.db || DB).db.query(
           'INSERT INTO ai_conversations (person_id, session_id, role, content) VALUES ($1, $2, $3, $4)',
           [personId, sessionId, 'assistant', finalText.substring(0, 5000)]
         );
