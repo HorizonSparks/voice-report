@@ -15,6 +15,7 @@ const DB = require('../../database/db');
 const { agentToolCallsTotal, agentSessionsTotal, agentToolLoopsExhausted } = require('../services/metrics');
 const { captureError } = require('../services/errorTracking');
 const { agentLogger } = require('../services/logger');
+const { recallFromBridge, formatBridgeMemory } = require('../services/hermesBridge');
 const router = Router();
 const ROOT = path.join(__dirname, '../..');
 // ---- AGENT RATE LIMITING & COST GUARD ----
@@ -1964,6 +1965,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       if (rows[0]) personId = rows[0].id;
     }
     const knowledge = loadRelevantKnowledge(message || '');
+    const bridgeMemory = formatBridgeMemory(await recallFromBridge(message)); // Hermes Bridge (fail-open)
 
     const trimmedMessage = String(message || '').trim();
 
@@ -2110,6 +2112,7 @@ ${companyName ? `- Company: ${companyName}` : ''}
 ${conversationContext ? `- Recent chat context:\n${conversationContext}` : ''}
 Use this context to give relevant answers. If they are messaging someone, you know who. If they are in a company view, you know which company. Tailor your responses to what they are doing RIGHT NOW.
 ${knowledge ? `\nTRADE KNOWLEDGE:\n${knowledge}` : ''}
+${bridgeMemory}
 P&ID VIEWER KNOWLEDGE — YOU KNOW EVERY BUTTON:
 When users ask about the P&ID viewer, how to do things, or what buttons do, use this:
 
