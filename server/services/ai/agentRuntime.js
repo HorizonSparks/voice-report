@@ -406,6 +406,11 @@ async function runAgent(agent, opts = {}) {
       tracking: {
         requestId: tracking.requestId,
         personId: tracking.personId,
+        // Phase 0a fix: thread companyId through to callClaude so the
+        // analytics_ai_costs billing row gets correct per-tenant attribution.
+        // (callClaude reads tracking.companyId; runAgent was dropping it →
+        //  every agent-runtime LLM call was billed with company_id=null.)
+        companyId: tracking.companyId,
         service: tracking.service || agent.name,
         extra: {
           agent_name: agent.name,

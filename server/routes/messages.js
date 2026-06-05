@@ -33,12 +33,31 @@ async function resolveAdminId(actorPersonId, bodyFromId, reqDb) {
   return rows.length > 0 ? rows[0].id : actorPersonId;
 }
 
+// Is `ancestorId` strictly ABOVE `personId` in the supervisor chain?
+// NOTE: do NOT use report_visibility here — it now also encodes same-team PEER edges, but
+// messaging privacy is pure see-down (a supervisor may read/send a subordinate's messages;
+// peers may not). So we walk supervisor_id upward directly. Excludes self.
+async function isAncestorOf(reqDb, ancestorId, personId) {
+  if (!ancestorId || !personId || ancestorId === personId) return false;
+  const db = reqDb || DB;
+  let cur = (await db.db.query('SELECT supervisor_id FROM people WHERE id = $1', [personId])).rows[0]?.supervisor_id;
+  const seen = new Set();
+  while (cur && !seen.has(cur)) {
+    if (cur === ancestorId) return true;
+    seen.add(cur);
+    cur = (await db.db.query('SELECT supervisor_id FROM people WHERE id = $1', [cur])).rows[0]?.supervisor_id;
+  }
+  return false;
+}
+
 // Legacy messages — require auth, derive person from session
 router.get('/messages/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
-    // Can only read own legacy messages unless admin/supervisor
-    if (actor.person_id !== req.params.person_id && !actor.is_admin && actor.role_level < 3) {
+    // Own inbox, admin, or a supervisor strictly ABOVE this person (ancestor) — NOT a flat
+    // role proxy, and NOT a peer (messaging is private to the two parties + their chain up).
+    if (actor.person_id !== req.params.person_id && !actor.is_sparks
+        && !(await isAncestorOf(req.db, actor.person_id, req.params.person_id))) {
       return res.status(403).json({ error: 'Not authorized' });
     }
     res.json(await (req.db || DB).legacyMessages.getForPerson(req.params.person_id));
@@ -48,8 +67,9 @@ router.get('/messages/:person_id', requireAuth, async (req, res) => {
 router.post('/messages/:person_id', requireAuth, requireSparksEditMode, async (req, res) => {
   try {
     const actor = getActor(req);
-    // Only admin/supervisors can send legacy messages
-    if (!actor.is_admin && actor.role_level < 3) {
+    // A legacy message is a supervisor directive — the sender must be admin or strictly
+    // ABOVE the recipient in the chain (never a peer, never themselves).
+    if (!actor.is_sparks && !(await isAncestorOf(req.db, actor.person_id, req.params.person_id))) {
       return res.status(403).json({ error: 'Not authorized' });
     }
     let msgs = await (req.db || DB).legacyMessages.getForPerson(req.params.person_id);
@@ -69,8 +89,9 @@ router.post('/messages/:person_id', requireAuth, requireSparksEditMode, async (r
 router.put('/messages/:person_id/mark-addressed', requireAuth, requireSparksEditMode, async (req, res) => {
   try {
     const actor = getActor(req);
-    // Only the recipient (person_id), the sender, or supervisor+ can mark messages addressed
-    if (actor.person_id !== req.params.person_id && !actor.is_admin && actor.role_level < 3) {
+    // The recipient (own), admin, or a supervisor strictly above them (ancestor) — not a peer.
+    if (actor.person_id !== req.params.person_id && !actor.is_sparks
+        && !(await isAncestorOf(req.db, actor.person_id, req.params.person_id))) {
       return res.status(403).json({ error: 'Not authorized to mark these messages' });
     }
     let msgs = await (req.db || DB).legacyMessages.getForPerson(req.params.person_id);
@@ -86,7 +107,7 @@ router.get('/v2/contacts/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     // Use actor's own person_id for contacts (ignore URL param for self, allow admin override)
-    const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const targetId = actor.is_sparks ? req.params.person_id : actor.person_id;
     res.json(await (req.db || DB).contacts.getForPerson(targetId));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -94,7 +115,7 @@ router.get('/v2/contacts/:person_id', requireAuth, async (req, res) => {
 router.get('/v2/conversations/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
-    const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const targetId = actor.is_sparks ? req.params.person_id : actor.person_id;
     res.json(await (req.db || DB).contacts.getConversationList(targetId));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -103,7 +124,7 @@ router.get('/v2/messages/:person_id/:contact_id', requireAuth, async (req, res) 
   try {
     const actor = getActor(req);
     // Actor must be one of the parties in the conversation (or admin)
-    if (!actor.is_admin && actor.person_id !== req.params.person_id) {
+    if (!actor.is_sparks && actor.person_id !== req.params.person_id) {
       return res.status(403).json({ error: 'Not authorized to view this conversation' });
     }
     if (!(await (req.db || DB).contacts.canMessage(req.params.person_id, req.params.contact_id))) {
@@ -248,7 +269,7 @@ router.post('/v2/messages/voice', requireAuth, requireSparksEditMode, msgAudioUp
 router.get('/v2/unread/:person_id', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
-    const targetId = actor.is_admin ? req.params.person_id : actor.person_id;
+    const targetId = actor.is_sparks ? req.params.person_id : actor.person_id;
     res.json({ count: (await (req.db || DB).messages.getUnread(targetId)).length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -262,7 +283,7 @@ router.delete('/v2/messages/:message_id', requireAuth, requireSparksEditMode, as
     if (!message) return res.status(404).json({ error: 'Message not found' });
 
     // Only sender, admin, or supervisor can delete
-    if (message.from_id !== actor.person_id && !actor.is_admin && actor.role_level < 3) {
+    if (message.from_id !== actor.person_id && !actor.is_sparks && actor.role_level < 3) {
       return res.status(403).json({ error: 'Not authorized to delete this message' });
     }
 

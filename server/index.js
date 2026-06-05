@@ -169,6 +169,7 @@ app.use('/api/people', require('./routes/people'));
 app.use('/api', require('./routes/ai'));
 app.use('/api', require('./routes/messages'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/safety-observations', require('./routes/safetyObservations'));
 app.use('/api/forms', require('./routes/formsV2'));  // Must be before old forms route — has /templates, /submissions
 app.use('/api/forms', require('./routes/forms'));    // Old forms route has /:id catch-all
 app.use('/api/daily-plans', require('./routes/dailyPlans'));

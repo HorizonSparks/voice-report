@@ -1072,7 +1072,7 @@ router.get('/files/:filename', requireAuth, async (req, res) => {
   const isSupportStaff = !!(req.auth && (
     req.auth.sparks_role === 'support'
     || req.auth.sparks_role === 'admin'
-    || req.auth.is_admin === true
+    // NOTE: req.auth.is_admin is role_level>=5 (includes customers) — NOT a support-staff signal.
   ));
   if (!isSupportStaff) {
     const isIntegration = !!(req.auth && req.auth.isIntegration);

@@ -57,7 +57,7 @@ export default function SafetyObservationForm({ user, onBack, onSaved }) {
         created_at: new Date().toISOString(),
       };
 
-      const res = await fetch('/api/forms', {
+      const res = await fetch('/api/safety-observations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reportData),
