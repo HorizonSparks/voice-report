@@ -10,6 +10,36 @@ const pdfParse = require('pdf-parse');
 
 const router = Router();
 
+// Fail-CLOSED tenant check (Codex review): a CUSTOMER (non-Sparks) actor may only touch a person in
+// their OWN company, and BOTH company ids MUST be present. The old `req.companyId && target.company_id
+// && ...` form skipped the check whenever either id was null (e.g. an un-migrated row), opening a
+// cross-tenant read/write. Sparks admin/support keep their legitimate cross-tenant reach.
+// Returns true when the actor must be DENIED (caller responds 404 to avoid leaking existence).
+function blockedCrossCompany(req, target) {
+  const isSparks = req.auth && (req.auth.sparks_role === 'admin' || req.auth.sparks_role === 'support');
+  if (isSparks) return false;
+  return !req.companyId || !target || !target.company_id || String(target.company_id) !== String(req.companyId);
+}
+
+// Pure write-wall for PUT /api/people/:id — the SINGLE source of truth for which fields an actor may
+// set, applied BEFORE people.update (Codex round 3). Sparks staff (admin/support) are unrestricted.
+// A CUSTOMER may NEVER set cross-tenant fields (sparks_role, company_id) on anyone, and may NEVER
+// elevate THEMSELVES — role_level / is_admin / status are stripped on self-edits. Critically this uses
+// sparks_role, NOT the POLLUTED req.auth.is_admin (which is true for any role>=5 customer and would
+// otherwise let a PM self-promote to CEO through this legacy route).
+function stripPrivilegedFields(reqAuth, targetId, body) {
+  const isSparks = reqAuth && (reqAuth.sparks_role === 'admin' || reqAuth.sparks_role === 'support');
+  if (isSparks) return body;
+  delete body.sparks_role;
+  delete body.company_id;
+  if (targetId === reqAuth.person_id) {
+    delete body.role_level;
+    delete body.is_admin;
+    delete body.status;
+  }
+  return body;
+}
+
 // Photo upload
 const photoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -100,8 +130,8 @@ router.get('/:id', requireAuth, async (req, res) => {
   try {
     const p = await (req.db || DB).people.getById(req.params.id);
     if (!p) return res.status(404).json({ error: 'Person not found' });
-    // Company isolation first
-    if (req.companyId && p.company_id && p.company_id !== req.companyId) {
+    // Company isolation first (fail-closed for customers)
+    if (blockedCrossCompany(req, p)) {
       return res.status(404).json({ error: 'Person not found' });
     }
     const actor = getActor(req);
@@ -129,22 +159,15 @@ router.post('/', requireAuth, requireSparksEditMode, requireRoleLevel(3), async 
 // SECURITY: Strip privileged fields for self-edits (prevent self-promotion)
 router.put('/:id', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('id', 3), async (req, res) => {
   try {
-    // Company isolation — verify target person is in the same company
+    // Company isolation — verify target person is in the same company (fail-closed for customers)
     const target = await (req.db || DB).people.getById(req.params.id);
     if (!target) return res.status(404).json({ error: 'Person not found' });
-    if (req.companyId && target.company_id && target.company_id !== req.companyId) {
+    if (blockedCrossCompany(req, target)) {
       return res.status(404).json({ error: 'Person not found' });
     }
-    // SECURITY: Block self-promotion — strip privileged fields for self-edits
-    const isSelfEdit = req.params.id === req.auth.person_id;
-    const isAdmin = req.auth.is_admin || req.auth.sparks_role === 'admin';
-    if (isSelfEdit && !isAdmin) {
-      delete req.body.role_level;
-      delete req.body.is_admin;
-      delete req.body.sparks_role;
-      delete req.body.status;
-      delete req.body.company_id;
-    }
+    // SECURITY: apply the single-source-of-truth write-wall (cross-tenant fields blocked for customers;
+    // no self-elevation via the polluted is_admin). See stripPrivilegedFields above.
+    stripPrivilegedFields(req.auth, req.params.id, req.body);
     const result = await (req.db || DB).people.update(req.params.id, req.body);
     if (!result) return res.status(404).json({ error: 'Person not found' });
     res.json(result);
@@ -154,10 +177,10 @@ router.put('/:id', requireAuth, requireSparksEditMode, requireSelfOrRoleLevel('i
 // Delete person — admin only, company-scoped
 router.delete('/:id', requireAuth, requireSparksEditMode, requireRoleLevel(4), async (req, res) => {
   try {
-    // Company isolation — verify target person exists and is in the same company
+    // Company isolation — verify target person exists and is in the same company (fail-closed for customers)
     const target = await (req.db || DB).people.getById(req.params.id);
     if (!target) return res.status(404).json({ error: 'Person not found' });
-    if (req.companyId && target.company_id !== req.companyId) {
+    if (blockedCrossCompany(req, target)) {
       return res.status(404).json({ error: 'Person not found' });
     }
     res.json(await (req.db || DB).people.delete(req.params.id));
@@ -329,3 +352,6 @@ router.get('/:person_id/knowledge/file/:filename', requireAuth, requireSelfOrRol
 });
 
 module.exports = router;
+// Exposed for the isolation proof (database/ceo-control-center-proof.js) — pure tenant predicates.
+module.exports.blockedCrossCompany = blockedCrossCompany;
+module.exports.stripPrivilegedFields = stripPrivilegedFields;

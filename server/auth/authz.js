@@ -31,6 +31,9 @@ function getActor(req) {
     sparks_role: sparksRole,
     role_level: req.auth.role_level,
     trade: req.auth.trade,
+    // The actor's OWN company. Required for any within-tenant guard (e.g. the CEO Control Center's
+    // cross-company wall). Without it, company-scoped guards fail OPEN — never omit it.
+    company_id: req.auth.company_id || null,
   };
 }
 
