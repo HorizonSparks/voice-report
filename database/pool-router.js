@@ -22,17 +22,33 @@ const PG_BASE = {
   password: process.env.PG_PASSWORD,
 };
 
-// Company → database name mapping
-// Companies NOT listed here use the shared pool (horizon)
-const COMPANY_DB_MAP = {
-  // In production, each company has its own DB:
-  // 'company_pacific_mechanical': 'horizon_pacific_mechanical',
-  // 'company_summit_electrical': 'horizon_summit_electrical',
-  // 'company_horizon_sparks': 'horizon_sparks',
-  // In dev, all companies use the shared 'horizon' DB (leave this map empty)
-};
+// Company → database name mapping.
+// Loaded DYNAMICALLY from the voicereport.company_databases registry (in the shared DB) via
+// refreshCompanyDbMap(). Companies NOT in the map use the shared pool (horizon).
+// An EMPTY map = every company uses the shared DB = today's behavior (so this is safe to ship before
+// any company is provisioned). provisionCompanyDb() inserts a row + calls refresh, so a newly
+// provisioned company routes to its own DB immediately, no restart.
+let COMPANY_DB_MAP = {};
 
 const SHARED_DB = process.env.PG_DATABASE;
+
+/**
+ * Reload the company→DB map from the registry. Safe to call anytime; on any error (e.g. the registry
+ * table doesn't exist yet) it leaves the map empty → everyone uses the shared DB (current behavior).
+ * @returns {Promise<number>} number of companies with their own DB
+ */
+async function refreshCompanyDbMap() {
+  try {
+    const shared = getSharedPool();
+    const { rows } = await shared.query('SELECT company_id, db_name FROM voicereport.company_databases');
+    const next = {};
+    for (const r of rows) next[r.company_id] = r.db_name;
+    COMPANY_DB_MAP = next;
+    return rows.length;
+  } catch (e) {
+    return Object.keys(COMPANY_DB_MAP).length; // registry missing/unreadable → keep current map
+  }
+}
 
 // Pool cache — lazily created
 const pools = new Map();
@@ -119,5 +135,6 @@ module.exports = {
   hasCompanyDb,
   getAllCompanyDbs,
   closeAll,
-  COMPANY_DB_MAP,
+  refreshCompanyDbMap,
+  getCompanyDbMap: () => ({ ...COMPANY_DB_MAP }),
 };

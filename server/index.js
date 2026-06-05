@@ -284,6 +284,14 @@ setTimeout(async () => {
 }, 30 * 1000);
 
 
+// Load the per-company DB registry once at startup (so each company routes to its own database).
+// Safe no-op if the registry table doesn't exist yet → everyone uses the shared DB.
+try {
+  require('../database/pool-router').refreshCompanyDbMap()
+    .then((n) => console.log(`  Company DBs:  ${n} company database(s) registered`))
+    .catch(() => {});
+} catch (_e) { /* pool-router optional */ }
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('===========================================');
