@@ -224,8 +224,31 @@ const people = {
     return this.getById(p.id);
   },
 
+  // Mirror the minimal LOGIN IDENTITY of a person into the shared pool so they can authenticate even
+  // when their canonical record lives in a per-company DB (login/getByPin reads the shared table).
+  // No-op on the shared pool. Identity-only columns (no FK fields) → no FK-ordering pitfalls.
+  async _mirrorIdentityToShared(id) {
+    if (!this._pool || this._pool === pool) return; // already on shared — nothing to mirror
+    const { rows } = await this._pool.query('SELECT * FROM people WHERE id = $1', [id]);
+    const p = rows[0];
+    if (!p) return;
+    await pool.query(`
+      INSERT INTO people (id, name, pin, role_title, role_level, trade, status, project_id, photo, is_admin, company_id, sparks_role)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, pin=EXCLUDED.pin, role_title=EXCLUDED.role_title,
+        role_level=EXCLUDED.role_level, trade=EXCLUDED.trade, status=EXCLUDED.status, project_id=EXCLUDED.project_id,
+        photo=EXCLUDED.photo, is_admin=EXCLUDED.is_admin, company_id=EXCLUDED.company_id, sparks_role=EXCLUDED.sparks_role`,
+      [p.id, p.name, p.pin, p.role_title, p.role_level, p.trade, p.status, p.project_id, p.photo, p.is_admin, p.company_id, p.sparks_role]);
+  },
+
   async create(data) {
     const id = data.id || 'person_' + Date.now();
+    // Identity guard: a PIN must be globally unique — login matches by PIN across all companies (shared table).
+    if (data.pin) {
+      const { rows: clash } = await pool.query(
+        "SELECT id FROM people WHERE pin = $1 AND status = 'active' AND id <> $2", [data.pin, id]);
+      if (clash.length) throw new Error('That PIN is already in use by another active user — choose a different one.');
+    }
     const pc = data.personal_context || {};
     // Get trade from template
     let trade = data.trade || null;
@@ -259,6 +282,9 @@ const people = {
 
     // Rebuild visibility for this person
     await this._rebuildVisibility(id);
+    // Mirror the login identity to the shared table so this person can sign in even when their full
+    // record lives in a per-company database.
+    await this._mirrorIdentityToShared(id);
     return { success: true, id };
   },
 
@@ -296,6 +322,13 @@ const people = {
       if (tmpl) updates.trade = tmpl.trade;
     }
 
+    // Identity guard: a changed PIN must stay globally unique (login matches by PIN in the shared table).
+    if (updates.pin) {
+      const { rows: clash } = await pool.query(
+        "SELECT id FROM people WHERE pin = $1 AND status = 'active' AND id <> $2", [updates.pin, id]);
+      if (clash.length) throw new Error('That PIN is already in use by another active user — choose a different one.');
+    }
+
     if (Object.keys(updates).length > 0) {
       const keys = Object.keys(updates);
       let paramIdx = 1;
@@ -309,7 +342,8 @@ const people = {
     if (data.supervisor_id !== undefined || data.role_level !== undefined || data.status !== undefined) {
       await this._rebuildAllVisibility();
     }
-
+    // Keep the shared login identity in sync (pin/role/status/name/company changes).
+    await this._mirrorIdentityToShared(id);
     return { success: true };
   },
 
@@ -318,6 +352,11 @@ const people = {
       // Hard delete — only platform superadmin can do this
       await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1 OR viewer_id = $1', [id]);
       await (this._pool || pool).query('DELETE FROM people WHERE id = $1', [id]);
+      // Remove the shared login identity too (frees the PIN; they can no longer authenticate).
+      if (this._pool && this._pool !== pool) {
+        await pool.query('DELETE FROM report_visibility WHERE person_id = $1 OR viewer_id = $1', [id]);
+        await pool.query('DELETE FROM people WHERE id = $1', [id]);
+      }
       return { success: true, type: 'hard_delete' };
     }
     // Soft delete — deactivate instead. Reports stay in the system.
@@ -327,6 +366,9 @@ const people = {
     // stale peer/chain edges). Reports remain in the system and re-appear on reactivation
     // (update(status) triggers _rebuildAllVisibility).
     await (this._pool || pool).query('DELETE FROM report_visibility WHERE person_id = $1 OR viewer_id = $1', [id]);
+    // Propagate the deactivation to the shared login identity so a deactivated person cannot sign in
+    // (getByPin filters status='active').
+    await this._mirrorIdentityToShared(id);
     return { success: true, type: 'deactivated' };
   },
 
