@@ -34,6 +34,7 @@ import ProjectsView from './views/ProjectsView.jsx';
 import InstallBanner from './components/InstallBanner.jsx';
 import PinModal from './components/PinModal.jsx';
 import SparksCommandCenter from './views/SparksCommandCenter.jsx';
+import CEOControlCenter from './views/CEOControlCenter.jsx';
 import SupportChat from './components/SupportChat.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
 import { apiPost, ApiError } from './lib/apiClient.js';
@@ -770,6 +771,11 @@ export default function App() {
         {/* Menu links */}
         <Divider />
         <List sx={{ px: 1 }}>
+          {(user.role_level || 0) >= 6 && !user.sparks_role && (
+            <ListItemButton onClick={() => { navigateTo('ceo'); setMenuOpen(false); }}>
+              <ListItemText primary={'🎛️ Control Center'} slotProps={{ primary: { sx: { fontWeight: 700, color: 'primary.main' } } }} />
+            </ListItemButton>
+          )}
           {currentWorld !== 'control-center' && user.is_admin && (
             <ListItemButton onClick={() => navigateTo('templates')}>
               <ListItemText primary={'📝 ' + t('nav.templates')} />
@@ -876,6 +882,7 @@ export default function App() {
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
         {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} agentOpen={globalAgentOpen} onSupportConvOpen={(convId) => { setSelectedSupportConvId(convId); setSupportChatOpen(true); }} />}
+        {view === 'ceo' && (user.role_level || 0) >= 6 && !user.sparks_role && <CEOControlCenter user={user} goBack={goBack} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>
