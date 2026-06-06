@@ -446,6 +446,18 @@ export default function LoginView({ onLogin }) {
           <Typography variant="h6" sx={{ textAlign: 'center', mb: 0.5 }}>{t('login.title')}</Typography>
           <Typography sx={{ textAlign: 'center', color: 'text.secondary', mb: 2, fontSize: 14 }}>{t('login.enterPin')}</Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {/* Primary login: Sign in with Horizon Sparks (Keycloak SSO — username + password).
+              Full-page navigation, since it's an OAuth redirect to Keycloak and back. */}
+          <Button fullWidth variant="contained" size="large"
+            onClick={() => { window.location.href = '/auth/sso/login?return_to=/'; }}
+            sx={{ mb: 2, py: 1.5, fontSize: 16, fontWeight: 700, bgcolor: ORANGE, color: '#fff', '&:hover': { bgcolor: '#d07f2a' } }}>
+            {t('login.ssoButton', 'Sign in with Horizon Sparks')}
+          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'grey.300' }} />
+            <Typography sx={{ px: 2, color: 'text.secondary', fontSize: 13 }}>{t('login.or', 'or')}</Typography>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: 'grey.300' }} />
+          </Box>
           {faceIdAvailable && (
             <Button fullWidth variant="outlined" color="secondary" onClick={handleFaceId} disabled={loading}
               sx={{ mb: 2, py: 1.5, borderRadius: 3, display: 'flex', gap: 1 }}>
