@@ -193,6 +193,39 @@ app.use('/api/support', require('./routes/support'));
 app.use('/api/ppe', require('./routes/ppe'));
 app.use('/api/push', require('./routes/push'));
 
+// Isolation routing health — answered BY the running server, so it reflects the REAL in-process
+// company→DB map (a throwaway `node` process always shows empty — the artifact that misled the
+// 2026-06-06 diagnosis). Polled by the isolation-canary every few minutes. Returns 503 when
+// isolation is ON but the loaded map does NOT cover every registered company (silent fallback to
+// shared), the registry is unreadable, or the degraded flag is set. Booleans only — no company
+// counts — safe to answer unauthenticated. MUST stay before the '/api' 404 catch-all below.
+app.get('/api/health/isolation', async (req, res) => {
+  try {
+    const poolRouter = require('../database/pool-router');
+    const useCompanyDbs = process.env.USE_COMPANY_DBS === 'true';
+    const mapSize = Object.keys(poolRouter.getCompanyDbMap()).length;
+    let registeredCount = -1; // -1 = registry unreadable (a real failure, NOT a legit empty)
+    try {
+      const r = await poolRouter.getSharedPool()
+        .query('SELECT COUNT(*)::int AS c FROM voicereport.company_databases');
+      registeredCount = r.rows[0].c;
+    } catch (e) {
+      if (e && e.code === '42P01') registeredCount = 0; // registry table absent → legit 0
+    }
+    const degraded = global.__ISOLATION_DEGRADED__ === true;
+    const ok = !useCompanyDbs || (registeredCount >= 0 && mapSize >= registeredCount && !degraded);
+    if (!ok) {
+      console.warn(`[health/isolation] NOT OK — mapSize=${mapSize} registered=${registeredCount} degraded=${degraded}`);
+    }
+    return res.status(ok ? 200 : 503).json({ ok, degraded, useCompanyDbs });
+  } catch (e) {
+    // Fail closed + keep the boolean contract consistent: if the probe itself can't run, we
+    // cannot confirm isolation health, so report not-ok (the canary will alarm).
+    console.error('[health/isolation] probe error:', e && e.message);
+    return res.status(503).json({ ok: false, degraded: true, useCompanyDbs: process.env.USE_COMPANY_DBS === 'true' });
+  }
+});
+
 // Grafana reverse proxy — authenticated, Sparks role required, streamed responses
 const GRAFANA_INTERNAL = process.env.GRAFANA_URL || 'http://grafana:3000';
 const { Readable } = require('stream');
@@ -340,39 +373,6 @@ setInterval(async () => {
     __companyDbReassertInFlight = false;
   }
 }, 5 * 60 * 1000);
-
-// Isolation routing health — answered BY the running server, so it reflects the REAL
-// in-process company→DB map (a throwaway `node` process always shows an empty map, which is
-// what fooled an earlier diagnosis on 2026-06-06). The isolation canary polls this every few
-// minutes. Returns 503 when isolation is ON but the loaded map does NOT cover every registered
-// company (silent fallback-to-shared), the registry is unreadable, or the degraded flag is set.
-// Exposes booleans only — no company counts — so it's safe to answer unauthenticated.
-app.get('/api/health/isolation', async (req, res) => {
-  try {
-    const poolRouter = require('../database/pool-router');
-    const useCompanyDbs = process.env.USE_COMPANY_DBS === 'true';
-    const mapSize = Object.keys(poolRouter.getCompanyDbMap()).length;
-    let registeredCount = -1; // -1 = registry unreadable (a real failure, NOT a legit empty)
-    try {
-      const r = await poolRouter.getSharedPool()
-        .query('SELECT COUNT(*)::int AS c FROM voicereport.company_databases');
-      registeredCount = r.rows[0].c;
-    } catch (e) {
-      if (e && e.code === '42P01') registeredCount = 0; // registry table absent → legit 0
-    }
-    const degraded = global.__ISOLATION_DEGRADED__ === true;
-    const ok = !useCompanyDbs || (registeredCount >= 0 && mapSize >= registeredCount && !degraded);
-    if (!ok) {
-      console.warn(`[health/isolation] NOT OK — mapSize=${mapSize} registered=${registeredCount} degraded=${degraded}`);
-    }
-    return res.status(ok ? 200 : 503).json({ ok, degraded, useCompanyDbs });
-  } catch (e) {
-    // Fail closed + keep the boolean contract consistent: if the probe itself can't run, we
-    // cannot confirm isolation health, so report not-ok (the canary will alarm).
-    console.error('[health/isolation] probe error:', e && e.message);
-    return res.status(503).json({ ok: false, degraded: true, useCompanyDbs: process.env.USE_COMPANY_DBS === 'true' });
-  }
-});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
