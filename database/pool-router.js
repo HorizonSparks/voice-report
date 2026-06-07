@@ -38,16 +38,28 @@ const SHARED_DB = process.env.PG_DATABASE;
  * @returns {Promise<number>} number of companies with their own DB
  */
 async function refreshCompanyDbMap() {
+  const shared = getSharedPool();
+  let rows;
   try {
-    const shared = getSharedPool();
-    const { rows } = await shared.query('SELECT company_id, db_name FROM voicereport.company_databases');
-    const next = {};
-    for (const r of rows) next[r.company_id] = r.db_name;
-    COMPANY_DB_MAP = next;
-    return rows.length;
+    ({ rows } = await shared.query('SELECT company_id, db_name FROM voicereport.company_databases'));
   } catch (e) {
-    return Object.keys(COMPANY_DB_MAP).length; // registry missing/unreadable → keep current map
+    // 42P01 = undefined_table → the registry legitimately doesn't exist yet → an empty
+    // map is the CORRECT state (everyone uses shared until a company is provisioned).
+    if (e && e.code === '42P01') {
+      COMPANY_DB_MAP = {};
+      return 0;
+    }
+    // ANY other error (connection/auth/timeout/wrong-db) is a REAL failure. We must NOT
+    // silently keep an empty/stale map and report success — THROW so the caller can retry
+    // and alarm. (Swallowing this was the root cause of the 2026-06-06 isolation-off bug:
+    // one boot hiccup → empty map → every company silently routed to the shared DB.)
+    // Note: we do NOT reassign COMPANY_DB_MAP here, so a prior good map is preserved.
+    throw e;
   }
+  const next = {};
+  for (const r of rows) next[r.company_id] = r.db_name;
+  COMPANY_DB_MAP = next;
+  return rows.length;
 }
 
 // Pool cache — lazily created
