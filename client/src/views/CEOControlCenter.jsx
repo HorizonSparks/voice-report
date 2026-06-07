@@ -7,16 +7,16 @@ import {
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/apiClient.js';
 
 // Company role ladder (authz.js). The CEO Control Center lets a CEO set anyone in their company
-// from 1..6; the backend (ceoGuards.sanitizePersonChange) enforces the walls (no self-lockout, no
-// sparks escalation, clamp 1..6) — the UI just surfaces the friendly error if a guard trips.
-const ROLE_LABELS = { 1: 'Helper', 2: 'Journeyman', 3: 'Foreman', 4: 'Superintendent', 5: 'Project Manager', 6: 'CEO' };
-const ROLE_OPTIONS = [1, 2, 3, 4, 5, 6];
+// from 1..7; the backend (ceoGuards.sanitizePersonChange) enforces the walls (no self-lockout, no
+// sparks escalation, clamp 1..7) — the UI just surfaces the friendly error if a guard trips.
+const ROLE_LABELS = { 1: 'Helper', 2: 'Journeyman', 3: 'Foreman', 4: 'General Foreman', 5: 'Superintendent', 6: 'Project Manager', 7: 'CEO' };
+const ROLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 const STATUS_OPTIONS = ['active', 'inactive', 'suspended'];
 
 const ORANGE = 'primary.main';
 
 /**
- * CEO Control Center — the per-company administrator window (walled, role_level >= 6).
+ * CEO Control Center — the per-company administrator window (walled, role_level >= 7).
  * Distinct from the Sparks Command Center. Talks to:
  *   GET   /api/ceo/overview      — the portfolio glance
  *   PATCH /api/ceo/people/:id    — set a person's role / permissions / status (guarded)

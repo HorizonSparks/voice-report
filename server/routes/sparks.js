@@ -144,7 +144,7 @@ router.post('/companies/onboard', requireSparksRole('admin'), async (req, res) =
     const { rows: companyRows } = await client.query('SELECT * FROM companies WHERE id = $1', [companyId]);
     res.status(201).json({
       company: companyRows[0],
-      admin: { id: adminId, name: admin.name, role_title: admin.role_title || 'Administrator', role_level: 5, company_id: companyId },
+      admin: { id: adminId, name: admin.name, role_title: admin.role_title || 'Administrator', role_level: 6, company_id: companyId },
     });
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch {}

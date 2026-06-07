@@ -60,8 +60,8 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
     if (user.sparks_role && !isSimulating) {
     }
     if (isAdmin) {
-      if ((user.role_level || 0) >= 5 || user.is_admin) tiles.push({ id: 'projects', icon: '📁', label: 'Projects', view: 'projects' });
-      const crewLabel = (user.role_level || 0) <= 4 && !user.sparks_role ? t('home.myCrew') : t('home.peopleCrew');
+      if ((user.role_level || 0) >= 6 || user.is_admin) tiles.push({ id: 'projects', icon: '📁', label: 'Projects', view: 'projects' });
+      const crewLabel = (user.role_level || 0) <= 5 && !user.sparks_role ? t('home.myCrew') : t('home.peopleCrew');
       tiles.push({ id: 'crew', icon: '👥', label: crewLabel, view: 'people' });
       tiles.push({ id: 'dailyplan', icon: '📌', label: t('home.dailyPlanPunchList'), view: 'dailyplan' });
       tiles.push({ id: 'reports', icon: '📋', label: t('home.reports'), view: 'reports' });
@@ -69,7 +69,7 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
       tiles.push({ id: 'forms', icon: '📝', label: t('home.forms'), view: 'forms' });
     } else {
       if (isSupervisor) {
-        const crewLabel2 = (user.role_level || 0) <= 4 ? t('home.myCrew') : t('home.peopleCrew');
+        const crewLabel2 = (user.role_level || 0) <= 5 ? t('home.myCrew') : t('home.peopleCrew');
         tiles.push({ id: 'crew', icon: '👥', label: crewLabel2, view: 'people' });
       }
       tiles.push({ id: 'dailyplan', icon: '📌', label: t('home.dailyPlanPunchList'), view: 'dailyplan' });

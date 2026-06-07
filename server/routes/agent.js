@@ -556,10 +556,10 @@ const TOOL_MIN_LEVEL = {
   list_knowledge_proposals: 'sparks_admin',
   approve_knowledge_proposal: 'sparks_admin',
   reject_knowledge_proposal: 'sparks_admin',
-  // PM+ (level 5) or admin — company-wide Voice Report analytics (now tenant-scoped)
-  lookup_company: 5,
-  get_company_analytics: 5,
-  trace_company_everything: 5,
+  // PM+ (level 6) or admin — company-wide Voice Report analytics (now tenant-scoped)
+  lookup_company: 6,
+  get_company_analytics: 6,
+  trace_company_everything: 6,
   // Sparks staff only — LoopFolders/extraction ops. No reliable per-customer tenant link
   // (see CROSS_CUSTOMER_OPS_TOOLS), so these are gated to admin/support at the role layer
   // too — keeping them out of customers' tool list entirely (defense in depth with the
@@ -614,7 +614,7 @@ const CROSS_CUSTOMER_OPS_TOOLS = new Set([
  * Returns only tools the user is authorized to use.
  */
 // True ONLY for the Horizon Sparks platform owner/admin tier. Deliberately
-// excludes customer PMs (role_level >= 5) and the integration-key service path,
+// excludes customer PMs (role_level >= 6) and the integration-key service path,
 // both of which set is_admin. Gates the destructive knowledge-approval tools.
 function isSparksOwner(sparksRole, isIntegration) {
   return sparksRole === 'admin' && !isIntegration;
@@ -624,7 +624,7 @@ function getToolsForRole(roleLevel, isAdmin, sparksRole, isIntegration) {
   return AGENT_TOOLS.filter(tool => {
     const minLevel = TOOL_MIN_LEVEL[tool.name];
     // sparks_admin is the narrow owner-only tier — checked BEFORE the broad
-    // is_admin short-circuit so role_level>=5 / integration callers can't reach it.
+    // is_admin short-circuit so role_level>=6 / integration callers can't reach it.
     if (minLevel === 'sparks_admin') return isSparksOwner(sparksRole, isIntegration);
     if (isAdmin || sparksRole === 'admin') return true;
     if (minLevel === undefined) return true; // No restriction
@@ -891,7 +891,7 @@ async function executeTool(toolName, toolInput, authContext = {}) {
   // ---- Phase 1.1 scope-lock: server-derived authorization context ----
   // company_id + identity come from the authenticated session (see /chat), NEVER
   // from the model's tool input. is_admin is the TRUE platform-admin flag — customer
-  // PMs are role_level 5 but is_admin=false, so they stay company-locked. Tools that
+  // PMs are role_level 6 but is_admin=false, so they stay company-locked. Tools that
   // read tenant data FORCE these filters; the model cannot widen them. visibleIds is
   // the see-down chain (report_visibility WHERE viewer_id=actor): actor + descendants.
   const _isAdmin = !!authContext.is_admin;
@@ -2179,7 +2179,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       agentInflight.delete(flightKey);
       return res.status(400).json({ error: 'Unsupported image type. Use JPEG, PNG, GIF or WEBP.' });
     }
-    const isAdmin = actor.is_admin || actor.role_level >= 5;
+    const isAdmin = actor.is_admin || actor.role_level >= 6;
     const model = isAdmin ? 'claude-opus-4-7' : 'claude-sonnet-4-6';
     // Prometheus: track agent session
     agentSessionsTotal.inc({ model_tier: isAdmin ? 'opus' : 'sonnet' });
@@ -2195,14 +2195,14 @@ router.post('/chat', requireAuth, async (req, res) => {
     //  - company_id comes from tenantFilter (session-derived; NOT client-controllable
     //    for non-Sparks users — the ?company_id override is admin/support only).
     //  - is_admin is the TRUE platform-admin flag from getActor (customer PMs are
-    //    role_level 5 but is_admin=false → they stay company-locked).
+    //    role_level 6 but is_admin=false → they stay company-locked).
     //  - visiblePersonIds = report_visibility WHERE viewer_id=actor (actor + the
     //    people below them in the chain). Fails closed to self-only on error.
     // 🔒 CROSS-TENANT GATE: company- and project-crossing are SPARKS-STAFF-ONLY. getActor's
-    // is_admin is POLLUTED — verifyKeycloakJwt sets is_admin = (role_level>=5), which includes
-    // customer PMs and CEOs. Using it to bypass the company wall would let a role-5 CUSTOMER
+    // is_admin is POLLUTED — verifyKeycloakJwt sets is_admin = (role_level>=6), which includes
+    // customer PMs and CEOs. Using it to bypass the company wall would let a role-6 CUSTOMER
     // reach another tenant. So the scope-lock uses the Sparks-staff flag instead. Customer
-    // role-5 users (CEO/PM) stay company + chain scoped — and a CEO still sees their WHOLE
+    // role-6+ users (PM/CEO) stay company + chain scoped — and a CEO still sees their WHOLE
     // company because they are the ROOT of the supervisor chain (see-down covers everyone below).
     const isSparks = req.auth?.sparks_role === 'admin' || req.auth?.sparks_role === 'support';
     let visiblePersonIds = [personId];
@@ -2215,11 +2215,11 @@ router.post('/chat', requireAuth, async (req, res) => {
       } catch (e) { visiblePersonIds = [personId]; }
     }
     // Project axis (Ellery's STRICT rule, 2026-06-04): "see ALL company projects" = the company
-    // CEO (role_level 6) within their own company, OR Sparks staff (cross-tenant). A Project
-    // Manager (role 5) sees only their MEMBER projects. role 6 = the CEO marker that distinguishes
-    // CEO from PM (once CEOs are re-tagged 5->6; until then no customer auto-sees-all). This gates
+    // CEO (role_level 7) within their own company, OR Sparks staff (cross-tenant). A Project
+    // Manager (role 6) sees only their MEMBER projects. role 7 = the CEO marker that distinguishes
+    // CEO from PM (once CEOs are re-tagged 6->7; until then no customer auto-sees-all). This gates
     // ON TOP of the see-down chain.
-    const canCrossProject = isSparks || (actor.role_level || 1) >= 6;
+    const canCrossProject = isSparks || (actor.role_level || 1) >= 7;
     let accessibleProjectIds = [];
     if (!canCrossProject) {
       try {
@@ -2233,7 +2233,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       person_id: personId,
       company_id: req.companyId || null,
       role_level: actor.role_level || 1,
-      is_admin: isSparks, // SPARKS-only — the cross-company capability is NOT role>=5
+      is_admin: isSparks, // SPARKS-only — the cross-company capability is NOT role>=6
       sparks_role: req.auth?.sparks_role || null,
       visiblePersonIds,
       canCrossProject,
@@ -2343,9 +2343,9 @@ router.post('/chat', requireAuth, async (req, res) => {
       );
       if (person) { userName = person.name?.split(' ')[0] || 'there'; userRole = person.role_title || ''; userTrade = person.trade || ''; }
     } catch {}
-    // Executive altitude overlay (CEO >=6 / PM ===5 / Superintendent ===4). Additive persona only —
+    // Executive altitude overlay (CEO >=7 / PM ===6 / Superintendent ===5). Additive persona only —
     // grants NO data access; the walls below + canCrossProject/accessibleProjectIds still bind. Empty
-    // for field roles (<=3), so their RD2 persona is unchanged. See services/ai/executiveBrief.js.
+    // for field roles (<=4), so their RD2 persona is unchanged. See services/ai/executiveBrief.js.
     const executiveBrief = buildExecutiveBrief(actor?.role_level, { userName });
     const systemPrompt = `You are RD2 — Relation Data Intelligence — the AI brain of Horizon Sparks.
 You are talking to ${userName}${userRole ? ` (${userRole})` : ''}${userTrade ? `, ${userTrade} trade` : ''}.

@@ -117,7 +117,7 @@ async function loadSession(req, res, next) {
         sessionId: 'integration_' + Date.now(),
         person_id: 'integration',
         is_admin: true,
-        role_level: 5,
+        role_level: 6,
         trade: null,
         company_id: null,
         sparks_role: 'admin',
@@ -142,7 +142,7 @@ async function loadSession(req, res, next) {
         sessionId: 'integration_' + Date.now(),
         person_id: 'integration',
         is_admin: true,
-        role_level: 5,
+        role_level: 6,
         trade: null,
         company_id: null,
         sparks_role: 'admin',
@@ -200,7 +200,7 @@ function requireAuth(req, res, next) {
  */
 function requireAdmin(req, res, next) {
   if (!req.auth) return res.status(401).json({ error: 'Authentication required' });
-  if (!req.auth.is_admin && req.auth.role_level < 5) {
+  if (!req.auth.is_admin && req.auth.role_level < 6) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();

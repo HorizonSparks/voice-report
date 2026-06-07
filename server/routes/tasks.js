@@ -17,7 +17,7 @@ const { getActor } = require('../auth/authz');
 async function authorizeTaskAccess(req, task) {
   const actor = getActor(req);
   if (!actor) return { authorized: false, status: 401, error: 'Authentication required' };
-  if (actor.is_sparks) return { authorized: true }; // cross-tenant task access is Sparks-only (not role>=5)
+  if (actor.is_sparks) return { authorized: true }; // cross-tenant task access is Sparks-only (not role>=6)
 
   const callerPid = actor.person_id;
 

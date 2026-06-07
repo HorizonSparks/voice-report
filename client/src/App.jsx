@@ -698,7 +698,7 @@ export default function App() {
         )}
 
         {/* Trade stars — only for admin and supervisors, NOT in Control Center */}
-        {currentWorld !== 'control-center' && (user.is_admin || (user.role_level || 0) >= 4) && (
+        {currentWorld !== 'control-center' && (user.is_admin || (user.role_level || 0) >= 5) && (
           <Box sx={{ px: 2, py: 2 }}>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5 }}>
               {t('nav.activeTrades')}
@@ -756,7 +756,7 @@ export default function App() {
         )}
 
         {/* Workers see their trade — no switching */}
-        {currentWorld !== 'control-center' && !user.is_admin && (user.role_level || 0) < 4 && (
+        {currentWorld !== 'control-center' && !user.is_admin && (user.role_level || 0) < 5 && (
           <Box sx={{ px: 2, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>
               {t('nav.yourTrade')}
@@ -771,7 +771,7 @@ export default function App() {
         {/* Menu links */}
         <Divider />
         <List sx={{ px: 1 }}>
-          {(user.role_level || 0) >= 6 && !user.sparks_role && (
+          {(user.role_level || 0) >= 7 && !user.sparks_role && (
             <ListItemButton onClick={() => { navigateTo('ceo'); setMenuOpen(false); }}>
               <ListItemText primary={'🎛️ Control Center'} slotProps={{ primary: { sx: { fontWeight: 700, color: 'primary.main' } } }} />
             </ListItemButton>
@@ -882,7 +882,7 @@ export default function App() {
         {view === 'punchlist' && <PunchListView readOnly={readOnly} user={user} onNavigate={navigateTo} goBack={viewHistory.length > 0 ? goBack : null} />}
         {view === 'jsa' && <JSAView readOnly={readOnly} user={user} goHome={goHome} activeTrade={activeTrade} presetTaskId={jsaTaskContext?.taskId} presetTaskTitle={jsaTaskContext?.taskTitle} presetTaskDescription={jsaTaskContext?.taskDescription} />}
         {view === 'sparks' && user.sparks_role && <SparksCommandCenter ref={viewRef} user={user} goBack={goBack} onEnterCompany={enterSimulation} agentOpen={globalAgentOpen} onSupportConvOpen={(convId) => { setSelectedSupportConvId(convId); setSupportChatOpen(true); }} />}
-        {view === 'ceo' && (user.role_level || 0) >= 6 && !user.sparks_role && <CEOControlCenter user={user} goBack={goBack} />}
+        {view === 'ceo' && (user.role_level || 0) >= 7 && !user.sparks_role && <CEOControlCenter user={user} goBack={goBack} />}
         {view === "analytics" && <AnalyticsView goBack={goBack} />}
         {view === "projects" && <ProjectsView readOnly={readOnly} user={user} activeTrade={activeTrade} navigateTo={navigateTo} />}
       </Box>

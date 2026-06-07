@@ -1,23 +1,25 @@
 /**
  * CEO Control Center — pure authorization guards.
  *
- * The CEO (role_level >= 6) has ABSOLUTE power WITHIN their own company ONLY. These functions
+ * The CEO (role_level >= 7) has ABSOLUTE power WITHIN their own company ONLY. These functions
  * never touch the database — they validate a CEO's intent so the route layer and the proof
  * harness share ONE source of truth for the wall. Everything here is deterministic and unit-tested
  * by database/ceo-control-center-proof.js.
  *
  * The walls (why each guard exists):
- *   - role_level >= 6                  → only a CEO can use the Control Center (NOT_CEO)
+ *   - role_level >= 7                  → only a CEO can use the Control Center (NOT_CEO)
  *   - target.company_id == actor's     → a CEO can never reach into another company (CROSS_COMPANY)
  *   - no sparks_role grant             → a customer CEO can never mint Horizon Sparks (cross-tenant)
  *                                        staff — that is Sparks-only (NO_SPARKS_GRANT)
  *   - target is not Sparks staff       → a CEO cannot manage a Sparks account (TARGET_IS_SPARKS)
- *   - role_level clamped to [1,6]      → company roles cap at CEO; nothing above is grantable here
+ *   - role_level clamped to [1,7]      → company roles cap at CEO; nothing above is grantable here
  *   - no self-lockout / self-deactivate→ a CEO cannot strip their own CEO role or disable themselves
  */
 
-const CEO_LEVEL = 6;
-const MAX_COMPANY_ROLE = 6; // company role ladder caps at CEO; sparks_role is the only tier above and is Sparks-only
+const { LEVEL } = require('../auth/roleLevels');
+
+const CEO_LEVEL = LEVEL.CEO;
+const MAX_COMPANY_ROLE = LEVEL.CEO; // company role ladder caps at CEO; sparks_role is the only tier above and is Sparks-only
 const ALLOWED_STATUS = ['active', 'inactive', 'suspended'];
 
 function isCeo(actor) {
@@ -71,7 +73,7 @@ function sanitizePersonChange(actor, target, body) {
   const isSelf = String(target.id) === String(actor.person_id);
   const updates = {};
 
-  // role_level — the "set permissions" power. Clamp to [1,6].
+  // role_level — the "set permissions" power. Clamp to [1,7].
   if (body.role_level !== undefined) {
     let lvl = parseInt(body.role_level, 10);
     if (Number.isNaN(lvl)) throw new CeoGuardError(400, 'role_level must be a number', 'BAD_ROLE');

@@ -27,7 +27,7 @@ function resolvePersonId(req) {
   const sessionId = req.auth && req.auth.person_id;
   if (!clientId || clientId === sessionId) return sessionId;
   // Loading ANOTHER person's report/worker context (their trade, supervisor, project, certs) can
-  // cross a tenant — restrict to Sparks staff. role>=5/role>=3 customers use their own session id.
+  // cross a tenant — restrict to Sparks staff. role>=6/role>=3 customers use their own session id.
   if (req.auth && (req.auth.sparks_role === 'admin' || req.auth.sparks_role === 'support')) return clientId;
   return sessionId;
 }

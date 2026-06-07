@@ -180,7 +180,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/webauthn', webauthnLimiter, require('./routes/webauthn'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/projects', require('./routes/projects'));
-app.use('/api/ceo', require('./routes/ceo'));  // CEO Control Center — per-company admin window (role>=6), walled from /api/sparks
+app.use('/api/ceo', require('./routes/ceo'));  // CEO Control Center — per-company admin window (role>=7), walled from /api/sparks
 app.use('/api/sparks', require('./routes/sparks'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api', require('./routes/files'));
