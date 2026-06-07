@@ -285,13 +285,61 @@ setTimeout(async () => {
 }, 30 * 1000);
 
 
-// Load the per-company DB registry once at startup (so each company routes to its own database).
-// Safe no-op if the registry table doesn't exist yet → everyone uses the shared DB.
-try {
-  require('../database/pool-router').refreshCompanyDbMap()
-    .then((n) => console.log(`  Company DBs:  ${n} company database(s) registered`))
-    .catch(() => {});
-} catch (_e) { /* pool-router optional */ }
+// Load the per-company DB registry at startup — ROBUSTLY.
+//
+// A silent failure here is a SECURITY event: an empty map makes every company
+// fall back to the SHARED database (physical isolation OFF) with no error and no
+// alarm. Root cause of the 2026-06-06 "Tommy silently routed to shared" incident
+// was THIS call being fire-and-forget with a swallowed catch and no retry — one
+// boot hiccup (DB not ready for that single instant during a restart) stranded
+// the map empty for the whole process lifetime. So now: retry with backoff,
+// verify the loaded count matches the registry, log LOUDLY (never swallow), set a
+// degraded marker the health probe can read, and re-assert periodically.
+// refreshCompanyDbMap() now THROWS on a real failure (connection/auth/timeout) and
+// RESOLVES only on genuine success — returning the company count, with a missing
+// registry table treated as a legitimate 0. So "resolved" == truly loaded, and we
+// can retry/alarm honestly. (Codex caught that the prior version's success check was
+// unsound because the function used to swallow errors and return a count.)
+(async function loadCompanyDbMapRobustly() {
+  const router = require('../database/pool-router');
+  const wantIsolation = process.env.USE_COMPANY_DBS === 'true';
+  const MAX_ATTEMPTS = 12;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const loaded = await router.refreshCompanyDbMap(); // throws on real failure
+      console.log(`[company-dbs] map loaded: ${loaded} dedicated database(s)`);
+      global.__ISOLATION_DEGRADED__ = false; // genuine success (a throw would skip this line)
+      return;
+    } catch (e) {
+      console.error(`[company-dbs] load attempt ${attempt}/${MAX_ATTEMPTS} FAILED: ${e.message}`);
+      if (attempt === MAX_ATTEMPTS) {
+        global.__ISOLATION_DEGRADED__ = wantIsolation;
+        console.error('[company-dbs] 🚨 ISOLATION DEGRADED — per-company DB map did not load; '
+          + 'provisioned companies will FALL BACK TO THE SHARED DATABASE. Investigate immediately.');
+      } else {
+        await new Promise((res) => setTimeout(res, Math.min(1000 * attempt, 8000)));
+      }
+    }
+  }
+})();
+
+// Re-assert periodically so a transient can NEVER permanently strand the map.
+// Overlap-safe (skips if a prior refresh is still in flight), and the degraded flag
+// moves ONLY on a genuine resolve (cleared) or a genuine throw (set) — never on a
+// swallowed/false-healthy result.
+let __companyDbReassertInFlight = false;
+setInterval(async () => {
+  if (__companyDbReassertInFlight) return;
+  __companyDbReassertInFlight = true;
+  try {
+    await require('../database/pool-router').refreshCompanyDbMap(); // throws on real failure
+    global.__ISOLATION_DEGRADED__ = false; // genuine success
+  } catch (_) {
+    if (process.env.USE_COMPANY_DBS === 'true') global.__ISOLATION_DEGRADED__ = true;
+  } finally {
+    __companyDbReassertInFlight = false;
+  }
+}, 5 * 60 * 1000);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
