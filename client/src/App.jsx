@@ -677,7 +677,7 @@ export default function App() {
               Voice Report
             </Button>
             <Button fullWidth variant="outlined" color="secondary"
-              onClick={() => window.open('https://app.horizonsparks.ai/', '_blank', 'noopener,noreferrer')}
+              onClick={() => { window.location.href = 'https://loop-folder.horizonsparks.ai/'; }}
               sx={{ mb: 1, justifyContent: 'flex-start', fontSize: 14 }}>
               LoopFolders
             </Button>
