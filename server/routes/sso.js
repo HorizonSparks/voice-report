@@ -155,7 +155,7 @@ router.get('/callback', async (req, res) => {
   try {
     sessionRow = await DB.sessions.create({
       person_id: person.id,
-      is_admin: person.role_level >= 5 || person.sparks_role === 'admin',
+      is_admin: person.role_level >= 6 || person.sparks_role === 'admin',
       role_level: person.role_level,
       trade: person.trade || null,
       company_id: person.company_id,

@@ -6,16 +6,16 @@
  * agent's VOICE and the conclusions it leads with — it does NOT grant any data access. The hard
  * walls (company wall, see-down-never-up, per-project scope) are enforced separately in code via
  * canCrossProject / accessibleProjectIds / visiblePersonIds, so an altitude brief can never widen
- * what a user is allowed to see. Field roles (<=3) get an empty string — RD2's existing persona
+ * what a user is allowed to see. Field roles (<=4) get an empty string — RD2's existing persona
  * is unchanged for them.
  *
- * Altitude ladder (server/auth/authz.js + retag-ceo-role6.js):
- *   1 helper · 2 journeyman · 3 foreman · 4 superintendent · 5 admin/PM · 6 CEO
+ * Altitude ladder (server/auth/roleLevels.js):
+ *   1 helper · 2 journeyman · 3 foreman · 4 general foreman · 5 superintendent · 6 admin/PM · 7 CEO
  *
- *   role >= 6  -> CEO altitude        : sees ALL company projects (canCrossProject). Strategy/portfolio.
- *   role === 5 -> PM altitude         : sees the several projects he is a member of. Project delivery.
- *   role === 4 -> Superintendent      : sees his one project + everyone below. Daily field execution.
- *   role <= 3  -> field               : no overlay.
+ *   role >= 7  -> CEO altitude        : sees ALL company projects (canCrossProject). Strategy/portfolio.
+ *   role === 6 -> PM altitude         : sees the several projects he is a member of. Project delivery.
+ *   role === 5 -> Superintendent      : sees his one project + everyone below. Daily field execution.
+ *   role <= 4  -> field               : no overlay (helper/journeyman/foreman/general foreman).
  *
  * Design spec (research-backed, 5 over-hyped claims killed):
  *   02_OUTPUT/RD2_product_strategy/CEO_JARVIS_DESIGN_SPEC.md in the Cowork brain.
@@ -96,17 +96,17 @@ ${advisorVoice(name)}`;
 
 /**
  * Build the executive overlay for a user's altitude.
- * @param {number} roleLevel  voicereport.people.role_level (1-6)
+ * @param {number} roleLevel  voicereport.people.role_level (1-7)
  * @param {object} [opts]
  * @param {string} [opts.userName]  first name for personalization
- * @returns {string} block to append to the system prompt ('' for field roles <=3)
+ * @returns {string} block to append to the system prompt ('' for field roles <=4)
  */
 function buildExecutiveBrief(roleLevel, opts = {}) {
   const lvl = Number(roleLevel) || 0;
   const name = (opts.userName && String(opts.userName).trim()) || 'there';
-  if (lvl >= 6) return ceoBrief(name);
-  if (lvl === 5) return pmBrief(name);
-  if (lvl === 4) return superBrief(name);
+  if (lvl >= 7) return ceoBrief(name);
+  if (lvl === 6) return pmBrief(name);
+  if (lvl === 5) return superBrief(name);
   return '';
 }
 

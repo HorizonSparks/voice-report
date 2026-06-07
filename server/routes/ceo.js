@@ -1,7 +1,7 @@
 /**
  * CEO Control Center — the per-company ADMINISTRATOR window's backend.
  *
- * The CEO (role_level >= 6) has absolute power WITHIN their own company only. This router is
+ * The CEO (role_level >= 7) has absolute power WITHIN their own company only. This router is
  * DISTINCT from /api/sparks (the Horizon Sparks-staff Command Center). It rides on the proven
  * isolation: tenantFilter locks a non-Sparks user to their own company_id, and attachCompanyDb
  * points req.db at that company's physical DB (Level 1). Projects-within-a-company don't bleed
@@ -23,7 +23,7 @@ const { isCeo, CeoGuardError, sanitizePersonChange } = require('../lib/ceoGuards
 const router = Router();
 
 /**
- * Wall: every /api/ceo/* route requires an authenticated CUSTOMER CEO (role_level >= 6) operating
+ * Wall: every /api/ceo/* route requires an authenticated CUSTOMER CEO (role_level >= 7) operating
  * on their OWN company. Fails CLOSED (Codex review):
  *   - Sparks staff (any sparks_role) are DENIED — they use /api/sparks (the Sparks Command Center),
  *     never this customer window. This also closes the ?company_id impersonation path for /api/ceo.

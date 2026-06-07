@@ -27,7 +27,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       const session = await DB.sessions.create({
         person_id: ADMIN_ID,
         is_admin: true,
-        role_level: 5,
+        role_level: 6,
         trade: null,
         company_id: 'company_horizon_sparks',
         sparks_role: 'admin',
@@ -108,7 +108,7 @@ router.get('/me', async (req, res) => {
       person_id: '__admin__',
       name: 'Admin',
       role_title: 'Administrator',
-      role_level: 5,
+      role_level: 6,
       company_id: 'company_horizon_sparks',
       sparks_role: 'admin',
     });

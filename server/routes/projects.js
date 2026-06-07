@@ -10,8 +10,8 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const actor = getActor(req);
     let rows;
-    if (actor.is_sparks || (actor.role_level || 0) >= 6) {
-      // Sparks staff or the company CEO (role 6) see ALL projects in the company; a PM (role 5)
+    if (actor.is_sparks || (actor.role_level || 0) >= 7) {
+      // Sparks staff or the company CEO (role 7) see ALL projects in the company; a PM (role 6)
       // and everyone below see only their member projects (the else branch) — strict isolation.
       const trade = req.query.trade;
       if (req.companyId) {

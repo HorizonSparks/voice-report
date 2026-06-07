@@ -25,7 +25,7 @@ function blockedCrossCompany(req, target) {
 // set, applied BEFORE people.update (Codex round 3). Sparks staff (admin/support) are unrestricted.
 // A CUSTOMER may NEVER set cross-tenant fields (sparks_role, company_id) on anyone, and may NEVER
 // elevate THEMSELVES — role_level / is_admin / status are stripped on self-edits. Critically this uses
-// sparks_role, NOT the POLLUTED req.auth.is_admin (which is true for any role>=5 customer and would
+// sparks_role, NOT the POLLUTED req.auth.is_admin (which is true for any role>=6 customer and would
 // otherwise let a PM self-promote to CEO through this legacy route).
 function stripPrivilegedFields(reqAuth, targetId, body) {
   const isSparks = reqAuth && (reqAuth.sparks_role === 'admin' || reqAuth.sparks_role === 'support');

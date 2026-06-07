@@ -34,7 +34,7 @@ async function resolvePersonId(actor, reqDb) {
 // id" cross-tenant hole on the member/file/link/download routes.
 async function canAccessFolder(folderId, actor, personId, companyId) {
   if (!folderId) return false;
-  if (actor.is_sparks) return true; // cross-tenant bypass is Sparks-staff-only (not role>=5)
+  if (actor.is_sparks) return true; // cross-tenant bypass is Sparks-staff-only (not role>=6)
   if (!personId) return false;
   const { rows } = await DB.db.query(
     `SELECT 1 FROM shared_folders f
@@ -50,7 +50,7 @@ async function canAccessFolder(folderId, actor, personId, companyId) {
 
 // Managing membership / destructive folder ops require owner or admin.
 async function isFolderOwnerOrAdmin(folderId, actor, personId) {
-  if (actor.is_sparks) return true; // cross-tenant bypass is Sparks-staff-only (not role>=5)
+  if (actor.is_sparks) return true; // cross-tenant bypass is Sparks-staff-only (not role>=6)
   if (!folderId || !personId) return false;
   const folder = await DB.sharedFolders.getById(folderId);
   return !!folder && folder.created_by === personId;

@@ -26,6 +26,7 @@
 const { createRemoteJWKSet, jwtVerify } = require('jose');
 const crypto = require('crypto');
 const DB = require('../../database/db');
+const { deriveRoleLevel } = require('../auth/roleLevels');
 
 // Multi-issuer support. KEYCLOAK_ISSUER may be a single URL or a
 // comma-separated list — e.g.
@@ -121,32 +122,9 @@ function extractCompanyId(claims) {
 }
 
 // Map Keycloak resource_access.app.roles → voicereport.people.role_level.
-// Picks the HIGHEST matching role so a user with both `user` and `pm_admin`
-// lands at role_level=5 (admin), not 1 (worker). Unknown roles are ignored.
-// Adjust this table if the Keycloak realm adds new roles that should map.
-const KEYCLOAK_ROLE_TO_LEVEL = {
-  pm_admin:  5,  // tenant admin in PIDS — admin in VR too
-  pm_editor: 3,  // project editor — equivalent to supervisor / PM
-  pm_viewer: 3,  // read-only viewer — above worker, below editor.
-                 // NOTE: VR routes that gate at >= 3 (e.g. loopfolders-
-                 // intelligence /api/sparks-ai chat) are not reachable by
-                 // pm_viewer with this mapping. If viewers should be able
-                 // to ask Sparks AI, either bump this to 3 or lower the
-                 // gate on the relevant endpoint.
-  editor:    3,
-  supervisor: 3,
-  foreman:   3,
-  user:      1,  // baseline worker
-};
-function deriveRoleLevel(claims) {
-  const appRoles = (claims && claims.resource_access && claims.resource_access.app && claims.resource_access.app.roles) || [];
-  let max = 1;
-  for (const r of appRoles) {
-    const lvl = KEYCLOAK_ROLE_TO_LEVEL[r];
-    if (typeof lvl === 'number' && lvl > max) max = lvl;
-  }
-  return max;
-}
+// Canonical map + derivation now live in ../auth/roleLevels (deriveRoleLevel),
+// which takes the app-roles ARRAY (not the whole claims object). Picks the
+// HIGHEST matching role; unknown roles are ignored.
 
 // Build a default display name from JWT claims. We try name, then given+family,
 // then preferred_username, then sub. Always returns a non-empty string.
@@ -244,11 +222,14 @@ async function resolvePersonFromClaims(claims) {
 
   const newId = 'person_' + crypto.randomUUID().slice(0, 12);
   const newName = deriveName(claims);
-  const newRoleLevel = deriveRoleLevel(claims);
+  const newRoleLevel = deriveRoleLevel(claims.resource_access?.app?.roles || []);
   // role_title is a human label — pick a sensible default that matches the
-  // numeric level so the UI doesn't show "User" for a role_level=5 admin.
-  const newRoleTitle = newRoleLevel >= 5 ? 'Administrator'
-                     : newRoleLevel >= 3 ? 'Project Manager'
+  // numeric level so the UI doesn't show "User" for a role_level=6 admin.
+  const newRoleTitle = newRoleLevel >= 7 ? 'CEO'
+                     : newRoleLevel >= 6 ? 'Administrator'
+                     : newRoleLevel >= 5 ? 'Superintendent'
+                     : newRoleLevel >= 4 ? 'General Foreman'
+                     : newRoleLevel >= 3 ? 'Foreman'
                      : 'User';
   // Generate an unguessable PIN so legacy PIN-login fails for auto-provisioned
   // users — they must always authenticate via Keycloak. 32 hex chars exceeds
@@ -397,7 +378,7 @@ function verifyKeycloakJwt() {
         role_level: person.role_level,
         sparks_role: person.sparks_role,
         company_id: person.company_id,
-        is_admin: person.role_level >= 5 || person.sparks_role === 'admin',
+        is_admin: person.role_level >= 6 || person.sparks_role === 'admin',
         keycloak_user_id: person.keycloak_user_id,
         keycloak_username: person.keycloak_username,
         source: 'keycloak_jwt',

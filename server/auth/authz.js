@@ -6,8 +6,10 @@
  *   1 = helper
  *   2 = journeyman
  *   3 = foreman
- *   4 = superintendent
- *   5 = admin
+ *   4 = general foreman
+ *   5 = superintendent
+ *   6 = pm / admin
+ *   7 = ceo
  *
  * is_admin is always an override.
  */
@@ -22,12 +24,12 @@ function getActor(req) {
   const sparksRole = req.auth.sparks_role || null;
   return {
     person_id: req.auth.person_id,
-    // ⚠️ is_admin is POLLUTED: req.auth.is_admin is computed as role_level>=5 (verifyKeycloakJwt),
+    // ⚠️ is_admin is POLLUTED: req.auth.is_admin is computed as role_level>=6 (verifyKeycloakJwt),
     // so it includes customer PMs/CEOs. NEVER use it to cross a tenant boundary. Use is_sparks for
     // cross-tenant decisions and is_company_admin for within-company admin powers.
     is_admin: req.auth.is_admin || sparksRole === 'admin',
     is_sparks: sparksRole === 'admin' || sparksRole === 'support', // Horizon Sparks platform staff (cross-tenant)
-    is_company_admin: (req.auth.role_level || 0) >= 5,             // within-company admin tier (PM/CEO)
+    is_company_admin: (req.auth.role_level || 0) >= 6,             // within-company admin tier (PM/CEO)
     sparks_role: sparksRole,
     role_level: req.auth.role_level,
     trade: req.auth.trade,
@@ -99,7 +101,7 @@ async function canManagePerson(actor, targetPersonId, reqDb) {
  * Rules:
  *   - admin: always
  *   - foreman approval: actor must be the JSA creator's supervisor or role_level >= 3
- *   - safety approval: actor must have safety authority (role_level >= 4 or is safety dept)
+ *   - safety approval: actor must have safety authority (role_level >= 5 or is safety dept)
  */
 async function canApproveJsa(actor, jsa, reqDb) {
   if (!actor) return false;
@@ -116,14 +118,14 @@ async function canApproveJsa(actor, jsa, reqDb) {
     }
     // Also allow if actor is in the creator's supervisor chain (not just direct)
     if (actor.role_level >= 3 && jsa.supervisor_id === actor.person_id) return true;
-    // Fallback: role_level >= 4 (general foreman+) can approve any in their company
-    if (actor.role_level >= 4) return true;
+    // Fallback: role_level >= 5 (superintendent+) can approve any in their company
+    if (actor.role_level >= 5) return true;
     return false;
   }
 
   // Safety approval stage
   if (currentStatus === 'pending_safety') {
-    if (actor.role_level >= 4) return true;
+    if (actor.role_level >= 5) return true;
     // Check if actor is in safety department
     if (actor.trade && actor.trade.toLowerCase().includes('safety')) return true;
     return false;
@@ -139,7 +141,7 @@ async function canApproveJsa(actor, jsa, reqDb) {
  */
 async function canMessage(actor, targetPersonId, reqDb) {
   if (!actor) return false;
-  if (actor.is_sparks) return true; // cross-tenant messaging is Sparks-only (NOT role>=5 customers)
+  if (actor.is_sparks) return true; // cross-tenant messaging is Sparks-only (NOT role>=6 customers)
   if (actor.person_id === targetPersonId) return false; // No self-messaging
 
   try {
