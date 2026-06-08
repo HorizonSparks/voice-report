@@ -6,12 +6,33 @@ import App from './App.jsx';
 import '../styles.css';
 import './i18n/i18n.js';
 
-// Global fetch override — always send session cookie with API requests
+// Single-domain unify: the shared Keycloak access token (set by the one login — the
+// LoopFolders/Keycloak form, picture 2) lives in localStorage on this same origin. Return it
+// ONLY if still valid, so a stale token can never shadow a working cookie session. This is what
+// lets ONE login light up Voice Report too — VR's backend already validates Keycloak JWTs.
+function _kcAccessToken() {
+  try {
+    const t = localStorage.getItem('accessToken');
+    if (!t) return null;
+    const payload = JSON.parse(atob(t.split('.')[1]));
+    if (payload && payload.exp && payload.exp * 1000 > Date.now() + 5000) return t;
+    return null;
+  } catch (e) { return null; }
+}
+
+// Global fetch override — always send session cookie with API requests, and attach the
+// shared Keycloak Bearer when present (cookie session stays the fallback).
 const originalFetch = window.fetch.bind(window);
 window.fetch = (url, options = {}) => {
   // Only add credentials for same-origin /api/ calls
   if (typeof url === 'string' && url.startsWith('/api')) {
     options = { ...options, credentials: 'include' };
+    const kc = _kcAccessToken();
+    if (kc) {
+      const h = { ...(options.headers || {}) };
+      const hasAuth = Object.keys(h).some((k) => k.toLowerCase() === 'authorization');
+      if (!hasAuth) { h.Authorization = 'Bearer ' + kc; options.headers = h; }
+    }
     // Inject company_id when simulating a company (Sparks admin viewing as a company)
     if (window.__simulatingCompanyId && !url.includes('company_id=')) {
       const sep = url.includes('?') ? '&' : '?';

@@ -366,6 +366,9 @@ export default function App() {
     setViewHistory([]);
     setMenuOpen(false);
     setCurrentWorld(null);
+    // Single-domain unify: also clear the shared Keycloak token so signing out of Voice Report
+    // fully signs out of the unified session (otherwise the token would re-auth on next load).
+    try { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); } catch (e) {}
     // Then destroy server session
     fetch('/api/logout', { method: 'POST' }).catch(() => {});
   };

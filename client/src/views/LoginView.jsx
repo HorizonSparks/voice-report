@@ -377,9 +377,28 @@ export default function LoginView({ onLogin }) {
           px: { xs: 3, md: 5 },
           py: 2.5,
         }}>
+          {/* Single-domain unify: the primary "Sign In" goes to the ONE Keycloak login
+              (the branded email+password form served under /loopfolders/login). The PIN pad
+              is demoted to a small field-worker fallback. */}
           <Button
             variant="text"
             onClick={() => setShowLogin(true)}
+            sx={{
+              color: CHARCOAL,
+              fontWeight: 500,
+              fontSize: 14,
+              letterSpacing: 0.3,
+              textTransform: 'none',
+              mr: 1.5,
+              opacity: 0.7,
+              '&:hover': { color: ORANGE, backgroundColor: 'transparent', opacity: 1 },
+            }}
+          >
+            {t('login.fieldPin', 'Field PIN')}
+          </Button>
+          <Button
+            variant="text"
+            onClick={() => { window.location.href = '/loopfolders/login'; }}
             sx={{
               color: CHARCOAL,
               fontWeight: 600,
