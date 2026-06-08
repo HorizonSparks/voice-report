@@ -14,7 +14,13 @@ function _kcAccessToken() {
   try {
     const t = localStorage.getItem('accessToken');
     if (!t) return null;
-    const payload = JSON.parse(atob(t.split('.')[1]));
+    let b = t.split('.')[1];
+    if (!b) return null;
+    // JWT payloads are base64URL (- _ , no padding) — normalize before atob, or valid
+    // tokens with - / _ would fail to decode and get wrongly dropped.
+    b = b.replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    const payload = JSON.parse(atob(b));
     if (payload && payload.exp && payload.exp * 1000 > Date.now() + 5000) return t;
     return null;
   } catch (e) { return null; }
