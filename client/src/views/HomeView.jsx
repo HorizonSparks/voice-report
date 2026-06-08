@@ -4,6 +4,7 @@ import {
   Box, Button, Typography, Avatar, Menu, MenuItem, ListItemText,
   Card, CardContent, CardActionArea, alpha, Chip
 } from '@mui/material';
+import { ACTION_ICONS } from '../lib/uiIcons.jsx';
 
 export default function HomeView({ user, setView, logout, activeTrade, setActiveTrade, starredTrades, allTrades, onSafetyOpen, simulatingCompany, onEnterCompany, onSupportOpen }) {
   const { t } = useTranslation();
@@ -265,7 +266,11 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
             gap: 2,
             px: 2.5,
           }}>
-            {actionTiles.map(tile => (
+            {actionTiles.map(tile => {
+              const meta = ACTION_ICONS[tile.id];
+              const TileIcon = meta?.Icon;
+              const tone = meta?.tone || 'primary';
+              return (
               <Card
                 key={tile.id}
                 sx={{
@@ -301,9 +306,10 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 24,
-                    bgcolor: tile.accent === 'primary' ? alpha('#fff', 0.16) : (theme) => alpha(theme.palette.primary.main, 0.08),
+                    bgcolor: tile.accent === 'primary' ? alpha('#fff', 0.16) : (theme) => alpha((theme.palette[tone] || theme.palette.primary).main, 0.16),
+                    color: tile.accent === 'primary' ? '#fff' : (theme) => (theme.palette[tone] || theme.palette.primary).main,
                   }}>
-                    {tile.icon}
+                    {TileIcon ? <TileIcon sx={{ fontSize: 26 }} /> : tile.icon}
                   </Box>
                   <Typography
                     variant="subtitle2"
@@ -316,7 +322,8 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
                   </Typography>
                 </CardActionArea>
               </Card>
-            ))}
+              );
+            })}
           </Box>
 
           {/* Safety card — compact, centered */}

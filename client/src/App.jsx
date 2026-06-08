@@ -622,7 +622,7 @@ export default function App() {
       {/* Sticky top stack — all bars stick together */}
       <Box sx={{ position: 'sticky', top: 0, zIndex: (theme) => theme.zIndex.appBar + 1 }}>
       {/* Header */}
-      <AppBar position="static" sx={{ bgcolor: 'secondary.main', borderBottom: '4px solid', borderColor: 'primary.main' }}>
+      <AppBar position="static" color="default" sx={{ bgcolor: 'background.paper', borderBottom: '4px solid', borderColor: 'primary.main', boxShadow: '0 1px 3px 0 rgba(72,72,74,0.08)' }}>
         <Toolbar sx={{ gap: 0.5, px: 2, pt: 1, position: "relative" }}>
           <IconButton color="inherit" onClick={() => setMenuOpen(!menuOpen)} sx={{ mr: 0.5 }}>
             {menuOpen ? <CloseIcon /> : <MenuIcon />}
@@ -642,7 +642,7 @@ export default function App() {
               </>
             ) : (
               <>
-                <Typography sx={{ fontWeight: 800, letterSpacing: 2, color: 'white', fontSize: 16 }}>
+                <Typography sx={{ fontWeight: 800, letterSpacing: 2, color: 'text.primary', fontSize: 16 }}>
                   {companySettings?.company_name || t('app.title')}
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600 }}>
