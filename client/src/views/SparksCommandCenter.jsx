@@ -5,6 +5,19 @@ import {
   Grid, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar,
   IconButton,
 } from '@mui/material';
+import ChatRoundedIcon from '@mui/icons-material/ChatRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import PsychologyRoundedIcon from '@mui/icons-material/PsychologyRounded';
+import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
+import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
+import PushPinRoundedIcon from '@mui/icons-material/PushPinRounded';
+import HandymanRoundedIcon from '@mui/icons-material/HandymanRounded';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import BusinessRoundedIcon from '@mui/icons-material/BusinessRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
+import BuildRoundedIcon from '@mui/icons-material/BuildRounded';
+import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import AnalyticsView from './AnalyticsView.jsx';
 import MessagesView from './MessagesView.jsx';
 import TeamChatPanel from '../components/TeamChatPanel.jsx';
@@ -471,10 +484,11 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
               { label: 'MRR', value: revenue ? fmtMRR(revenue.mrr_cents) : '\u2014', sub: 'revenue' },
               { label: 'Subscriptions', value: revenue ? revenue.active_subscriptions : '\u2014', sub: 'active' },
             ].map((stat, i) => (
-              <Paper key={i} variant="outlined" sx={{
+              <Paper key={i} sx={{
                 width: 90, height: 90, display: 'flex', flexDirection: 'column',
                 justifyContent: 'center', alignItems: 'center', textAlign: 'center',
-                borderRadius: 2.5, border: '2px solid', borderColor: 'secondary.main',
+                borderRadius: 2.5, bgcolor: 'background.paper',
+                boxShadow: '0 0 2px 0 rgba(72,72,74,0.16), 0 8px 20px -8px rgba(72,72,74,0.18)',
               }}>
                 <Typography sx={{ fontSize: 22, fontWeight: 800, color: 'primary.main', lineHeight: 1 }}>{stat.value}</Typography>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, mt: 0.5, color: 'text.primary' }}>{stat.label}</Typography>
@@ -580,14 +594,14 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
               {/* Navigation Tiles */}
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.25, mb: 2 }}>
                 {[
-                  { label: 'Companies', icon: '\uD83C\uDFE2', action: loadCompanies, show: ['admin', 'support'].includes(user.sparks_role) },
-                  { label: 'Team', icon: '\uD83D\uDC65', action: loadTeam, show: true },
-                  { label: 'Audit Log', icon: '\uD83D\uDCCB', action: loadAudit, show: user.sparks_role === 'admin' },
-                  { label: 'Messages', icon: '\uD83D\uDCAC', action: loadMessages, show: true },
-                  { label: 'Support', icon: '\uD83D\uDEE0\uFE0F', action: () => setScreen('support'), show: ['admin', 'support'].includes(user.sparks_role) },
-                  { label: 'PPE', icon: '\uD83E\uDD7D', action: () => setScreen('ppe'), show: ['admin', 'support', 'advisor'].includes(user.sparks_role) },
-                  { label: 'AI Spending', icon: '\uD83E\uDDE0', action: loadAiSpending, show: ['admin', 'support'].includes(user.sparks_role) },
-                  { label: 'System Health', icon: '\uD83D\uDCCA', action: () => setScreen('system-health'), show: ['admin', 'support'].includes(user.sparks_role) },
+                  { label: 'Companies', Icon: BusinessRoundedIcon, action: loadCompanies, show: ['admin', 'support'].includes(user.sparks_role) },
+                  { label: 'Team', Icon: GroupsRoundedIcon, action: loadTeam, show: true },
+                  { label: 'Audit Log', Icon: ReceiptLongRoundedIcon, action: loadAudit, show: user.sparks_role === 'admin' },
+                  { label: 'Messages', Icon: ChatRoundedIcon, action: loadMessages, show: true },
+                  { label: 'Support', Icon: BuildRoundedIcon, action: () => setScreen('support'), show: ['admin', 'support'].includes(user.sparks_role) },
+                  { label: 'PPE', Icon: HealthAndSafetyRoundedIcon, action: () => setScreen('ppe'), show: ['admin', 'support', 'advisor'].includes(user.sparks_role) },
+                  { label: 'AI Spending', Icon: PsychologyRoundedIcon, action: loadAiSpending, show: ['admin', 'support'].includes(user.sparks_role) },
+                  { label: 'System Health', Icon: InsightsRoundedIcon, action: () => setScreen('system-health'), show: ['admin', 'support'].includes(user.sparks_role) },
                 ].filter(t => t.show).map((tile, i) => (
                   <Button key={i} onClick={tile.action} disabled={tile.disabled}
                     variant="outlined"
@@ -599,7 +613,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                       opacity: tile.disabled ? 0.5 : 1,
                       color: 'text.primary',
                     }}>
-                    <Typography sx={{ fontSize: 22, mb: 0.5 }}>{tile.icon}</Typography>
+                    <Box sx={{ mb: 0.5, color: 'primary.main', display: 'flex' }}>{tile.Icon && <tile.Icon sx={{ fontSize: 26 }} />}</Box>
                     <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary' }}>{tile.label}</Typography>
                     {tile.disabled && <Typography sx={{ fontSize: 9, color: 'text.secondary' }}>coming soon</Typography>}
                   </Button>
@@ -961,10 +975,11 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                   { label: 'AI Cost', value: companyAnalytics?.summary?.total_ai_cost_cents ? '$' + (companyAnalytics.summary.total_ai_cost_cents / 100).toFixed(0) : '$0' },
                   { label: 'Trades', value: (selectedCompany.trades || []).filter(t => typeof t === 'object' ? t.status === 'active' : true).length },
                 ].map((stat, i) => (
-                  <Paper key={i} variant="outlined" sx={{
+                  <Paper key={i} sx={{
                     width: 80, height: 80, display: 'flex', flexDirection: 'column',
                     justifyContent: 'center', alignItems: 'center', textAlign: 'center',
-                    borderRadius: 2.5, border: '2px solid', borderColor: 'secondary.main',
+                    borderRadius: 2.5, bgcolor: 'background.paper',
+                    boxShadow: '0 0 2px 0 rgba(72,72,74,0.16), 0 8px 20px -8px rgba(72,72,74,0.18)',
                   }}>
                     <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'primary.main', lineHeight: 1 }}>{stat.value}</Typography>
                     <Typography sx={{ fontSize: 10, fontWeight: 700, mt: 0.5, color: 'text.primary' }}>{stat.label}</Typography>
@@ -1000,14 +1015,14 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.25, mb: 3 }}>
                 {[
-                  { label: 'Chat', icon: '💬', action: () => setCompanyScreen('chat') },
-                  { label: 'People', icon: '👥', action: () => setCompanyScreen('people') },
-                  { label: 'AI Analytics', icon: '🧠', action: () => setCompanyScreen('analytics') },
-                  { label: 'Billing', icon: '💳', action: () => setCompanyScreen('billing'), show: ['admin'].includes(user.sparks_role) },
-                  { label: 'Reports', icon: '📋', action: () => setCompanyScreen('reports') },
-                  { label: 'Daily Plans', icon: '📌', action: () => setCompanyScreen('dailyplans') },
-                  { label: 'Punch List', icon: '🔨', action: () => setCompanyScreen('punchlist') },
-                  { label: 'Licenses', icon: '⚙️', action: () => setCompanyScreen('licenses'), show: ['admin'].includes(user.sparks_role) },
+                  { label: 'Chat', Icon: ChatRoundedIcon, action: () => setCompanyScreen('chat') },
+                  { label: 'People', Icon: GroupsRoundedIcon, action: () => setCompanyScreen('people') },
+                  { label: 'AI Analytics', Icon: PsychologyRoundedIcon, action: () => setCompanyScreen('analytics') },
+                  { label: 'Billing', Icon: CreditCardRoundedIcon, action: () => setCompanyScreen('billing'), show: ['admin'].includes(user.sparks_role) },
+                  { label: 'Reports', Icon: AssignmentRoundedIcon, action: () => setCompanyScreen('reports') },
+                  { label: 'Daily Plans', Icon: PushPinRoundedIcon, action: () => setCompanyScreen('dailyplans') },
+                  { label: 'Punch List', Icon: HandymanRoundedIcon, action: () => setCompanyScreen('punchlist') },
+                  { label: 'Licenses', Icon: SettingsRoundedIcon, action: () => setCompanyScreen('licenses'), show: ['admin'].includes(user.sparks_role) },
                 ].filter(t => t.show !== false).map((tile, i) => (
                   <Button key={i} onClick={tile.action}
                     variant="outlined"
@@ -1018,7 +1033,7 @@ export default forwardRef(function SparksCommandCenter({ user, onEnterCompany, a
                       borderColor: 'grey.200', borderWidth: 2,
                       color: 'text.primary',
                     }}>
-                    <Typography sx={{ fontSize: 22, mb: 0.5 }}>{tile.icon}</Typography>
+                    <Box sx={{ mb: 0.5, color: 'primary.main', display: 'flex' }}>{tile.Icon && <tile.Icon sx={{ fontSize: 26 }} />}</Box>
                     <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary' }}>{tile.label}</Typography>
                   </Button>
                 ))}

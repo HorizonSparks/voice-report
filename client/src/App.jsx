@@ -9,6 +9,13 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
+import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
+import ChatRoundedIcon from '@mui/icons-material/ChatRounded';
+import BuildRoundedIcon from '@mui/icons-material/BuildRounded';
+import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
+import NotificationsOffRoundedIcon from '@mui/icons-material/NotificationsOffRounded';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import AnalyticsTracker from './utils/AnalyticsTracker.js';
 import { initErrorTracking, setErrorUser, ErrorBoundary } from './utils/errorTracking.js';
 
@@ -797,19 +804,23 @@ export default function App() {
         <List sx={{ px: 1 }}>
           {(user.role_level || 0) >= 7 && !user.sparks_role && (
             <ListItemButton onClick={() => { navigateTo('ceo'); setMenuOpen(false); }}>
-              <ListItemText primary={'🎛️ Control Center'} slotProps={{ primary: { sx: { fontWeight: 700, color: 'primary.main' } } }} />
+              <ListItemIcon sx={{ minWidth: 38, color: 'primary.main' }}><DashboardRoundedIcon fontSize="small" /></ListItemIcon>
+              <ListItemText primary={'Control Center'} slotProps={{ primary: { sx: { fontWeight: 700, color: 'primary.main' } } }} />
             </ListItemButton>
           )}
           {currentWorld !== 'control-center' && user.is_admin && (
             <ListItemButton onClick={() => navigateTo('templates')}>
-              <ListItemText primary={'📝 ' + t('nav.templates')} />
+              <ListItemIcon sx={{ minWidth: 38, color: 'text.secondary' }}><DescriptionRoundedIcon fontSize="small" /></ListItemIcon>
+              <ListItemText primary={t('nav.templates')} />
             </ListItemButton>
           )}
           <ListItemButton onClick={() => navigateTo('messages')}>
-            <ListItemText primary={'💬 ' + t('messages.title')} />
+            <ListItemIcon sx={{ minWidth: 38, color: 'text.secondary' }}><ChatRoundedIcon fontSize="small" /></ListItemIcon>
+            <ListItemText primary={t('messages.title')} />
           </ListItemButton>
           <ListItemButton onClick={() => { setSupportChatOpen(true); setMenuOpen(false); }}>
-            <ListItemText primary="🛠️ Tech Support" />
+            <ListItemIcon sx={{ minWidth: 38, color: 'text.secondary' }}><BuildRoundedIcon fontSize="small" /></ListItemIcon>
+            <ListItemText primary="Tech Support" />
           </ListItemButton>
         </List>
 
@@ -825,14 +836,16 @@ export default function App() {
         <List sx={{ px: 1 }}>
           {pushSupported && (
             <ListItemButton onClick={togglePush} disabled={pushBusy}>
+              <ListItemIcon sx={{ minWidth: 38, color: 'text.secondary' }}>{pushEnabled ? <NotificationsRoundedIcon fontSize="small" /> : <NotificationsOffRoundedIcon fontSize="small" />}</ListItemIcon>
               <ListItemText
-                primary={(pushEnabled ? '🔔 ' : '🔕 ') + t(pushEnabled ? 'push.enabled' : 'push.enable')}
+                primary={t(pushEnabled ? 'push.enabled' : 'push.enable')}
                 slotProps={{ primary: { sx: { color: 'text.primary' } } }}
               />
             </ListItemButton>
           )}
           <ListItemButton onClick={() => { showConfirm(t('nav.logout'), t('nav.confirmLogout'), () => { closeDialog(); logout(); }, t('nav.logout'), t('common.cancel')); }}>
-            <ListItemText primary={'⏻ ' + t('nav.logout')} slotProps={{ primary: { sx: { color: 'text.primary' } } }} />
+            <ListItemIcon sx={{ minWidth: 38, color: 'text.secondary' }}><LogoutRoundedIcon fontSize="small" /></ListItemIcon>
+            <ListItemText primary={t('nav.logout')} slotProps={{ primary: { sx: { color: 'text.primary' } } }} />
           </ListItemButton>
         </List>
       </Drawer>
