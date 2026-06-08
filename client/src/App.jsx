@@ -310,6 +310,25 @@ export default function App() {
     }
   }, [user, view, simulatingCompany, currentWorld]);
 
+  // Cross-app deep-link: an external link (e.g. from LoopFolders) can request a specific world via
+  // ?world=voice-report|control-center. Apply it once after auth (control-center is sparks-gated),
+  // then strip the param so it doesn't stick on refresh/navigation.
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const w = params.get('world');
+    if (!w) return;
+    // Only act once the world is actually applicable; otherwise leave the param in place so a
+    // not-yet-resolved role can't drop the deep-link (the effect re-runs when `user` updates).
+    if (w !== 'voice-report' && !(w === 'control-center' && user.sparks_role)) return;
+    setCurrentWorld(w);
+    setView(w === 'control-center' ? 'sparks' : 'home');
+    // Strip the param ONLY after applying, so it survives until honored.
+    params.delete('world');
+    const qs = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+  }, [user]);
+
   // Load company settings (only after auth resolves)
   useEffect(() => {
     if (authStatus !== 'loading') {
@@ -691,8 +710,13 @@ export default function App() {
         {currentWorld === 'voice-report' && user?.sparks_role && !simulatingCompany && (
           <Box sx={{ px: 2, pb: 1.5 }}>
             <Button fullWidth variant="contained" color="secondary" onClick={exitToControlCenter}
-              sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13 }}>
+              sx={{ border: '2px solid', borderColor: 'primary.main', fontSize: 13, mb: 1 }}>
               {'\u2190'} Control Center
+            </Button>
+            <Button fullWidth variant="outlined" color="secondary"
+              onClick={() => { window.location.href = 'https://loop-folder.horizonsparks.ai/'; }}
+              sx={{ justifyContent: 'center', fontSize: 13 }}>
+              LoopFolders
             </Button>
           </Box>
         )}
