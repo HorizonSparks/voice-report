@@ -84,28 +84,23 @@ if echo "$ADMIN_RESP" | grep -q '"is_admin":true'; then
   PEOPLE_COUNT=$(curl -s -b "$ADMIN_JAR" http://localhost:3070/api/people 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
   [ "$PEOPLE_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ People: $PEOPLE_COUNT" || { echo "  ✗ People: EMPTY/ERROR"; FAIL=1; }
 
+  # Projects/templates are DATA-state checks (prod runs demo data, 2026-06):
+  # an empty table says nothing about the image just deployed. Warn, don't fail
+  # — false ✗ on every deploy is how a verify section gets ignored.
   PROJ_COUNT=$(curl -s -b "$ADMIN_JAR" http://localhost:3070/api/projects 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-  [ "$PROJ_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ Projects: $PROJ_COUNT" || { echo "  ✗ Projects: EMPTY/ERROR"; FAIL=1; }
+  [ "$PROJ_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ Projects: $PROJ_COUNT" || echo "  ⚠ Projects: empty (data state, not a deploy failure)"
 
   TMPL_COUNT=$(curl -s -b "$ADMIN_JAR" http://localhost:3070/api/templates 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(len([t for t in d if 'sparks' in t.get('id','').lower()]))" 2>/dev/null || echo "0")
-  [ "$TMPL_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ Sparks templates: $TMPL_COUNT" || { echo "  ✗ Sparks templates: MISSING"; FAIL=1; }
+  [ "$TMPL_COUNT" -gt 0 ] 2>/dev/null && echo "  ✓ Sparks templates: $TMPL_COUNT" || echo "  ⚠ Sparks templates: none for this tenant (data state)"
 else
   echo "  ✗ Admin login FAILED"
   FAIL=1
 fi
 
-ELLERY_RESP=$(curl -s -c "$ELLERY_JAR" -X POST http://localhost:3070/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"pin":"1234"}' 2>/dev/null)
-
-if echo "$ELLERY_RESP" | grep -q '"name"'; then
-  echo "  ✓ Ellery login OK"
-  ELLERY_PEOPLE=$(curl -s -b "$ELLERY_JAR" http://localhost:3070/api/people 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-  [ "$ELLERY_PEOPLE" -gt 0 ] 2>/dev/null && echo "  ✓ Ellery sees people: $ELLERY_PEOPLE" || { echo "  ✗ Ellery sees NO people"; FAIL=1; }
-else
-  echo "  ✗ Ellery login FAILED"
-  FAIL=1
-fi
+# (2026-06-11) The hardcoded Ellery PIN-1234 check was removed: since the
+# 2026-06-08 Keycloak login unification that PIN isn't provisioned in this
+# DB, so the check failed on EVERY deploy regardless of the image. The admin
+# login above is the auth-path canary; per-user auth now belongs to Keycloak.
 
 rm -f "$ADMIN_JAR" "$ELLERY_JAR"
 
@@ -115,8 +110,11 @@ echo "[6/6] Edge / canonical sanity..."
 LEGACY_CODE=$(curl -sk -o /dev/null -w '%{http_code}' https://voice-report.ai/ 2>/dev/null || echo '000')
 [ "$LEGACY_CODE" = "301" ] && echo "  ✓ voice-report.ai → 301 redirect live" || echo "  ⚠ voice-report.ai HTTP $LEGACY_CODE (expected 301)"
 
-CANON_CODE=$(curl -sk -o /dev/null -w '%{http_code}' https://horizonsparks.com/ 2>/dev/null || echo '000')
-[ "$CANON_CODE" = "200" ] && echo "  ✓ horizonsparks.com → 200 OK" || { echo "  ✗ horizonsparks.com HTTP $CANON_CODE"; FAIL=1; }
+# horizonsparks.com is served by the SPARK tunnel (see
+# reference_production_topology_may31) — its state reflects a different host,
+# so it can't fail THIS deploy. Follow redirects; informational only.
+CANON_CODE=$(curl -skL -o /dev/null -w '%{http_code}' https://horizonsparks.com/ 2>/dev/null || echo '000')
+[ "$CANON_CODE" = "200" ] && echo "  ✓ horizonsparks.com → 200 OK (via Spark tunnel)" || echo "  ⚠ horizonsparks.com HTTP $CANON_CODE (Spark-served — check Spark, not this deploy)"
 
 # Final verdict
 echo ""
