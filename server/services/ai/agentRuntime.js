@@ -72,6 +72,7 @@ const PII_PATTERNS = {
 // for actual billing lives in anthropicClient.js (kept in sync with this).
 const MODEL_PRICING = {
   // Opus 4.5+ (newer cheaper tier — $5 / $25 per Mtok)
+  'claude-opus-4-8': { input: 0.0005,  output: 0.0025  },
   'claude-opus-4-7': { input: 0.0005,  output: 0.0025  },
   'claude-opus-4-6': { input: 0.0005,  output: 0.0025  },
   'claude-opus-4-5': { input: 0.0005,  output: 0.0025  },

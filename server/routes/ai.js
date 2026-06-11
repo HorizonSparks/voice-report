@@ -272,6 +272,11 @@ router.post('/refine', requireAuth, async (req, res) => {
           else if (trade === 'industrialerection') trade = 'erection';
           else if (trade === 'instrumentation') trade = 'instrumentation';
           else if (trade === 'safety') trade = 'safety';
+          // 2026-06-11 (task #45): millwright was missing here, so
+          // person.trade='Millwright' silently collapsed to electrical —
+          // the trade was unreachable end-to-end despite 76KB of accurate
+          // knowledge and a working Whisper vocabulary prompt.
+          else if (trade === 'millwright') trade = 'millwright';
           else trade = 'electrical';
         }
       } catch { /* fall through to text detection */ }

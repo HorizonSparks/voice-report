@@ -95,6 +95,9 @@ function detectTrade(personContext) {
   if (personContext.includes('Pipe Fitting')) return 'pipefitting';
   if (personContext.includes('Industrial Erection')) return 'erection';
   if (personContext.includes('Safety')) return 'safety';
+  // 2026-06-11 (task #45): second of the two millwright collapses — the
+  // text-detection fallback also had no millwright branch.
+  if (personContext.includes('Millwright')) return 'millwright';
   return 'electrical';
 }
 

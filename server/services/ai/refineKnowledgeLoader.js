@@ -21,6 +21,268 @@ const KNOWLEDGE_DIR = path.join(ROOT, 'knowledge');
 // Task keyword maps — externalized to JSON config for maintainability
 const TASK_KEYWORDS = require('../../config/task-keywords.json');
 
+// ═══════════════════════════════════════════════════════════════════
+// KNOWLEDGE SCHEMA CONTRACT (2026-06-11, task #45)
+//
+// The loader serves SIX trades whose JSON files were written by different
+// hands with different key shapes. The old loader hardcoded ~70 exact key
+// names that only instrumentation satisfied — pipefitting (156KB), erection
+// (51KB), millwright (76KB), safety (152KB) and most of electrical were
+// silently unreachable (~500KB dark). These helpers define the contract:
+//
+//   safety:   {tasks: {...}} | {safety_by_task: {...}} | topical top-level
+//             sections (fall_protection, LOTO_rotating_equipment, …).
+//             Entry fields are alias-tolerant (ppe/PPE, permits/
+//             permits_required, jsa_items/JSA_items, …).
+//   sections: task-keyword → section-key resolution is TOKEN-based
+//             (megger_testing ↔ testing_megger, flange_boltup ↔
+//             flange_bolt_up, hydro_testing ↔ hydrostatic_testing_procedure)
+//             — never exact-string-only again.
+//   codes:    {trade}_codes_standards.json OR {trade}_codes.json; named
+//             lookups resolve via normalized prefixes (isa_5_1 ↔
+//             ISA_5_1_P_and_ID_symbols) + a generic relevance pass.
+//
+// The contract is PROVEN by server/scripts/probe-trade-knowledge.js —
+// per trade, a synthetic transcript built from that trade's own
+// task-keywords must yield non-empty safety + content sections. Run it
+// after ANY change to this file or to knowledge/*.json.
+// ═══════════════════════════════════════════════════════════════════
+
+const META_KEYS = new Set([
+  'trade', 'category', 'description', 'id', 'title', 'version', 'updated_at',
+  'disclaimer', 'universal_safety_reminders',
+]);
+
+// Tokens too generic to carry meaning when matching key names.
+const STOP_TOKENS = new Set([
+  'and', 'the', 'of', 'for', 'with', 'a', 'to', 'in', 'on',
+  'procedure', 'procedures', 'operation', 'operations', 'section',
+  'detail', 'details', 'general', 'common',
+]);
+
+// Soft ceiling — gates the GENERIC passes only (checked before each generic
+// append). The named instrumentation blocks pre-date the cap and stay
+// keyword-gated, not size-gated, so a deliberately keyword-stuffed
+// instrumentation transcript can still exceed this (real turns hit 2-6KB).
+// Honest scope per Codex review: this cap bounds what task #45 ADDED, it is
+// not a global output limit.
+const MAX_KNOWLEDGE_CHARS = 7000;
+
+const normKeyChars = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function keyTokens(s) {
+  return String(s || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 3 && !STOP_TOKENS.has(t))
+    .map((t) => (t.length > 4 ? t.replace(/s$/, '') : t)); // light plural stem
+}
+
+// Two tokens are equivalent when equal or one prefixes the other
+// (hydro ↔ hydrostatic, termination ↔ terminations).
+function tokensEquivalent(a, b) {
+  if (a === b) return true;
+  if (a.length >= 4 && b.length >= 4) return a.startsWith(b) || b.startsWith(a);
+  return false;
+}
+
+/**
+ * Score how well a task keyword key matches a knowledge-section key.
+ * 1.0   = same after separator/case normalization (flange_boltup ↔ flange_bolt_up)
+ * ≥0.75 = token-subset either way (fitup ⊂ pipe_fitup_and_alignment,
+ *         megger_testing ↔ testing_megger)
+ * else  = Jaccard overlap of token sets (conduit_installation ↔
+ *         conduit_bending = 0.33)
+ */
+function keyMatchScore(taskKey, sectionKey) {
+  if (normKeyChars(taskKey) === normKeyChars(sectionKey)) return 1;
+  const ta = keyTokens(taskKey);
+  const tb = keyTokens(sectionKey);
+  if (ta.length === 0 || tb.length === 0) return 0;
+  let inter = 0;
+  for (const x of ta) if (tb.some((y) => tokensEquivalent(x, y))) inter += 1;
+  if (inter === 0) return 0;
+  const union = ta.length + tb.length - inter;
+  const jaccard = union > 0 ? inter / union : 0;
+  const aInB = ta.every((x) => tb.some((y) => tokensEquivalent(x, y)));
+  const bInA = tb.every((y) => ta.some((x) => tokensEquivalent(x, y)));
+  if (aInB || bInA) return Math.max(0.75, jaccard);
+  return jaccard;
+}
+
+// Field-vocabulary synonyms: workers say the spoken word, files key the
+// formal one. Consulted when scoring a section against the transcript —
+// REQUIRED for safety-correct tie-breaks among sibling sections (a "tig"
+// transcript must select welding_GTAW, never welding_SMAW). Seed list;
+// extend as trades surface new vocabulary.
+const SECTION_TEXT_HINTS = {
+  gtaw: ['tig'],
+  smaw: ['stick', '6010', '7018'],
+  fcaw: ['flux'],
+  loto: ['lockout', 'tagout', 'locked out', 'tagged out'],
+  megger: ['insulation resistance'],
+  hydrostatic: ['hydro'],
+};
+
+/** How strongly does this section key's name appear in the transcript? */
+function sectionTextEvidence(sectionKey, textLower) {
+  let score = 0;
+  for (const t of keyTokens(sectionKey)) {
+    if (/^\d+$/.test(t)) continue;
+    if (textLower.includes(t)) score += 2;
+    else if (t.length > 5 && textLower.includes(t.slice(0, 5))) score += 1;
+    const hints = SECTION_TEXT_HINTS[t];
+    if (hints && hints.some((h) => textLower.includes(h))) score += 2;
+  }
+  return score;
+}
+
+/** Does this section key's name appear in the transcript text? */
+function sectionNameInText(sectionKey, textLower) {
+  return sectionTextEvidence(sectionKey, textLower) > 0;
+}
+
+/**
+ * Resolve a task keyword to the best-matching section of a knowledge file.
+ * Strong matches (≥ minStrong) always win. Weak matches (≥ minWeak) are
+ * accepted only when the section's own name also appears in the transcript
+ * — guards against cross-task bleed (cable_tray must not pull
+ * cable_pulling's steps unless the text actually talks about pulling/cable).
+ */
+function resolveSection(container, taskKey, textLower = '', minStrong = 0.5, minWeak = 0.3) {
+  if (!container || typeof container !== 'object') return null;
+  // Collect ALL candidates so near-ties resolve on transcript evidence, not
+  // key order (Codex MAJOR-1: pipefitting task 'welding' scores welding_SMAW
+  // / welding_GTAW / welding_FCAW identically — a "tig" transcript must get
+  // GTAW, never whichever key happens to come first in the JSON).
+  const candidates = [];
+  for (const k of Object.keys(container)) {
+    if (META_KEYS.has(k)) continue;
+    const s = keyMatchScore(taskKey, k);
+    if (s > 0) candidates.push({ key: k, score: s });
+  }
+  if (candidates.length === 0) return null;
+  const topScore = Math.max(...candidates.map((c) => c.score));
+  const tied = candidates.filter((c) => c.score >= topScore - 0.1);
+  let best = tied[0];
+  if (tied.length > 1 && textLower) {
+    let bestEvidence = -1;
+    for (const c of tied) {
+      const ev = sectionTextEvidence(c.key, textLower);
+      if (ev > bestEvidence) {
+        bestEvidence = ev;
+        best = c;
+      }
+    }
+  }
+  if (best.score >= minStrong) return { key: best.key, data: container[best.key], score: best.score };
+  if (best.score >= minWeak && textLower && sectionNameInText(best.key, textLower)) {
+    return { key: best.key, data: container[best.key], score: best.score };
+  }
+  return null;
+}
+
+/**
+ * Generic relevance pass: sections of a knowledge file whose names appear
+ * in the transcript (or match active task keywords), best-scored first.
+ * This is what lights up the files the named blocks don't know about —
+ * electrical_materials.wire_and_cable, erection_codes.AISC,
+ * safety_department.section_03_incident_investigation, …
+ */
+function findRelevantSections(data, textLower, activeKeywords = [], maxSections = 3) {
+  if (!data || typeof data !== 'object') return [];
+  const scored = [];
+  for (const [sectionKey, sectionData] of Object.entries(data)) {
+    if (META_KEYS.has(sectionKey)) continue;
+    const toks = keyTokens(sectionKey);
+    let score = 0;
+    for (const t of toks) {
+      if (/^\d+$/.test(t)) continue;
+      if (textLower.includes(t)) score += 2;
+      else if (t.length > 5 && textLower.includes(t.slice(0, 5))) score += 1;
+    }
+    for (const kw of activeKeywords) {
+      if (toks.some((t) => tokensEquivalent(t, kw))) score += 1;
+    }
+    if (score > 0) scored.push({ key: sectionKey, data: sectionData, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, maxSections);
+}
+
+/**
+ * Boundary-aware task-keyword activation (Codex re-review MAJOR-1): short
+ * single-word keywords ('rig', 'set', 'key', 'jaw', 'trip') must not
+ * substring-activate inside unrelated words — 'rig' was activating on
+ * "RIGID conduit" and pulling crane/rigging safety into electrical-style
+ * millwright turns. Word-boundary match with common inflections allowed
+ * (rig→rigs/rigging, set→setting, align→alignment, trip→tripped). Phrases
+ * and longer words keep plain substring — they're specific enough and
+ * substring is what lets 'termination' cover 'terminations'.
+ */
+function keywordInText(kw, textLower) {
+  const k = String(kw).toLowerCase().trim();
+  if (!k) return false;
+  if (k.includes(' ') || k.length >= 6) return textLower.includes(k);
+  const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const lastChar = esc.slice(-1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Full keyword + optional doubled final consonant + common suffix
+  // (rig→rigs/rigging, set→setting, trip→tripped, align→alignment).
+  let core = `${esc}(?:${lastChar})?(?:s|es|ed|ing|ment)?`;
+  // Silent-e drop (Codex follow-up MAJOR): wire→wiring, cable→cabling,
+  // probe→probing, guide→guiding — the e disappears before ing/ed.
+  // 'ation' is deliberately NOT allowed: probe+ation would match
+  // "probation" (Codex final-round catch).
+  if (k.endsWith('e')) {
+    const stem = esc.slice(0, -1);
+    core = `(?:${core}|${stem}(?:ing|ed))`;
+  }
+  const re = new RegExp(`(^|[^a-z0-9])${core}([^a-z0-9]|$)`);
+  return re.test(textLower);
+}
+
+// Alias-tolerant safety entry formatter. Handles tasks-shape entries
+// (ppe/jsa_items/permits/hazards), pipefitting's safety_by_task shape
+// (PPE/JSA_items/permits_required/fire_watch_requirements) and free-form
+// topical sections (erection fall_protection, millwright LOTO_*) — the
+// last via extractSummary.
+// Labels carry the "Safety — " prefix so safety entries are structurally
+// distinguishable from content sections — both for the model (provenance)
+// and for the reachability probe's accounting (Codex MAJOR-3).
+function formatSafetyEntry(label, td) {
+  if (td == null) return '';
+  if (typeof td !== 'object') return `[Safety — ${label}] ${String(td).substring(0, 300)}`;
+  const lower = {};
+  for (const [k, v] of Object.entries(td)) lower[k.toLowerCase()] = v;
+  const asArr = (v) =>
+    Array.isArray(v)
+      ? v
+      : typeof v === 'string'
+        ? [v]
+        : Object.values(v).map((x) => (typeof x === 'string' ? x : JSON.stringify(x)));
+  const pick = (...names) => {
+    for (const n of names) if (lower[n] != null) return lower[n];
+    return null;
+  };
+  const summary = [];
+  const ppe = pick('ppe');
+  if (ppe) summary.push(`PPE: ${asArr(ppe).slice(0, 6).join(', ')}`);
+  const jsa = pick('jsa_items');
+  if (jsa) summary.push(`JSA items: ${asArr(jsa).slice(0, 4).join('; ')}`);
+  const permits = pick('permits', 'permits_required');
+  if (permits) summary.push(`Permits needed: ${asArr(permits).slice(0, 4).join(', ')}`);
+  const hazards = pick('hazards');
+  if (hazards) summary.push(`Key hazards: ${asArr(hazards).slice(0, 3).join('; ')}`);
+  const safety = pick('safety');
+  if (safety) summary.push(`Safety: ${asArr(safety).slice(0, 4).join('; ')}`);
+  const reqs = pick('requirements', 'osha_requirement', 'osha_requirements');
+  if (reqs) summary.push(`Requirements: ${asArr(reqs).slice(0, 3).join('; ')}`);
+  const fire = pick('fire_watch_requirements');
+  if (fire) summary.push(`Fire watch: ${asArr(fire).slice(0, 2).join('; ')}`);
+  if (summary.length === 0) return `[Safety — ${label}] ${extractSummary(td, 5, 500)}`;
+  return `[Safety — ${label}] ${summary.join('. ')}`;
+}
+
 
 function readJsonSafe(filePath) {
   // Try cache first (key = filename without extension)
@@ -106,20 +368,63 @@ function loadRefineKnowledge(trade, allText) {
   //    Source: {trade}_safety.json
   //    Always loaded first — safety is #1 priority
   // ═══════════════════════════════════════════════════════════
-  const safetyData = readJsonSafe(path.join(KNOWLEDGE_DIR, `${trade}_safety.json`));
+  // The safety-department trade has no safety_safety.json — its corpus is
+  // safety_department.json (section_01_osha_regulations … section_08_site_
+  // safety_programs), which the topical branch below matches per task
+  // (permits → section_02_permit_systems, incidents → section_03_incident_
+  // investigation, training → section_07_training_requirements, …).
+  const safetyData =
+    readJsonSafe(path.join(KNOWLEDGE_DIR, `${trade}_safety.json`)) ||
+    (trade === 'safety' ? readJsonSafe(path.join(KNOWLEDGE_DIR, 'safety_department.json')) : null);
+  // Active tasks = keyword hit in transcript. Computed once, reused by the
+  // safety + procedures + generic passes below.
+  const activeTasks = Object.entries(taskKeywords)
+    .filter(([, keywords]) => keywords.some((kw) => keywordInText(kw, textLower)))
+    .map(([task]) => task);
+  // Flat keyword list of the active tasks — fed to the generic relevance pass.
+  const activeKeywordTokens = activeTasks
+    .flatMap((task) => keyTokens(task).concat((taskKeywords[task] || []).flatMap(keyTokens)))
+    .filter((t, i, a) => a.indexOf(t) === i);
   if (safetyData) {
+    // Three accepted shapes (see schema contract above):
+    //   tasks-keyed (electrical, instrumentation), safety_by_task-keyed
+    //   (pipefitting), or topical top-level sections (erection, millwright).
+    const container =
+      safetyData.tasks && typeof safetyData.tasks === 'object'
+        ? safetyData.tasks
+        : safetyData.safety_by_task && typeof safetyData.safety_by_task === 'object'
+          ? safetyData.safety_by_task
+          : null;
     const taskMatches = [];
-    for (const [task, keywords] of Object.entries(taskKeywords)) {
-      if (keywords.some(kw => textLower.includes(kw)) && safetyData.tasks && safetyData.tasks[task]) {
-        const td = safetyData.tasks[task];
-        const summary = [];
-        if (td.ppe) summary.push(`PPE: ${td.ppe.join(', ')}`);
-        if (td.jsa_items) summary.push(`JSA items: ${td.jsa_items.slice(0, 4).join('; ')}`);
-        if (td.permits) summary.push(`Permits needed: ${td.permits.join(', ')}`);
-        if (td.hazards) summary.push(`Key hazards: ${td.hazards.slice(0, 3).join('; ')}`);
-        if (td.safety) summary.push(`Safety: ${td.safety.slice(0, 4).join('; ')}`);
-        if (td.requirements) summary.push(`Requirements: ${(Array.isArray(td.requirements) ? td.requirements : []).slice(0, 3).join('; ')}`);
-        taskMatches.push(`[${task.replace(/_/g, ' ')}] ${summary.join('. ')}`);
+    const usedKeys = new Set();
+    if (container) {
+      for (const task of activeTasks) {
+        const hit = resolveSection(container, task, textLower, 0.45);
+        if (hit && !usedKeys.has(hit.key)) {
+          usedKeys.add(hit.key);
+          const line = formatSafetyEntry(hit.key.replace(/_/g, ' '), hit.data);
+          if (line) taskMatches.push(line);
+        }
+      }
+    } else {
+      // Topical safety file: resolve active tasks against the top-level
+      // sections, then let transcript relevance pull in what task names
+      // missed (a millwright saying "locked out the pump" reaches
+      // LOTO_rotating_equipment through 'rotating'/'pump' tokens in text).
+      for (const task of activeTasks) {
+        const hit = resolveSection(safetyData, task, textLower, 0.45);
+        if (hit && !usedKeys.has(hit.key)) {
+          usedKeys.add(hit.key);
+          const line = formatSafetyEntry(hit.key.replace(/_/g, ' '), hit.data);
+          if (line) taskMatches.push(line);
+        }
+      }
+      for (const sec of findRelevantSections(safetyData, textLower, activeKeywordTokens, 2)) {
+        if (!usedKeys.has(sec.key) && taskMatches.length < 4) {
+          usedKeys.add(sec.key);
+          const line = formatSafetyEntry(sec.key.replace(/_/g, ' '), sec.data);
+          if (line) taskMatches.push(line);
+        }
       }
     }
     if (taskMatches.length > 0) knowledge += `\nRelevant safety knowledge for this work:\n${taskMatches.join('\n')}`;
@@ -137,26 +442,34 @@ function loadRefineKnowledge(trade, allText) {
       knowledge += `\nCommon punch list items to watch for: ${procData.quality_common_punch_items.slice(0, 8).join('; ')}`;
     }
 
-    // Match specific procedure sections based on keywords
-    for (const [task, keywords] of Object.entries(taskKeywords)) {
-      if (!keywords.some(kw => textLower.includes(kw))) continue;
-
-      // Look for matching section in procedures (e.g., "calibration" → calibration_procedure or calibration)
-      const possibleKeys = [task, task.replace(/_/g, ''), `${task}_procedure`];
-      for (const key of possibleKeys) {
-        if (procData[key]) {
-          const section = procData[key];
-          if (section.steps) {
-            knowledge += `\n[${task.replace(/_/g, ' ')} procedure] Steps: ${section.steps.slice(0, 5).join('; ')}`;
-          }
-          if (section.common_mistakes) {
-            knowledge += `\nCommon mistakes: ${(Array.isArray(section.common_mistakes) ? section.common_mistakes : Object.values(section.common_mistakes)).slice(0, 3).join('; ')}`;
-          }
-          if (section.common_errors) {
-            knowledge += `\nCommon errors: ${section.common_errors.slice(0, 3).join('; ')}`;
-          }
-          break;
-        }
+    // Match specific procedure sections based on keywords — token-based
+    // resolution (task #45): flange_boltup ↔ flange_bolt_up, testing_megger ↔
+    // megger_testing, hydro_testing ↔ hydrostatic_testing_procedure, fitup ⊂
+    // pipe_fitup_and_alignment all land now. Sections without .steps (e.g.
+    // erection equipment_setting's nested vessels/exchangers/columns) inject
+    // a summary instead of silently yielding nothing.
+    const usedProcKeys = new Set();
+    for (const task of activeTasks) {
+      const hit = resolveSection(procData, task, textLower);
+      if (!hit || usedProcKeys.has(hit.key)) continue;
+      usedProcKeys.add(hit.key);
+      const section = hit.data;
+      if (!section || typeof section !== 'object') continue;
+      let injected = false;
+      if (section.steps) {
+        knowledge += `\n[${task.replace(/_/g, ' ')} procedure] Steps: ${section.steps.slice(0, 5).join('; ')}`;
+        injected = true;
+      }
+      if (section.common_mistakes) {
+        knowledge += `\nCommon mistakes: ${(Array.isArray(section.common_mistakes) ? section.common_mistakes : Object.values(section.common_mistakes)).slice(0, 3).join('; ')}`;
+        injected = true;
+      }
+      if (section.common_errors) {
+        knowledge += `\nCommon errors: ${section.common_errors.slice(0, 3).join('; ')}`;
+        injected = true;
+      }
+      if (!injected) {
+        knowledge += `\n[${task.replace(/_/g, ' ')} — ${hit.key.replace(/_/g, ' ')}] ${extractSummary(section, 4, 450)}`;
       }
     }
 
@@ -264,6 +577,7 @@ function loadRefineKnowledge(trade, allText) {
   //    Injects actual specs, not just "knowledge available"
   // ═══════════════════════════════════════════════════════════
   const tradeMatData = readJsonSafe(path.join(KNOWLEDGE_DIR, `${trade}_materials.json`));
+  const matLenBefore = knowledge.length;
   if (tradeMatData) {
     // Tubing
     if (tradeMatData.tubing && (textLower.includes('tubing') || textLower.includes('tube') || textLower.includes('swagelok') || textLower.includes('316'))) {
@@ -324,10 +638,26 @@ function loadRefineKnowledge(trade, allText) {
         : Object.values(tradeMatData.common_material_mistakes);
       knowledge += `\nCommon material mistakes: ${mistakes.slice(0, 3).map(m => typeof m === 'string' ? m : (m.mistake || m.description || JSON.stringify(m))).join('; ')}`;
     }
+
+    // Generic pass (task #45): the named blocks above are instrumentation-
+    // shaped. When they injected nothing, light up this trade's own material
+    // sections by transcript relevance — electrical wire_and_cable/cable_tray/
+    // switchgear_and_breakers, pipefitting flange_ratings/bolt_specifications,
+    // erection high_strength_bolts, millwright bearings/couplings/grout…
+    if (knowledge.length === matLenBefore && knowledge.length < MAX_KNOWLEDGE_CHARS) {
+      const sections = findRelevantSections(tradeMatData, textLower, activeKeywordTokens, 3);
+      for (const sec of sections) {
+        if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+        knowledge += `\n[Materials — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 450)}`;
+      }
+    }
   }
 
-  // Fallback: generic materials_specs.json (for electrical/general)
-  if (!tradeMatData) {
+  // Fallback: generic materials_specs.json (for electrical/general).
+  // Task #45 fix: fires when the trade file is MISSING or yielded nothing —
+  // the old `if (!tradeMatData)` gate cut electricians off from the cable-
+  // type fallback the moment electrical_materials.json appeared on disk.
+  if (knowledge.length === matLenBefore) {
     const matKeywords = ['cable', 'wire', 'conduit', 'emt', 'rigid', 'pvc', 'tubing', 'material', 'fitting', 'seal', 'gasket', 'thhn', 'xhhw', 'mc cable'];
     if (matKeywords.some(kw => textLower.includes(kw))) {
       const matData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'materials_specs.json'));
@@ -346,6 +676,7 @@ function loadRefineKnowledge(trade, allText) {
   //    Source: {trade}_quality_inspection.json (NEW)
   // ═══════════════════════════════════════════════════════════
   const qualData = readJsonSafe(path.join(KNOWLEDGE_DIR, `${trade}_quality_inspection.json`));
+  const qualLenBefore = knowledge.length;
   if (qualData) {
     // Installation QC checklists
     if (qualData.installation_qc_checklists && (textLower.includes('install') || textLower.includes('check') || textLower.includes('qc') || textLower.includes('inspect'))) {
@@ -386,6 +717,20 @@ function loadRefineKnowledge(trade, allText) {
     if (qualData.sis_validation && (textLower.includes('sis') || textLower.includes('sil') || textLower.includes('proof test') || textLower.includes('safety instrumented'))) {
       knowledge += `\n[SIS validation] ${extractSummary(qualData.sis_validation, 4, 500)}`;
     }
+
+    // Generic pass (task #45): non-instrumentation quality files (electrical
+    // megger_testing_procedures, pipefitting common_weld_defects_and_causes,
+    // erection bolt-tension QC, millwright acceptance criteria) by relevance.
+    if (
+      knowledge.length === qualLenBefore &&
+      knowledge.length < MAX_KNOWLEDGE_CHARS &&
+      ['quality', 'inspect', 'qc', 'check', 'punch', 'test', 'reject', 'defect', 'tolerance', 'torque', 'accept'].some((kw) => textLower.includes(kw))
+    ) {
+      for (const sec of findRelevantSections(qualData, textLower, activeKeywordTokens, 2)) {
+        if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+        knowledge += `\n[QC — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 450)}`;
+      }
+    }
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -396,6 +741,7 @@ function loadRefineKnowledge(trade, allText) {
   if (troubleData) {
     const troubleKeywords = ['problem', 'issue', 'trouble', 'fault', 'fail', 'not working', 'erratic', 'stuck', 'wrong', 'noise', 'drift', 'error', 'diagnos'];
     const isTroubleshooting = troubleKeywords.some(kw => textLower.includes(kw));
+    const troubleLenBefore = knowledge.length;
 
     if (isTroubleshooting || textLower.includes('troubleshoot')) {
       // Signal issues
@@ -437,6 +783,16 @@ function loadRefineKnowledge(trade, allText) {
       // Analyzer problems
       if (troubleData.analyzer_problems && (textLower.includes('analyzer') || textLower.includes('sample') || textLower.includes('probe'))) {
         knowledge += `\n[Analyzer troubleshooting] ${extractSummary(troubleData.analyzer_problems, 4, 400)}`;
+      }
+
+      // Generic pass (task #45): non-instrumentation troubleshooting files
+      // (electrical VFD_fault_codes/breaker_troubleshooting, millwright
+      // pump/gearbox diagnostics, erection fit-up issues) by relevance.
+      if (knowledge.length === troubleLenBefore && knowledge.length < MAX_KNOWLEDGE_CHARS) {
+        for (const sec of findRelevantSections(troubleData, textLower, activeKeywordTokens, 2)) {
+          if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+          knowledge += `\n[Troubleshooting — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 450)}`;
+        }
       }
     }
   }
@@ -516,37 +872,84 @@ function loadRefineKnowledge(trade, allText) {
   // 7. CODES & STANDARDS
   //    Source: {trade}_codes_standards.json (NEW) + pipefitting
   // ═══════════════════════════════════════════════════════════
-  const codesData = readJsonSafe(path.join(KNOWLEDGE_DIR, `${trade}_codes_standards.json`));
+  // Task #45: this section was dead for ALL trades — the loader checked
+  // lowercase keys (codesData.isa_5_1) against TitleCase JSON keys
+  // (ISA_5_1_P_and_ID_symbols), and electrical's file is named
+  // electrical_codes.json, not electrical_codes_standards.json. ~85KB of
+  // codes knowledge never reached a single worker. Fixed with a filename
+  // fallback + normalized-prefix lookup + a generic relevance pass.
+  const codesData =
+    readJsonSafe(path.join(KNOWLEDGE_DIR, `${trade}_codes_standards.json`)) ||
+    readJsonSafe(path.join(KNOWLEDGE_DIR, `${trade}_codes.json`));
   if (codesData) {
+    const codesLenBefore = knowledge.length;
+    const usedCodeKeys = new Set();
+    // Normalized-prefix lookup: 'isa51' resolves ISA_5_1_P_and_ID_symbols,
+    // 'nec500' resolves NEC_500_506_hazardous_area_classification, etc.
+    const codeByPrefix = (prefix) => {
+      for (const k of Object.keys(codesData)) {
+        if (META_KEYS.has(k) || usedCodeKeys.has(k)) continue;
+        if (normKeyChars(k).startsWith(prefix)) {
+          usedCodeKeys.add(k);
+          return codesData[k];
+        }
+      }
+      return null;
+    };
     // ISA standards
     if (textLower.includes('isa') || textLower.includes('tag') || textLower.includes('p&id') || textLower.includes('pid')) {
-      if (codesData.isa_5_1) knowledge += `\n[ISA 5.1 — P&ID symbols] ${extractSummary(codesData.isa_5_1, 4, 500)}`;
+      const v = codeByPrefix('isa51');
+      if (v) knowledge += `\n[ISA 5.1 — P&ID symbols] ${extractSummary(v, 4, 500)}`;
     }
     if (textLower.includes('sil') || textLower.includes('sis') || textLower.includes('isa 84') || textLower.includes('iec 61511')) {
-      if (codesData.isa_84_iec_61511) knowledge += `\n[ISA 84 / IEC 61511 — SIS] ${extractSummary(codesData.isa_84_iec_61511, 5, 600)}`;
+      const v = codeByPrefix('isa84');
+      if (v) knowledge += `\n[ISA 84 / IEC 61511 — SIS] ${extractSummary(v, 5, 600)}`;
     }
     if (textLower.includes('control valve') || textLower.includes('cv') || textLower.includes('sizing')) {
-      if (codesData.isa_75) knowledge += `\n[ISA 75 — valve sizing] ${extractSummary(codesData.isa_75, 4, 400)}`;
+      const v = codeByPrefix('isa75');
+      if (v) knowledge += `\n[ISA 75 — valve sizing] ${extractSummary(v, 4, 400)}`;
     }
     // NEC hazardous areas
     if (textLower.includes('nec') || textLower.includes('classified') || textLower.includes('division') || textLower.includes('zone') || textLower.includes('hazardous') || textLower.includes('explosion')) {
-      if (codesData.nec_500_506) knowledge += `\n[NEC 500-506 — Hazardous areas] ${extractSummary(codesData.nec_500_506, 5, 600)}`;
+      const v = codeByPrefix('nec500');
+      if (v) knowledge += `\n[NEC 500-506 — Hazardous areas] ${extractSummary(v, 5, 600)}`;
     }
     // API standards
     if (textLower.includes('api') || textLower.includes('analyzer') || textLower.includes('sample system')) {
-      if (codesData.api_555 && textLower.includes('analyzer')) knowledge += `\n[API 555 — Analyzers] ${extractSummary(codesData.api_555, 4, 400)}`;
-      if (codesData.api_551) knowledge += `\n[API 551 — Measurement] ${extractSummary(codesData.api_551, 3, 300)}`;
+      if (textLower.includes('analyzer')) {
+        const v = codeByPrefix('api555');
+        if (v) knowledge += `\n[API 555 — Analyzers] ${extractSummary(v, 4, 400)}`;
+      }
+      const v551 = codeByPrefix('api551');
+      if (v551) knowledge += `\n[API 551 — Measurement] ${extractSummary(v551, 3, 300)}`;
     }
     // Grounding/shielding standard
     if (textLower.includes('ground') || textLower.includes('shield') || textLower.includes('emi')) {
-      if (codesData.api_554) knowledge += `\n[API 554 — Grounding/Shielding] ${extractSummary(codesData.api_554, 3, 300)}`;
+      const v = codeByPrefix('api554');
+      if (v) knowledge += `\n[API 554 — Grounding/Shielding] ${extractSummary(v, 3, 300)}`;
     }
-  }
-
-  // Fallback: piping codes for pipefitting trade
-  if (!codesData && ['asme', 'b31', 'code', 'wps', 'pqr', 'welder qualification', 'section ix', 'aws'].some(kw => textLower.includes(kw))) {
-    if (readJsonSafe(path.join(KNOWLEDGE_DIR, 'pipefitting_codes_standards.json'))) {
-      knowledge += `\nPiping codes and standards knowledge available — ASME B31.3, B31.1, Section IX, welding qualifications.`;
+    // Generic pass: everything the named lookups don't know — ASME B31.3 /
+    // Section IX (pipefitting), AISC / RCSC / Subpart R (erection), API 610/
+    // 686 / alignment_tolerances (millwright), NEC ampacity / conduit-fill /
+    // working-clearance tables (electrical). Gated on codes-ish words OR a
+    // direct section-name hit in the transcript.
+    if (knowledge.length < MAX_KNOWLEDGE_CHARS) {
+      const codesWords = ['code', 'standard', 'spec', 'asme', 'b31', 'aws ', 'aisc', 'rcsc', 'osha', 'nec', 'api ', 'ampacity', 'derating', 'fill', 'clearance', 'torque', 'tolerance', 'qualification', 'wps', 'pqr'];
+      const codesContext = codesWords.some((kw) => textLower.includes(kw));
+      for (const sec of findRelevantSections(codesData, textLower, codesContext ? activeKeywordTokens : [], 2)) {
+        if (usedCodeKeys.has(sec.key)) continue;
+        if (!codesContext && sec.score < 2) continue; // need a real name hit without codes context
+        if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+        usedCodeKeys.add(sec.key);
+        knowledge += `\n[Codes & standards — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 450)}`;
+      }
+    }
+    if (knowledge.length === codesLenBefore && trade === 'pipefitting' && ['asme', 'b31', 'code', 'wps', 'pqr', 'section ix', 'aws'].some((kw) => textLower.includes(kw))) {
+      // Last-resort named anchors for the most-asked piping codes.
+      const b31 = codeByPrefix('asmeb313');
+      if (b31) knowledge += `\n[ASME B31.3 — process piping] ${extractSummary(b31, 4, 450)}`;
+      const ix = codeByPrefix('asmesectionix');
+      if (ix) knowledge += `\n[ASME Section IX — welding quals] ${extractSummary(ix, 4, 450)}`;
     }
   }
 
@@ -568,8 +971,11 @@ function loadRefineKnowledge(trade, allText) {
   if (['rework', 'mistake', 'problem', 'wrong', 'issue', 'deficiency', 'quality'].some(kw => textLower.includes(kw))) {
     const lessonsData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'lessons_learned.json'));
     if (lessonsData) {
-      const reworkKey = `top_rework_causes_${trade === 'pipefitting' ? 'pipefitting' : trade === 'erection' ? 'erection' : trade === 'instrumentation' ? 'instrumentation' : 'electrical'}`;
-      if (lessonsData[reworkKey]) knowledge += `\nTop rework causes: ${lessonsData[reworkKey].slice(0, 3).map(r => typeof r === 'string' ? r : r.cause).join('; ')}`;
+      // Task #45: every trade tries ITS OWN rework bucket first (so the
+      // knowledge self-audit loop can grow per-trade lessons), falling back
+      // to electrical only when the trade has none yet.
+      const reworkData = lessonsData[`top_rework_causes_${trade}`] || lessonsData.top_rework_causes_electrical;
+      if (reworkData) knowledge += `\nTop rework causes: ${reworkData.slice(0, 3).map(r => typeof r === 'string' ? r : r.cause).join('; ')}`;
     }
   }
 
@@ -592,22 +998,40 @@ function loadRefineKnowledge(trade, allText) {
   // ═══════════════════════════════════════════════════════════
   // 12. PIPE FITTING MATERIALS (pipefitting/erection trades)
   // ═══════════════════════════════════════════════════════════
-  const pipeMatKeywords = ['pipe', 'flange', 'gasket', 'bolt', 'stud', 'elbow', 'tee', 'reducer', 'spool', 'carbon steel', 'chrome', 'alloy', 'weld neck', 'slip-on'];
-  if ((trade === 'pipefitting' || trade === 'erection') && pipeMatKeywords.some(kw => textLower.includes(kw))) {
+  // Task #45: stub lines ("knowledge available…") replaced with real content
+  // — stubs told the model knowledge existed with no way to fetch it, which
+  // invites confident bluffing in a safety domain. Erection borrows the
+  // pipefitting materials file here; pipefitting itself already got these
+  // sections in the generic materials pass above.
+  const pipeMatKeywords = ['pipe', 'flange', 'gasket', 'bolt', 'stud', 'elbow', 'tee', 'reducer', 'spool', 'carbon steel', 'chrome', 'alloy', 'weld neck', 'slip-on', 'torque'];
+  if (trade === 'erection' && knowledge.length < MAX_KNOWLEDGE_CHARS && pipeMatKeywords.some(kw => textLower.includes(kw))) {
     const pipeMatData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'pipefitting_materials.json'));
     if (pipeMatData) {
-      if (textLower.includes('flange') || textLower.includes('gasket') || textLower.includes('bolt')) knowledge += `\nPipe fitting material knowledge available for flanges, gaskets, and bolt specifications.`;
-      if (textLower.includes('torque')) knowledge += `\nBolt torque knowledge available — ask about specific flange size and class.`;
+      for (const sec of findRelevantSections(pipeMatData, textLower, [], 2)) {
+        if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+        knowledge += `\n[Pipe materials — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 400)}`;
+      }
     }
   }
 
   // ═══════════════════════════════════════════════════════════
   // 13. RIGGING / CRANE (erection trade)
   // ═══════════════════════════════════════════════════════════
-  const riggingKeywords = ['rig', 'rigging', 'crane', 'lift', 'sling', 'shackle', 'spreader', 'vessel', 'column', 'exchanger', 'module', 'steel', 'erection', 'iron'];
-  if (trade === 'erection' || riggingKeywords.some(kw => textLower.includes(kw))) {
+  // Codex MAJOR-2 fix: word-boundary regex, not substring — the old 'rig'
+  // keyword matched "RIGID conduit" and would have pushed crane/rigging
+  // content into ordinary electrical turns. 'steel'/'column'/'vessel' alone
+  // are also too generic to mean a lift is happening; the gate now needs an
+  // actual rigging/lifting word.
+  const RIGGING_GATE = /\b(rig|rigs|rigged|rigging|rigger|riggers|crane|cranes|lift|lifts|lifting|sling|slings|shackle|shackles|spreader|tailing|ironworker|iron worker)\b/;
+  if (trade !== 'millwright' && (trade === 'erection' || RIGGING_GATE.test(textLower)) && knowledge.length < MAX_KNOWLEDGE_CHARS) {
     const riggingData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'rigging_crane_operations.json'));
-    if (riggingData?.sling_capacities || riggingData?.crane_signals) knowledge += `\nRigging and crane operations knowledge available — sling capacities, crane signals, lift planning.`;
+    if (riggingData) {
+      const sections = findRelevantSections(riggingData, textLower, ['sling', 'crane', 'rigging', 'lift'], 2);
+      for (const sec of sections) {
+        if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+        knowledge += `\n[Rigging — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 450)}`;
+      }
+    }
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -621,11 +1045,12 @@ function loadRefineKnowledge(trade, allText) {
         const refs = Object.entries(qr).slice(0, 10).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join('; ');
         knowledge += `\nSafety quick reference: ${refs}`;
       }
-      if (textLower.includes('permit')) knowledge += `\nPermit system knowledge available — hot work, confined space, excavation, line break, LOTO.`;
-      if (textLower.includes('incident') || textLower.includes('investigation')) knowledge += `\nIncident investigation knowledge: 5 Whys, fishbone, OSHA recordability criteria, reporting deadlines.`;
-      if (textLower.includes('trir') || textLower.includes('metric') || textLower.includes('rate')) knowledge += `\nSafety metrics: TRIR formula (recordables x 200,000 / hours worked). Excellent <0.5, world class <0.3.`;
-      if (textLower.includes('training') || textLower.includes('osha')) knowledge += `\nTraining requirements knowledge available — OSHA 10/30, fall protection, confined space, crane, forklift, first aid.`;
-      if (textLower.includes('jsa') || textLower.includes('jha') || textLower.includes('hazard')) knowledge += `\nJSA/JHA creation knowledge: hazard categories, risk matrix, hierarchy of controls, task-specific templates.`;
+      // Task #45: the nine deep sections (section_01_osha_regulations …
+      // section_08_site_safety_programs) are now served by SECTION 1's
+      // safety_department.json fallback (task-matched, summarized content) —
+      // the old stub lines here are gone, and re-injecting the sections here
+      // would duplicate them. Only the quick reference remains this section's
+      // job.
     }
   }
 
@@ -634,23 +1059,29 @@ function loadRefineKnowledge(trade, allText) {
   // 15. BOILERMAKER SPECIALTY (pipefitting trade, boilermaker role)
   // ═══════════════════════════════════════════════════════════
   const boilerKeywords = ['boiler', 'tube', 'drum', 'steam drum', 'mud drum', 'waterwall', 'economizer', 'superheater', 'reheater', 'refractory', 'castable', 'firebrick', 'tube sheet', 'tube bundle', 'tube rolling', 'tube plug', 'vessel', 'pressure vessel', 'manway', 'ASME Section I', 'ASME Section VIII', 'NBIC', 'R stamp'];
-  if (trade === 'pipefitting' && boilerKeywords.some(kw => textLower.includes(kw))) {
+  if (trade === 'pipefitting' && knowledge.length < MAX_KNOWLEDGE_CHARS && boilerKeywords.some(kw => textLower.includes(kw))) {
     const boilerData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'pipefitting_boilermaker.json'));
     if (boilerData) {
-      if (textLower.includes('tube') && (textLower.includes('roll') || textLower.includes('expand'))) knowledge += '\nBoilermaker tube rolling knowledge available — torque control, wall reduction, tube projection.';
-      if (textLower.includes('refractory')) knowledge += '\nRefractory knowledge available — castable, brick, anchors, dry-out procedures.';
-      if (textLower.includes('vessel') || textLower.includes('drum')) knowledge += '\nPressure vessel and boiler drum knowledge available — ASME code, nozzle replacement, internals.';
-      if (textLower.includes('bundle')) knowledge += '\nHeat exchanger bundle pulling knowledge available — procedures, clearance, tube sheet inspection.';
-      if (textLower.includes('nbic') || textLower.includes('r stamp') || textLower.includes('repair')) knowledge += '\nNBIC repair code knowledge available — R-stamp requirements, R-1 forms, authorized inspector.';
+      // Task #45: stubs → real content by relevance (tube rolling, refractory,
+      // drums, bundle pulling, NBIC repairs).
+      for (const sec of findRelevantSections(boilerData, textLower, ['tube', 'refractory', 'vessel', 'drum', 'bundle', 'nbic'], 2)) {
+        if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+        knowledge += `\n[Boilermaker — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 450)}`;
+      }
     }
   }
 
   // ═══════════════════════════════════════════════════════════
   // 16. MILLWRIGHT — RIGGING AND EQUIPMENT SETTING
   // ═══════════════════════════════════════════════════════════
-  if (trade === 'millwright' && (textLower.includes('rig') || textLower.includes('crane') || textLower.includes('lift') || textLower.includes('set') || textLower.includes('exchanger') || textLower.includes('vessel'))) {
+  if (trade === 'millwright' && knowledge.length < MAX_KNOWLEDGE_CHARS && (/\b(rig|rigs|rigged|rigging|rigger|crane|cranes|lift|lifts|lifting|sling|slings|setting|set)\b/.test(textLower) || textLower.includes('exchanger') || textLower.includes('vessel'))) {
     const riggingData = readJsonSafe(path.join(KNOWLEDGE_DIR, 'rigging_crane_operations.json'));
-    if (riggingData) knowledge += '\nRigging and crane operations knowledge available for equipment setting.';
+    if (riggingData) {
+      for (const sec of findRelevantSections(riggingData, textLower, ['sling', 'crane', 'rigging', 'lift', 'setting'], 2)) {
+        if (knowledge.length >= MAX_KNOWLEDGE_CHARS) break;
+        knowledge += `\n[Rigging — ${sec.key.replace(/_/g, ' ')}] ${extractSummary(sec.data, 4, 400)}`;
+      }
+    }
   }
 
   return knowledge;
