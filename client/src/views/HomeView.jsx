@@ -90,7 +90,7 @@ export default function HomeView({ user, setView, logout, activeTrade, setActive
     return 'Good evening';
   };
 
-  const jsaColor = jsaStatus === 'approved' ? 'success' : jsaStatus === 'pending' ? 'warning' : 'error';
+  const jsaColor = jsaStatus === 'approved' ? 'success' : jsaStatus === 'pending' ? 'warning' : 'default';
   const jsaLabel = jsaStatus === 'approved' ? 'JSA Active' : jsaStatus === 'pending' ? 'JSA Pending' : 'No JSA';
 
   return (
